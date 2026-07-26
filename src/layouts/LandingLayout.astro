@@ -1,0 +1,86 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import { site } from '../lib/site';
+
+interface Props {
+  title: string;
+  description: string;
+  keyword: string;
+  relatedSkills?: string[];
+  relatedShows?: string[];
+  cta?: string;
+  canonicalPath: string;
+}
+
+const {
+  title,
+  description,
+  keyword,
+  relatedSkills = [],
+  relatedShows = [],
+  cta = 'Request materials',
+  canonicalPath,
+} = Astro.props;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: site.name,
+  url: site.url,
+  email: site.email,
+  jobTitle: 'Actress',
+  knowsAbout: [keyword, ...relatedSkills],
+  description,
+};
+---
+
+<BaseLayout title={title} description={description} canonicalPath={canonicalPath} jsonLd={jsonLd}>
+  <article class="mx-auto max-w-3xl px-6 py-16 md:py-24">
+    <p class="fade-up text-sm uppercase tracking-[0.2em] text-gel">{keyword}</p>
+    <h1 class="fade-up-delay mt-4 font-display text-4xl leading-tight text-spotlight md:text-5xl">
+      {title.replace(` | ${site.name}`, '')}
+    </h1>
+    <div class="fade-up-delay-2 prose-site mt-8">
+      <slot />
+    </div>
+
+    {
+      relatedShows.length > 0 && (
+        <aside class="mt-12 border-t border-line pt-8">
+          <h2 class="font-display text-2xl text-spotlight">Related credits</h2>
+          <ul class="mt-4 flex flex-wrap gap-2">
+            {relatedShows.map((show) => (
+              <li class="rounded-full border border-line px-3 py-1 text-sm text-muted">{show}</li>
+            ))}
+          </ul>
+          <p class="mt-4">
+            <a href="/shows" class="text-gel underline underline-offset-4 hover:text-spotlight">
+              View all shows
+            </a>
+          </p>
+        </aside>
+      )
+    }
+
+    <div class="mt-12 flex flex-wrap gap-4">
+      <a
+        href={`mailto:${site.email}?subject=${encodeURIComponent(cta + ' — ' + keyword)}`}
+        class="inline-flex items-center rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink transition hover:brightness-110"
+      >
+        {cta}
+      </a>
+      <a
+        href="/about"
+        class="inline-flex items-center rounded-sm border border-line px-5 py-3 text-sm text-spotlight transition hover:border-gold"
+      >
+        About Elyse
+      </a>
+      <a
+        href="/contact"
+        class="inline-flex items-center rounded-sm border border-line px-5 py-3 text-sm text-spotlight transition hover:border-gold"
+      >
+        Contact
+      </a>
+    </div>
+  </article>
+</BaseLayout>

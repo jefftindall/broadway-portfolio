@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1200" viewBox="0 0 900 1200">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3d8b8b"/>
+      <stop offset="50%" stop-color="#241f1a"/>
+      <stop offset="100%" stop-color="#0e0d0c"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="1200" fill="url(#g)"/>
+  <text x="450" y="600" text-anchor="middle" fill="#f3ebe0" font-family="Georgia, serif" font-size="48">Elyse Tindall</text>
+  <text x="450" y="660" text-anchor="middle" fill="#b8a99a" font-family="sans-serif" font-size="22">Headshot placeholder</text>
+</svg>

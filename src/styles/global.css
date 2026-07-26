@@ -1,0 +1,102 @@
+@import "tailwindcss";
+@import "@fontsource-variable/cormorant-garamond";
+@import "@fontsource-variable/figtree";
+
+@theme {
+  --font-display: "Cormorant Garamond Variable", "Cormorant Garamond", Georgia, serif;
+  --font-sans: "Figtree Variable", "Figtree", system-ui, sans-serif;
+
+  --color-ink: #0e0d0c;
+  --color-stage: #1a1612;
+  --color-panel: #241f1a;
+  --color-spotlight: #f3ebe0;
+  --color-muted: #b8a99a;
+  --color-gold: #c4a35a;
+  --color-gel: #3d8b8b;
+  --color-line: rgba(243, 235, 224, 0.12);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-ink);
+  color: var(--color-spotlight);
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-gold) 45%, transparent);
+  color: var(--color-ink);
+}
+
+.site-bg {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(196, 163, 90, 0.18), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 100% 20%, rgba(61, 139, 139, 0.12), transparent 50%),
+    radial-gradient(ellipse 50% 35% at 0% 80%, rgba(61, 139, 139, 0.08), transparent 45%),
+    linear-gradient(180deg, var(--color-ink) 0%, var(--color-stage) 100%);
+  background-attachment: fixed;
+}
+
+.fade-up {
+  animation: fadeUp 0.8s ease-out both;
+}
+
+.fade-up-delay {
+  animation: fadeUp 0.8s ease-out 0.15s both;
+}
+
+.fade-up-delay-2 {
+  animation: fadeUp 0.8s ease-out 0.3s both;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.prose-site {
+  max-width: 42rem;
+  line-height: 1.7;
+  color: var(--color-muted);
+}
+
+.prose-site h2,
+.prose-site h3 {
+  color: var(--color-spotlight);
+  margin-top: 1.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.prose-site p + p {
+  margin-top: 1rem;
+}
+
+.prose-site a {
+  color: var(--color-gel);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.prose-site strong {
+  color: var(--color-spotlight);
+  font-weight: 600;
+}

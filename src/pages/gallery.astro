@@ -1,0 +1,38 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const items = (await getCollection('gallery')).sort(
+  (a, b) => (a.data.order ?? 99) - (b.data.order ?? 99),
+);
+---
+
+<BaseLayout
+  title="Gallery"
+  description="Photos of actress Elyse Tindall — headshots and performance stills."
+>
+  <section class="mx-auto max-w-6xl px-6 py-16 md:py-24">
+    <p class="text-sm uppercase tracking-[0.2em] text-gel">Media</p>
+    <h1 class="mt-3 font-display text-5xl text-spotlight md:text-6xl">Gallery</h1>
+    <p class="mt-4 max-w-2xl text-muted">
+      Replace these placeholders with production headshots and stills via Studio or a git commit.
+    </p>
+    <div class="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {
+        items.map((item) => (
+          <figure class="overflow-hidden rounded-sm border border-line bg-panel">
+            <img
+              src={item.data.image}
+              alt={item.data.caption}
+              class="aspect-[3/4] w-full object-cover"
+              loading="lazy"
+            />
+            <figcaption class="border-t border-line px-4 py-3 text-sm text-muted">
+              {item.data.caption}
+            </figcaption>
+          </figure>
+        ))
+      }
+    </div>
+  </section>
+</BaseLayout>

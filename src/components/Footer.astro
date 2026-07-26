@@ -1,0 +1,43 @@
+---
+import { site } from '../lib/site';
+interface Props {
+  hideCta?: boolean;
+}
+const { hideCta = false } = Astro.props;
+---
+
+<footer class="mt-24 border-t border-line">
+  {
+    !hideCta && (
+      <div class="mx-auto max-w-6xl px-6 py-16 text-center">
+        <h2 class="font-display text-3xl text-spotlight md:text-4xl">Let’s work together</h2>
+        <p class="mx-auto mt-3 max-w-xl text-muted">
+          Casting inquiries, lesson questions, or press — reach out anytime.
+        </p>
+        <div class="mt-8 flex flex-wrap justify-center gap-4">
+          <a
+            href="/contact"
+            class="rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110"
+          >
+            Contact
+          </a>
+          <a
+            href="/lessons"
+            class="rounded-sm border border-line px-5 py-3 text-sm text-spotlight hover:border-gold"
+          >
+            Lessons
+          </a>
+        </div>
+      </div>
+    )
+  }
+  <div
+    class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-8 text-sm text-muted md:flex-row"
+  >
+    <p>© {new Date().getFullYear()} {site.name}</p>
+    <div class="flex gap-6">
+      <a href={site.instagram} class="hover:text-spotlight">Instagram</a>
+      <a href={`mailto:${site.email}`} class="hover:text-spotlight">{site.email}</a>
+    </div>
+  </div>
+</footer>

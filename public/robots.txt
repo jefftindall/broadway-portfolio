@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://elysetindall.com/sitemap-index.xml

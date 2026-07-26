@@ -1,0 +1,116 @@
+---
+import { getCollection, getEntry } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ShowCard from '../components/ShowCard.astro';
+import PostCard from '../components/PostCard.astro';
+import LessonCta from '../components/LessonCta.astro';
+import { site } from '../lib/site';
+
+const shows = (await getCollection('shows')).sort(
+  (a, b) => (a.data.order ?? 99) - (b.data.order ?? 99),
+);
+const featured = shows.filter((s) => s.data.featured).slice(0, 3);
+const news = (await getCollection('news'))
+  .filter((n) => !n.data.draft)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+  .slice(0, 2);
+
+const about = await getEntry('pages', 'about');
+---
+
+<BaseLayout>
+  <section class="relative overflow-hidden">
+    <div class="mx-auto grid max-w-6xl gap-12 px-6 py-20 md:grid-cols-[1.1fr_0.9fr] md:py-28 lg:py-32">
+      <div>
+        <p class="fade-up text-sm uppercase tracking-[0.25em] text-gel">Actress · Musical Theatre</p>
+        <h1 class="fade-up-delay mt-4 font-display text-6xl leading-[0.95] text-spotlight md:text-7xl lg:text-8xl">
+          {site.name}
+        </h1>
+        <p class="fade-up-delay-2 mt-6 max-w-md text-lg text-muted">
+          Atlanta-raised. New York–based. Building a life on stage — one honest performance at a time.
+        </p>
+        <div class="fade-up-delay-2 mt-10 flex flex-wrap gap-4">
+          <a
+            href="/contact"
+            class="rounded-sm bg-gold px-6 py-3 text-sm font-semibold text-ink hover:brightness-110"
+          >
+            Casting materials
+          </a>
+          <a
+            href="/lessons"
+            class="rounded-sm border border-line px-6 py-3 text-sm text-spotlight hover:border-gold"
+          >
+            Lessons
+          </a>
+        </div>
+      </div>
+      <div class="fade-up relative min-h-[22rem] overflow-hidden rounded-sm border border-line bg-panel">
+        <div
+          class="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(196,163,90,0.35),transparent_55%),radial-gradient(circle_at_80%_70%,rgba(61,139,139,0.25),transparent_50%),linear-gradient(160deg,#241f1a,#0e0d0c)]"
+        >
+        </div>
+        <div class="absolute inset-0 flex flex-col justify-end p-8">
+          <p class="font-display text-3xl text-spotlight">On stage &amp; in the room</p>
+          <p class="mt-2 text-sm text-muted">Shows · Cabaret · Coaching</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mx-auto max-w-6xl px-6 py-16">
+    <div class="flex items-end justify-between gap-4">
+      <h2 class="font-display text-4xl text-spotlight">Recent shows</h2>
+      <a href="/shows" class="text-sm text-gel hover:text-spotlight">All credits →</a>
+    </div>
+    <div class="mt-4">
+      {
+        featured.map((show) => (
+          <ShowCard
+            title={show.data.title}
+            year={show.data.year}
+            role={show.data.role}
+            venue={show.data.venue}
+            synopsis={show.data.synopsis}
+            featured={show.data.featured}
+          />
+        ))
+      }
+    </div>
+  </section>
+
+  {
+    about && (
+      <section class="mx-auto max-w-6xl px-6 py-16">
+        <div class="grid gap-10 md:grid-cols-2">
+          <div>
+            <h2 class="font-display text-4xl text-spotlight">About</h2>
+            <p class="mt-4 text-muted">{about.data.description}</p>
+            <a href="/about" class="mt-6 inline-block text-sm text-gold hover:text-spotlight">
+              Background & philosophy →
+            </a>
+          </div>
+          <LessonCta />
+        </div>
+      </section>
+    )
+  }
+
+  <section class="mx-auto max-w-6xl px-6 py-16">
+    <div class="flex items-end justify-between gap-4">
+      <h2 class="font-display text-4xl text-spotlight">News</h2>
+      <a href="/news" class="text-sm text-gel hover:text-spotlight">All news →</a>
+    </div>
+    <div class="mt-2">
+      {
+        news.map((post) => (
+          <PostCard
+            title={post.data.title}
+            description={post.data.description}
+            date={post.data.date}
+            href={`/news/${post.id}`}
+          />
+        ))
+      }
+    </div>
+  </section>
+</BaseLayout>

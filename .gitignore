@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Astro build output and generated types
+dist/
+.astro/
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# Azure Functions local settings (contains secrets)
+api/local.settings.json
+
+# Terraform: state (bootstrap uses local state), caches, and real tfvars
+infra/**/.terraform/
+infra/**/*.tfstate
+infra/**/*.tfstate.*
+infra/**/*.tfvars
+!infra/**/terraform.tfvars.example
+infra/**/tfplan
+infra/**/*.tfplan
+infra/**/crash.log
+infra/**/override.tf
+infra/**/override.tf.json
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json

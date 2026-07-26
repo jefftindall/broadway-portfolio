@@ -1,0 +1,55 @@
+---
+import { nav, site } from '../lib/site';
+const pathname = Astro.url.pathname;
+---
+
+<header class="sticky top-0 z-40 border-b border-line bg-ink/80 backdrop-blur-md">
+  <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
+    <a href="/" class="font-display text-2xl tracking-tight text-spotlight md:text-3xl">
+      {site.name}
+    </a>
+    <nav class="hidden items-center gap-6 md:flex" aria-label="Primary">
+      {
+        nav.map((item) => {
+          const active =
+            item.href === '/'
+              ? pathname === '/'
+              : pathname === item.href || pathname.startsWith(item.href + '/');
+          return (
+            <a
+              href={item.href}
+              class:list={[
+                'text-sm transition',
+                active ? 'text-gold' : 'text-muted hover:text-spotlight',
+              ]}
+              aria-current={active ? 'page' : undefined}
+            >
+              {item.label}
+            </a>
+          );
+        })
+      }
+    </nav>
+    <details class="relative md:hidden">
+      <summary
+        class="cursor-pointer list-none rounded-sm border border-line px-3 py-2 text-sm text-spotlight"
+      >
+        Menu
+      </summary>
+      <div
+        class="absolute right-0 mt-2 w-48 rounded-sm border border-line bg-panel p-2 shadow-xl"
+      >
+        {
+          nav.map((item) => (
+            <a
+              href={item.href}
+              class="block rounded-sm px-3 py-2 text-sm text-muted hover:bg-stage hover:text-spotlight"
+            >
+              {item.label}
+            </a>
+          ))
+        }
+      </div>
+    </details>
+  </div>
+</header>

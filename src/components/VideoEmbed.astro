@@ -1,0 +1,51 @@
+---
+interface Props {
+  url: string;
+  title?: string;
+}
+
+const { url, title = 'Performance video' } = Astro.props;
+
+function toEmbed(raw: string): string | null {
+  try {
+    const u = new URL(raw);
+    if (u.hostname.includes('youtu.be')) {
+      return `https://www.youtube.com/embed/${u.pathname.slice(1)}`;
+    }
+    if (u.hostname.includes('youtube.com')) {
+      const id = u.searchParams.get('v');
+      return id ? `https://www.youtube.com/embed/${id}` : null;
+    }
+    if (u.hostname.includes('vimeo.com')) {
+      const id = u.pathname.split('/').filter(Boolean).pop();
+      return id ? `https://player.vimeo.com/video/${id}` : null;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+const embed = toEmbed(url);
+---
+
+{
+  embed ? (
+    <div class="aspect-video overflow-hidden rounded-sm border border-line bg-panel">
+      <iframe
+        src={embed}
+        title={title}
+        class="h-full w-full"
+        loading="lazy"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen
+      />
+    </div>
+  ) : (
+    <p class="text-sm text-muted">
+      <a href={url} class="text-gel underline" target="_blank" rel="noopener noreferrer">
+        Watch video
+      </a>
+    </p>
+  )
+}

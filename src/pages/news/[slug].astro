@@ -1,0 +1,45 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import VideoEmbed from '../../components/VideoEmbed.astro';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('news', ({ data }) => !data.draft);
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+const formatted = post.data.date.toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+---
+
+<BaseLayout
+  title={post.data.title}
+  description={post.data.description}
+  canonicalPath={`/news/${post.id}`}
+>
+  <article class="mx-auto max-w-3xl px-6 py-16 md:py-24">
+    <time class="text-sm text-gel" datetime={post.data.date.toISOString()}>{formatted}</time>
+    <h1 class="mt-3 font-display text-4xl text-spotlight md:text-5xl">{post.data.title}</h1>
+    {
+      post.data.videoUrl && (
+        <div class="mt-8">
+          <VideoEmbed url={post.data.videoUrl} title={post.data.title} />
+        </div>
+      )
+    }
+    <div class="prose-site mt-10">
+      <Content />
+    </div>
+    <p class="mt-12">
+      <a href="/news" class="text-sm text-gel hover:text-spotlight">← All news</a>
+    </p>
+  </article>
+</BaseLayout>

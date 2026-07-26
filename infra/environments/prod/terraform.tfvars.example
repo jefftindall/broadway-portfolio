@@ -1,0 +1,13 @@
+location        = "eastus2"
+subscription_id = "e601e59a-c7f4-41f0-8178-b59740fb1974"
+custom_domain   = "elysetindall.com"
+
+# Azure-generated SWA hostname is registered automatically.
+additional_auth_hostnames = ["www.elysetindall.com"]
+
+github_owner  = "jefftindall"
+github_repo   = "broadway-portfolio"
+github_branch = "main"
+
+# Requires: export GH_TOKEN="$(gh auth token)"
+manage_github_actions = true

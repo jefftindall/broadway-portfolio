@@ -1,0 +1,30 @@
+# Runbook: Troubleshoot build
+
+## GitHub Actions failed
+
+1. Open the failed workflow → build logs
+2. Common causes:
+   - Invalid content collection frontmatter (schema mismatch)
+   - Syntax error in `.astro` / markdown
+   - Missing `AZURE_STATIC_WEB_APPS_API_TOKEN`
+3. Reproduce locally: `npm ci && npm run build`
+
+## Frontmatter / content schema errors
+
+Schemas live in `src/content.config.ts`. Fix the markdown fields (types, required keys, URL formats) and rebuild.
+
+## Studio said it committed but site unchanged
+
+1. Check GitHub `main` for the commit
+2. Check Actions status — still running vs failed
+3. Hard-refresh / CDN cache: wait 1–2 minutes more
+4. Confirm you are looking at the custom domain that points to SWA (not old WordPress DNS)
+
+## Studio publish errors
+
+- **401** — not signed in, not assigned to the Entra enterprise app, or not on allowlist ([manage-access](manage-access.md))
+- **AADSTS50011 (redirect URI mismatch)** — the hostname you used is not registered; add it to `additional_auth_hostnames` and re-apply, then check `terraform output entra_redirect_uris`
+- **500 / Missing env** — Key Vault secret empty or MI role missing (`Key Vault Secrets User` on SWA identity)
+- **GitHub 401/403 from Studio** — App private key / installation ID wrong, or App missing Contents:write ([github-app](github-app.md))
+- **Actions `azure/login` OIDC failure** — federated subject mismatch; compare workflow environment name to `terraform output github_actions_oidc_subjects`
+- **Actions cannot list SWA secrets** — OIDC principal needs Contributor on the Static Web App (granted by Terraform)

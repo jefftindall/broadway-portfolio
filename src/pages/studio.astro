@@ -1,0 +1,221 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Studio"
+  description="Private content studio for Elyse Tindall."
+  hideFooterCta={true}
+>
+  <section class="mx-auto max-w-xl px-4 py-8 md:py-12">
+    <p class="text-sm uppercase tracking-[0.2em] text-gel">Private</p>
+    <h1 class="mt-2 font-display text-4xl text-spotlight">Studio</h1>
+    <p class="mt-3 text-sm text-muted">
+      Tell me what to update — shows, news, lessons, about, gallery, or casting pages. Changes commit to GitHub and go live after the site rebuilds (usually a few minutes).
+    </p>
+
+    <div id="auth-gate" class="mt-8 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted">
+      <p>Sign in required to publish.</p>
+      <a
+        id="login-link"
+        href="/.auth/login/aad"
+        class="mt-4 inline-flex rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink"
+      >
+        Sign in
+      </a>
+    </div>
+
+    <div id="studio-app" class="mt-8 space-y-4">
+      <div
+        id="log"
+        class="max-h-64 space-y-3 overflow-y-auto rounded-sm border border-line bg-panel/40 p-4 text-sm"
+        aria-live="polite"
+      >
+        <p class="text-muted">Ready when you are.</p>
+      </div>
+
+      <label class="block text-sm text-muted">
+        Message
+        <textarea
+          id="message"
+          rows="4"
+          class="mt-2 w-full rounded-sm border border-line bg-ink px-3 py-3 text-spotlight outline-none focus:border-gold"
+          placeholder='e.g. "I just booked Lily in Anastasia at the Strand, July 2025"'
+        ></textarea>
+      </label>
+
+      <label class="block text-sm text-muted">
+        Photo (optional)
+        <input
+          id="photo"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          class="mt-2 block w-full text-sm text-muted file:mr-3 file:rounded-sm file:border-0 file:bg-stage file:px-3 file:py-2 file:text-spotlight"
+        />
+      </label>
+
+      <div class="flex flex-wrap gap-3">
+        <button
+          id="mic"
+          type="button"
+          class="rounded-sm border border-line px-4 py-3 text-sm text-spotlight hover:border-gold"
+        >
+          Hold to speak
+        </button>
+        <button
+          id="send"
+          type="button"
+          class="rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110"
+        >
+          Publish update
+        </button>
+      </div>
+      <p id="status" class="text-xs text-muted"></p>
+    </div>
+  </section>
+
+  <script>
+    const logEl = document.getElementById('log')!;
+    const messageEl = document.getElementById('message') as HTMLTextAreaElement;
+    const photoEl = document.getElementById('photo') as HTMLInputElement;
+    const sendBtn = document.getElementById('send') as HTMLButtonElement;
+    const micBtn = document.getElementById('mic') as HTMLButtonElement;
+    const statusEl = document.getElementById('status')!;
+    const authGate = document.getElementById('auth-gate')!;
+    const studioApp = document.getElementById('studio-app')!;
+
+    function appendLog(role: 'you' | 'studio', text: string) {
+      const p = document.createElement('p');
+      p.className = role === 'you' ? 'text-spotlight' : 'text-gel';
+      p.textContent = (role === 'you' ? 'You: ' : 'Studio: ') + text;
+      logEl.appendChild(p);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    async function checkAuth() {
+      try {
+        const res = await fetch('/.auth/me');
+        const data = await res.json();
+        const clientPrincipal = data?.clientPrincipal;
+        if (!clientPrincipal) {
+          authGate.classList.remove('hidden');
+          studioApp.classList.add('opacity-50', 'pointer-events-none');
+          return false;
+        }
+        authGate.classList.add('hidden');
+        studioApp.classList.remove('opacity-50', 'pointer-events-none');
+        return true;
+      } catch {
+        // Local dev: allow UI without SWA auth
+        return true;
+      }
+    }
+
+    async function resizeImage(file: File): Promise<{ name: string; contentType: string; dataBase64: string } | null> {
+      const bitmap = await createImageBitmap(file);
+      const max = 1600;
+      const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+      const w = Math.round(bitmap.width * scale);
+      const h = Math.round(bitmap.height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      ctx.drawImage(bitmap, 0, 0, w, h);
+      const blob: Blob | null = await new Promise((resolve) =>
+        canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.85),
+      );
+      if (!blob) return null;
+      const buffer = await blob.arrayBuffer();
+      let binary = '';
+      const bytes = new Uint8Array(buffer);
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]!);
+      const dataBase64 = btoa(binary);
+      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/\.\w+$/, '.jpg');
+      return { name: safe, contentType: 'image/jpeg', dataBase64 };
+    }
+
+    sendBtn.addEventListener('click', async () => {
+      const message = messageEl.value.trim();
+      if (!message) {
+        statusEl.textContent = 'Write a message first.';
+        return;
+      }
+      sendBtn.disabled = true;
+      statusEl.textContent = 'Publishing…';
+      appendLog('you', message);
+
+      let photo: { name: string; contentType: string; dataBase64: string } | undefined;
+      if (photoEl.files?.[0]) {
+        const resized = await resizeImage(photoEl.files[0]);
+        if (resized) photo = resized;
+      }
+
+      try {
+        const res = await fetch('/api/updateContent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message, photo }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          appendLog('studio', data.error || 'Update failed.');
+          statusEl.textContent = 'Something went wrong.';
+        } else {
+          appendLog('studio', data.reply || 'Update committed. Site will rebuild shortly.');
+          messageEl.value = '';
+          photoEl.value = '';
+          statusEl.textContent = 'Done. Live in a few minutes after the build finishes.';
+        }
+      } catch (err) {
+        appendLog('studio', 'Network error — try again.');
+        statusEl.textContent = 'Network error.';
+      } finally {
+        sendBtn.disabled = false;
+      }
+    });
+
+    const SpeechRecognition =
+      (window as unknown as { SpeechRecognition?: new () => SpeechRecognition; webkitSpeechRecognition?: new () => SpeechRecognition })
+        .SpeechRecognition ||
+      (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognition }).webkitSpeechRecognition;
+
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      micBtn.addEventListener('pointerdown', () => {
+        try {
+          recognition.start();
+          micBtn.textContent = 'Listening…';
+          statusEl.textContent = 'Speak now';
+        } catch {
+          /* already started */
+        }
+      });
+      micBtn.addEventListener('pointerup', () => {
+        recognition.stop();
+        micBtn.textContent = 'Hold to speak';
+      });
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
+        let transcript = '';
+        for (let i = 0; i < event.results.length; i++) {
+          transcript += event.results[i]![0]!.transcript;
+        }
+        messageEl.value = transcript;
+      };
+      recognition.onerror = () => {
+        micBtn.textContent = 'Hold to speak';
+        statusEl.textContent = 'Mic unavailable — type instead.';
+      };
+    } else {
+      micBtn.disabled = true;
+      micBtn.textContent = 'Voice not supported';
+    }
+
+    checkAuth();
+  </script>
+</BaseLayout>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">
+  <defs>
+    <radialGradient id="s" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#c4a35a" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#0e0d0c"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="800" fill="#1a1612"/>
+  <rect width="1200" height="800" fill="url(#s)"/>
+  <text x="600" y="400" text-anchor="middle" fill="#f3ebe0" font-family="Georgia, serif" font-size="40">Performance still</text>
+  <text x="600" y="450" text-anchor="middle" fill="#b8a99a" font-family="sans-serif" font-size="20">Replace with production photo</text>
+</svg>
