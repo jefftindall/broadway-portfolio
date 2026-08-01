@@ -169,6 +169,7 @@ resource "azurerm_static_web_app" "main" {
 
   app_settings = {
     GEMINI_API_KEY                        = data.azurerm_key_vault_secret.gemini.value
+    GEMINI_MODEL                          = var.gemini_model
     GITHUB_APP_ID                         = data.azurerm_key_vault_secret.github_app_id.value
     GITHUB_APP_INSTALLATION_ID            = data.azurerm_key_vault_secret.github_app_installation_id.value
     GITHUB_APP_PRIVATE_KEY                = data.azurerm_key_vault_secret.github_app_private_key.value

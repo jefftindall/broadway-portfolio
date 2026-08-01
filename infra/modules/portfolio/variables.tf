@@ -50,6 +50,12 @@ variable "github_branch" {
   default     = "main"
 }
 
+variable "gemini_model" {
+  type        = string
+  description = "Gemini model ID used by Studio publish (override without redeploying API code)"
+  default     = "gemini-3.6-flash"
+}
+
 variable "additional_auth_hostnames" {
   type        = list(string)
   description = "Extra hostnames allowed to complete Entra sign-in (e.g. www.elysetindall.com)"

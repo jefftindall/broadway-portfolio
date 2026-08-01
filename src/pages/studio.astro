@@ -288,8 +288,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
               : 'Access denied.';
             showPublisherDenied(correlationId);
           } else {
-            appendLog('studio', data.error || 'Update failed.');
-            statusEl.textContent = 'Something went wrong.';
+            const friendly =
+              typeof data.error === 'string' && data.error.trim()
+                ? data.error.trim()
+                : 'Something went wrong while publishing.';
+            appendLog(
+              'studio',
+              correlationId ? `${friendly} Reference: ${correlationId}` : friendly,
+            );
+            statusEl.textContent = correlationId
+              ? `Something went wrong. Reference: ${correlationId}`
+              : 'Something went wrong.';
           }
           trackEvent('StudioPublishUiFailed', {
             status: String(res.status),

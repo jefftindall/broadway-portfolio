@@ -8,6 +8,7 @@ import {
 } from '../lib/auth.js';
 import { commitFile } from '../lib/github.js';
 import { runContentAgent } from '../lib/gemini.js';
+import { studioFailureResponse } from '../lib/httpErrors.js';
 import { flush, trackEvent, trackException } from '../lib/telemetry.js';
 import slugify from 'slugify';
 
@@ -50,9 +51,12 @@ app.http('updateContent', {
       return { status: 400, jsonBody: { error: 'message is required' } };
     }
 
+    const correlationId = newCorrelationId();
+
     trackEvent('StudioPublishRequested', {
       userId: principal?.userId || 'local',
       hasPhoto: Boolean(body.photo?.dataBase64),
+      correlationId,
     });
 
     let photoPath;
@@ -76,13 +80,27 @@ app.http('updateContent', {
       const result = await runContentAgent({ message, photoPath });
       return { status: 200, jsonBody: result };
     } catch (err) {
-      context.error(err);
-      trackException(err, { operation: 'updateContent' });
+      const failure = studioFailureResponse(err, correlationId, {
+        operation: 'updateContent',
+      });
+      context.error('Studio publish failed', {
+        correlationId,
+        errorKind: failure.errorKind,
+        message: err instanceof Error ? err.message : String(err),
+      });
+      trackException(err, {
+        operation: 'updateContent',
+        correlationId,
+        errorKind: failure.errorKind,
+      });
+      trackEvent('StudioPublishFailed', {
+        correlationId,
+        operation: 'updateContent',
+        errorKind: failure.errorKind,
+        userId: principal?.userId || 'local',
+      });
       await flush();
-      return {
-        status: 500,
-        jsonBody: { error: err.message || 'Failed to publish update' },
-      };
+      return { status: failure.status, jsonBody: failure.jsonBody };
     }
   },
 });

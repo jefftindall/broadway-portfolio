@@ -27,5 +27,7 @@ Schemas live in `src/content.config.ts`. Fix the markdown fields (types, require
 - **500 / Missing env** — Key Vault secret empty/REPLACE_ME, or SWA app settings not synced after a vault update ([rotate-secrets](rotate-secrets.md)). If a setting still looks like `@Microsoft.KeyVault(...)`, managed Functions will not resolve it — run the sync script/workflow or terraform apply.
 - **401 allowlist after updating ALLOWED-USER-IDS** — vault updated but SWA not synced yet
 - **GitHub 401/403 from Studio** — App private key / installation ID wrong, or App missing Contents:write ([github-app](github-app.md))
+- **Gemini / quota / 429 (or friendly “temporarily unavailable”)** — confirm `GEMINI_MODEL` is a current model (default `gemini-3.6-flash`; `gemini-2.0-flash` is shut down). Match the API key’s Google project to the quotas in AI Studio / Cloud Console. Look up the user-facing **reference** (`correlationId`) in App Insights — see [observability](observability.md).
+- **Any publish failure with a reference ID** — user-facing copy is intentionally non-technical; use the correlation ID in App Insights ([observability](observability.md))
 - **Actions `azure/login` OIDC failure (`AADSTS700213`)** — federated subject mismatch. GitHub sends `repo:owner@OWNER_ID/repo@REPO_ID:...`. Compare the error’s subject to `terraform output github_actions_oidc_subjects`, then fix `github_owner_id` / `github_repo_id` and re-apply.
 - **Actions cannot list SWA secrets** — OIDC principal needs Contributor on the Static Web App (granted by Terraform)
