@@ -11,9 +11,12 @@ GitHub does not allow Terraform to create Apps. Create one App and install it on
 5. Repository permissions:
    - **Contents**: Read and write
    - **Metadata**: Read-only
+   - **Actions**: Read-only (Studio polls deploy progress after publish)
 6. Where can this App be installed? **Only on this account**
 7. Create the App, then **Generate a private key** (download the `.pem`)
 8. Note the **App ID** on the App settings page
+
+If the App already exists without Actions read: App settings → **Permissions & events** → set **Actions** to **Read-only** → Save → accept the new permission on the installation.
 
 ## Install on the repo
 

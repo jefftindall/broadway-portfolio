@@ -45,6 +45,7 @@ User-facing messages stay short and non-technical. Full provider/SDK detail is o
 | `StudioToolExecuted` | Gemini tool loop |
 | `GitHubCommitSucceeded` / `GitHubCommitFailed` | Contents API commits |
 | `GET /api/publisherStatus` | Preflight allowlist check for Studio UI |
+| `GET /api/publishStatus` | Studio Done-step pipeline poll (`sha` → Actions run status) |
 | Page views / client errors / fetch | Browser SDK in `BaseLayout` |
 | `StudioPublishUiSuccess` / `StudioPublishUiFailed` | Studio UI (always sampled; `reason` + optional `correlationId` on failures) |
 | `DeployCompleted` | GitHub Actions after SWA upload |

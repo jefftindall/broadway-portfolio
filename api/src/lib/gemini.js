@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { trackEvent } from './telemetry.js';
 import slugify from 'slugify';
-import { commitFile, toFrontmatter } from './github.js';
+import { commitFile, listRepoFiles, readRepoTextFile, toFrontmatter } from './github.js';
 
 const tools = [
   {
@@ -256,6 +256,24 @@ export function buildContentChange(name, args, photoPath) {
 }
 
 /**
+ * Map a repo content path to a public site URL path (or null if not a page).
+ * @param {string} path
+ * @returns {string | null}
+ */
+export function publicUrlForContentPath(path) {
+  const p = String(path || '').replace(/\\/g, '/');
+  let m;
+  if ((m = /^src\/content\/news\/([^/]+)\.md$/.exec(p))) return `/news/${m[1]}`;
+  if (/^src\/content\/shows\/[^/]+\.md$/.test(p)) return '/shows';
+  if (p === 'src/content/pages/about.md') return '/about';
+  if (p === 'src/content/pages/lessons.md') return '/lessons';
+  if (/^src\/content\/gallery\/[^/]+\.md$/.test(p)) return '/gallery';
+  if ((m = /^src\/content\/casting\/([^/]+)\.md$/.exec(p))) return `/for/${m[1]}`;
+  if ((m = /^public\/(images\/photos\/[^/]+)$/.exec(p))) return `/${m[1]}`;
+  return null;
+}
+
+/**
  * Commit approved content changes to GitHub.
  * @param {Array<{ path: string, content: string, commitMessage?: string, message?: string, tool?: string, summary?: string }>} changes
  */
@@ -265,6 +283,7 @@ export async function applyContentChanges(changes) {
   }
 
   const actions = [];
+  let commitSha = '';
   for (const change of changes) {
     const path = String(change.path || '').replace(/\\/g, '/');
     if (!isAllowedContentPath(path)) {
@@ -272,17 +291,97 @@ export async function applyContentChanges(changes) {
     }
     const content = String(change.content ?? '');
     const commitMessage = String(change.commitMessage || change.message || `content: update ${path}`);
-    await commitFile({ path, content, message: commitMessage });
+    const committed = await commitFile({ path, content, message: commitMessage });
+    if (committed.commitSha) commitSha = committed.commitSha;
     const summary = change.summary || `Updated ${path}.`;
     trackEvent('StudioToolExecuted', { tool: change.tool || 'publish' });
-    actions.push({ tool: change.tool || 'publish', summary, path });
+    actions.push({
+      tool: change.tool || 'publish',
+      summary,
+      path,
+      url: publicUrlForContentPath(path),
+      commitSha: committed.commitSha || undefined,
+    });
   }
 
   const reply =
     actions.map((a) => a.summary).join(' ') +
     ' The site will rebuild and go live within a few minutes.';
 
-  return { reply, actions };
+  return { reply, actions, commitSha: commitSha || undefined };
+}
+
+const CONTENT_DIRS = [
+  'src/content/shows',
+  'src/content/news',
+  'src/content/pages',
+  'src/content/gallery',
+  'src/content/casting',
+];
+
+/**
+ * Production site URL used as the canonical reference for Gemini.
+ * Prefer SITE_URL; fall back to PUBLIC_SITE_URL; default to the live domain.
+ */
+export function productionSiteUrl() {
+  const raw = process.env.SITE_URL || process.env.PUBLIC_SITE_URL || 'https://elysetindall.com';
+  return String(raw).replace(/\/$/, '');
+}
+
+function frontmatterField(text, key) {
+  const re = new RegExp(`^${key}:\\s*(.*)$`, 'm');
+  const m = String(text || '').match(re);
+  if (!m) return '';
+  return m[1].trim().replace(/^["']|["']$/g, '');
+}
+
+/**
+ * Build a compact catalog of live portfolio pages from the GitHub content branch.
+ * Failures are non-fatal — Studio can still draft without the catalog.
+ * @returns {Promise<string>}
+ */
+export async function buildProductionSiteContext() {
+  const siteUrl = productionSiteUrl();
+  const lines = [
+    `Production site (canonical reference): ${siteUrl}`,
+    'Site map: / (home), /shows, /about, /lessons, /news, /gallery, /contact, /for/[slug] (casting).',
+    'Existing content on the production branch (reuse slugs when updating; match voice and facts):',
+  ];
+
+  try {
+    const pathLists = await Promise.all(CONTENT_DIRS.map((dir) => listRepoFiles(dir)));
+    const paths = pathLists
+      .flat()
+      .filter((p) => p.endsWith('.md'))
+      .sort();
+
+    if (!paths.length) {
+      lines.push('- (no markdown content found yet)');
+      return lines.join('\n');
+    }
+
+    const entries = await Promise.all(
+      paths.map(async (path) => {
+        const text = await readRepoTextFile(path);
+        const urlPath = publicUrlForContentPath(path);
+        const liveUrl = urlPath ? `${siteUrl}${urlPath}` : null;
+        const label =
+          frontmatterField(text, 'title') ||
+          frontmatterField(text, 'keyword') ||
+          frontmatterField(text, 'caption') ||
+          path.split('/').pop()?.replace(/\.md$/, '') ||
+          path;
+        return liveUrl ? `- ${label} — ${liveUrl} (${path})` : `- ${label} — ${path}`;
+      }),
+    );
+    lines.push(...entries);
+  } catch {
+    lines.push(
+      `- Catalog unavailable; still treat ${siteUrl} as the live site and avoid inventing credits.`,
+    );
+  }
+
+  return lines.join('\n');
 }
 
 /**
@@ -293,25 +392,37 @@ export async function runContentAgent({ message, photoPath }) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('Missing GEMINI_API_KEY');
 
+  const siteUrl = productionSiteUrl();
+  const siteContext = await buildProductionSiteContext();
+
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
     model: process.env.GEMINI_MODEL || 'gemini-3.6-flash',
     tools,
-    systemInstruction: `You are Elyse Tindall's website publishing assistant.
-Turn her natural-language requests into the appropriate tool call to update her Astro portfolio.
+    systemInstruction: `You are a warm, highly capable digital manager for Elyse Tindall, a NYC-based actress, singer, and instructor.
+Turn her natural-language requests into the appropriate tool call to update her Astro portfolio at ${siteUrl}.
+Each request includes a production site catalog (live URLs + repo paths). Use it so updates build on what already exists instead of inventing a blank site.
 Rules:
-- Prefer upsert_show for new bookings/credits.
+- Prefer upsert_show for new bookings/credits; when updating an existing show, reuse its slug from the catalog.
 - Prefer create_news_post for press and announcements.
-- Prefer create_or_update_casting_page for SEO/casting keyword pages (write real helpful copy, not thin spam).
-- Prefer update_about / update_lessons when she asks to change those pages.
+- Prefer create_or_update_casting_page for SEO/casting keyword pages (write real helpful copy, not thin spam); reuse existing casting slugs when she means an existing page.
+- Prefer update_about / update_lessons when she asks to change those pages; treat them as edits to the live ${siteUrl}/about and ${siteUrl}/lessons pages.
 - Prefer add_gallery_photo when she attaches a photo for the gallery (image path will be provided).
-- Keep tone professional, warm, and accurate. Do not invent fake credits.
+- Keep tone professional, warm, and accurate. Do not invent fake credits; align facts with the catalog and production site.
+- Content is expected to be evergreen unless otherwise specified. Avoid relative terms like today, this week, this month, etc which would not make sense in the future.
+- Never mention technical terms like "YAML," "Azure," or "Astro" to her—keep her user experience purely creative and effortless.
 - Always call a tool when an update is requested; do not only chat.`,
   });
 
-  const prompt = photoPath
-    ? `${message}\n\n[Attached photo will be available at path: ${photoPath}]`
-    : message;
+  const promptParts = [
+    siteContext,
+    '',
+    `Publisher request: ${message}`,
+  ];
+  if (photoPath) {
+    promptParts.push('', `[Attached photo will be available at path: ${photoPath}]`);
+  }
+  const prompt = promptParts.join('\n');
 
   const result = await model.generateContent(prompt);
   const response = result.response;

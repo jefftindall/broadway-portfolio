@@ -126,15 +126,17 @@ app.http('updateContent', {
       }));
 
       let photoPath;
+      let lastCommitSha = '';
       if (hasPhoto && body.photo?.name) {
         const filename = realPhotoFilename(body.photo.name);
         const repoPath = `public/images/photos/${filename}`;
-        await commitFile({
+        const photoCommit = await commitFile({
           path: repoPath,
           content: body.photo.dataBase64,
           message: `media: upload ${filename}`,
           binary: true,
         });
+        if (photoCommit.commitSha) lastCommitSha = photoCommit.commitSha;
         photoPath = `/images/photos/${filename}`;
         const provisional = body.provisionalPhotoPath
           ? String(body.provisionalPhotoPath)
@@ -143,7 +145,16 @@ app.http('updateContent', {
       }
 
       const result = await applyContentChanges(changes);
-      return { status: 200, jsonBody: { ...result, correlationId } };
+      const commitSha = result.commitSha || lastCommitSha || undefined;
+      return {
+        status: 200,
+        jsonBody: {
+          reply: result.reply,
+          actions: result.actions,
+          commitSha,
+          correlationId,
+        },
+      };
     } catch (err) {
       const failure = studioFailureResponse(err, correlationId, {
         operation,

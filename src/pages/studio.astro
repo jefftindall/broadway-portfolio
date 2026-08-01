@@ -63,6 +63,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <ol class="flex flex-wrap gap-x-4 gap-y-1 text-xs uppercase tracking-[0.15em] text-muted" aria-hidden="true">
         <li id="step-indicator-compose" class="text-gel">1. Compose</li>
         <li id="step-indicator-preview">2. Preview</li>
+        <li id="step-indicator-done">3. Done</li>
       </ol>
 
       <div id="compose-step" class="space-y-4">
@@ -106,7 +107,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         <button
           id="preview-btn"
           type="button"
-          class="rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110"
+          data-label="Preview update"
+          class="rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 disabled:hover:brightness-100"
         >
           Preview update
         </button>
@@ -119,18 +121,45 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <button
             id="back-btn"
             type="button"
-            class="rounded-sm border border-line px-4 py-3 text-sm text-spotlight hover:border-gold"
+            class="rounded-sm border border-line px-4 py-3 text-sm text-spotlight hover:border-gold disabled:cursor-wait disabled:opacity-60"
           >
             Back
           </button>
           <button
             id="publish-btn"
             type="button"
-            class="rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110"
+            data-label="Publish to site"
+            class="rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 disabled:hover:brightness-100"
           >
             Publish to site
           </button>
         </div>
+      </div>
+
+      <div id="done-step" class="hidden space-y-4">
+        <div class="rounded-sm border border-line bg-panel/40 p-4 space-y-3">
+          <p class="text-sm font-semibold text-spotlight">Update accepted</p>
+          <p id="done-reply" class="text-sm text-gel"></p>
+          <p id="done-sha" class="text-xs text-muted"></p>
+        </div>
+
+        <div class="space-y-2">
+          <p class="text-xs uppercase tracking-[0.15em] text-muted">Publishing pipeline</p>
+          <ul id="pipeline-list" class="space-y-2 text-sm text-muted"></ul>
+        </div>
+
+        <div class="space-y-2">
+          <p class="text-xs uppercase tracking-[0.15em] text-muted">Pages</p>
+          <ul id="page-links" class="space-y-2 text-sm"></ul>
+        </div>
+
+        <button
+          id="another-btn"
+          type="button"
+          class="rounded-sm border border-line px-4 py-3 text-sm text-spotlight hover:border-gold"
+        >
+          Start another update
+        </button>
       </div>
 
       <p id="status" class="text-xs text-muted" role="status" aria-live="polite"></p>
@@ -148,6 +177,16 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       commitMessage: string;
       summary?: string;
     };
+    type PublishAction = {
+      tool?: string;
+      summary?: string;
+      path?: string;
+      url?: string | null;
+    };
+
+    const BUSY_CLASS = 'opacity-60';
+    const POLL_MS = 5000;
+    const POLL_TIMEOUT_MS = 15 * 60 * 1000;
 
     const messageEl = document.getElementById('message') as HTMLTextAreaElement;
     const photoEl = document.getElementById('photo') as HTMLInputElement;
@@ -156,14 +195,21 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     const previewBtn = document.getElementById('preview-btn') as HTMLButtonElement;
     const publishBtn = document.getElementById('publish-btn') as HTMLButtonElement;
     const backBtn = document.getElementById('back-btn') as HTMLButtonElement;
+    const anotherBtn = document.getElementById('another-btn') as HTMLButtonElement;
     const micBtn = document.getElementById('mic') as HTMLButtonElement;
     const statusEl = document.getElementById('status')!;
     const composeStep = document.getElementById('compose-step')!;
     const previewStep = document.getElementById('preview-step')!;
+    const doneStep = document.getElementById('done-step')!;
     const changesEditor = document.getElementById('changes-editor')!;
     const previewReply = document.getElementById('preview-reply')!;
+    const doneReply = document.getElementById('done-reply')!;
+    const doneSha = document.getElementById('done-sha')!;
+    const pipelineList = document.getElementById('pipeline-list')!;
+    const pageLinks = document.getElementById('page-links')!;
     const stepCompose = document.getElementById('step-indicator-compose')!;
     const stepPreview = document.getElementById('step-indicator-preview')!;
+    const stepDone = document.getElementById('step-indicator-done')!;
     const accessCheck = document.getElementById('access-check')!;
     const authGate = document.getElementById('auth-gate')!;
     const publisherGate = document.getElementById('publisher-gate')!;
@@ -175,6 +221,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     let draftPhoto: PhotoPayload | undefined;
     let provisionalPhotoPath: string | null = null;
     let draftChanges: ContentChange[] = [];
+    let pollTimer: number | null = null;
+    let pollStartedAt = 0;
+    let micSupported = true;
 
     const EMAIL_CLAIM_TYPES = new Set([
       'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress',
@@ -198,6 +247,44 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       statusEl.textContent = text;
     }
 
+    function setBusy(busy: boolean, primary?: HTMLButtonElement, workingLabel?: string) {
+      studioApp.setAttribute('aria-busy', busy ? 'true' : 'false');
+      if (busy) {
+        studioApp.classList.add(BUSY_CLASS);
+      } else {
+        studioApp.classList.remove(BUSY_CLASS);
+      }
+
+      if (primary && workingLabel) {
+        if (busy) {
+          primary.dataset.restoreLabel = primary.dataset.label || primary.textContent || '';
+          primary.textContent = workingLabel;
+        } else if (primary.dataset.restoreLabel) {
+          primary.textContent = primary.dataset.restoreLabel;
+          delete primary.dataset.restoreLabel;
+        } else if (primary.dataset.label) {
+          primary.textContent = primary.dataset.label;
+        }
+      }
+    }
+
+    function setComposeBusy(busy: boolean) {
+      setBusy(busy, previewBtn, 'Preparing preview…');
+      previewBtn.disabled = busy;
+      messageEl.disabled = busy;
+      photoEl.disabled = busy;
+      micBtn.disabled = busy || !micSupported;
+    }
+
+    function setPreviewBusy(busy: boolean) {
+      setBusy(busy, publishBtn, 'Publishing…');
+      publishBtn.disabled = busy;
+      backBtn.disabled = busy;
+      changesEditor.querySelectorAll('input, textarea').forEach((el) => {
+        (el as HTMLInputElement | HTMLTextAreaElement).disabled = busy;
+      });
+    }
+
     function hideAccessCheck() {
       accessCheck.classList.add('hidden');
     }
@@ -207,8 +294,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       authGate.classList.add('hidden');
       publisherGate.classList.add('hidden');
       studioApp.classList.remove('hidden');
-      previewBtn.disabled = false;
-      publishBtn.disabled = false;
+      setComposeBusy(false);
+      setPreviewBusy(false);
     }
 
     function showSignInGate() {
@@ -227,18 +314,38 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       publisherGate.classList.remove('hidden');
     }
 
+    function setStepIndicators(active: 'compose' | 'preview' | 'done') {
+      const map = {
+        compose: stepCompose,
+        preview: stepPreview,
+        done: stepDone,
+      };
+      for (const [key, el] of Object.entries(map)) {
+        if (key === active) el.classList.add('text-gel');
+        else el.classList.remove('text-gel');
+      }
+    }
+
     function showCompose() {
+      stopPolling();
       composeStep.classList.remove('hidden');
       previewStep.classList.add('hidden');
-      stepCompose.classList.add('text-gel');
-      stepPreview.classList.remove('text-gel');
+      doneStep.classList.add('hidden');
+      setStepIndicators('compose');
     }
 
     function showPreview() {
       composeStep.classList.add('hidden');
       previewStep.classList.remove('hidden');
-      stepCompose.classList.remove('text-gel');
-      stepPreview.classList.add('text-gel');
+      doneStep.classList.add('hidden');
+      setStepIndicators('preview');
+    }
+
+    function showDone() {
+      composeStep.classList.add('hidden');
+      previewStep.classList.add('hidden');
+      doneStep.classList.remove('hidden');
+      setStepIndicators('done');
     }
 
     function formatApiError(data: { error?: string; correlationId?: string }, fallback: string) {
@@ -247,6 +354,194 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       const correlationId =
         typeof data.correlationId === 'string' ? data.correlationId : undefined;
       return correlationId ? `${friendly} Reference: ${correlationId}` : friendly;
+    }
+
+    function stopPolling() {
+      if (pollTimer != null) {
+        window.clearTimeout(pollTimer);
+        pollTimer = null;
+      }
+    }
+
+    function pipelineLabel(status: string) {
+      switch (status) {
+        case 'success':
+          return 'Complete';
+        case 'failure':
+          return 'Failed';
+        case 'in_progress':
+          return 'In progress';
+        case 'queued':
+          return 'Queued';
+        default:
+          return 'Waiting…';
+      }
+    }
+
+    function renderPipeline(data: {
+      status?: string;
+      runUrl?: string | null;
+      jobs?: Array<{ name: string; status: string }>;
+    }) {
+      pipelineList.replaceChildren();
+
+      const overall = document.createElement('li');
+      overall.className = 'flex flex-wrap items-baseline justify-between gap-2';
+      const overallLabel = document.createElement('span');
+      overallLabel.textContent = 'Site rebuild';
+      const overallStatus = document.createElement('span');
+      overallStatus.className = 'text-spotlight';
+      overallStatus.textContent = pipelineLabel(String(data.status || 'unknown'));
+      overall.append(overallLabel, overallStatus);
+      pipelineList.appendChild(overall);
+
+      const jobs = Array.isArray(data.jobs) ? data.jobs : [];
+      const interesting = jobs.filter((j) =>
+        /staging|production|deploy/i.test(j.name || ''),
+      );
+      for (const job of interesting.length ? interesting : jobs.slice(0, 4)) {
+        const li = document.createElement('li');
+        li.className = 'flex flex-wrap items-baseline justify-between gap-2 pl-2 text-xs';
+        const name = document.createElement('span');
+        name.textContent = job.name;
+        const st = document.createElement('span');
+        st.className = 'text-spotlight';
+        st.textContent = pipelineLabel(job.status);
+        li.append(name, st);
+        pipelineList.appendChild(li);
+      }
+
+      if (data.runUrl) {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = data.runUrl;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.className = 'text-gel underline-offset-2 hover:text-gold hover:underline';
+        a.textContent = 'View build details';
+        li.appendChild(a);
+        pipelineList.appendChild(li);
+      }
+    }
+
+    function renderPageLinks(actions: PublishAction[]) {
+      pageLinks.replaceChildren();
+      const seen = new Set<string>();
+      for (const action of actions) {
+        const url = typeof action.url === 'string' ? action.url : '';
+        if (!url || url.startsWith('/images/') || seen.has(url)) continue;
+        seen.add(url);
+
+        const li = document.createElement('li');
+        li.className = 'flex flex-wrap items-center justify-between gap-2';
+        li.dataset.url = url;
+
+        const label = document.createElement('span');
+        label.className = 'text-muted';
+        label.textContent = action.summary || url;
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.className =
+          'pointer-events-none text-xs text-muted opacity-50';
+        link.textContent = 'Checking…';
+        link.dataset.live = 'false';
+
+        li.append(label, link);
+        pageLinks.appendChild(li);
+      }
+
+      if (!pageLinks.children.length) {
+        const li = document.createElement('li');
+        li.className = 'text-muted';
+        li.textContent = 'No public page links for this update.';
+        pageLinks.appendChild(li);
+      }
+    }
+
+    async function checkPageLive(url: string): Promise<boolean> {
+      try {
+        const res = await fetch(`${url}?t=${Date.now()}`, {
+          method: 'GET',
+          cache: 'no-store',
+          credentials: 'same-origin',
+        });
+        return res.ok;
+      } catch {
+        return false;
+      }
+    }
+
+    async function refreshLiveLinks() {
+      const items = Array.from(pageLinks.querySelectorAll('li[data-url]')) as HTMLElement[];
+      await Promise.all(
+        items.map(async (li) => {
+          const url = li.dataset.url;
+          const link = li.querySelector('a') as HTMLAnchorElement | null;
+          if (!url || !link || link.dataset.live === 'true') return;
+          const live = await checkPageLive(url);
+          if (live) {
+            link.dataset.live = 'true';
+            link.textContent = 'View page';
+            link.className = 'text-gel underline-offset-2 hover:text-gold hover:underline';
+            link.classList.remove('pointer-events-none', 'opacity-50');
+          } else {
+            link.textContent = 'Waiting for rebuild…';
+          }
+        }),
+      );
+    }
+
+    async function pollOnce(sha: string) {
+      try {
+        const res = await fetch(`/api/publishStatus?sha=${encodeURIComponent(sha)}`);
+        const data = await res.json();
+        if (res.ok) {
+          renderPipeline(data);
+          if (data.status === 'failure') {
+            setStatus(
+              'The site rebuild reported a failure. Share this with support if it keeps happening.',
+            );
+            stopPolling();
+            return;
+          }
+          if (data.status === 'success') {
+            setStatus('Rebuild finished. Use View page when the link is ready.');
+          }
+        }
+      } catch {
+        /* keep polling */
+      }
+
+      await refreshLiveLinks();
+
+      const elapsed = Date.now() - pollStartedAt;
+      if (elapsed >= POLL_TIMEOUT_MS) {
+        setStatus('Still rebuilding — check back in a few minutes, or use View page if it appears.');
+        stopPolling();
+        return;
+      }
+
+      pollTimer = window.setTimeout(() => {
+        void pollOnce(sha);
+      }, POLL_MS);
+    }
+
+    function startProgressTracking(sha: string | undefined, actions: PublishAction[]) {
+      renderPipeline({ status: 'queued', jobs: [] });
+      renderPageLinks(actions);
+      void refreshLiveLinks();
+
+      if (!sha) {
+        setStatus('Accepted. Waiting for the site rebuild…');
+        return;
+      }
+
+      pollStartedAt = Date.now();
+      setStatus('Accepted. Watching the rebuild…');
+      void pollOnce(sha);
     }
 
     async function checkPublisherStatus(): Promise<{ authorized: boolean; correlationId?: string }> {
@@ -266,7 +561,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         const data = await res.json();
         clientPrincipal = data?.clientPrincipal as ClientPrincipal | null | undefined;
       } catch {
-        // Local dev: allow UI without SWA auth
         authUser.classList.add('hidden');
         showStudioApp();
         return true;
@@ -413,6 +707,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       photoPreview.removeAttribute('src');
       changesEditor.replaceChildren();
       previewReply.textContent = '';
+      doneReply.textContent = '';
+      doneSha.textContent = '';
+      pipelineList.replaceChildren();
+      pageLinks.replaceChildren();
     }
 
     photoEl.addEventListener('change', () => {
@@ -434,7 +732,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         return;
       }
 
-      previewBtn.disabled = true;
+      setComposeBusy(true);
       setStatus('Preparing preview…');
 
       draftPhoto = undefined;
@@ -501,8 +799,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         trackException(err, { operation: 'studioDraft' });
         flush();
       } finally {
-        if (!studioApp.classList.contains('hidden')) {
-          previewBtn.disabled = false;
+        if (!studioApp.classList.contains('hidden') && !composeStep.classList.contains('hidden')) {
+          setComposeBusy(false);
+        } else if (!studioApp.classList.contains('hidden')) {
+          setBusy(false);
+          studioApp.classList.remove(BUSY_CLASS);
         }
       }
     });
@@ -519,8 +820,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         return;
       }
 
-      publishBtn.disabled = true;
-      backBtn.disabled = true;
+      setPreviewBusy(true);
       setStatus('Publishing…');
 
       try {
@@ -555,25 +855,38 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           return;
         }
 
-        resetComposeForm();
-        showCompose();
-        setStatus(
+        const actions = Array.isArray(data.actions) ? (data.actions as PublishAction[]) : [];
+        const commitSha = typeof data.commitSha === 'string' ? data.commitSha : undefined;
+        doneReply.textContent =
           typeof data.reply === 'string' && data.reply.trim()
             ? data.reply.trim()
-            : 'Done. Live in a few minutes after the build finishes.',
-        );
-        trackEvent('StudioPublishUiSuccess');
+            : 'Your update was committed. The site will rebuild shortly.';
+        doneSha.textContent = commitSha ? `Commit ${commitSha.slice(0, 7)}` : '';
+        showDone();
+        setBusy(false);
+        studioApp.classList.remove(BUSY_CLASS);
+        startProgressTracking(commitSha, actions);
+        trackEvent('StudioPublishUiSuccess', {
+          ...(commitSha ? { commitSha } : {}),
+        });
         flush();
       } catch (err) {
         setStatus('Network error — try again.');
         trackException(err, { operation: 'studioPublish' });
         flush();
       } finally {
-        if (!studioApp.classList.contains('hidden')) {
-          publishBtn.disabled = false;
-          backBtn.disabled = false;
+        if (!studioApp.classList.contains('hidden') && !previewStep.classList.contains('hidden')) {
+          setPreviewBusy(false);
         }
       }
+    });
+
+    anotherBtn.addEventListener('click', () => {
+      stopPolling();
+      resetComposeForm();
+      showCompose();
+      setComposeBusy(false);
+      setStatus('');
     });
 
     type StudioSpeechRecognition = {
@@ -599,6 +912,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       recognition.lang = 'en-US';
 
       micBtn.addEventListener('pointerdown', () => {
+        if (micBtn.disabled) return;
         try {
           recognition.start();
           micBtn.textContent = 'Listening…';
@@ -623,6 +937,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         setStatus('Mic unavailable — type instead.');
       };
     } else {
+      micSupported = false;
       micBtn.disabled = true;
       micBtn.textContent = 'Voice not supported';
     }

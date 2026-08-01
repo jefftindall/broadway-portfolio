@@ -49,6 +49,8 @@ func start
   - [Troubleshoot build](docs/runbooks/troubleshoot-build.md)
   - [DNS and domain](docs/runbooks/dns-and-domain.md)
   - [Cost and quotas](docs/runbooks/cost-and-quotas.md)
+  - [Observability](docs/runbooks/observability.md)
+  - [Refine Studio Gemini instructions](docs/runbooks/refine-studio-gemini.md)
 
 ## Security model
 

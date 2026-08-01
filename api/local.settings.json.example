@@ -6,6 +6,7 @@
     "AZURE_FUNCTIONS_ENVIRONMENT": "Development",
     "GEMINI_API_KEY": "",
     "GEMINI_MODEL": "gemini-3.6-flash",
+    "SITE_URL": "https://elysetindall.com",
     "GITHUB_APP_ID": "",
     "GITHUB_APP_INSTALLATION_ID": "",
     "GITHUB_APP_PRIVATE_KEY": "",

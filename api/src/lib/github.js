@@ -92,18 +92,70 @@ export async function commitFile({ path, content, message, binary = false }) {
       branch,
       ...(sha ? { sha } : {}),
     });
+    const commitSha = data.commit?.sha || '';
     trackEvent('GitHubCommitSucceeded', {
       path,
       branch,
-      sha: data.content?.sha || data.commit?.sha || '',
+      sha: commitSha || data.content?.sha || '',
     });
-    return { path, branch, sha: data.content?.sha };
+    return {
+      path,
+      branch,
+      sha: data.content?.sha,
+      commitSha,
+    };
   } catch (err) {
     trackEvent('GitHubCommitFailed', {
       path,
       branch,
       error: err.message || String(err),
     });
+    throw err;
+  }
+}
+
+/**
+ * List file paths under a repo directory (non-recursive).
+ * @param {string} dir
+ * @returns {Promise<string[]>}
+ */
+export async function listRepoFiles(dir) {
+  const octokit = getOctokit();
+  const { owner, repo, branch } = repoInfo();
+  try {
+    const { data } = await octokit.repos.getContent({
+      owner,
+      repo,
+      path: dir,
+      ref: branch,
+    });
+    if (!Array.isArray(data)) return [];
+    return data.filter((f) => f.type === 'file' && f.path).map((f) => f.path);
+  } catch (err) {
+    if (err.status === 404) return [];
+    throw err;
+  }
+}
+
+/**
+ * Read a text file from the repo branch.
+ * @param {string} path
+ * @returns {Promise<string | null>}
+ */
+export async function readRepoTextFile(path) {
+  const octokit = getOctokit();
+  const { owner, repo, branch } = repoInfo();
+  try {
+    const { data } = await octokit.repos.getContent({
+      owner,
+      repo,
+      path,
+      ref: branch,
+    });
+    if (Array.isArray(data) || data.type !== 'file' || !data.content) return null;
+    return Buffer.from(data.content, 'base64').toString('utf8');
+  } catch (err) {
+    if (err.status === 404) return null;
     throw err;
   }
 }
