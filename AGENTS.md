@@ -19,6 +19,7 @@ This mirrors the PR gate workflow [`.github/workflows/static-analysis.yml`](.git
 | Terraform fmt + TFLint + validate | `npm run lint:terraform` | Terraform lint |
 | Astro / TypeScript | `npm run check` | Site check |
 | API JS syntax | `npm run lint:api` | API syntax |
+| Terraform plan (CI only, after the checks above) | — | Plan staging / Plan prod (PRs touching `infra/`) |
 
 Requirements for Terraform lint locally: Terraform >= 1.5 and [TFLint](https://github.com/terraform-linters/tflint) on `PATH` (`tflint --init` uses [`infra/.tflint.hcl`](infra/.tflint.hcl)). Do not commit if lint fails; do not skip these checks.
 

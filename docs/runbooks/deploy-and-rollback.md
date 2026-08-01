@@ -3,9 +3,8 @@
 ## Promotion path (staging → production)
 
 1. Open a PR targeting `main`. Actions:
-   - Runs **Static analysis** (Terraform fmt/TFLint/validate, Astro check, API syntax)
+   - Runs **Static analysis** (Terraform fmt/TFLint/validate, Astro check, API syntax). If the PR touches `infra/`, **Plan staging** / **Plan prod** run only after those checks succeed and comment the plan on the PR
    - Deploys the app to **staging** (Static Web App)
-   - If the PR touches `infra/`, also runs **Terraform CI** (`terraform plan` for staging and prod) and comments the plan on the PR
 2. Verify on staging (SWA default hostname from Terraform output `static_web_app_default_hostname` for staging).
 3. Merge the PR. On `main`, Actions:
    - If `infra/` changed: **Terraform apply staging**, then **Deploy Staging**, then **Terraform apply prod**, then **Deploy Production**

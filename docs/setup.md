@@ -168,7 +168,7 @@ Terraform also manages GitHub Environment variables. The default Actions `GITHUB
 
 | Workflow | When | What |
 |---|---|---|
-| [terraform.yml](../.github/workflows/terraform.yml) | PRs that touch `infra/` | `terraform plan` for staging and prod |
+| [static-analysis.yml](../.github/workflows/static-analysis.yml) | Every PR / push to `main` | fmt, TFLint, validate, Astro check, API syntax; then (on PRs that touch `infra/`) `terraform plan` for staging and prod after those checks succeed |
 | [azure-static-web-apps.yml](../.github/workflows/azure-static-web-apps.yml) | Push to `main` | If `infra/` changed: apply staging → deploy staging → apply prod → deploy prod; otherwise app deploy only |
 | [staging-branch.yml](../.github/workflows/staging-branch.yml) | Manual (`workflow_dispatch`) | Apply staging Terraform from the selected branch, then deploy the staging SWA |
 

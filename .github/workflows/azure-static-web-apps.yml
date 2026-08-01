@@ -30,7 +30,7 @@ jobs:
             infra:
               - 'infra/**'
               - '.github/workflows/azure-static-web-apps.yml'
-              - '.github/workflows/terraform.yml'
+              - '.github/workflows/static-analysis.yml'
               - '.github/workflows/staging-branch.yml'
 
   terraform_staging:
