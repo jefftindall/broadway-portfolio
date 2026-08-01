@@ -1,5 +1,7 @@
 name: Staging branch
 
+# Manual async test: apply staging Terraform + deploy the staging app from any branch.
+# Automated deploys run only on merge to main (azure-static-web-apps.yml).
 on:
   workflow_dispatch:
 

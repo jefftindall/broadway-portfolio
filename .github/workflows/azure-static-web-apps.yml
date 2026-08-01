@@ -1,18 +1,15 @@
 name: Azure Static Web Apps CI/CD
 
+# Deploy only on merge to main. PRs run static analysis (and Terraform plan) only.
+# Manual staging deploy: Actions → Staging branch (workflow_dispatch).
 on:
   push:
-    branches:
-      - main
-  pull_request:
-    types: [opened, synchronize, reopened]
     branches:
       - main
 
 permissions:
   id-token: write
   contents: read
-  pull-requests: write
   actions: write
 
 jobs:
@@ -36,7 +33,7 @@ jobs:
   terraform_staging:
     name: Terraform Apply Staging
     needs: changes
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.infra == 'true'
+    if: needs.changes.outputs.infra == 'true'
     runs-on: ubuntu-latest
     environment: staging
     defaults:
@@ -84,16 +81,14 @@ jobs:
           GH_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
         run: terraform apply -input=false tfplan
 
-  # Always deploy staging first (PRs and main). Prod only runs after this succeeds on main.
   deploy_staging:
+    name: Deploy Staging
+    needs: [changes, terraform_staging]
     if: |
       always() &&
       needs.changes.result == 'success' &&
-      (github.event_name == 'push' || github.event_name == 'pull_request') &&
       (needs.terraform_staging.result == 'success' || needs.terraform_staging.result == 'skipped')
-    needs: [changes, terraform_staging]
     runs-on: ubuntu-latest
-    name: Deploy Staging
     environment: staging
     env:
       PUBLIC_APPINSIGHTS_CONNECTION_STRING: ${{ vars.APPINSIGHTS_CONNECTION_STRING }}
@@ -187,7 +182,6 @@ jobs:
     name: Terraform Apply Production
     needs: [changes, deploy_staging]
     if: |
-      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
       needs.changes.outputs.infra == 'true' &&
       needs.deploy_staging.result == 'success'
     runs-on: ubuntu-latest
@@ -238,14 +232,13 @@ jobs:
         run: terraform apply -input=false tfplan
 
   deploy_prod:
+    name: Deploy Production
+    needs: [deploy_staging, terraform_prod]
     if: |
       always() &&
-      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
       needs.deploy_staging.result == 'success' &&
       (needs.terraform_prod.result == 'success' || needs.terraform_prod.result == 'skipped')
-    needs: [deploy_staging, terraform_prod]
     runs-on: ubuntu-latest
-    name: Deploy Production
     environment: prod
     env:
       PUBLIC_APPINSIGHTS_CONNECTION_STRING: ${{ vars.APPINSIGHTS_CONNECTION_STRING }}

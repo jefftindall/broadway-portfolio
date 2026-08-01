@@ -2,19 +2,19 @@
 
 ## Promotion path (staging → production)
 
-1. Open a PR targeting `main`. Actions:
-   - Runs **Static analysis** (Terraform fmt/TFLint/validate, Astro check, API syntax). If the PR touches `infra/`, **Plan staging** / **Plan prod** run only after those checks succeed and comment the plan on the PR
-   - Deploys the app to **staging** (Static Web App)
-2. Verify on staging (SWA default hostname from Terraform output `static_web_app_default_hostname` for staging).
-3. Merge the PR. On `main`, Actions:
+1. Open a PR targeting `main`. Actions run **Static analysis** only (no deploys). If the PR touches `infra/`, **Plan staging** / **Plan prod** run after lint/checks and comment the plan on the PR.
+2. Review the plan (when present) and merge when ready.
+3. On merge to `main`, **Azure Static Web Apps CI/CD** runs:
    - If `infra/` changed: **Terraform apply staging**, then **Deploy Staging**, then **Terraform apply prod**, then **Deploy Production**
    - If `infra/` did not change: **Deploy Staging**, then **Deploy Production** (Terraform apply jobs are skipped)
 
 Production never deploys unless staging succeeded for that run. Optional: add required reviewers on the GitHub Environment **prod** for a manual approval gate after staging.
 
+Branch protection should require **Static analysis** checks (Terraform lint / Site check / API syntax) before merge — not deploy jobs.
+
 ## Test a branch in staging (manual)
 
-Use this to try infra and/or app changes from any branch without merging:
+Use this for async smoke tests of infra and/or app changes without merging:
 
 1. GitHub → Actions → **Staging branch**
 2. **Run workflow** → select the branch → Run
@@ -22,7 +22,7 @@ Use this to try infra and/or app changes from any branch without merging:
 
 ## Redeploy without code changes
 
-GitHub → Actions → **Azure Static Web Apps CI/CD** → Re-run jobs.
+GitHub → Actions → **Azure Static Web Apps CI/CD** → Re-run jobs (runs on `main` only).
 
 ## Rollback a bad content commit
 
@@ -32,7 +32,7 @@ git revert <bad-commit-sha>
 git push origin main
 ```
 
-Or restore a previous file version and commit. Prefer `revert` over force-push. The revert still goes through staging → prod.
+Or restore a previous file version and commit. Prefer `revert` over force-push. The revert still goes through staging → prod on `main`.
 
 ## Rollback application code
 
