@@ -63,11 +63,10 @@ jobs:
           azure_static_web_apps_api_token: ${{ steps.swa.outputs.api_key }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: upload
-          app_location: "/"
+          # With skip_app_build, app_location must be the prebuilt output folder.
+          app_location: "dist"
           api_location: "api"
-          output_location: "dist"
           skip_app_build: true
-          skip_api_build: false
 
   close_pull_request:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
