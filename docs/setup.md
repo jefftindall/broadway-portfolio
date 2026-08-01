@@ -19,7 +19,7 @@ This guide provisions Azure with Terraform (bootstrap + staging/prod), connects 
 
 | Path | Purpose |
 |------|---------|
-| [`infra/bootstrap`](../infra/bootstrap) | Creates remote state storage (**local** Terraform state, run once) |
+| [`infra/bootstrap`](../infra/bootstrap) | Creates remote state storage + Terraform OIDC identity (**local** Terraform state, run once) |
 | [`infra/environments/staging`](../infra/environments/staging) | Staging SWA + Key Vault |
 | [`infra/environments/prod`](../infra/environments/prod) | Production SWA + Key Vault + custom domain |
 | [`infra/modules/portfolio`](../infra/modules/portfolio) | Shared module used by both environments |
@@ -28,9 +28,10 @@ All app resources include the environment in their names (`rg-elyse-portfolio-st
 
 **Region:** All resources use **East US 2** (`eastus2`), including Static Web Apps, Key Vault, and Terraform state storage.
 
-## 1. Bootstrap Terraform remote state (once, local state)
+## 1. Bootstrap Terraform remote state + Terraform OIDC (once, local state)
 
 ```bash
+export GH_TOKEN="$(gh auth token)"   # needs admin access to repo variables
 cd infra/bootstrap
 terraform init -input=false
 terraform plan -input=false -out=tfplan
@@ -45,11 +46,22 @@ This creates (expected values already wired into staging/prod backends):
 | Storage account | `stelysetfstateeu2` |
 | Container | `tfstate` |
 | Location | `eastus2` |
+| Entra app (Terraform CI/CD) | `elyse-portfolio-gha-terraform` |
 
 State file keys (separate per environment):
 
 - Staging: `broadway-portfolio/staging.tfstate`
 - Prod: `broadway-portfolio/prod.tfstate`
+
+When `manage_github_actions = true`, bootstrap also sets repository variables:
+
+| Variable | Purpose |
+|---|---|
+| `AZURE_TF_CLIENT_ID` | Terraform OIDC Entra app client ID |
+| `AZURE_TF_TENANT_ID` | Directory (tenant) ID |
+| `AZURE_TF_SUBSCRIPTION_ID` | Target subscription |
+
+These are distinct from the per-environment `AZURE_CLIENT_ID` used for SWA deploy. Re-apply bootstrap after pulling OIDC changes so Actions can run Terraform.
 
 Keep the bootstrap local `terraform.tfstate` backed up (or migrate it later); it is gitignored.
 
@@ -134,11 +146,13 @@ After first login to `/studio`, check `/.auth/me` while signed in to copy the ex
 
 ## 4. GitHub Actions OIDC (no deploy-token secret)
 
+### App deploy identity (per environment)
+
 Terraform creates an Entra app `elyse-portfolio-gha-<env>` with federated credentials for GitHub OIDC, plus (when `manage_github_actions = true`) a GitHub Environment (`staging` / `prod`) with:
 
 | Variable | Purpose |
 |---|---|
-| `AZURE_CLIENT_ID` | Federated Entra app client ID |
+| `AZURE_CLIENT_ID` | Federated Entra app client ID (SWA deploy only) |
 | `AZURE_TENANT_ID` | Directory (tenant) ID |
 | `AZURE_SUBSCRIPTION_ID` | Target subscription |
 | `AZURE_RESOURCE_GROUP` | Environment resource group |
@@ -146,18 +160,33 @@ Terraform creates an Entra app `elyse-portfolio-gha-<env>` with federated creden
 
 The workflow ([azure-static-web-apps.yml](../.github/workflows/azure-static-web-apps.yml)) uses `azure/login` with OIDC, fetches the SWA deploy key at runtime, and deploys. **Do not** store `AZURE_STATIC_WEB_APPS_API_TOKEN` in GitHub secrets.
 
+### Terraform identity (shared, from bootstrap)
+
+Bootstrap creates `elyse-portfolio-gha-terraform` with subscription Contributor / User Access Administrator, Storage Blob Data Contributor on tfstate, and Cloud Application Administrator so CI can plan/apply env stacks. Repo variables `AZURE_TF_*` point at this app.
+
+| Workflow | When | What |
+|---|---|---|
+| [terraform.yml](../.github/workflows/terraform.yml) | PRs that touch `infra/` | `terraform plan` for staging and prod |
+| [azure-static-web-apps.yml](../.github/workflows/azure-static-web-apps.yml) | Push to `main` | If `infra/` changed: apply staging → deploy staging → apply prod → deploy prod; otherwise app deploy only |
+| [staging-branch.yml](../.github/workflows/staging-branch.yml) | Manual (`workflow_dispatch`) | Apply staging Terraform from the selected branch, then deploy the staging SWA |
+
 Promotion path:
 
-- Pull requests → **Deploy Staging** (GitHub Environment `staging`)
-- Push / merge to `main` → **Deploy Staging**, then **Deploy Production** only if staging succeeded (Environment `prod`)
+- Pull requests → **Terraform CI** (plan, when infra changes) + **Deploy Staging** (app)
+- Push / merge to `main` → Terraform apply (when infra changes) before each env’s app deploy; prod app only if staging deploy succeeded
+- Manual branch test → Actions → **Staging branch** → pick the branch → Run workflow
 
 Branch protection should require the **Deploy Staging** status check before merge. Optionally add required reviewers on the `prod` environment for a manual gate after staging.
 
 Verify subjects if login fails (must match GitHub’s assertion, including numeric IDs):
 
 ```bash
+# Deploy identity (from env stack)
 terraform output github_actions_oidc_subjects
 # e.g. repo:jefftindall@10339968/broadway-portfolio@1312787625:environment:staging
+
+# Terraform identity (from bootstrap)
+cd infra/bootstrap && terraform output terraform_oidc_subjects
 ```
 
 If Actions reports `AADSTS700213` with a different subject, update `github_owner_id` / `github_repo_id` and re-apply.

@@ -36,3 +36,33 @@ variable "tags" {
     managed = "terraform"
   }
 }
+
+variable "github_owner" {
+  type        = string
+  description = "GitHub org or user that owns the portfolio repo"
+  default     = "jefftindall"
+}
+
+variable "github_owner_id" {
+  type        = string
+  description = "Numeric GitHub owner ID used in OIDC subject claims"
+  default     = "10339968"
+}
+
+variable "github_repo" {
+  type        = string
+  description = "GitHub repository name"
+  default     = "broadway-portfolio"
+}
+
+variable "github_repo_id" {
+  type        = string
+  description = "Numeric GitHub repository ID used in OIDC subject claims"
+  default     = "1312787625"
+}
+
+variable "manage_github_actions" {
+  type        = bool
+  description = "When true, set repo-level AZURE_TF_* Actions variables (requires GH_TOKEN)"
+  default     = true
+}

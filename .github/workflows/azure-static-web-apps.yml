@@ -13,11 +13,73 @@ permissions:
   id-token: write
   contents: read
   pull-requests: write
+  actions: write
 
 jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      infra: ${{ steps.filter.outputs.infra }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            infra:
+              - 'infra/**'
+              - '.github/workflows/azure-static-web-apps.yml'
+              - '.github/workflows/terraform.yml'
+              - '.github/workflows/staging-branch.yml'
+
+  terraform_staging:
+    name: Terraform Apply Staging
+    needs: changes
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.changes.outputs.infra == 'true'
+    runs-on: ubuntu-latest
+    environment: staging
+    defaults:
+      run:
+        working-directory: infra/environments/staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Azure login (Terraform OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_TF_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TF_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_TF_SUBSCRIPTION_ID }}
+
+      - name: Terraform init
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: terraform init -input=false
+
+      - name: Terraform plan
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: terraform plan -input=false -out=tfplan
+
+      - name: Terraform apply
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: terraform apply -input=false tfplan
+
   # Always deploy staging first (PRs and main). Prod only runs after this succeeds on main.
   deploy_staging:
-    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    if: |
+      always() &&
+      needs.changes.result == 'success' &&
+      (github.event_name == 'push' || github.event_name == 'pull_request') &&
+      (needs.terraform_staging.result == 'success' || needs.terraform_staging.result == 'skipped')
+    needs: [changes, terraform_staging]
     runs-on: ubuntu-latest
     name: Deploy Staging
     environment: staging
@@ -109,9 +171,55 @@ jobs:
               }
             }]"
 
+  terraform_prod:
+    name: Terraform Apply Production
+    needs: [changes, deploy_staging]
+    if: |
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      needs.changes.outputs.infra == 'true' &&
+      needs.deploy_staging.result == 'success'
+    runs-on: ubuntu-latest
+    environment: prod
+    defaults:
+      run:
+        working-directory: infra/environments/prod
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Azure login (Terraform OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_TF_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TF_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_TF_SUBSCRIPTION_ID }}
+
+      - name: Terraform init
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: terraform init -input=false
+
+      - name: Terraform plan
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: terraform plan -input=false -out=tfplan
+
+      - name: Terraform apply
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: terraform apply -input=false tfplan
+
   deploy_prod:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: deploy_staging
+    if: |
+      always() &&
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      needs.deploy_staging.result == 'success' &&
+      (needs.terraform_prod.result == 'success' || needs.terraform_prod.result == 'skipped')
+    needs: [deploy_staging, terraform_prod]
     runs-on: ubuntu-latest
     name: Deploy Production
     environment: prod
