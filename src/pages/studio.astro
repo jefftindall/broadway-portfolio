@@ -181,13 +181,24 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       }
     });
 
-    const SpeechRecognition =
-      (window as unknown as { SpeechRecognition?: new () => SpeechRecognition; webkitSpeechRecognition?: new () => SpeechRecognition })
-        .SpeechRecognition ||
-      (window as unknown as { webkitSpeechRecognition?: new () => SpeechRecognition }).webkitSpeechRecognition;
+    type StudioSpeechRecognition = {
+      continuous: boolean;
+      interimResults: boolean;
+      lang: string;
+      start: () => void;
+      stop: () => void;
+      onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+      onerror: (() => void) | null;
+    };
 
-    if (SpeechRecognition) {
-      const recognition = new SpeechRecognition();
+    type SpeechRecognitionCtor = new () => StudioSpeechRecognition;
+
+    const SpeechRecognitionCtor =
+      (window as unknown as { SpeechRecognition?: SpeechRecognitionCtor }).SpeechRecognition ||
+      (window as unknown as { webkitSpeechRecognition?: SpeechRecognitionCtor }).webkitSpeechRecognition;
+
+    if (SpeechRecognitionCtor) {
+      const recognition = new SpeechRecognitionCtor();
       recognition.continuous = false;
       recognition.interimResults = true;
       recognition.lang = 'en-US';
@@ -205,7 +216,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         recognition.stop();
         micBtn.textContent = 'Hold to speak';
       });
-      recognition.onresult = (event: SpeechRecognitionEvent) => {
+      recognition.onresult = (event) => {
         let transcript = '';
         for (let i = 0; i < event.results.length; i++) {
           transcript += event.results[i]![0]!.transcript;

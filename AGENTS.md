@@ -4,9 +4,27 @@ See README.md and docs/ for project guidance.
 
 Single-product Astro portfolio + optional Gemini-powered "Studio" Azure Functions API. Node >= 22.12 is required (see root `package.json` engines). Dependencies for the root site and `api/` are installed automatically by the startup update script (`npm ci` in both).
 
+### Lint and static analysis (required before commit)
+
+**Agents must run local static analysis before committing or pushing code:**
+
+```bash
+npm run lint
+```
+
+This mirrors the PR gate workflow [`.github/workflows/static-analysis.yml`](.github/workflows/static-analysis.yml):
+
+| Check | Local command | CI job |
+|-------|---------------|--------|
+| Terraform fmt + TFLint + validate | `npm run lint:terraform` | Terraform lint |
+| Astro / TypeScript | `npm run check` | Site check |
+| API JS syntax | `npm run lint:api` | API syntax |
+
+Requirements for Terraform lint locally: Terraform >= 1.5 and [TFLint](https://github.com/terraform-linters/tflint) on `PATH` (`tflint --init` uses [`infra/.tflint.hcl`](infra/.tflint.hcl)). Do not commit if lint fails; do not skip these checks.
+
 ### Public site (primary service)
 - Dev server: `npm run dev` (Astro, serves on port 4321). Build: `npm run build` (static output to `dist/`).
-- There is **no lint or test tooling** configured in this repo (no ESLint/Prettier, no test runner, no `lint`/`test` scripts). "Verification" is `npm run build` plus manual smoke tests. Do not assume `npm test`/`npm run lint` exist.
+- Verification: `npm run lint` plus `npm run build` and manual smoke tests. There is no separate unit-test runner.
 - Content is markdown under `src/content/` (`shows`, `news`, `gallery`, `pages`, `casting`) with Zod schemas in `src/content.config.ts`. Adding a markdown file adds a live route (e.g. a new `src/content/news/*.md` appears on `/news` and `/news/<id>`).
 
 ### Studio API (`api/`, optional local)

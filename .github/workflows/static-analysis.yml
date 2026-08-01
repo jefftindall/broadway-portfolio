@@ -1,0 +1,91 @@
+name: Static analysis
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    name: Terraform lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+
+      - name: Cache TFLint plugins
+        uses: actions/cache@v4
+        with:
+          path: ~/.tflint.d/plugins
+          key: tflint-${{ hashFiles('infra/.tflint.hcl') }}
+
+      - name: Terraform fmt
+        run: terraform fmt -check -recursive infra
+
+      - name: TFLint init
+        working-directory: infra
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: tflint --init
+
+      - name: TFLint
+        working-directory: infra
+        run: tflint --recursive --format compact
+
+      - name: Terraform validate
+        run: |
+          set -euo pipefail
+          for dir in infra/bootstrap infra/environments/staging infra/environments/prod; do
+            echo "::group::validate ${dir}"
+            (
+              cd "$dir"
+              terraform init -backend=false -input=false
+              terraform validate
+            )
+            echo "::endgroup::"
+
+  site:
+    name: Site check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install and check
+        run: |
+          npm ci
+          npm run check
+
+  api:
+    name: API syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Syntax check
+        run: npm run lint:api

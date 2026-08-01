@@ -178,7 +178,7 @@ Promotion path:
 - Push / merge to `main` → Terraform apply (when infra changes) before each env’s app deploy; prod app only if staging deploy succeeded
 - Manual branch test → Actions → **Staging branch** → pick the branch → Run workflow
 
-Branch protection should require the **Deploy Staging** status check before merge. Optionally add required reviewers on the `prod` environment for a manual gate after staging.
+Branch protection should require **Static analysis** (Terraform lint / Site check / API syntax) and **Deploy Staging** before merge. Optionally add required reviewers on the `prod` environment for a manual gate after staging.
 
 Verify subjects if login fails (must match GitHub’s assertion, including numeric IDs):
 

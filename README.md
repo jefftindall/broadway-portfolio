@@ -18,6 +18,14 @@ npm install
 npm run dev
 ```
 
+### Lint / static analysis
+
+```bash
+npm run lint
+```
+
+Runs Terraform fmt + TFLint + validate, `astro check`, and API syntax checks. The same gates run on every PR via [`.github/workflows/static-analysis.yml`](.github/workflows/static-analysis.yml). Agents must run this before committing (see [AGENTS.md](AGENTS.md)).
+
 API functions (optional local):
 
 ```bash

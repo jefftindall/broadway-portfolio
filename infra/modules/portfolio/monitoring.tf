@@ -17,12 +17,12 @@ resource "azurerm_log_analytics_workspace" "main" {
 }
 
 resource "azurerm_application_insights" "main" {
-  name                = local.appi_name
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  workspace_id        = azurerm_log_analytics_workspace.main.id
-  application_type    = "web"
-  retention_in_days   = 30
+  name                 = local.appi_name
+  location             = azurerm_resource_group.main.location
+  resource_group_name  = azurerm_resource_group.main.name
+  workspace_id         = azurerm_log_analytics_workspace.main.id
+  application_type     = "web"
+  retention_in_days    = 30
   daily_data_cap_in_gb = 1
   # Email when nearing the daily cap (uses Azure subscription contacts / AI notifications).
   daily_data_cap_notifications_enabled = true
