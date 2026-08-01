@@ -40,6 +40,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       </a>
     </div>
 
+    <div id="publisher-gate" class="mt-8 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted">
+      <p>
+        You are signed in, but this account is not on the publisher allowlist. Ask an admin to add your
+        identity from <code class="text-spotlight">/.auth/me</code> to
+        <code class="text-spotlight">ALLOWED-USER-IDS</code>, then sign out and back in if needed.
+      </p>
+    </div>
+
     <div id="studio-app" class="mt-8 space-y-4">
       <div
         id="log"
@@ -90,7 +98,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   </section>
 
   <script>
-    import { trackEvent, trackException } from '../scripts/app-insights';
+    import { flush, trackEvent, trackException } from '../scripts/app-insights';
 
     const logEl = document.getElementById('log')!;
     const messageEl = document.getElementById('message') as HTMLTextAreaElement;
@@ -99,9 +107,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     const micBtn = document.getElementById('mic') as HTMLButtonElement;
     const statusEl = document.getElementById('status')!;
     const authGate = document.getElementById('auth-gate')!;
+    const publisherGate = document.getElementById('publisher-gate')!;
     const authUser = document.getElementById('auth-user')!;
     const authUserName = document.getElementById('auth-user-name')!;
     const studioApp = document.getElementById('studio-app')!;
+
+    const UNAUTHORIZED_STATUS =
+      'Signed in, but this account cannot publish. Ask an admin to update the allowlist.';
 
     const EMAIL_CLAIM_TYPES = new Set([
       'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress',
@@ -121,6 +133,16 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       return String(email || principal.userDetails || principal.userId || '').trim() || 'Unknown';
     }
 
+    function setEditorEnabled(enabled: boolean) {
+      if (enabled) {
+        studioApp.classList.remove('opacity-50', 'pointer-events-none');
+        sendBtn.disabled = false;
+      } else {
+        studioApp.classList.add('opacity-50', 'pointer-events-none');
+        sendBtn.disabled = true;
+      }
+    }
+
     function appendLog(role: 'you' | 'studio', text: string) {
       const p = document.createElement('p');
       p.className = role === 'you' ? 'text-spotlight' : 'text-gel';
@@ -129,27 +151,56 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       logEl.scrollTop = logEl.scrollHeight;
     }
 
+    async function checkPublisherStatus(): Promise<boolean> {
+      const res = await fetch('/api/publisherStatus');
+      if (!res.ok) return false;
+      const data = await res.json();
+      return Boolean(data?.authorized);
+    }
+
     async function checkAuth() {
+      let clientPrincipal: ClientPrincipal | null | undefined;
       try {
         const res = await fetch('/.auth/me');
         const data = await res.json();
-        const clientPrincipal = data?.clientPrincipal as ClientPrincipal | null | undefined;
-        if (!clientPrincipal) {
-          authUser.classList.add('hidden');
-          authGate.classList.remove('hidden');
-          studioApp.classList.add('opacity-50', 'pointer-events-none');
-          return false;
-        }
-        authUserName.textContent = displayNameFromPrincipal(clientPrincipal);
-        authUser.classList.remove('hidden');
-        authGate.classList.add('hidden');
-        studioApp.classList.remove('opacity-50', 'pointer-events-none');
-        return true;
+        clientPrincipal = data?.clientPrincipal as ClientPrincipal | null | undefined;
       } catch {
         // Local dev: allow UI without SWA auth
         authUser.classList.add('hidden');
+        authGate.classList.add('hidden');
+        publisherGate.classList.add('hidden');
+        setEditorEnabled(true);
         return true;
       }
+
+      if (!clientPrincipal) {
+        authUser.classList.add('hidden');
+        authGate.classList.remove('hidden');
+        publisherGate.classList.add('hidden');
+        setEditorEnabled(false);
+        return false;
+      }
+
+      authUserName.textContent = displayNameFromPrincipal(clientPrincipal);
+      authUser.classList.remove('hidden');
+      authGate.classList.add('hidden');
+
+      let authorized = false;
+      try {
+        authorized = await checkPublisherStatus();
+      } catch {
+        authorized = false;
+      }
+
+      if (!authorized) {
+        publisherGate.classList.remove('hidden');
+        setEditorEnabled(false);
+        return false;
+      }
+
+      publisherGate.classList.add('hidden');
+      setEditorEnabled(true);
+      return true;
     }
 
     async function resizeImage(file: File): Promise<{ name: string; contentType: string; dataBase64: string } | null> {
@@ -202,21 +253,31 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         const data = await res.json();
         if (!res.ok) {
           appendLog('studio', data.error || 'Update failed.');
-          statusEl.textContent = 'Something went wrong.';
-          trackEvent('StudioPublishUiFailed', { status: String(res.status) });
+          const reason = res.status === 401 ? 'unauthorized' : 'http_error';
+          statusEl.textContent = res.status === 401 ? UNAUTHORIZED_STATUS : 'Something went wrong.';
+          trackEvent('StudioPublishUiFailed', { status: String(res.status), reason });
+          flush();
+          if (res.status === 401) {
+            publisherGate.classList.remove('hidden');
+            setEditorEnabled(false);
+          }
         } else {
           appendLog('studio', data.reply || 'Update committed. Site will rebuild shortly.');
           messageEl.value = '';
           photoEl.value = '';
           statusEl.textContent = 'Done. Live in a few minutes after the build finishes.';
           trackEvent('StudioPublishUiSuccess');
+          flush();
         }
       } catch (err) {
         appendLog('studio', 'Network error — try again.');
         statusEl.textContent = 'Network error.';
         trackException(err, { operation: 'studioPublish' });
+        flush();
       } finally {
-        sendBtn.disabled = false;
+        if (publisherGate.classList.contains('hidden') && authGate.classList.contains('hidden')) {
+          sendBtn.disabled = false;
+        }
       }
     });
 

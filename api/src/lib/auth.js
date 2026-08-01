@@ -13,6 +13,17 @@ export function getClientPrincipal(request) {
   }
 }
 
+export function publisherIdentity(principal) {
+  if (!principal) {
+    return { userId: '', userDetails: '', identityProvider: '' };
+  }
+  return {
+    userId: String(principal.userId || ''),
+    userDetails: String(principal.userDetails || ''),
+    identityProvider: String(principal.identityProvider || ''),
+  };
+}
+
 export function isAuthorizedPublisher(principal) {
   if (!principal) return false;
   const allow = (process.env.ALLOWED_USER_IDS || '')
@@ -33,9 +44,11 @@ export function isAuthorizedPublisher(principal) {
   return candidates.some((c) => c && allow.includes(c));
 }
 
-export function unauthorized(context) {
+export function unauthorized() {
   return {
     status: 401,
-    jsonBody: { error: 'Unauthorized. Only Elyse can publish updates.' },
+    jsonBody: {
+      error: 'Unauthorized. This account is signed in but is not on the publisher allowlist.',
+    },
   };
 }

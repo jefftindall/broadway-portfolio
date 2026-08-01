@@ -14,6 +14,8 @@ Only Elyse should be able to publish.
 | Staging | `kv-elyse-staging` | `elyse-portfolio-staging` |
 | Production | `kv-elyse-prod` | `elyse-portfolio-prod` |
 
+**Sign-in ≠ publish.** A user assigned in Entra can open `/studio` and see their identity, but publishing still requires the allowlist. Studio calls `GET /api/publisherStatus` and shows a “not on the publisher allowlist” gate when they are signed in but not authorized. Denied publishes emit `StudioPublishDenied` in App Insights (see [observability.md](./observability.md)).
+
 ## Grant or revoke sign-in (Entra assignment)
 
 Azure Portal → **Entra ID → Enterprise applications → `elyse-portfolio-staging` or `elyse-portfolio-prod` → Users and groups**.
@@ -32,17 +34,21 @@ az keyvault secret set --vault-name kv-elyse-staging --name ALLOWED-USER-IDS --v
 az keyvault secret set --vault-name kv-elyse-prod --name ALLOWED-USER-IDS --value "<ids>"
 ```
 
+After updating the Key Vault secret, SWA Key Vault references may cache the old value. Refresh Static Web App configuration (Portal → Configuration → pull/restart, or re-apply the app setting) if `/api/publisherStatus` still returns `authorized: false` for a newly allowlisted user.
+
 ## Add a temporary publisher (emergency only)
 
 1. Add their ID/email to `ALLOWED-USER-IDS` in both vaults (commands above)
 2. Ensure they can authenticate via the configured IdP and are assigned to the enterprise app
-3. Remove them immediately after the emergency
+3. Refresh SWA config if the allowlist change does not take effect immediately
+4. Remove them immediately after the emergency
 
 ## Remove access
 
 1. Remove from `ALLOWED-USER-IDS` in `kv-elyse-staging` and `kv-elyse-prod`
 2. Remove/disable their IdP assignment on the enterprise app
 3. Confirm anonymous `/api/updateContent` returns 401/302
+4. Confirm a signed-in non-allowlisted user sees the Studio publisher gate
 
 ## Review
 
