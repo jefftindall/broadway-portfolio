@@ -40,7 +40,7 @@ After updating the secret, sync into SWA ([rotate-secrets.md](./rotate-secrets.m
 
 1. Add their ID/email to `ALLOWED-USER-IDS` in both vaults (commands above)
 2. Ensure they can authenticate via the configured IdP and are assigned to the enterprise app
-3. Sync staging and prod ([rotate-secrets.md](./rotate-secrets.md#sync-swa-api-secrets-no-redeploy) or Sync SWA API secrets workflow)
+3. Sync staging and prod ([rotate-secrets.md](./rotate-secrets.md#sync-swa-api-secrets-no-redeploy) or Sync SWA API secrets workflow once per environment)
 4. Remove them immediately after the emergency
 
 ## Remove access

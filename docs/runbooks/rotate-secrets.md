@@ -11,7 +11,7 @@ Secrets live in Azure Key Vault as the source of truth. Managed Functions on SWA
 
 Subscription: `e601e59a-c7f4-41f0-8178-b59740fb1974`
 
-After updating a vault secret used by the Studio API, sync into SWA (commands below, **Actions → Sync SWA API secrets → Run workflow**, or `terraform apply` for that environment). Values appear in Terraform state and SWA app settings (encrypted at rest by Azure).
+After updating a vault secret used by the Studio API, sync into SWA (commands below, **Actions → Sync SWA API secrets → Run workflow** and choose `staging` or `prod` — default `staging`, or `terraform apply` for that environment). Values appear in Terraform state and SWA app settings (encrypted at rest by Azure).
 
 ## Sync SWA API secrets (no redeploy)
 
