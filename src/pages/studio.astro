@@ -14,6 +14,21 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       Tell me what to update — shows, news, lessons, about, gallery, or casting pages. Changes commit to GitHub and go live after the site rebuilds (usually a few minutes).
     </p>
 
+    <div
+      id="auth-user"
+      class="mt-8 hidden flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4 text-sm text-muted"
+    >
+      <p>
+        Signed in as <span id="auth-user-name" class="text-spotlight"></span>
+      </p>
+      <a
+        href="/.auth/logout?post_logout_redirect_uri=/"
+        class="text-sm text-gel underline-offset-2 hover:text-gold hover:underline"
+      >
+        Sign out
+      </a>
+    </div>
+
     <div id="auth-gate" class="mt-8 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted">
       <p>Sign in required to publish.</p>
       <a
@@ -84,7 +99,27 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     const micBtn = document.getElementById('mic') as HTMLButtonElement;
     const statusEl = document.getElementById('status')!;
     const authGate = document.getElementById('auth-gate')!;
+    const authUser = document.getElementById('auth-user')!;
+    const authUserName = document.getElementById('auth-user-name')!;
     const studioApp = document.getElementById('studio-app')!;
+
+    const EMAIL_CLAIM_TYPES = new Set([
+      'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress',
+      'emails',
+      'email',
+    ]);
+
+    type ClientPrincipal = {
+      userId?: string;
+      userDetails?: string;
+      claims?: Array<{ typ?: string; val?: string }>;
+    };
+
+    function displayNameFromPrincipal(principal: ClientPrincipal): string {
+      const claims = Array.isArray(principal.claims) ? principal.claims : [];
+      const email = claims.find((c) => c.typ && EMAIL_CLAIM_TYPES.has(c.typ) && c.val)?.val;
+      return String(email || principal.userDetails || principal.userId || '').trim() || 'Unknown';
+    }
 
     function appendLog(role: 'you' | 'studio', text: string) {
       const p = document.createElement('p');
@@ -98,17 +133,21 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       try {
         const res = await fetch('/.auth/me');
         const data = await res.json();
-        const clientPrincipal = data?.clientPrincipal;
+        const clientPrincipal = data?.clientPrincipal as ClientPrincipal | null | undefined;
         if (!clientPrincipal) {
+          authUser.classList.add('hidden');
           authGate.classList.remove('hidden');
           studioApp.classList.add('opacity-50', 'pointer-events-none');
           return false;
         }
+        authUserName.textContent = displayNameFromPrincipal(clientPrincipal);
+        authUser.classList.remove('hidden');
         authGate.classList.add('hidden');
         studioApp.classList.remove('opacity-50', 'pointer-events-none');
         return true;
       } catch {
         // Local dev: allow UI without SWA auth
+        authUser.classList.add('hidden');
         return true;
       }
     }
