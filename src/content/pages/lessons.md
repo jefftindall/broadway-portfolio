@@ -1,26 +1,30 @@
 ---
-title: Lessons
-description: Musical theatre and acting lessons with Elyse Tindall — for students who want craft, confidence, and audition readiness.
-updated: 2026-07-26
+title: "Private Lessons & Coaching | Elyse Tindall"
+description: "Private vocal, acting, and audition prep coaching with Elyse Tindall in NYC and online. Rates: $60/30-min or $100/60-min."
+updated: "2026-08-01"
 ---
+# Private Vocal & Acting Lessons with Elyse Tindall
 
-## Study with Elyse
+Whether preparing for upcoming auditions, honing vocal technique, or building confidence on stage, personalized private instruction tailored to your unique artistic goals is key to unlocking your full potential.
 
-Elyse offers coaching for students who love musical theatre and want practical, encouraging guidance — song prep, monologue work, audition technique, and building confidence in the room.
+## Instruction & Coaching Philosophy
 
-### Who it’s for
+With a strong foundation in musical theatre, healthy vocal mechanics, and dramatic storytelling, I offer personalized coaching for performers of all ages and skill levels. My goal is to foster a warm, encouraging environment where singers and actors can safely build vocal strength, refine technique, and discover their authentic artistic voice.
 
-- Middle school, high school, and early college performers
-- Students preparing for show auditions, intensives, or college MT programs
-- Anyone who wants clearer storytelling and stronger stage presence
+### Core Areas of Focus
 
-### What we work on
+* **Vocal Technique & Health:** Developing healthy breath support, vocal alignment, resonance, tone control, and building range without strain.
+* **Audition Prep & Repertoire Selection:** Curating and perfecting audition cuts, building a versatile repertoire binder, and mastering musical theatre storytelling.
+* **Acting Through Song & Monologues:** Character study, song interpretation, text analysis, and emotional connection.
+* **Performance & Audition Technique:** Building stage presence, audition etiquette, and confidence in high-pressure settings.
 
-- Song interpretation and character storytelling
-- Monologue selection and coaching
-- Audition etiquette and slate confidence
-- Breath, focus, and performance nerves
+## Rates & Session Structure
 
-### How to inquire
+* **30-Minute Session:** $60
+* **60-Minute Session:** $100
 
-Email **elyse.tindall@gmail.com** with the subject line **“Lesson Inquiry”** and a short note about your goals, experience level, and preferred schedule (virtual or in-person when available).
+*Sessions are offered in-person in New York City or online via Zoom.*
+
+## Inquire & Book
+
+To schedule a lesson or ask any questions about coaching, please visit the [Contact page](/contact) to reach out directly.
