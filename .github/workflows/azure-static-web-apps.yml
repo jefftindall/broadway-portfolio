@@ -5,7 +5,7 @@ on:
     branches:
       - main
   pull_request:
-    types: [opened, synchronize, reopened, closed]
+    types: [opened, synchronize, reopened]
     branches:
       - main
 
@@ -15,11 +15,12 @@ permissions:
   pull-requests: write
 
 jobs:
-  build_and_deploy:
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+  # Always deploy staging first (PRs and main). Prod only runs after this succeeds on main.
+  deploy_staging:
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    name: Build and Deploy
-    environment: ${{ github.event_name == 'push' && 'prod' || 'staging' }}
+    name: Deploy Staging
+    environment: staging
     steps:
       - uses: actions/checkout@v4
         with:
@@ -57,7 +58,7 @@ jobs:
           echo "::add-mask::$TOKEN"
           echo "api_key=$TOKEN" >> "$GITHUB_OUTPUT"
 
-      - name: Deploy to Azure Static Web Apps
+      - name: Deploy to staging
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ steps.swa.outputs.api_key }}
@@ -68,12 +69,32 @@ jobs:
           api_location: "api"
           skip_app_build: true
 
-  close_pull_request:
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+  deploy_prod:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: deploy_staging
     runs-on: ubuntu-latest
-    name: Close Pull Request
-    environment: staging
+    name: Deploy Production
+    environment: prod
     steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          lfs: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install and build
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install API dependencies
+        run: npm ci --prefix api
+
       - name: Azure login (OIDC)
         uses: azure/login@v2
         with:
@@ -91,8 +112,12 @@ jobs:
           echo "::add-mask::$TOKEN"
           echo "api_key=$TOKEN" >> "$GITHUB_OUTPUT"
 
-      - name: Close staging environment
+      - name: Deploy to production
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ steps.swa.outputs.api_key }}
-          action: close
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: "dist"
+          api_location: "api"
+          skip_app_build: true
