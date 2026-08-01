@@ -55,8 +55,8 @@ func start
 Only Elyse can publish:
 
 1. SWA routes protect `/studio` and `/api/*` (authenticated)
-2. API re-checks `x-ms-client-principal` against `ALLOWED_USER_IDS` from Key Vault
-3. GitHub writes use short-lived **GitHub App** installation tokens (private key only in Key Vault)
+2. API re-checks `x-ms-client-principal` against `ALLOWED_USER_IDS` (Key Vault source of truth, synced into SWA app settings for managed Functions)
+3. GitHub writes use short-lived **GitHub App** installation tokens (private key in Key Vault, synced into SWA)
 4. GitHub Actions uses **OIDC** to Azure (separate identities for SWA deploy vs Terraform; no long-lived deploy token in repo secrets)
 
 ## Infrastructure

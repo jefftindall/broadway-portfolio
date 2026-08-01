@@ -24,7 +24,8 @@ Schemas live in `src/content.config.ts`. Fix the markdown fields (types, require
 
 - **401** — not signed in, not assigned to the Entra enterprise app, or not on allowlist ([manage-access](manage-access.md))
 - **AADSTS50011 (redirect URI mismatch)** — the hostname you used is not registered; add it to `additional_auth_hostnames` and re-apply, then check `terraform output entra_redirect_uris`
-- **500 / Missing env** — Key Vault secret empty or MI role missing (`Key Vault Secrets User` on SWA identity)
+- **500 / Missing env** — Key Vault secret empty/REPLACE_ME, or SWA app settings not synced after a vault update ([rotate-secrets](rotate-secrets.md)). If a setting still looks like `@Microsoft.KeyVault(...)`, managed Functions will not resolve it — run the sync script/workflow or terraform apply.
+- **401 allowlist after updating ALLOWED-USER-IDS** — vault updated but SWA not synced yet
 - **GitHub 401/403 from Studio** — App private key / installation ID wrong, or App missing Contents:write ([github-app](github-app.md))
 - **Actions `azure/login` OIDC failure (`AADSTS700213`)** — federated subject mismatch. GitHub sends `repo:owner@OWNER_ID/repo@REPO_ID:...`. Compare the error’s subject to `terraform output github_actions_oidc_subjects`, then fix `github_owner_id` / `github_repo_id` and re-apply.
 - **Actions cannot list SWA secrets** — OIDC principal needs Contributor on the Static Web App (granted by Terraform)
