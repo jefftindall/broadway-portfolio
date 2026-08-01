@@ -107,12 +107,28 @@ const tools = [
   },
 ];
 
+const ALLOWED_PATH_PREFIXES = ['src/content/', 'public/images/photos/'];
+
 function makeSlug(input, fallback) {
   const base = input || fallback || 'update';
   return slugify(base, { lower: true, strict: true });
 }
 
-async function handleToolCall(name, args, photoPath) {
+/**
+ * @param {string} path
+ * @returns {boolean}
+ */
+export function isAllowedContentPath(path) {
+  const p = String(path || '').replace(/\\/g, '/');
+  if (!p || p.includes('..') || p.startsWith('/')) return false;
+  return ALLOWED_PATH_PREFIXES.some((prefix) => p.startsWith(prefix));
+}
+
+/**
+ * Build a proposed file change from a Gemini tool call (no GitHub write).
+ * @returns {{ tool: string, path: string, content: string, commitMessage: string, summary: string }}
+ */
+export function buildContentChange(name, args, photoPath) {
   const today = new Date().toISOString().slice(0, 10);
 
   switch (name) {
@@ -128,13 +144,16 @@ async function handleToolCall(name, args, photoPath) {
           featured: Boolean(args.featured),
           videoUrl: args.videoUrl,
           image: args.image || photoPath,
-        }) + (args.body || args.synopsis) + '\n';
-      await commitFile({
+        }) +
+        (args.body || args.synopsis) +
+        '\n';
+      return {
+        tool: name,
         path: `src/content/shows/${slug}.md`,
         content,
-        message: `content: upsert show ${args.title}`,
-      });
-      return `Updated show “${args.title}” at /shows.`;
+        commitMessage: `content: upsert show ${args.title}`,
+        summary: `Updated show “${args.title}” at /shows.`,
+      };
     }
     case 'create_news_post': {
       const slug = makeSlug(args.slug || args.title);
@@ -146,13 +165,16 @@ async function handleToolCall(name, args, photoPath) {
           tags: args.tags || [],
           image: args.image || photoPath,
           videoUrl: args.videoUrl,
-        }) + args.body + '\n';
-      await commitFile({
+        }) +
+        args.body +
+        '\n';
+      return {
+        tool: name,
         path: `src/content/news/${slug}.md`,
         content,
-        message: `content: news ${args.title}`,
-      });
-      return `Published news post “${args.title}” at /news/${slug}.`;
+        commitMessage: `content: news ${args.title}`,
+        summary: `Published news post “${args.title}” at /news/${slug}.`,
+      };
     }
     case 'update_about': {
       const content =
@@ -160,13 +182,16 @@ async function handleToolCall(name, args, photoPath) {
           title: args.title || 'About',
           description: args.description || 'About Elyse Tindall',
           updated: today,
-        }) + args.body + '\n';
-      await commitFile({
+        }) +
+        args.body +
+        '\n';
+      return {
+        tool: name,
         path: 'src/content/pages/about.md',
         content,
-        message: 'content: update about page',
-      });
-      return 'Updated the About page.';
+        commitMessage: 'content: update about page',
+        summary: 'Updated the About page.',
+      };
     }
     case 'update_lessons': {
       const content =
@@ -174,13 +199,16 @@ async function handleToolCall(name, args, photoPath) {
           title: args.title || 'Lessons',
           description: args.description || 'Lessons with Elyse Tindall',
           updated: today,
-        }) + args.body + '\n';
-      await commitFile({
+        }) +
+        args.body +
+        '\n';
+      return {
+        tool: name,
         path: 'src/content/pages/lessons.md',
         content,
-        message: 'content: update lessons page',
-      });
-      return 'Updated the Lessons page.';
+        commitMessage: 'content: update lessons page',
+        summary: 'Updated the Lessons page.',
+      };
     }
     case 'add_gallery_photo': {
       const slug = makeSlug(args.slug || args.caption);
@@ -193,12 +221,13 @@ async function handleToolCall(name, args, photoPath) {
           tags: args.tags || [],
           order: args.order,
         }) + '\n';
-      await commitFile({
+      return {
+        tool: name,
         path: `src/content/gallery/${slug}.md`,
         content,
-        message: `content: gallery ${args.caption}`,
-      });
-      return `Added gallery photo “${args.caption}”.`;
+        commitMessage: `content: gallery ${args.caption}`,
+        summary: `Added gallery photo “${args.caption}”.`,
+      };
     }
     case 'create_or_update_casting_page': {
       const slug = makeSlug(args.slug || args.keyword);
@@ -210,19 +239,56 @@ async function handleToolCall(name, args, photoPath) {
           relatedSkills: args.relatedSkills || [],
           relatedShows: args.relatedShows || [],
           cta: args.cta || 'Request materials',
-        }) + args.body + '\n';
-      await commitFile({
+        }) +
+        args.body +
+        '\n';
+      return {
+        tool: name,
         path: `src/content/casting/${slug}.md`,
         content,
-        message: `content: casting page ${args.keyword}`,
-      });
-      return `Casting page ready at /for/${slug}.`;
+        commitMessage: `content: casting page ${args.keyword}`,
+        summary: `Casting page ready at /for/${slug}.`,
+      };
     }
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
 }
 
+/**
+ * Commit approved content changes to GitHub.
+ * @param {Array<{ path: string, content: string, commitMessage?: string, message?: string, tool?: string, summary?: string }>} changes
+ */
+export async function applyContentChanges(changes) {
+  if (!Array.isArray(changes) || changes.length === 0) {
+    throw new Error('No content changes to publish.');
+  }
+
+  const actions = [];
+  for (const change of changes) {
+    const path = String(change.path || '').replace(/\\/g, '/');
+    if (!isAllowedContentPath(path)) {
+      throw new Error(`Disallowed content path: ${path}`);
+    }
+    const content = String(change.content ?? '');
+    const commitMessage = String(change.commitMessage || change.message || `content: update ${path}`);
+    await commitFile({ path, content, message: commitMessage });
+    const summary = change.summary || `Updated ${path}.`;
+    trackEvent('StudioToolExecuted', { tool: change.tool || 'publish' });
+    actions.push({ tool: change.tool || 'publish', summary, path });
+  }
+
+  const reply =
+    actions.map((a) => a.summary).join(' ') +
+    ' The site will rebuild and go live within a few minutes.';
+
+  return { reply, actions };
+}
+
+/**
+ * Ask Gemini for tool calls and return proposed file changes (no commits).
+ * @param {{ message: string, photoPath?: string }} opts
+ */
 export async function runContentAgent({ message, photoPath }) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('Missing GEMINI_API_KEY');
@@ -262,20 +328,22 @@ Rules:
           .map((p) => ({ name: p.functionCall.name, args: p.functionCall.args }));
 
   if (!functionCalls.length) {
-    const text = response.text?.() || 'I could not map that to a website update. Try being more specific.';
-    return { reply: text, actions: [] };
+    const text =
+      response.text?.() || 'I could not map that to a website update. Try being more specific.';
+    return { reply: text, changes: [], actions: [] };
   }
 
-  const actions = [];
+  const changes = [];
   for (const call of functionCalls) {
-    const summary = await handleToolCall(call.name, call.args || {}, photoPath);
-    trackEvent('StudioToolExecuted', { tool: call.name });
-    actions.push({ tool: call.name, summary });
+    const change = buildContentChange(call.name, call.args || {}, photoPath);
+    trackEvent('StudioToolExecuted', { tool: call.name, mode: 'draft' });
+    changes.push(change);
   }
 
-  const reply =
-    actions.map((a) => a.summary).join(' ') +
-    ' The site will rebuild and go live within a few minutes.';
-
-  return { reply, actions };
+  const reply = changes.map((c) => c.summary).join(' ');
+  return {
+    reply,
+    changes,
+    actions: changes.map((c) => ({ tool: c.tool, summary: c.summary })),
+  };
 }

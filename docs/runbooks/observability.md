@@ -39,7 +39,8 @@ User-facing messages stay short and non-technical. Full provider/SDK detail is o
 | API requests / failures | SWA managed Functions + App Insights |
 | `StudioAccessDenied` | `api` publisherStatus (signed in, not allowlisted; includes `correlationId`) |
 | `StudioPublishDenied` | `api` updateContent / uploadMedia (allowlist deny; includes `correlationId`) |
-| `StudioPublishRequested` | `api` updateContent (after allowlist; includes `correlationId`) |
+| `StudioDraftRequested` / `StudioDraftFailed` | `api` updateContent `mode=draft` (Gemini preview; includes `correlationId`) |
+| `StudioPublishRequested` | `api` updateContent `mode=publish` (after allowlist; includes `correlationId`) |
 | `StudioPublishFailed` | `api` updateContent / uploadMedia catch path (`correlationId`, `errorKind`, `operation`) |
 | `StudioToolExecuted` | Gemini tool loop |
 | `GitHubCommitSucceeded` / `GitHubCommitFailed` | Contents API commits |
@@ -115,7 +116,7 @@ Studio / publish events:
 
 ```kusto
 customEvents
-| where name in ("StudioAccessDenied", "StudioPublishDenied", "StudioPublishRequested", "StudioPublishFailed", "StudioToolExecuted", "GitHubCommitSucceeded", "GitHubCommitFailed", "StudioPublishUiSuccess", "StudioPublishUiFailed", "DeployCompleted")
+| where name in ("StudioAccessDenied", "StudioPublishDenied", "StudioDraftRequested", "StudioDraftFailed", "StudioPublishRequested", "StudioPublishFailed", "StudioToolExecuted", "GitHubCommitSucceeded", "GitHubCommitFailed", "StudioPublishUiSuccess", "StudioPublishUiFailed", "DeployCompleted")
 | order by timestamp desc
 | take 100
 ```

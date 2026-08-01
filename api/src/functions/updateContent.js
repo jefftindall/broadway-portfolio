@@ -7,10 +7,37 @@ import {
   unauthorized,
 } from '../lib/auth.js';
 import { commitFile } from '../lib/github.js';
-import { runContentAgent } from '../lib/gemini.js';
+import { applyContentChanges, runContentAgent } from '../lib/gemini.js';
 import { studioFailureResponse } from '../lib/httpErrors.js';
 import { flush, trackEvent, trackException } from '../lib/telemetry.js';
 import slugify from 'slugify';
+
+function provisionalPhotoPath(photoName) {
+  const safe = slugify(String(photoName || 'photo').replace(/\.\w+$/, ''), {
+    lower: true,
+    strict: true,
+  });
+  return `/images/photos/pending-${safe || 'photo'}.jpg`;
+}
+
+function realPhotoFilename(photoName) {
+  const safe = slugify(String(photoName || 'photo').replace(/\.\w+$/, ''), {
+    lower: true,
+    strict: true,
+  });
+  return `${Date.now()}-${safe || 'photo'}.jpg`;
+}
+
+/**
+ * Replace provisional photo paths in change content with the committed public path.
+ */
+function rewritePhotoPaths(changes, fromPath, toPath) {
+  if (!fromPath || !toPath || fromPath === toPath) return changes;
+  return changes.map((change) => ({
+    ...change,
+    content: String(change.content || '').split(fromPath).join(toPath),
+  }));
+}
 
 app.http('updateContent', {
   methods: ['POST'],
@@ -46,27 +73,61 @@ app.http('updateContent', {
       return { status: 400, jsonBody: { error: 'Invalid JSON body' } };
     }
 
-    const message = String(body.message || '').trim();
-    if (!message) {
-      return { status: 400, jsonBody: { error: 'message is required' } };
-    }
-
+    const mode = String(body.mode || 'publish').toLowerCase() === 'draft' ? 'draft' : 'publish';
     const correlationId = newCorrelationId();
+    const hasPhoto = Boolean(body.photo?.dataBase64);
+    const operation = mode === 'draft' ? 'draftContent' : 'updateContent';
 
-    trackEvent('StudioPublishRequested', {
-      userId: principal?.userId || 'local',
-      hasPhoto: Boolean(body.photo?.dataBase64),
-      correlationId,
-    });
-
-    let photoPath;
     try {
-      if (body.photo?.dataBase64 && body.photo?.name) {
-        const safe = slugify(body.photo.name.replace(/\.\w+$/, ''), {
-          lower: true,
-          strict: true,
+      if (mode === 'draft') {
+        const message = String(body.message || '').trim();
+        if (!message) {
+          return { status: 400, jsonBody: { error: 'message is required' } };
+        }
+
+        trackEvent('StudioDraftRequested', {
+          userId: principal?.userId || 'local',
+          hasPhoto,
+          correlationId,
         });
-        const filename = `${Date.now()}-${safe || 'photo'}.jpg`;
+
+        const photoPath = hasPhoto ? provisionalPhotoPath(body.photo?.name) : undefined;
+        const result = await runContentAgent({ message, photoPath });
+        return {
+          status: 200,
+          jsonBody: {
+            reply: result.reply,
+            changes: result.changes,
+            provisionalPhotoPath: photoPath || null,
+            correlationId,
+          },
+        };
+      }
+
+      // publish: commit approved changes (optionally with photo)
+      const rawChanges = Array.isArray(body.changes) ? body.changes : null;
+      if (!rawChanges || rawChanges.length === 0) {
+        return { status: 400, jsonBody: { error: 'changes is required for publish' } };
+      }
+
+      trackEvent('StudioPublishRequested', {
+        userId: principal?.userId || 'local',
+        hasPhoto,
+        correlationId,
+        changeCount: String(rawChanges.length),
+      });
+
+      let changes = rawChanges.map((c) => ({
+        path: String(c.path || ''),
+        content: String(c.content ?? ''),
+        commitMessage: String(c.commitMessage || c.message || ''),
+        tool: c.tool ? String(c.tool) : undefined,
+        summary: c.summary ? String(c.summary) : undefined,
+      }));
+
+      let photoPath;
+      if (hasPhoto && body.photo?.name) {
+        const filename = realPhotoFilename(body.photo.name);
         const repoPath = `public/images/photos/${filename}`;
         await commitFile({
           path: repoPath,
@@ -75,27 +136,31 @@ app.http('updateContent', {
           binary: true,
         });
         photoPath = `/images/photos/${filename}`;
+        const provisional = body.provisionalPhotoPath
+          ? String(body.provisionalPhotoPath)
+          : provisionalPhotoPath(body.photo.name);
+        changes = rewritePhotoPaths(changes, provisional, photoPath);
       }
 
-      const result = await runContentAgent({ message, photoPath });
-      return { status: 200, jsonBody: result };
+      const result = await applyContentChanges(changes);
+      return { status: 200, jsonBody: { ...result, correlationId } };
     } catch (err) {
       const failure = studioFailureResponse(err, correlationId, {
-        operation: 'updateContent',
+        operation,
       });
-      context.error('Studio publish failed', {
+      context.error(mode === 'draft' ? 'Studio draft failed' : 'Studio publish failed', {
         correlationId,
         errorKind: failure.errorKind,
         message: err instanceof Error ? err.message : String(err),
       });
       trackException(err, {
-        operation: 'updateContent',
+        operation,
         correlationId,
         errorKind: failure.errorKind,
       });
-      trackEvent('StudioPublishFailed', {
+      trackEvent(mode === 'draft' ? 'StudioDraftFailed' : 'StudioPublishFailed', {
         correlationId,
-        operation: 'updateContent',
+        operation,
         errorKind: failure.errorKind,
         userId: principal?.userId || 'local',
       });
