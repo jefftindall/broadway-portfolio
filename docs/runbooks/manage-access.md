@@ -14,7 +14,7 @@ Only Elyse should be able to publish.
 | Staging | `kv-elyse-staging` | `elyse-portfolio-staging` |
 | Production | `kv-elyse-prod` | `elyse-portfolio-prod` |
 
-**Sign-in ≠ publish.** A user assigned in Entra can open `/studio` and see their identity, but publishing still requires the allowlist. Studio calls `GET /api/publisherStatus` and shows a “not on the publisher allowlist” gate when they are signed in but not authorized. Denied publishes emit `StudioPublishDenied` in App Insights (see [observability.md](./observability.md)).
+**Sign-in ≠ publish.** A user assigned in Entra can open `/studio` and see their identity, but publishing still requires the allowlist. Studio checks access before showing the editor; signed-in non-publishers see a friendly denial with a **correlation ID**. Look up that ID in App Insights (`StudioAccessDenied` / `StudioPublishDenied`) for `userId` / `userDetails` to add to `ALLOWED-USER-IDS` (see [observability.md](./observability.md)).
 
 ## Grant or revoke sign-in (Entra assignment)
 

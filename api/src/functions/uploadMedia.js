@@ -2,6 +2,7 @@ import { app } from '@azure/functions';
 import {
   getClientPrincipal,
   isAuthorizedPublisher,
+  newCorrelationId,
   publisherIdentity,
   unauthorized,
 } from '../lib/auth.js';
@@ -18,13 +19,20 @@ app.http('uploadMedia', {
     if (process.env.AZURE_FUNCTIONS_ENVIRONMENT !== 'Development') {
       if (!isAuthorizedPublisher(principal)) {
         const identity = publisherIdentity(principal);
-        context.warn('Rejected upload attempt', { userId: identity.userId });
+        const correlationId = newCorrelationId();
+        context.warn('Rejected upload attempt', {
+          correlationId,
+          userId: identity.userId,
+          userDetails: identity.userDetails,
+          identityProvider: identity.identityProvider,
+        });
         trackEvent('StudioPublishDenied', {
           ...identity,
+          correlationId,
           route: 'uploadMedia',
         });
         await flush();
-        return unauthorized();
+        return unauthorized(correlationId);
       }
     }
 

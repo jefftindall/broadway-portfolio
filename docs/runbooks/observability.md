@@ -28,7 +28,8 @@ To temporarily raise browser sampling for non-Studio traffic, set `PUBLIC_APPINS
 | Signal | Source |
 |--------|--------|
 | API requests / failures | SWA managed Functions + App Insights |
-| `StudioPublishDenied` | `api` updateContent / uploadMedia (allowlist deny) |
+| `StudioAccessDenied` | `api` publisherStatus (signed in, not allowlisted; includes `correlationId`) |
+| `StudioPublishDenied` | `api` updateContent / uploadMedia (allowlist deny; includes `correlationId`) |
 | `StudioPublishRequested` | `api` updateContent (after allowlist) |
 | `StudioToolExecuted` | Gemini tool loop |
 | `GitHubCommitSucceeded` / `GitHubCommitFailed` | Contents API commits |
@@ -50,18 +51,27 @@ requests
 | take 50
 ```
 
-Allowlist denials (preferred for “signed in but cannot publish”):
+Allowlist denials (preferred for “signed in but cannot publish”). Studio shows a `correlationId` users can share with an admin:
 
 ```kusto
 customEvents
-| where name == "StudioPublishDenied"
+| where name in ("StudioAccessDenied", "StudioPublishDenied")
 | project timestamp,
+    name,
+    correlationId = tostring(customDimensions.correlationId),
     userId = tostring(customDimensions.userId),
     userDetails = tostring(customDimensions.userDetails),
     identityProvider = tostring(customDimensions.identityProvider),
     route = tostring(customDimensions.route)
 | order by timestamp desc
 | take 50
+```
+
+```kusto
+customEvents
+| where name in ("StudioAccessDenied", "StudioPublishDenied")
+| where tostring(customDimensions.correlationId) == "<paste-correlation-id>"
+| project timestamp, name, userId = tostring(customDimensions.userId), userDetails = tostring(customDimensions.userDetails), identityProvider = tostring(customDimensions.identityProvider)
 ```
 
 ```kusto
@@ -75,7 +85,7 @@ Studio / publish events:
 
 ```kusto
 customEvents
-| where name in ("StudioPublishDenied", "StudioPublishRequested", "StudioToolExecuted", "GitHubCommitSucceeded", "GitHubCommitFailed", "StudioPublishUiSuccess", "StudioPublishUiFailed", "DeployCompleted")
+| where name in ("StudioAccessDenied", "StudioPublishDenied", "StudioPublishRequested", "StudioToolExecuted", "GitHubCommitSucceeded", "GitHubCommitFailed", "StudioPublishUiSuccess", "StudioPublishUiFailed", "DeployCompleted")
 | order by timestamp desc
 | take 100
 ```

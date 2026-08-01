@@ -29,6 +29,15 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       </a>
     </div>
 
+    <div
+      id="access-check"
+      class="mt-8 rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted"
+      role="status"
+      aria-live="polite"
+    >
+      <p>Checking access…</p>
+    </div>
+
     <div id="auth-gate" class="mt-8 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted">
       <p>Sign in required to publish.</p>
       <a
@@ -41,14 +50,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     </div>
 
     <div id="publisher-gate" class="mt-8 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted">
-      <p>
-        You are signed in, but this account is not on the publisher allowlist. Ask an admin to add your
-        identity from <code class="text-spotlight">/.auth/me</code> to
-        <code class="text-spotlight">ALLOWED-USER-IDS</code>, then sign out and back in if needed.
+      <p>You’re signed in, but this account can’t publish updates.</p>
+      <p class="mt-3">
+        Share this reference with an admin:
+        <code id="publisher-correlation" class="break-all text-spotlight"></code>
       </p>
     </div>
 
-    <div id="studio-app" class="mt-8 space-y-4">
+    <div id="studio-app" class="mt-8 hidden space-y-4">
       <div
         id="log"
         class="max-h-64 space-y-3 overflow-y-auto rounded-sm border border-line bg-panel/40 p-4 text-sm"
@@ -106,14 +115,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     const sendBtn = document.getElementById('send') as HTMLButtonElement;
     const micBtn = document.getElementById('mic') as HTMLButtonElement;
     const statusEl = document.getElementById('status')!;
+    const accessCheck = document.getElementById('access-check')!;
     const authGate = document.getElementById('auth-gate')!;
     const publisherGate = document.getElementById('publisher-gate')!;
+    const publisherCorrelation = document.getElementById('publisher-correlation')!;
     const authUser = document.getElementById('auth-user')!;
     const authUserName = document.getElementById('auth-user-name')!;
     const studioApp = document.getElementById('studio-app')!;
-
-    const UNAUTHORIZED_STATUS =
-      'Signed in, but this account cannot publish. Ask an admin to update the allowlist.';
 
     const EMAIL_CLAIM_TYPES = new Set([
       'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress',
@@ -133,14 +141,32 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       return String(email || principal.userDetails || principal.userId || '').trim() || 'Unknown';
     }
 
-    function setEditorEnabled(enabled: boolean) {
-      if (enabled) {
-        studioApp.classList.remove('opacity-50', 'pointer-events-none');
-        sendBtn.disabled = false;
-      } else {
-        studioApp.classList.add('opacity-50', 'pointer-events-none');
-        sendBtn.disabled = true;
-      }
+    function hideAccessCheck() {
+      accessCheck.classList.add('hidden');
+    }
+
+    function showStudioApp() {
+      hideAccessCheck();
+      authGate.classList.add('hidden');
+      publisherGate.classList.add('hidden');
+      studioApp.classList.remove('hidden');
+      sendBtn.disabled = false;
+    }
+
+    function showSignInGate() {
+      hideAccessCheck();
+      authUser.classList.add('hidden');
+      authGate.classList.remove('hidden');
+      publisherGate.classList.add('hidden');
+      studioApp.classList.add('hidden');
+    }
+
+    function showPublisherDenied(correlationId?: string) {
+      hideAccessCheck();
+      authGate.classList.add('hidden');
+      studioApp.classList.add('hidden');
+      publisherCorrelation.textContent = correlationId || 'unavailable';
+      publisherGate.classList.remove('hidden');
     }
 
     function appendLog(role: 'you' | 'studio', text: string) {
@@ -151,11 +177,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       logEl.scrollTop = logEl.scrollHeight;
     }
 
-    async function checkPublisherStatus(): Promise<boolean> {
+    async function checkPublisherStatus(): Promise<{ authorized: boolean; correlationId?: string }> {
       const res = await fetch('/api/publisherStatus');
-      if (!res.ok) return false;
+      if (!res.ok) return { authorized: false };
       const data = await res.json();
-      return Boolean(data?.authorized);
+      return {
+        authorized: Boolean(data?.authorized),
+        correlationId: typeof data?.correlationId === 'string' ? data.correlationId : undefined,
+      };
     }
 
     async function checkAuth() {
@@ -167,39 +196,31 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       } catch {
         // Local dev: allow UI without SWA auth
         authUser.classList.add('hidden');
-        authGate.classList.add('hidden');
-        publisherGate.classList.add('hidden');
-        setEditorEnabled(true);
+        showStudioApp();
         return true;
       }
 
       if (!clientPrincipal) {
-        authUser.classList.add('hidden');
-        authGate.classList.remove('hidden');
-        publisherGate.classList.add('hidden');
-        setEditorEnabled(false);
+        showSignInGate();
         return false;
       }
 
       authUserName.textContent = displayNameFromPrincipal(clientPrincipal);
       authUser.classList.remove('hidden');
-      authGate.classList.add('hidden');
 
-      let authorized = false;
+      let status: { authorized: boolean; correlationId?: string } = { authorized: false };
       try {
-        authorized = await checkPublisherStatus();
+        status = await checkPublisherStatus();
       } catch {
-        authorized = false;
+        status = { authorized: false };
       }
 
-      if (!authorized) {
-        publisherGate.classList.remove('hidden');
-        setEditorEnabled(false);
+      if (!status.authorized) {
+        showPublisherDenied(status.correlationId);
         return false;
       }
 
-      publisherGate.classList.add('hidden');
-      setEditorEnabled(true);
+      showStudioApp();
       return true;
     }
 
@@ -252,15 +273,29 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         });
         const data = await res.json();
         if (!res.ok) {
-          appendLog('studio', data.error || 'Update failed.');
           const reason = res.status === 401 ? 'unauthorized' : 'http_error';
-          statusEl.textContent = res.status === 401 ? UNAUTHORIZED_STATUS : 'Something went wrong.';
-          trackEvent('StudioPublishUiFailed', { status: String(res.status), reason });
-          flush();
+          const correlationId = typeof data.correlationId === 'string' ? data.correlationId : undefined;
           if (res.status === 401) {
-            publisherGate.classList.remove('hidden');
-            setEditorEnabled(false);
+            appendLog(
+              'studio',
+              correlationId
+                ? `This account can’t publish. Reference: ${correlationId}`
+                : data.error || 'This account can’t publish updates.',
+            );
+            statusEl.textContent = correlationId
+              ? `Access denied. Reference: ${correlationId}`
+              : 'Access denied.';
+            showPublisherDenied(correlationId);
+          } else {
+            appendLog('studio', data.error || 'Update failed.');
+            statusEl.textContent = 'Something went wrong.';
           }
+          trackEvent('StudioPublishUiFailed', {
+            status: String(res.status),
+            reason,
+            ...(correlationId ? { correlationId } : {}),
+          });
+          flush();
         } else {
           appendLog('studio', data.reply || 'Update committed. Site will rebuild shortly.');
           messageEl.value = '';
@@ -275,7 +310,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         trackException(err, { operation: 'studioPublish' });
         flush();
       } finally {
-        if (publisherGate.classList.contains('hidden') && authGate.classList.contains('hidden')) {
+        if (!studioApp.classList.contains('hidden')) {
           sendBtn.disabled = false;
         }
       }

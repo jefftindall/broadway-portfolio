@@ -2,6 +2,8 @@
  * Parse SWA client principal from x-ms-client-principal header.
  * Enforce allowlist from ALLOWED_USER_IDS (comma-separated user IDs or emails).
  */
+import { randomUUID } from 'node:crypto';
+
 export function getClientPrincipal(request) {
   const header = request.headers.get('x-ms-client-principal');
   if (!header) return null;
@@ -24,6 +26,10 @@ export function publisherIdentity(principal) {
   };
 }
 
+export function newCorrelationId() {
+  return randomUUID();
+}
+
 export function isAuthorizedPublisher(principal) {
   if (!principal) return false;
   const allow = (process.env.ALLOWED_USER_IDS || '')
@@ -44,11 +50,12 @@ export function isAuthorizedPublisher(principal) {
   return candidates.some((c) => c && allow.includes(c));
 }
 
-export function unauthorized() {
+export function unauthorized(correlationId) {
   return {
     status: 401,
     jsonBody: {
-      error: 'Unauthorized. This account is signed in but is not on the publisher allowlist.',
+      error: 'This account is signed in but cannot publish updates.',
+      correlationId: correlationId || undefined,
     },
   };
 }
