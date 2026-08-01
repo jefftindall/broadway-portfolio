@@ -146,8 +146,12 @@ Terraform creates an Entra app `elyse-portfolio-gha-<env>` with federated creden
 
 The workflow ([azure-static-web-apps.yml](../.github/workflows/azure-static-web-apps.yml)) uses `azure/login` with OIDC, fetches the SWA deploy key at runtime, and deploys. **Do not** store `AZURE_STATIC_WEB_APPS_API_TOKEN` in GitHub secrets.
 
-- Push to `main` → GitHub Environment **prod**
-- Pull requests → GitHub Environment **staging**
+Promotion path:
+
+- Pull requests → **Deploy Staging** (GitHub Environment `staging`)
+- Push / merge to `main` → **Deploy Staging**, then **Deploy Production** only if staging succeeded (Environment `prod`)
+
+Branch protection should require the **Deploy Staging** status check before merge. Optionally add required reviewers on the `prod` environment for a manual gate after staging.
 
 Verify subjects if login fails (must match GitHub’s assertion, including numeric IDs):
 
