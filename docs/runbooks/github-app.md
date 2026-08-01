@@ -37,6 +37,16 @@ az keyvault secret set --vault-name kv-elyse-prod --name GITHUB-APP-PRIVATE-KEY 
 
 Reuse the same App for staging and prod (one installation covers the repo). Delete the local `.pem` after upload.
 
+## Allow direct commits to `main`
+
+Studio writes via the Contents API (not PRs). The **Protect main** ruleset must list the App as a bypass actor, or publishes fail with “Cannot update this protected ref.”
+
+1. Repo → **Settings → Rules → Rulesets → Protect main**
+2. **Bypass list** → **Add bypass** → choose the Studio GitHub App (`elyse-portfolio-studio`) → bypass mode **Always**
+3. Save
+
+The App’s numeric ID (Key Vault `GITHUB-APP-ID`) is the Integration `actor_id` on the ruleset. Keep any existing User bypasses when editing.
+
 ## Verify
 
 Publish a harmless Studio update and confirm a commit authored by the GitHub App appears on `main`.
