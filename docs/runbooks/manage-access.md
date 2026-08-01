@@ -34,13 +34,13 @@ az keyvault secret set --vault-name kv-elyse-staging --name ALLOWED-USER-IDS --v
 az keyvault secret set --vault-name kv-elyse-prod --name ALLOWED-USER-IDS --value "<ids>"
 ```
 
-After updating the Key Vault secret, SWA Key Vault references may cache the old value. Refresh Static Web App configuration (Portal → Configuration → pull/restart, or re-apply the app setting) if `/api/publisherStatus` still returns `authorized: false` for a newly allowlisted user.
+SWA caches resolved Key Vault values (about **24 hours** unless refreshed). After updating the secret, run the copy/paste commands in [rotate-secrets.md](./rotate-secrets.md#refresh-swa-key-vault-references-no-redeploy), or trigger **Actions → Refresh Key Vault references → Run workflow**.
 
 ## Add a temporary publisher (emergency only)
 
 1. Add their ID/email to `ALLOWED-USER-IDS` in both vaults (commands above)
 2. Ensure they can authenticate via the configured IdP and are assigned to the enterprise app
-3. Refresh SWA config if the allowlist change does not take effect immediately
+3. Run the staging/prod refresh commands in [rotate-secrets.md](./rotate-secrets.md#refresh-swa-key-vault-references-no-redeploy) (or run the Refresh Key Vault references workflow)
 4. Remove them immediately after the emergency
 
 ## Remove access
