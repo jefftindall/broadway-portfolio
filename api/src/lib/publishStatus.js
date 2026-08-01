@@ -6,10 +6,11 @@ const WORKFLOW_FILE = 'azure-static-web-apps.yml';
  * Normalize a workflow / job status for the Studio UI.
  * @param {string | null | undefined} status
  * @param {string | null | undefined} conclusion
- * @returns {'queued'|'in_progress'|'success'|'failure'|'unknown'}
+ * @returns {'queued'|'in_progress'|'success'|'failure'|'skipped'|'unknown'}
  */
 export function normalizeRunStatus(status, conclusion) {
   if (conclusion === 'success') return 'success';
+  if (conclusion === 'skipped' || conclusion === 'neutral') return 'skipped';
   if (
     conclusion === 'failure' ||
     conclusion === 'cancelled' ||

@@ -167,7 +167,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   </section>
 
   <script>
-    import { flush, trackEvent, trackException } from '../scripts/app-insights';
+    import { flush, trackEvent, trackException, trackMetric } from '../scripts/app-insights';
 
     type PhotoPayload = { name: string; contentType: string; dataBase64: string };
     type ContentChange = {
@@ -223,6 +223,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     let draftChanges: ContentChange[] = [];
     let pollTimer: number | null = null;
     let pollStartedAt = 0;
+    let publishClickedAt = 0;
+    let prodLatencyEmitted = false;
     let micSupported = true;
 
     const EMAIL_CLAIM_TYPES = new Set([
@@ -369,6 +371,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           return 'Complete';
         case 'failure':
           return 'Failed';
+        case 'skipped':
+          return 'Skipped';
         case 'in_progress':
           return 'In progress';
         case 'queued':
@@ -494,12 +498,36 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       );
     }
 
+    function maybeEmitProdLatency(
+      data: { jobs?: Array<{ name: string; status: string }> },
+      sha: string,
+    ) {
+      if (prodLatencyEmitted || !publishClickedAt) return;
+      const jobs = Array.isArray(data.jobs) ? data.jobs : [];
+      const prodDeploy = jobs.find(
+        (j) => /deploy\s+production/i.test(j.name || '') && j.status === 'success',
+      );
+      if (!prodDeploy) return;
+
+      prodLatencyEmitted = true;
+      const durationMs = Math.max(0, Date.now() - publishClickedAt);
+      trackEvent('StudioPublishToProdCompleted', {
+        durationMs: String(durationMs),
+        commitSha: sha,
+      });
+      trackMetric('StudioPublishToProdDurationMs', durationMs, {
+        commitSha: sha,
+      });
+      flush();
+    }
+
     async function pollOnce(sha: string) {
       try {
         const res = await fetch(`/api/publishStatus?sha=${encodeURIComponent(sha)}`);
         const data = await res.json();
         if (res.ok) {
           renderPipeline(data);
+          maybeEmitProdLatency(data, sha);
           if (data.status === 'failure') {
             setStatus(
               'The site rebuild reported a failure. Share this with support if it keeps happening.',
@@ -530,6 +558,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     }
 
     function startProgressTracking(sha: string | undefined, actions: PublishAction[]) {
+      prodLatencyEmitted = false;
       renderPipeline({ status: 'queued', jobs: [] });
       renderPageLinks(actions);
       void refreshLiveLinks();
@@ -820,6 +849,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         return;
       }
 
+      publishClickedAt = Date.now();
+      prodLatencyEmitted = false;
       setPreviewBusy(true);
       setStatus('Publishing…');
 

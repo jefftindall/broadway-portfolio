@@ -6,7 +6,12 @@ declare global {
   }
 }
 
-const FORCE_SAMPLE_EVENTS = new Set(['StudioPublishUiSuccess', 'StudioPublishUiFailed']);
+const FORCE_SAMPLE_EVENTS = new Set([
+  'StudioPublishUiSuccess',
+  'StudioPublishUiFailed',
+  'StudioPublishToProdCompleted',
+]);
+const FORCE_SAMPLE_METRICS = new Set(['StudioPublishToProdDurationMs']);
 
 let initialized = false;
 
@@ -45,8 +50,11 @@ export function initAppInsights() {
       delete baseData.properties.cookie;
       delete baseData.properties.auth;
     }
-    // Studio publish UI events must always ingest despite global browser sampling.
+    // Studio publish UI events/metrics must always ingest despite global browser sampling.
     if (baseData?.name && FORCE_SAMPLE_EVENTS.has(baseData.name)) {
+      (envelope as { sampleRate?: number }).sampleRate = 100;
+    }
+    if (baseData?.name && FORCE_SAMPLE_METRICS.has(baseData.name)) {
       (envelope as { sampleRate?: number }).sampleRate = 100;
     }
     return true;
@@ -58,6 +66,10 @@ export function initAppInsights() {
 
 export function trackEvent(name: string, properties?: Record<string, string>) {
   window.__appInsights?.trackEvent({ name, properties });
+}
+
+export function trackMetric(name: string, average: number, properties?: Record<string, string>) {
+  window.__appInsights?.trackMetric({ name, average }, properties);
 }
 
 export function trackException(error: unknown, properties?: Record<string, string>) {
