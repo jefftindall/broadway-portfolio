@@ -15,5 +15,9 @@
 #   Entra app:         elyse-portfolio-gha-terraform (OIDC for plan/apply)
 #   Repo variables:    AZURE_TF_CLIENT_ID, AZURE_TF_TENANT_ID, AZURE_TF_SUBSCRIPTION_ID
 #
+# Also grant the Terraform SP Key Vault Secrets Officer (subscription) so Actions
+# can refresh azurerm_key_vault_secret resources. Add repo secret TF_GITHUB_TOKEN
+# (PAT with environment variable access) for the GitHub provider in CI.
+#
 # Staging/prod backends are preconfigured to use this account with distinct state keys.
 # Re-apply after pulling OIDC changes so Actions can run Terraform.

@@ -22,6 +22,11 @@ resource "azuread_application" "swa" {
   owners           = [data.azuread_client_config.current.object_id]
   sign_in_audience = "AzureADMyOrg"
 
+  # Avoid thrashing owners between local users and the Terraform OIDC principal.
+  lifecycle {
+    ignore_changes = [owners]
+  }
+
   web {
     implicit_grant {
       access_token_issuance_enabled = false
@@ -58,6 +63,10 @@ resource "azuread_service_principal" "swa" {
   client_id                    = azuread_application.swa.client_id
   app_role_assignment_required = var.require_app_role_assignment
   owners                       = [data.azuread_client_config.current.object_id]
+
+  lifecycle {
+    ignore_changes = [owners]
+  }
 }
 
 # Anchors the secret's end_date so it stays stable between plans, and triggers

@@ -60,6 +60,12 @@ resource "azurerm_role_assignment" "kv_admin" {
   scope                = azurerm_key_vault.main.id
   role_definition_name = "Key Vault Administrator"
   principal_id         = data.azurerm_client_config.current.object_id
+
+  # Whoever first applied (usually a human) keeps admin; CI uses the Terraform
+  # OIDC principal granted Key Vault Secrets Officer at subscription scope in bootstrap.
+  lifecycle {
+    ignore_changes = [principal_id]
+  }
 }
 
 resource "azurerm_static_web_app" "main" {

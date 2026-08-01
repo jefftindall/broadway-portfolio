@@ -70,6 +70,13 @@ resource "azurerm_role_assignment" "terraform_subscription_uaa" {
   principal_id         = azuread_service_principal.terraform.object_id
 }
 
+# Key Vault uses data-plane RBAC; subscription Contributor does not grant getSecret.
+resource "azurerm_role_assignment" "terraform_kv_secrets_officer" {
+  scope                = data.azurerm_subscription.current.id
+  role_definition_name = "Key Vault Secrets Officer"
+  principal_id         = azuread_service_principal.terraform.object_id
+}
+
 # Env stacks manage azuread_application / service principals (Studio + deploy OIDC apps).
 resource "azuread_directory_role" "cloud_app_admin" {
   display_name = "Cloud Application Administrator"

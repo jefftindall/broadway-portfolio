@@ -57,19 +57,31 @@ jobs:
           tenant-id: ${{ vars.AZURE_TF_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_TF_SUBSCRIPTION_ID }}
 
+      - name: Require TF_GITHUB_TOKEN
+        env:
+          TF_GITHUB_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+        run: |
+          if [ -z "$TF_GITHUB_TOKEN" ]; then
+            echo "::error::Add repository secret TF_GITHUB_TOKEN (a PAT that can read/write Actions environment variables). The default GITHUB_TOKEN cannot manage environment variables."
+            exit 1
+          fi
+
       - name: Terraform init
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
         run: terraform init -input=false
 
       - name: Terraform plan
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
         run: terraform plan -input=false -out=tfplan
 
       - name: Terraform apply
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
         run: terraform apply -input=false tfplan
 
   # Always deploy staging first (PRs and main). Prod only runs after this succeeds on main.
@@ -198,19 +210,31 @@ jobs:
           tenant-id: ${{ vars.AZURE_TF_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_TF_SUBSCRIPTION_ID }}
 
+      - name: Require TF_GITHUB_TOKEN
+        env:
+          TF_GITHUB_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+        run: |
+          if [ -z "$TF_GITHUB_TOKEN" ]; then
+            echo "::error::Add repository secret TF_GITHUB_TOKEN (a PAT that can read/write Actions environment variables). The default GITHUB_TOKEN cannot manage environment variables."
+            exit 1
+          fi
+
       - name: Terraform init
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
         run: terraform init -input=false
 
       - name: Terraform plan
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
         run: terraform plan -input=false -out=tfplan
 
       - name: Terraform apply
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
         run: terraform apply -input=false tfplan
 
   deploy_prod:

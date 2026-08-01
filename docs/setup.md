@@ -162,7 +162,9 @@ The workflow ([azure-static-web-apps.yml](../.github/workflows/azure-static-web-
 
 ### Terraform identity (shared, from bootstrap)
 
-Bootstrap creates `elyse-portfolio-gha-terraform` with subscription Contributor / User Access Administrator, Storage Blob Data Contributor on tfstate, and Cloud Application Administrator so CI can plan/apply env stacks. Repo variables `AZURE_TF_*` point at this app.
+Bootstrap creates `elyse-portfolio-gha-terraform` with subscription Contributor / User Access Administrator, Key Vault Secrets Officer, Storage Blob Data Contributor on tfstate, and Cloud Application Administrator so CI can plan/apply env stacks. Repo variables `AZURE_TF_*` point at this app.
+
+Terraform also manages GitHub Environment variables. The default Actions `GITHUB_TOKEN` cannot read those, so add a repository secret **`TF_GITHUB_TOKEN`**: a classic PAT with `repo` scope, or a fine-grained PAT with Environments + Variables read/write on this repo. Workflows override `GITHUB_TOKEN` with that secret for Terraform steps.
 
 | Workflow | When | What |
 |---|---|---|

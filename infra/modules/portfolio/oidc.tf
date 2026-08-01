@@ -9,12 +9,20 @@ resource "azuread_application" "github_actions" {
   display_name     = "elyse-portfolio-gha-${var.environment}"
   owners           = [data.azuread_client_config.current.object_id]
   sign_in_audience = "AzureADMyOrg"
+
+  lifecycle {
+    ignore_changes = [owners]
+  }
 }
 
 resource "azuread_service_principal" "github_actions" {
   client_id                    = azuread_application.github_actions.client_id
   app_role_assignment_required = false
   owners                       = [data.azuread_client_config.current.object_id]
+
+  lifecycle {
+    ignore_changes = [owners]
+  }
 }
 
 resource "azuread_application_federated_identity_credential" "github_environment" {
