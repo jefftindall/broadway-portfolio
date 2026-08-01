@@ -174,7 +174,7 @@ Terraform also manages GitHub Environment variables. The default Actions `GITHUB
 
 Promotion path:
 
-- Pull requests → **Terraform CI** (plan, when infra changes) + **Deploy Staging** (app)
+- Pull requests → **Static analysis** (then plan when infra changes) + **Deploy Staging** (app)
 - Push / merge to `main` → Terraform apply (when infra changes) before each env’s app deploy; prod app only if staging deploy succeeded
 - Manual branch test → Actions → **Staging branch** → pick the branch → Run workflow
 
