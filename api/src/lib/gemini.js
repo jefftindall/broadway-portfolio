@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { trackEvent } from './telemetry.js';
 import slugify from 'slugify';
 import { commitFile, toFrontmatter } from './github.js';
 
@@ -268,6 +269,7 @@ Rules:
   const actions = [];
   for (const call of functionCalls) {
     const summary = await handleToolCall(call.name, call.args || {}, photoPath);
+    trackEvent('StudioToolExecuted', { tool: call.name });
     actions.push({ tool: call.name, summary });
   }
 

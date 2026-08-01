@@ -2,6 +2,7 @@ import { app } from '@azure/functions';
 import { getClientPrincipal, isAuthorizedPublisher, unauthorized } from '../lib/auth.js';
 import { commitFile } from '../lib/github.js';
 import { runContentAgent } from '../lib/gemini.js';
+import { trackEvent, trackException } from '../lib/telemetry.js';
 import slugify from 'slugify';
 
 app.http('updateContent', {
@@ -30,6 +31,11 @@ app.http('updateContent', {
       return { status: 400, jsonBody: { error: 'message is required' } };
     }
 
+    trackEvent('StudioPublishRequested', {
+      userId: principal?.userId || 'local',
+      hasPhoto: Boolean(body.photo?.dataBase64),
+    });
+
     let photoPath;
     try {
       if (body.photo?.dataBase64 && body.photo?.name) {
@@ -52,6 +58,7 @@ app.http('updateContent', {
       return { status: 200, jsonBody: result };
     } catch (err) {
       context.error(err);
+      trackException(err, { operation: 'updateContent' });
       return {
         status: 500,
         jsonBody: { error: err.message || 'Failed to publish update' },

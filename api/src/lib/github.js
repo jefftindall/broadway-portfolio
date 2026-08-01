@@ -1,5 +1,6 @@
 import { createAppAuth } from '@octokit/auth-app';
 import { Octokit } from '@octokit/rest';
+import { trackEvent } from './telemetry.js';
 
 function required(name) {
   const v = process.env[name];
@@ -81,17 +82,30 @@ export async function commitFile({ path, content, message, binary = false }) {
       : String(content)
     : Buffer.from(content, 'utf8').toString('base64');
 
-  await octokit.repos.createOrUpdateFileContents({
-    owner,
-    repo,
-    path,
-    message,
-    content: contentBase64,
-    branch,
-    ...(sha ? { sha } : {}),
-  });
-
-  return { path, branch };
+  try {
+    const { data } = await octokit.repos.createOrUpdateFileContents({
+      owner,
+      repo,
+      path,
+      message,
+      content: contentBase64,
+      branch,
+      ...(sha ? { sha } : {}),
+    });
+    trackEvent('GitHubCommitSucceeded', {
+      path,
+      branch,
+      sha: data.content?.sha || data.commit?.sha || '',
+    });
+    return { path, branch, sha: data.content?.sha };
+  } catch (err) {
+    trackEvent('GitHubCommitFailed', {
+      path,
+      branch,
+      error: err.message || String(err),
+    });
+    throw err;
+  }
 }
 
 export function toFrontmatter(fields) {

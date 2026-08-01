@@ -75,17 +75,25 @@ resource "azurerm_static_web_app" "main" {
   }
 
   app_settings = {
-    GEMINI_API_KEY             = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/GEMINI-API-KEY/)"
-    GITHUB_APP_ID              = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/GITHUB-APP-ID/)"
-    GITHUB_APP_INSTALLATION_ID = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/GITHUB-APP-INSTALLATION-ID/)"
-    GITHUB_APP_PRIVATE_KEY     = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/GITHUB-APP-PRIVATE-KEY/)"
-    ALLOWED_USER_IDS           = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/ALLOWED-USER-IDS/)"
-    AAD_CLIENT_SECRET          = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/AAD-CLIENT-SECRET/)"
-    AAD_CLIENT_ID              = azuread_application.swa.client_id
-    AAD_TENANT_ID              = data.azurerm_client_config.current.tenant_id
-    GITHUB_OWNER               = var.github_owner
-    GITHUB_REPO                = var.github_repo
-    GITHUB_BRANCH              = var.github_branch
+    GEMINI_API_KEY                        = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/GEMINI-API-KEY/)"
+    GITHUB_APP_ID                         = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/GITHUB-APP-ID/)"
+    GITHUB_APP_INSTALLATION_ID            = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/GITHUB-APP-INSTALLATION-ID/)"
+    GITHUB_APP_PRIVATE_KEY                = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/GITHUB-APP-PRIVATE-KEY/)"
+    ALLOWED_USER_IDS                      = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/ALLOWED-USER-IDS/)"
+    AAD_CLIENT_SECRET                     = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/AAD-CLIENT-SECRET/)"
+    AAD_CLIENT_ID                         = azuread_application.swa.client_id
+    AAD_TENANT_ID                         = data.azurerm_client_config.current.tenant_id
+    GITHUB_OWNER                          = var.github_owner
+    GITHUB_REPO                           = var.github_repo
+    GITHUB_BRANCH                         = var.github_branch
+    APPLICATIONINSIGHTS_CONNECTION_STRING = azurerm_application_insights.main.connection_string
+  }
+
+  lifecycle {
+    ignore_changes = [
+      repository_url,
+      repository_branch,
+    ]
   }
 }
 

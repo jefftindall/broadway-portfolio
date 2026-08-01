@@ -53,5 +53,8 @@ const pageTitle = title ? `${title} · ${site.name}` : `${site.name} · ${site.t
       <slot />
     </main>
     <Footer hideCta={hideFooterCta} />
+    <script>
+      import '../scripts/app-insights.ts';
+    </script>
   </body>
 </html>

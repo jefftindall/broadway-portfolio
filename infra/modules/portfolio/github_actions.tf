@@ -47,3 +47,12 @@ resource "github_actions_environment_variable" "azure_static_web_app_name" {
   variable_name = "AZURE_STATIC_WEB_APP_NAME"
   value         = azurerm_static_web_app.main.name
 }
+
+# Public-by-design: also embedded in the Astro client bundle for the browser SDK.
+resource "github_actions_environment_variable" "appinsights_connection_string" {
+  count         = var.manage_github_actions ? 1 : 0
+  environment   = github_repository_environment.this[0].environment
+  repository    = var.github_repo
+  variable_name = "APPINSIGHTS_CONNECTION_STRING"
+  value         = azurerm_application_insights.main.connection_string
+}
