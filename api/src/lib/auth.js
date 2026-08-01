@@ -2,6 +2,8 @@
  * Parse SWA client principal from x-ms-client-principal header.
  * Enforce allowlist from ALLOWED_USER_IDS (comma-separated user IDs or emails).
  */
+import { randomUUID } from 'node:crypto';
+
 export function getClientPrincipal(request) {
   const header = request.headers.get('x-ms-client-principal');
   if (!header) return null;
@@ -11,6 +13,21 @@ export function getClientPrincipal(request) {
   } catch {
     return null;
   }
+}
+
+export function publisherIdentity(principal) {
+  if (!principal) {
+    return { userId: '', userDetails: '', identityProvider: '' };
+  }
+  return {
+    userId: String(principal.userId || ''),
+    userDetails: String(principal.userDetails || ''),
+    identityProvider: String(principal.identityProvider || ''),
+  };
+}
+
+export function newCorrelationId() {
+  return randomUUID();
 }
 
 export function isAuthorizedPublisher(principal) {
@@ -33,9 +50,12 @@ export function isAuthorizedPublisher(principal) {
   return candidates.some((c) => c && allow.includes(c));
 }
 
-export function unauthorized(context) {
+export function unauthorized(correlationId) {
   return {
     status: 401,
-    jsonBody: { error: 'Unauthorized. Only Elyse can publish updates.' },
+    jsonBody: {
+      error: 'This account is signed in but cannot publish updates.',
+      correlationId: correlationId || undefined,
+    },
   };
 }

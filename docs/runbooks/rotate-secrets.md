@@ -1,11 +1,33 @@
 # Runbook: Rotate secrets
 
-Secrets live in Azure Key Vault. SWA reads them via managed identity + Key Vault references.
+Secrets live in Azure Key Vault as the source of truth. Managed Functions on SWA **do not resolve** `@Microsoft.KeyVault(...)` app settings — they need the resolved values in SWA configuration. Terraform apply and [scripts/sync-swa-api-secrets.sh](../../scripts/sync-swa-api-secrets.sh) copy those values from Key Vault into SWA.
 
-| Environment | Key Vault |
-|---|---|
-| Staging | `kv-elyse-staging` |
-| Production | `kv-elyse-prod` |
+`AAD_CLIENT_SECRET` is the exception: SWA’s auth platform **does** resolve Key Vault references, so that setting stays a reference.
+
+| Environment | Key Vault | Resource group | Static Web App |
+|---|---|---|---|
+| Staging | `kv-elyse-staging` | `rg-elyse-portfolio-staging` | `swa-elyse-portfolio-staging` |
+| Production | `kv-elyse-prod` | `rg-elyse-portfolio-prod` | `swa-elyse-portfolio-prod` |
+
+Subscription: `e601e59a-c7f4-41f0-8178-b59740fb1974`
+
+After updating a vault secret used by the Studio API, sync into SWA (commands below, **Actions → Sync SWA API secrets → Run workflow** and choose `staging` or `prod` — default `staging`, or `terraform apply` for that environment). Values appear in Terraform state and SWA app settings (encrypted at rest by Azure).
+
+## Sync SWA API secrets (no redeploy)
+
+### Staging (copy/paste)
+
+```bash
+./scripts/sync-swa-api-secrets.sh staging
+```
+
+### Production (copy/paste)
+
+```bash
+./scripts/sync-swa-api-secrets.sh prod
+```
+
+Requires Azure CLI login with permission to read the vault and update the Static Web App.
 
 ## Rotate Gemini API key
 
@@ -17,7 +39,7 @@ az keyvault secret set --vault-name kv-elyse-staging --name GEMINI-API-KEY --val
 az keyvault secret set --vault-name kv-elyse-prod --name GEMINI-API-KEY --value "<new>"
 ```
 
-3. Restart / sync SWA app settings if needed (Portal → Configuration → save, or re-apply Terraform without changing secret values)
+3. Sync both environments (script above or Sync SWA API secrets workflow)
 4. Revoke the old Gemini key
 5. Publish a harmless Studio update to verify
 
@@ -31,11 +53,12 @@ az keyvault secret set --vault-name kv-elyse-staging --name GITHUB-APP-PRIVATE-K
 az keyvault secret set --vault-name kv-elyse-prod --name GITHUB-APP-PRIVATE-KEY --file ./new-key.pem
 ```
 
-3. Delete the previous private key in the GitHub App UI
-4. Delete the local `.pem`
-5. Verify Studio can still commit
+3. Sync both environments (script above or Sync SWA API secrets workflow)
+4. Delete the previous private key in the GitHub App UI
+5. Delete the local `.pem`
+6. Verify Studio can still commit
 
-App ID and installation ID rarely change; only update those Key Vault secrets if you recreate the App or reinstall it.
+App ID and installation ID rarely change; only update those Key Vault secrets if you recreate the App or reinstall it, then sync.
 
 ## Rotate the Entra client secret (Studio login)
 
@@ -63,3 +86,4 @@ To rotate Entra trust for Actions, re-apply Terraform (federated credentials are
 - Never put secrets in git, Terraform `tfvars`, or chat logs
 - Prefer GitHub App private keys and OIDC over PATs
 - Delete downloaded `.pem` files after uploading to Key Vault
+- After changing API secrets in Key Vault, always sync to SWA (script, workflow, or terraform apply)

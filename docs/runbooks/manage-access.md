@@ -14,6 +14,8 @@ Only Elyse should be able to publish.
 | Staging | `kv-elyse-staging` | `elyse-portfolio-staging` |
 | Production | `kv-elyse-prod` | `elyse-portfolio-prod` |
 
+**Sign-in ≠ publish.** A user assigned in Entra can open `/studio` and see their identity, but publishing still requires the allowlist. Studio checks access before showing the editor; signed-in non-publishers see a friendly denial with a **correlation ID**. Look up that ID in App Insights (`StudioAccessDenied` / `StudioPublishDenied`) for `userId` / `userDetails` to add to `ALLOWED-USER-IDS` (see [observability.md](./observability.md)).
+
 ## Grant or revoke sign-in (Entra assignment)
 
 Azure Portal → **Entra ID → Enterprise applications → `elyse-portfolio-staging` or `elyse-portfolio-prod` → Users and groups**.
@@ -32,17 +34,21 @@ az keyvault secret set --vault-name kv-elyse-staging --name ALLOWED-USER-IDS --v
 az keyvault secret set --vault-name kv-elyse-prod --name ALLOWED-USER-IDS --value "<ids>"
 ```
 
+After updating the secret, sync into SWA ([rotate-secrets.md](./rotate-secrets.md#sync-swa-api-secrets-no-redeploy), **Actions → Sync SWA API secrets**, or `terraform apply`). Managed Functions do not read Key Vault references directly.
+
 ## Add a temporary publisher (emergency only)
 
 1. Add their ID/email to `ALLOWED-USER-IDS` in both vaults (commands above)
 2. Ensure they can authenticate via the configured IdP and are assigned to the enterprise app
-3. Remove them immediately after the emergency
+3. Sync staging and prod ([rotate-secrets.md](./rotate-secrets.md#sync-swa-api-secrets-no-redeploy) or Sync SWA API secrets workflow once per environment)
+4. Remove them immediately after the emergency
 
 ## Remove access
 
-1. Remove from `ALLOWED-USER-IDS` in `kv-elyse-staging` and `kv-elyse-prod`
+1. Remove from `ALLOWED-USER-IDS` in `kv-elyse-staging` and `kv-elyse-prod`, then sync both SWAs
 2. Remove/disable their IdP assignment on the enterprise app
 3. Confirm anonymous `/api/updateContent` returns 401/302
+4. Confirm a signed-in non-allowlisted user sees the Studio publisher gate
 
 ## Review
 

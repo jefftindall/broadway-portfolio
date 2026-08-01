@@ -12,6 +12,8 @@ function getClient() {
   const connectionString = process.env.APPLICATIONINSIGHTS_CONNECTION_STRING;
   if (!connectionString) return null;
   client = new TelemetryClient(connectionString);
+  // Studio custom events/exceptions must not be dropped by client-side sampling.
+  client.config.samplingPercentage = 100;
   return client;
 }
 
@@ -40,6 +42,23 @@ export function trackException(error, properties = {}) {
     if (!c) return;
     const err = error instanceof Error ? error : new Error(String(error));
     c.trackException({ exception: err, properties: toProps(properties) });
+  } catch {
+    // ignore
+  }
+}
+
+/** Best-effort flush so short-lived Function returns do not drop the last events. */
+export async function flush() {
+  try {
+    const c = getClient();
+    if (!c) return;
+    await new Promise((resolve) => {
+      c.flush({
+        callback: () => resolve(),
+      });
+      // Guard against SDKs that never invoke the callback.
+      setTimeout(resolve, 2000);
+    });
   } catch {
     // ignore
   }

@@ -68,47 +68,8 @@ resource "azurerm_role_assignment" "kv_admin" {
   }
 }
 
-resource "azurerm_static_web_app" "main" {
-  name                = local.swa_name
-  resource_group_name = azurerm_resource_group.main.name
-  location            = azurerm_resource_group.main.location
-  sku_tier            = "Standard"
-  sku_size            = "Standard"
-  tags                = local.tags
-
-  identity {
-    type = "SystemAssigned"
-  }
-
-  app_settings = {
-    GEMINI_API_KEY                        = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/GEMINI-API-KEY/)"
-    GITHUB_APP_ID                         = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/GITHUB-APP-ID/)"
-    GITHUB_APP_INSTALLATION_ID            = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/GITHUB-APP-INSTALLATION-ID/)"
-    GITHUB_APP_PRIVATE_KEY                = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/GITHUB-APP-PRIVATE-KEY/)"
-    ALLOWED_USER_IDS                      = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/ALLOWED-USER-IDS/)"
-    AAD_CLIENT_SECRET                     = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/AAD-CLIENT-SECRET/)"
-    AAD_CLIENT_ID                         = azuread_application.swa.client_id
-    AAD_TENANT_ID                         = data.azurerm_client_config.current.tenant_id
-    GITHUB_OWNER                          = var.github_owner
-    GITHUB_REPO                           = var.github_repo
-    GITHUB_BRANCH                         = var.github_branch
-    APPLICATIONINSIGHTS_CONNECTION_STRING = azurerm_application_insights.main.connection_string
-  }
-
-  lifecycle {
-    ignore_changes = [
-      repository_url,
-      repository_branch,
-    ]
-  }
-}
-
-resource "azurerm_role_assignment" "swa_kv_secrets_user" {
-  scope                = azurerm_key_vault.main.id
-  role_definition_name = "Key Vault Secrets User"
-  principal_id         = azurerm_static_web_app.main.identity[0].principal_id
-}
-
+# Placeholder secrets (values set outside Terraform). ignore_changes keeps REPLACE_ME
+# out of the live vault after the first apply; data sources below read current values.
 resource "azurerm_key_vault_secret" "gemini" {
   name         = "GEMINI-API-KEY"
   value        = "REPLACE_ME"
@@ -162,6 +123,81 @@ resource "azurerm_key_vault_secret" "allowlist" {
   lifecycle {
     ignore_changes = [value]
   }
+}
+
+# Managed Functions do not resolve @Microsoft.KeyVault(...) app settings — they
+# receive the literal reference string. Read live vault values at plan/apply and
+# write them into SWA configuration. Key Vault remains the source of truth;
+# terraform apply (or scripts/sync-swa-api-secrets.sh) syncs into SWA.
+# AAD_CLIENT_SECRET stays a Key Vault reference — SWA auth platform resolves it.
+data "azurerm_key_vault_secret" "gemini" {
+  name         = azurerm_key_vault_secret.gemini.name
+  key_vault_id = azurerm_key_vault.main.id
+}
+
+data "azurerm_key_vault_secret" "github_app_id" {
+  name         = azurerm_key_vault_secret.github_app_id.name
+  key_vault_id = azurerm_key_vault.main.id
+}
+
+data "azurerm_key_vault_secret" "github_app_installation_id" {
+  name         = azurerm_key_vault_secret.github_app_installation_id.name
+  key_vault_id = azurerm_key_vault.main.id
+}
+
+data "azurerm_key_vault_secret" "github_app_private_key" {
+  name         = azurerm_key_vault_secret.github_app_private_key.name
+  key_vault_id = azurerm_key_vault.main.id
+}
+
+data "azurerm_key_vault_secret" "allowlist" {
+  name         = azurerm_key_vault_secret.allowlist.name
+  key_vault_id = azurerm_key_vault.main.id
+}
+
+resource "azurerm_static_web_app" "main" {
+  name                = local.swa_name
+  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.main.location
+  sku_tier            = "Standard"
+  sku_size            = "Standard"
+  tags                = local.tags
+
+  identity {
+    type = "SystemAssigned"
+  }
+
+  app_settings = {
+    GEMINI_API_KEY                        = data.azurerm_key_vault_secret.gemini.value
+    GITHUB_APP_ID                         = data.azurerm_key_vault_secret.github_app_id.value
+    GITHUB_APP_INSTALLATION_ID            = data.azurerm_key_vault_secret.github_app_installation_id.value
+    GITHUB_APP_PRIVATE_KEY                = data.azurerm_key_vault_secret.github_app_private_key.value
+    ALLOWED_USER_IDS                      = data.azurerm_key_vault_secret.allowlist.value
+    AAD_CLIENT_SECRET                     = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/AAD-CLIENT-SECRET/)"
+    AAD_CLIENT_ID                         = azuread_application.swa.client_id
+    AAD_TENANT_ID                         = data.azurerm_client_config.current.tenant_id
+    GITHUB_OWNER                          = var.github_owner
+    GITHUB_REPO                           = var.github_repo
+    GITHUB_BRANCH                         = var.github_branch
+    APPLICATIONINSIGHTS_CONNECTION_STRING = azurerm_application_insights.main.connection_string
+  }
+
+  depends_on = [
+    azurerm_key_vault_secret.aad_client_secret,
+  ]
+
+  lifecycle {
+    ignore_changes = [
+      repository_url,
+      repository_branch,
+    ]
+  }
+}
+
+resource "azurerm_role_assignment" "swa_kv_secrets_user" {
+  scope                = azurerm_key_vault.main.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_static_web_app.main.identity[0].principal_id
 }
 
 resource "azurerm_static_web_app_custom_domain" "apex" {

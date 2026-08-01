@@ -9,7 +9,7 @@
 | App type | Astro SSG portfolio + Azure SWA managed Functions API |
 | Hosting | Azure Static Web Apps (Standard) |
 | IaC | Terraform (`infra/terraform/`) |
-| Secrets | Azure Key Vault + SWA managed identity |
+| Secrets | Azure Key Vault (source of truth); API secrets synced into SWA app settings; AAD secret via Key Vault reference |
 | Auth | Entra ID / Google via SWA; Elyse-only allowlist for `/studio` + `/api/*` |
 | Domain | elysetindall.com custom domain on SWA |
 | CI/CD | GitHub Actions → SWA |
@@ -17,7 +17,7 @@
 ## Resources
 
 1. Bootstrap (once): `rg-elyse-tfstate` + `stelysetfstateeu2` / `tfstate` container in **East US 2**
-2. Per environment (`staging` / `prod`): resource group, Static Web App (Standard) with system-assigned managed identity, Key Vault (RBAC), role assignments, Key Vault–referenced app settings
+2. Per environment (`staging` / `prod`): resource group, Static Web App (Standard) with system-assigned managed identity, Key Vault (RBAC), role assignments, resolved API app settings from Key Vault (+ AAD Key Vault reference)
 3. Prod only: custom domain binding (`elysetindall.com`)
 4. Names are environment-scoped (e.g. `rg-elyse-portfolio-staging`, `kv-elyse-prod`) to avoid collisions
 

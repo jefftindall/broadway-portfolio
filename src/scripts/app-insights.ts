@@ -6,6 +6,8 @@ declare global {
   }
 }
 
+const FORCE_SAMPLE_EVENTS = new Set(['StudioPublishUiSuccess', 'StudioPublishUiFailed']);
+
 let initialized = false;
 
 export function initAppInsights() {
@@ -36,10 +38,16 @@ export function initAppInsights() {
 
   appInsights.loadAppInsights();
   appInsights.addTelemetryInitializer((envelope) => {
-    const baseData = envelope.baseData as { properties?: Record<string, string> } | undefined;
+    const baseData = envelope.baseData as
+      | { name?: string; properties?: Record<string, string> }
+      | undefined;
     if (baseData?.properties) {
       delete baseData.properties.cookie;
       delete baseData.properties.auth;
+    }
+    // Studio publish UI events must always ingest despite global browser sampling.
+    if (baseData?.name && FORCE_SAMPLE_EVENTS.has(baseData.name)) {
+      (envelope as { sampleRate?: number }).sampleRate = 100;
     }
     return true;
   });
@@ -55,6 +63,10 @@ export function trackEvent(name: string, properties?: Record<string, string>) {
 export function trackException(error: unknown, properties?: Record<string, string>) {
   const exception = error instanceof Error ? error : new Error(String(error));
   window.__appInsights?.trackException({ exception, properties });
+}
+
+export function flush() {
+  window.__appInsights?.flush();
 }
 
 initAppInsights();

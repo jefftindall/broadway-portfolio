@@ -1,8 +1,14 @@
 import { app } from '@azure/functions';
-import { getClientPrincipal, isAuthorizedPublisher, unauthorized } from '../lib/auth.js';
+import {
+  getClientPrincipal,
+  isAuthorizedPublisher,
+  newCorrelationId,
+  publisherIdentity,
+  unauthorized,
+} from '../lib/auth.js';
 import { commitFile } from '../lib/github.js';
 import { runContentAgent } from '../lib/gemini.js';
-import { trackEvent, trackException } from '../lib/telemetry.js';
+import { flush, trackEvent, trackException } from '../lib/telemetry.js';
 import slugify from 'slugify';
 
 app.http('updateContent', {
@@ -14,8 +20,21 @@ app.http('updateContent', {
     // In production SWA, routes already require auth; still enforce allowlist.
     if (process.env.AZURE_FUNCTIONS_ENVIRONMENT !== 'Development') {
       if (!isAuthorizedPublisher(principal)) {
-        context.warn('Rejected publish attempt', { userId: principal?.userId });
-        return unauthorized();
+        const identity = publisherIdentity(principal);
+        const correlationId = newCorrelationId();
+        context.warn('Rejected publish attempt', {
+          correlationId,
+          userId: identity.userId,
+          userDetails: identity.userDetails,
+          identityProvider: identity.identityProvider,
+        });
+        trackEvent('StudioPublishDenied', {
+          ...identity,
+          correlationId,
+          route: 'updateContent',
+        });
+        await flush();
+        return unauthorized(correlationId);
       }
     }
 
@@ -59,6 +78,7 @@ app.http('updateContent', {
     } catch (err) {
       context.error(err);
       trackException(err, { operation: 'updateContent' });
+      await flush();
       return {
         status: 500,
         jsonBody: { error: err.message || 'Failed to publish update' },

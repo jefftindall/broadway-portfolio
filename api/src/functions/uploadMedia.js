@@ -1,6 +1,13 @@
 import { app } from '@azure/functions';
-import { getClientPrincipal, isAuthorizedPublisher, unauthorized } from '../lib/auth.js';
+import {
+  getClientPrincipal,
+  isAuthorizedPublisher,
+  newCorrelationId,
+  publisherIdentity,
+  unauthorized,
+} from '../lib/auth.js';
 import { commitFile } from '../lib/github.js';
+import { flush, trackEvent } from '../lib/telemetry.js';
 import slugify from 'slugify';
 
 app.http('uploadMedia', {
@@ -11,7 +18,21 @@ app.http('uploadMedia', {
     const principal = getClientPrincipal(request);
     if (process.env.AZURE_FUNCTIONS_ENVIRONMENT !== 'Development') {
       if (!isAuthorizedPublisher(principal)) {
-        return unauthorized();
+        const identity = publisherIdentity(principal);
+        const correlationId = newCorrelationId();
+        context.warn('Rejected upload attempt', {
+          correlationId,
+          userId: identity.userId,
+          userDetails: identity.userDetails,
+          identityProvider: identity.identityProvider,
+        });
+        trackEvent('StudioPublishDenied', {
+          ...identity,
+          correlationId,
+          route: 'uploadMedia',
+        });
+        await flush();
+        return unauthorized(correlationId);
       }
     }
 

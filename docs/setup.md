@@ -144,6 +144,8 @@ az keyvault secret set --vault-name kv-elyse-prod --name GITHUB-APP-PRIVATE-KEY 
 
 After first login to `/studio`, check `/.auth/me` while signed in to copy the exact `userId` / email into the allowlist.
 
+**Important:** SWA managed Functions do **not** resolve `@Microsoft.KeyVault(...)` app settings. After populating the vault (or whenever you change API secrets), sync resolved values into SWA with `./scripts/sync-swa-api-secrets.sh <staging|prod>`, the **Sync SWA API secrets** workflow, or `terraform apply` for that environment. `AAD_CLIENT_SECRET` stays a Key Vault reference (auth platform only). See [rotate-secrets.md](runbooks/rotate-secrets.md).
+
 ## 4. GitHub Actions OIDC (no deploy-token secret)
 
 ### App deploy identity (per environment)
@@ -208,7 +210,7 @@ The Entra app registration is **defined in Terraform** ([`infra/modules/portfoli
 - `azuread_application` `elyse-portfolio-<env>` (single-tenant, `AzureADMyOrg`)
 - A service principal with **user assignment required**
 - A client secret stored in Key Vault as `AAD-CLIENT-SECRET`
-- SWA app settings `AAD_CLIENT_ID`, `AAD_TENANT_ID`, and a Key Vault reference for the secret
+- SWA app settings `AAD_CLIENT_ID`, `AAD_TENANT_ID`, and a Key Vault reference for `AAD_CLIENT_SECRET` (Studio API secrets are written as resolved values from Key Vault at apply/sync time)
 
 ### Redirect URIs
 
