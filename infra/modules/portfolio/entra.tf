@@ -22,11 +22,6 @@ resource "azuread_application" "swa" {
   owners           = [data.azuread_client_config.current.object_id]
   sign_in_audience = "AzureADMyOrg"
 
-  # Avoid thrashing owners between local users and the Terraform OIDC principal.
-  lifecycle {
-    ignore_changes = [owners]
-  }
-
   web {
     implicit_grant {
       access_token_issuance_enabled = false
@@ -48,7 +43,8 @@ resource "azuread_application" "swa" {
   lifecycle {
     # Redirect URIs are managed by azuread_application_redirect_uris below,
     # which depends on the Static Web App hostname.
-    ignore_changes = [web[0].redirect_uris]
+    # Owners: avoid thrashing between local users and the Terraform OIDC principal.
+    ignore_changes = [web[0].redirect_uris, owners]
   }
 }
 
