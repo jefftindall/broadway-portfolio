@@ -31,5 +31,13 @@ Requirements for Terraform lint locally: Terraform >= 1.5 and [TFLint](https://g
 ### Studio API (`api/`, optional local)
 - Requires **Azure Functions Core Tools** (`func`) which is NOT part of `npm` deps and NOT installed by the update script — install it separately (`npm i -g azure-functions-core-tools@4`) if you need to run the API.
 - Copy `api/local.settings.json.example` → `api/local.settings.json` (gitignored), then run `func start` (port 7071). Endpoints: `POST /api/updateContent`, `POST /api/uploadMedia`.
-- With `AZURE_FUNCTIONS_ENVIRONMENT=Development` (already set in the example settings) the SWA auth allowlist check is skipped, so endpoints are callable locally without SWA auth. However `updateContent` still needs `GEMINI_API_KEY` and GitHub App creds (or `GITHUB_TOKEN`) to actually publish — without them it returns `500 Missing GEMINI_API_KEY`.
+- With `AZURE_FUNCTIONS_ENVIRONMENT=Development` (already set in the example settings) the SWA auth allowlist check is skipped, so endpoints are callable locally without SWA auth. However `updateContent` still needs `GEMINI_API_KEY` and GitHub App creds (or `GITHUB_TOKEN`) to actually publish — without them it returns a sanitized 500 plus `correlationId` (not the raw missing-key string).
+- Default model is `gemini-3.6-flash` (`GEMINI_MODEL`). Do not reinstate shut-down IDs such as `gemini-2.0-flash`.
 - `astro dev` alone does NOT proxy `/api/*` to Functions on :7071. For full local Studio testing, use the Azure SWA CLI or call port 7071 directly.
+
+### Studio errors (user-facing + support)
+
+- **Never** return raw provider/SDK/`err.message` strings to the Studio UI for 500/503 paths. Use [`api/src/lib/httpErrors.js`](api/src/lib/httpErrors.js) so responses are friendly copy + **`correlationId`**.
+- Full diagnostics live in Function logs and App Insights (`StudioPublishFailed`, exceptions) keyed by that ID — see [`docs/runbooks/observability.md`](docs/runbooks/observability.md).
+- Studio UI should show the friendly message and `Reference: {correlationId}` (same pattern as allowlist denials).
+- When changing Studio API error handling, keep this contract; do not put HTTP/correlation rules into the Gemini `systemInstruction`.

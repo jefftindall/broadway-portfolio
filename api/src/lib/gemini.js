@@ -229,7 +229,7 @@ export async function runContentAgent({ message, photoPath }) {
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({
-    model: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
+    model: process.env.GEMINI_MODEL || 'gemini-3.6-flash',
     tools,
     systemInstruction: `You are Elyse Tindall's website publishing assistant.
 Turn her natural-language requests into the appropriate tool call to update her Astro portfolio.

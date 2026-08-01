@@ -7,7 +7,8 @@ import {
   unauthorized,
 } from '../lib/auth.js';
 import { commitFile } from '../lib/github.js';
-import { flush, trackEvent } from '../lib/telemetry.js';
+import { studioFailureResponse } from '../lib/httpErrors.js';
+import { flush, trackEvent, trackException } from '../lib/telemetry.js';
 import slugify from 'slugify';
 
 app.http('uploadMedia', {
@@ -47,6 +48,8 @@ app.http('uploadMedia', {
       return { status: 400, jsonBody: { error: 'name and dataBase64 are required' } };
     }
 
+    const correlationId = newCorrelationId();
+
     try {
       const safe = slugify(String(body.name).replace(/\.\w+$/, ''), {
         lower: true,
@@ -65,8 +68,27 @@ app.http('uploadMedia', {
         jsonBody: { path: `/images/photos/${filename}`, repoPath },
       };
     } catch (err) {
-      context.error(err);
-      return { status: 500, jsonBody: { error: err.message || 'Upload failed' } };
+      const failure = studioFailureResponse(err, correlationId, {
+        operation: 'uploadMedia',
+      });
+      context.error('Studio upload failed', {
+        correlationId,
+        errorKind: failure.errorKind,
+        message: err instanceof Error ? err.message : String(err),
+      });
+      trackException(err, {
+        operation: 'uploadMedia',
+        correlationId,
+        errorKind: failure.errorKind,
+      });
+      trackEvent('StudioPublishFailed', {
+        correlationId,
+        operation: 'uploadMedia',
+        errorKind: failure.errorKind,
+        userId: principal?.userId || 'local',
+      });
+      await flush();
+      return { status: failure.status, jsonBody: failure.jsonBody };
     }
   },
 });

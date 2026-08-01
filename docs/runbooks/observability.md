@@ -23,6 +23,15 @@ Optional: set `alert_email` when applying Terraform to create an action group + 
 
 To temporarily raise browser sampling for non-Studio traffic, set `PUBLIC_APPINSIGHTS_SAMPLE_PERCENT` in the workflow (or rebuild with a higher env value) and redeploy.
 
+## Correlation IDs (support standard)
+
+Studio returns a **`correlationId`** (shown in the UI as a **reference**) for:
+
+- Allowlist / access denials (`StudioAccessDenied`, `StudioPublishDenied`)
+- Publish and upload failures after auth (`StudioPublishFailed` + tracked exceptions)
+
+User-facing messages stay short and non-technical. Full provider/SDK detail is only in Function logs and App Insights, keyed by that ID. When a publisher shares a reference with support, look it up with the queries below.
+
 ## What is instrumented
 
 | Signal | Source |
@@ -30,15 +39,16 @@ To temporarily raise browser sampling for non-Studio traffic, set `PUBLIC_APPINS
 | API requests / failures | SWA managed Functions + App Insights |
 | `StudioAccessDenied` | `api` publisherStatus (signed in, not allowlisted; includes `correlationId`) |
 | `StudioPublishDenied` | `api` updateContent / uploadMedia (allowlist deny; includes `correlationId`) |
-| `StudioPublishRequested` | `api` updateContent (after allowlist) |
+| `StudioPublishRequested` | `api` updateContent (after allowlist; includes `correlationId`) |
+| `StudioPublishFailed` | `api` updateContent / uploadMedia catch path (`correlationId`, `errorKind`, `operation`) |
 | `StudioToolExecuted` | Gemini tool loop |
 | `GitHubCommitSucceeded` / `GitHubCommitFailed` | Contents API commits |
 | `GET /api/publisherStatus` | Preflight allowlist check for Studio UI |
 | Page views / client errors / fetch | Browser SDK in `BaseLayout` |
-| `StudioPublishUiSuccess` / `StudioPublishUiFailed` | Studio UI (always sampled; `reason` on failures) |
+| `StudioPublishUiSuccess` / `StudioPublishUiFailed` | Studio UI (always sampled; `reason` + optional `correlationId` on failures) |
 | `DeployCompleted` | GitHub Actions after SWA upload |
 
-Gemini model-side traces stay in Google — not App Insights.
+Gemini model-side traces stay in Google — not App Insights. Coarse `errorKind` values include `gemini_quota`, `gemini`, `github`, `config`, `unknown`.
 
 ## Useful Kusto (Logs)
 
@@ -74,6 +84,26 @@ customEvents
 | project timestamp, name, userId = tostring(customDimensions.userId), userDetails = tostring(customDimensions.userDetails), identityProvider = tostring(customDimensions.identityProvider)
 ```
 
+Look up a publish failure by reference ID:
+
+```kusto
+customEvents
+| where name == "StudioPublishFailed"
+| where tostring(customDimensions.correlationId) == "<paste-correlation-id>"
+| project timestamp,
+    operation = tostring(customDimensions.operation),
+    errorKind = tostring(customDimensions.errorKind),
+    userId = tostring(customDimensions.userId),
+    correlationId = tostring(customDimensions.correlationId)
+```
+
+```kusto
+exceptions
+| where tostring(customDimensions.correlationId) == "<paste-correlation-id>"
+| project timestamp, outerMessage, operation = tostring(customDimensions.operation), errorKind = tostring(customDimensions.errorKind)
+| order by timestamp desc
+```
+
 ```kusto
 requests
 | where name contains "updateContent" and resultCode == "401"
@@ -85,7 +115,7 @@ Studio / publish events:
 
 ```kusto
 customEvents
-| where name in ("StudioAccessDenied", "StudioPublishDenied", "StudioPublishRequested", "StudioToolExecuted", "GitHubCommitSucceeded", "GitHubCommitFailed", "StudioPublishUiSuccess", "StudioPublishUiFailed", "DeployCompleted")
+| where name in ("StudioAccessDenied", "StudioPublishDenied", "StudioPublishRequested", "StudioPublishFailed", "StudioToolExecuted", "GitHubCommitSucceeded", "GitHubCommitFailed", "StudioPublishUiSuccess", "StudioPublishUiFailed", "DeployCompleted")
 | order by timestamp desc
 | take 100
 ```
