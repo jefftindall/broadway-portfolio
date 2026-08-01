@@ -6,6 +6,14 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 4.0"
     }
+    azuread = {
+      source  = "hashicorp/azuread"
+      version = "~> 3.0"
+    }
+    github = {
+      source  = "integrations/github"
+      version = "~> 6.0"
+    }
   }
 
   # Local state only — this stack creates the remote backend used by staging/prod.
@@ -25,4 +33,10 @@ provider "azurerm" {
     "Microsoft.Authorization",
   ]
   features {}
+}
+
+provider "azuread" {}
+
+provider "github" {
+  owner = var.github_owner
 }

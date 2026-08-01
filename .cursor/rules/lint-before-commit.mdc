@@ -1,0 +1,21 @@
+---
+description: Require local lint and static analysis before committing
+alwaysApply: true
+---
+
+# Lint before commit
+
+Before creating a git commit (or opening/updating a PR with code changes), always run local static analysis and fix failures:
+
+```bash
+npm run lint
+```
+
+That runs Terraform fmt/TFLint/validate, `astro check`, and API `node --check` (same gates as `.github/workflows/static-analysis.yml`).
+
+## Rules
+
+- Do **not** commit or push changes that fail `npm run lint`.
+- If you only touched infra, you may run `npm run lint:terraform` first, but still run the full `npm run lint` before the commit when feasible.
+- If a required tool is missing (`terraform`, `tflint`), install it or tell the user — do not skip the gate silently.
+- CI job names to keep green on PRs: **Terraform lint**, **Site check**, **API syntax**. When `infra/` changes, **Plan staging** / **Plan prod** run only after those succeed.

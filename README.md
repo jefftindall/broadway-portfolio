@@ -18,6 +18,14 @@ npm install
 npm run dev
 ```
 
+### Lint / static analysis
+
+```bash
+npm run lint
+```
+
+Runs Terraform fmt + TFLint + validate, `astro check`, and API syntax checks. The same gates run on every PR via [`.github/workflows/static-analysis.yml`](.github/workflows/static-analysis.yml). Agents must run this before committing (see [AGENTS.md](AGENTS.md)).
+
 API functions (optional local):
 
 ```bash
@@ -49,13 +57,13 @@ Only Elyse can publish:
 1. SWA routes protect `/studio` and `/api/*` (authenticated)
 2. API re-checks `x-ms-client-principal` against `ALLOWED_USER_IDS` from Key Vault
 3. GitHub writes use short-lived **GitHub App** installation tokens (private key only in Key Vault)
-4. GitHub Actions uses **OIDC** to Azure (no long-lived deploy token in repo secrets)
+4. GitHub Actions uses **OIDC** to Azure (separate identities for SWA deploy vs Terraform; no long-lived deploy token in repo secrets)
 
 ## Infrastructure
 
 | Path | Purpose |
 |------|---------|
-| `infra/bootstrap` | Remote state storage (local Terraform state, East US 2) |
+| `infra/bootstrap` | Remote state storage + Terraform OIDC identity (local Terraform state, East US 2) |
 | `infra/environments/staging` | Staging stack |
 | `infra/environments/prod` | Production stack + `elysetindall.com` |
 | `infra/modules/portfolio` | Shared SWA + Key Vault module |

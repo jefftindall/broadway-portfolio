@@ -9,7 +9,11 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "check": "astro check",
+    "lint": "node scripts/lint.mjs",
+    "lint:api": "node scripts/lint-api.mjs",
+    "lint:terraform": "node scripts/lint-terraform.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",
@@ -19,5 +23,9 @@
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.1.3",
     "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "typescript": "^5.9.2"
   }
 }

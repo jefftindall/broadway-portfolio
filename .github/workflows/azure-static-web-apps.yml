@@ -1,25 +1,94 @@
 name: Azure Static Web Apps CI/CD
 
+# Deploy only on merge to main. PRs run static analysis (and Terraform plan) only.
+# Manual staging deploy: Actions → Staging branch (workflow_dispatch).
 on:
   push:
-    branches:
-      - main
-  pull_request:
-    types: [opened, synchronize, reopened]
     branches:
       - main
 
 permissions:
   id-token: write
   contents: read
-  pull-requests: write
+  actions: write
 
 jobs:
-  # Always deploy staging first (PRs and main). Prod only runs after this succeeds on main.
-  deploy_staging:
-    if: github.event_name == 'push' || github.event_name == 'pull_request'
+  changes:
+    name: Detect changes
     runs-on: ubuntu-latest
+    outputs:
+      infra: ${{ steps.filter.outputs.infra }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            infra:
+              - 'infra/**'
+              - '.github/workflows/azure-static-web-apps.yml'
+              - '.github/workflows/static-analysis.yml'
+              - '.github/workflows/staging-branch.yml'
+
+  terraform_staging:
+    name: Terraform Apply Staging
+    needs: changes
+    if: needs.changes.outputs.infra == 'true'
+    runs-on: ubuntu-latest
+    environment: staging
+    defaults:
+      run:
+        working-directory: infra/environments/staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Azure login (Terraform OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_TF_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TF_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_TF_SUBSCRIPTION_ID }}
+
+      - name: Require TF_GITHUB_TOKEN
+        env:
+          TF_GITHUB_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+        run: |
+          if [ -z "$TF_GITHUB_TOKEN" ]; then
+            echo "::error::Add repository secret TF_GITHUB_TOKEN (a PAT that can read/write Actions environment variables). The default GITHUB_TOKEN cannot manage environment variables."
+            exit 1
+          fi
+
+      - name: Terraform init
+        env:
+          GITHUB_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+        run: terraform init -input=false
+
+      - name: Terraform plan
+        env:
+          GITHUB_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+        run: terraform plan -input=false -out=tfplan
+
+      - name: Terraform apply
+        env:
+          GITHUB_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+        run: terraform apply -input=false tfplan
+
+  deploy_staging:
     name: Deploy Staging
+    needs: [changes, terraform_staging]
+    if: |
+      always() &&
+      needs.changes.result == 'success' &&
+      (needs.terraform_staging.result == 'success' || needs.terraform_staging.result == 'skipped')
+    runs-on: ubuntu-latest
     environment: staging
     env:
       PUBLIC_APPINSIGHTS_CONNECTION_STRING: ${{ vars.APPINSIGHTS_CONNECTION_STRING }}
@@ -109,11 +178,67 @@ jobs:
               }
             }]"
 
-  deploy_prod:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: deploy_staging
+  terraform_prod:
+    name: Terraform Apply Production
+    needs: [changes, deploy_staging]
+    if: |
+      needs.changes.outputs.infra == 'true' &&
+      needs.deploy_staging.result == 'success'
     runs-on: ubuntu-latest
+    environment: prod
+    defaults:
+      run:
+        working-directory: infra/environments/prod
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Azure login (Terraform OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_TF_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TF_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_TF_SUBSCRIPTION_ID }}
+
+      - name: Require TF_GITHUB_TOKEN
+        env:
+          TF_GITHUB_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+        run: |
+          if [ -z "$TF_GITHUB_TOKEN" ]; then
+            echo "::error::Add repository secret TF_GITHUB_TOKEN (a PAT that can read/write Actions environment variables). The default GITHUB_TOKEN cannot manage environment variables."
+            exit 1
+          fi
+
+      - name: Terraform init
+        env:
+          GITHUB_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+        run: terraform init -input=false
+
+      - name: Terraform plan
+        env:
+          GITHUB_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+        run: terraform plan -input=false -out=tfplan
+
+      - name: Terraform apply
+        env:
+          GITHUB_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+        run: terraform apply -input=false tfplan
+
+  deploy_prod:
     name: Deploy Production
+    needs: [deploy_staging, terraform_prod]
+    if: |
+      always() &&
+      needs.deploy_staging.result == 'success' &&
+      (needs.terraform_prod.result == 'success' || needs.terraform_prod.result == 'skipped')
+    runs-on: ubuntu-latest
     environment: prod
     env:
       PUBLIC_APPINSIGHTS_CONNECTION_STRING: ${{ vars.APPINSIGHTS_CONNECTION_STRING }}

@@ -43,7 +43,8 @@ resource "azuread_application" "swa" {
   lifecycle {
     # Redirect URIs are managed by azuread_application_redirect_uris below,
     # which depends on the Static Web App hostname.
-    ignore_changes = [web[0].redirect_uris]
+    # Owners: avoid thrashing between local users and the Terraform OIDC principal.
+    ignore_changes = [web[0].redirect_uris, owners]
   }
 }
 
@@ -58,6 +59,10 @@ resource "azuread_service_principal" "swa" {
   client_id                    = azuread_application.swa.client_id
   app_role_assignment_required = var.require_app_role_assignment
   owners                       = [data.azuread_client_config.current.object_id]
+
+  lifecycle {
+    ignore_changes = [owners]
+  }
 }
 
 # Anchors the secret's end_date so it stays stable between plans, and triggers
