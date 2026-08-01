@@ -165,7 +165,9 @@ jobs:
           GH_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          terraform plan -input=false -no-color -out=tfplan
+          # PR plans are read-only against remote state; skip the lock so they
+          # can run while an apply holds it (e.g. concurrent main deploy).
+          terraform plan -input=false -lock=false -no-color -out=tfplan
           terraform show -no-color tfplan > plan.txt
           {
             echo "## Terraform plan (${{ matrix.environment }})"
