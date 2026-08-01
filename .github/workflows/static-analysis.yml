@@ -58,6 +58,7 @@ jobs:
               terraform validate
             )
             echo "::endgroup::"
+          done
 
   site:
     name: Site check
