@@ -1,5 +1,7 @@
 locals {
-  github_repo_slug = "${var.github_owner}/${var.github_repo}"
+  # GitHub Actions OIDC subjects use owner@id/repo@id (not owner/repo).
+  # Example assertion: repo:jefftindall@10339968/broadway-portfolio@1312787625:environment:staging
+  github_oidc_repo = "${var.github_owner}@${var.github_owner_id}/${var.github_repo}@${var.github_repo_id}"
 }
 
 # Entra app used by GitHub Actions via OIDC (no long-lived Azure client secret).
@@ -21,7 +23,7 @@ resource "azuread_application_federated_identity_credential" "github_environment
   description    = "GitHub Actions environment ${var.environment}"
   audiences      = ["api://AzureADTokenExchange"]
   issuer         = "https://token.actions.githubusercontent.com"
-  subject        = "repo:${local.github_repo_slug}:environment:${var.environment}"
+  subject        = "repo:${local.github_oidc_repo}:environment:${var.environment}"
 }
 
 # Allow PRs to deploy to staging via the pull_request subject.
@@ -33,7 +35,7 @@ resource "azuread_application_federated_identity_credential" "github_pull_reques
   description    = "GitHub Actions pull requests"
   audiences      = ["api://AzureADTokenExchange"]
   issuer         = "https://token.actions.githubusercontent.com"
-  subject        = "repo:${local.github_repo_slug}:pull_request"
+  subject        = "repo:${local.github_oidc_repo}:pull_request"
 }
 
 # main branch → prod environment deploys
@@ -45,7 +47,7 @@ resource "azuread_application_federated_identity_credential" "github_main" {
   description    = "GitHub Actions pushes to main"
   audiences      = ["api://AzureADTokenExchange"]
   issuer         = "https://token.actions.githubusercontent.com"
-  subject        = "repo:${local.github_repo_slug}:ref:refs/heads/${var.github_branch}"
+  subject        = "repo:${local.github_oidc_repo}:ref:refs/heads/${var.github_branch}"
 }
 
 resource "azurerm_role_assignment" "github_actions_rg_reader" {

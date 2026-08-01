@@ -63,7 +63,9 @@ module "portfolio" {
   custom_domain             = var.custom_domain
   additional_auth_hostnames = var.additional_auth_hostnames
   github_owner              = var.github_owner
+  github_owner_id           = var.github_owner_id
   github_repo               = var.github_repo
+  github_repo_id            = var.github_repo_id
   github_branch             = var.github_branch
   manage_github_actions     = var.manage_github_actions
 }

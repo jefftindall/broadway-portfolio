@@ -5,9 +5,11 @@ custom_domain   = "elysetindall.com"
 # Azure-generated SWA hostname is registered automatically.
 additional_auth_hostnames = ["www.elysetindall.com"]
 
-github_owner  = "jefftindall"
-github_repo   = "broadway-portfolio"
-github_branch = "main"
+github_owner     = "jefftindall"
+github_owner_id  = "10339968"
+github_repo      = "broadway-portfolio"
+github_repo_id   = "1312787625"
+github_branch    = "main"
 
 # Requires: export GH_TOKEN="$(gh auth token)"
 manage_github_actions = true

@@ -28,9 +28,21 @@ variable "github_owner" {
   default     = "jefftindall"
 }
 
+variable "github_owner_id" {
+  type        = string
+  description = "Numeric GitHub owner ID for OIDC subject claims"
+  default     = "10339968"
+}
+
 variable "github_repo" {
   type    = string
   default = "broadway-portfolio"
+}
+
+variable "github_repo_id" {
+  type        = string
+  description = "Numeric GitHub repository ID for OIDC subject claims"
+  default     = "1312787625"
 }
 
 variable "github_branch" {

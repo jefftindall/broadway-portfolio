@@ -26,10 +26,22 @@ variable "github_owner" {
   default     = "jefftindall"
 }
 
+variable "github_owner_id" {
+  type        = string
+  description = "Numeric GitHub owner ID used in OIDC subject claims (from gh api /repos/...)"
+  default     = "10339968"
+}
+
 variable "github_repo" {
   type        = string
   description = "GitHub repository name"
   default     = "broadway-portfolio"
+}
+
+variable "github_repo_id" {
+  type        = string
+  description = "Numeric GitHub repository ID used in OIDC subject claims"
+  default     = "1312787625"
 }
 
 variable "github_branch" {

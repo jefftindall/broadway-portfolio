@@ -149,12 +149,14 @@ The workflow ([azure-static-web-apps.yml](../.github/workflows/azure-static-web-
 - Push to `main` → GitHub Environment **prod**
 - Pull requests → GitHub Environment **staging**
 
-Verify subjects if login fails:
+Verify subjects if login fails (must match GitHub’s assertion, including numeric IDs):
 
 ```bash
 terraform output github_actions_oidc_subjects
+# e.g. repo:jefftindall@10339968/broadway-portfolio@1312787625:environment:staging
 ```
 
+If Actions reports `AADSTS700213` with a different subject, update `github_owner_id` / `github_repo_id` and re-apply.
 ## 5. Authentication (Entra ID — provisioned by Terraform)
 
 The Entra app registration is **defined in Terraform** ([`infra/modules/portfolio/entra.tf`](../infra/modules/portfolio/entra.tf)), one per environment. Each apply creates:

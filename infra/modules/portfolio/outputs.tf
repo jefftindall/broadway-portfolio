@@ -80,8 +80,8 @@ output "github_actions_subscription_id" {
 output "github_actions_oidc_subjects" {
   description = "Federated credential subjects expected by Entra for this environment"
   value = compact([
-    "repo:${var.github_owner}/${var.github_repo}:environment:${var.environment}",
-    var.environment == "staging" ? "repo:${var.github_owner}/${var.github_repo}:pull_request" : null,
-    var.environment == "prod" ? "repo:${var.github_owner}/${var.github_repo}:ref:refs/heads/${var.github_branch}" : null,
+    "repo:${var.github_owner}@${var.github_owner_id}/${var.github_repo}@${var.github_repo_id}:environment:${var.environment}",
+    var.environment == "staging" ? "repo:${var.github_owner}@${var.github_owner_id}/${var.github_repo}@${var.github_repo_id}:pull_request" : null,
+    var.environment == "prod" ? "repo:${var.github_owner}@${var.github_owner_id}/${var.github_repo}@${var.github_repo_id}:ref:refs/heads/${var.github_branch}" : null,
   ])
 }
