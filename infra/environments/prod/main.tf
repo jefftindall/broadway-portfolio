@@ -39,6 +39,9 @@ provider "azurerm" {
     "Microsoft.KeyVault",
     "Microsoft.Web",
     "Microsoft.Authorization",
+    "Microsoft.Insights",
+    "Microsoft.OperationalInsights",
+    "Microsoft.AlertsManagement",
   ]
 
   features {
@@ -68,6 +71,7 @@ module "portfolio" {
   github_repo_id            = var.github_repo_id
   github_branch             = var.github_branch
   manage_github_actions     = var.manage_github_actions
+  alert_email               = var.alert_email
 }
 
 output "resource_group_name" {
@@ -134,4 +138,17 @@ output "github_actions_subscription_id" {
 
 output "github_actions_oidc_subjects" {
   value = module.portfolio.github_actions_oidc_subjects
+}
+
+output "application_insights_name" {
+  value = module.portfolio.application_insights_name
+}
+
+output "application_insights_connection_string" {
+  value     = module.portfolio.application_insights_connection_string
+  sensitive = true
+}
+
+output "log_analytics_workspace_name" {
+  value = module.portfolio.log_analytics_workspace_name
 }

@@ -21,6 +21,9 @@ jobs:
     runs-on: ubuntu-latest
     name: Deploy Staging
     environment: staging
+    env:
+      PUBLIC_APPINSIGHTS_CONNECTION_STRING: ${{ vars.APPINSIGHTS_CONNECTION_STRING }}
+      PUBLIC_APPINSIGHTS_SAMPLE_PERCENT: "25"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -69,12 +72,52 @@ jobs:
           api_location: "api"
           skip_app_build: true
 
+      - name: Emit DeployCompleted to App Insights
+        continue-on-error: true
+        env:
+          APPINSIGHTS_CONNECTION_STRING: ${{ vars.APPINSIGHTS_CONNECTION_STRING }}
+          DEPLOY_ENVIRONMENT: staging
+          GIT_SHA: ${{ github.sha }}
+          JOB_NAME: Deploy Staging
+        run: |
+          if [ -z "$APPINSIGHTS_CONNECTION_STRING" ]; then
+            echo "No App Insights connection string; skipping."
+            exit 0
+          fi
+          IKEY=$(echo "$APPINSIGHTS_CONNECTION_STRING" | sed -n 's/.*InstrumentationKey=\([^;]*\).*/\1/p')
+          ENDPOINT=$(echo "$APPINSIGHTS_CONNECTION_STRING" | sed -n 's/.*IngestionEndpoint=\([^;]*\).*/\1/p')
+          ENDPOINT=${ENDPOINT:-https://dc.services.visualstudio.com}
+          ENDPOINT=${ENDPOINT%/}
+          TIME=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
+          curl -sS -X POST "${ENDPOINT}/v2/track" \
+            -H "Content-Type: application/json" \
+            -d "[{
+              \"name\": \"Microsoft.ApplicationInsights.Event\",
+              \"time\": \"${TIME}\",
+              \"iKey\": \"${IKEY}\",
+              \"data\": {
+                \"baseType\": \"EventData\",
+                \"baseData\": {
+                  \"ver\": 2,
+                  \"name\": \"DeployCompleted\",
+                  \"properties\": {
+                    \"environment\": \"${DEPLOY_ENVIRONMENT}\",
+                    \"sha\": \"${GIT_SHA}\",
+                    \"job\": \"${JOB_NAME}\"
+                  }
+                }
+              }
+            }]"
+
   deploy_prod:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: deploy_staging
     runs-on: ubuntu-latest
     name: Deploy Production
     environment: prod
+    env:
+      PUBLIC_APPINSIGHTS_CONNECTION_STRING: ${{ vars.APPINSIGHTS_CONNECTION_STRING }}
+      PUBLIC_APPINSIGHTS_SAMPLE_PERCENT: "10"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -121,3 +164,40 @@ jobs:
           app_location: "dist"
           api_location: "api"
           skip_app_build: true
+
+      - name: Emit DeployCompleted to App Insights
+        continue-on-error: true
+        env:
+          APPINSIGHTS_CONNECTION_STRING: ${{ vars.APPINSIGHTS_CONNECTION_STRING }}
+          DEPLOY_ENVIRONMENT: prod
+          GIT_SHA: ${{ github.sha }}
+          JOB_NAME: Deploy Production
+        run: |
+          if [ -z "$APPINSIGHTS_CONNECTION_STRING" ]; then
+            echo "No App Insights connection string; skipping."
+            exit 0
+          fi
+          IKEY=$(echo "$APPINSIGHTS_CONNECTION_STRING" | sed -n 's/.*InstrumentationKey=\([^;]*\).*/\1/p')
+          ENDPOINT=$(echo "$APPINSIGHTS_CONNECTION_STRING" | sed -n 's/.*IngestionEndpoint=\([^;]*\).*/\1/p')
+          ENDPOINT=${ENDPOINT:-https://dc.services.visualstudio.com}
+          ENDPOINT=${ENDPOINT%/}
+          TIME=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
+          curl -sS -X POST "${ENDPOINT}/v2/track" \
+            -H "Content-Type: application/json" \
+            -d "[{
+              \"name\": \"Microsoft.ApplicationInsights.Event\",
+              \"time\": \"${TIME}\",
+              \"iKey\": \"${IKEY}\",
+              \"data\": {
+                \"baseType\": \"EventData\",
+                \"baseData\": {
+                  \"ver\": 2,
+                  \"name\": \"DeployCompleted\",
+                  \"properties\": {
+                    \"environment\": \"${DEPLOY_ENVIRONMENT}\",
+                    \"sha\": \"${GIT_SHA}\",
+                    \"job\": \"${JOB_NAME}\"
+                  }
+                }
+              }
+            }]"

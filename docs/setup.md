@@ -161,6 +161,15 @@ terraform output github_actions_oidc_subjects
 ```
 
 If Actions reports `AADSTS700213` with a different subject, update `github_owner_id` / `github_repo_id` and re-apply.
+
+Terraform also provisions Application Insights + Log Analytics per environment, sets `APPLICATIONINSIGHTS_CONNECTION_STRING` on the SWA, and publishes GitHub Environment variable `APPINSIGHTS_CONNECTION_STRING` for the browser SDK and deploy telemetry. Optional alerts:
+
+```bash
+terraform apply -var="alert_email=you@example.com"
+```
+
+See [runbooks/observability.md](runbooks/observability.md).
+
 ## 5. Authentication (Entra ID — provisioned by Terraform)
 
 The Entra app registration is **defined in Terraform** ([`infra/modules/portfolio/entra.tf`](../infra/modules/portfolio/entra.tf)), one per environment. Each apply creates:

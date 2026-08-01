@@ -75,6 +75,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   </section>
 
   <script>
+    import { trackEvent, trackException } from '../scripts/app-insights';
+
     const logEl = document.getElementById('log')!;
     const messageEl = document.getElementById('message') as HTMLTextAreaElement;
     const photoEl = document.getElementById('photo') as HTMLInputElement;
@@ -162,15 +164,18 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         if (!res.ok) {
           appendLog('studio', data.error || 'Update failed.');
           statusEl.textContent = 'Something went wrong.';
+          trackEvent('StudioPublishUiFailed', { status: String(res.status) });
         } else {
           appendLog('studio', data.reply || 'Update committed. Site will rebuild shortly.');
           messageEl.value = '';
           photoEl.value = '';
           statusEl.textContent = 'Done. Live in a few minutes after the build finishes.';
+          trackEvent('StudioPublishUiSuccess');
         }
       } catch (err) {
         appendLog('studio', 'Network error — try again.');
         statusEl.textContent = 'Network error.';
+        trackException(err, { operation: 'studioPublish' });
       } finally {
         sendBtn.disabled = false;
       }

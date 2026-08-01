@@ -56,3 +56,9 @@ variable "manage_github_actions" {
   description = "Create GitHub Actions environment variables via Terraform (needs GITHUB_TOKEN/GH_TOKEN)"
   default     = true
 }
+
+variable "alert_email" {
+  type        = string
+  description = "Email for App Insights / availability alerts (empty skips metric alert action group)"
+  default     = ""
+}

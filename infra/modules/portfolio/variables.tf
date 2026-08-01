@@ -80,6 +80,12 @@ variable "manage_github_actions" {
   default     = true
 }
 
+variable "alert_email" {
+  type        = string
+  description = "Email for App Insights failed-request and availability alerts (empty skips action group + metric alerts)"
+  default     = ""
+}
+
 variable "tags" {
   type        = map(string)
   description = "Additional resource tags"
