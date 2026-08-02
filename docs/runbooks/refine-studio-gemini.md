@@ -42,9 +42,20 @@ If announcements become show credits (or the reverse), tighten the preference ru
 
 Also update the matching tool `description` so it restates when to use that tool.
 
+### Lessons vs book-a-lesson routing
+
+Lessons content is split across two pages:
+
+| Page | URL | Tools |
+|------|-----|-------|
+| Philosophy & approach | `/lessons` | `update_lessons_copy`, `update_lessons_seo` |
+| Rates & scheduling | `/lessons/book` | `update_lesson_rates`, `update_lesson_scheduling`, `update_lesson_book_seo` |
+
+If rate changes land on `lessons.md`, tighten routing: prices belong on `/lessons/book` via `update_lesson_rates` only. Lesson copy builders **merge** into existing markdown (they do not replace unrelated frontmatter or body).
+
 ## Brand facts for teaching copy
 
-Keep these in `systemInstruction` (and the `update_lessons` tool description):
+Keep these in `systemInstruction` (and the lessons tool descriptions):
 
 - Elyse teaches as a **vocal coach only** — private voice lessons.
 - Strengths to reflect: **vocal pedagogy**, **vocal health**, **contemporary commercial music (CCM)**.
@@ -67,7 +78,7 @@ When drafts omit `date`, invent slugs poorly, or leave empty `body`:
 2. Add a short `description` on the property (e.g. `ISO date YYYY-MM-DD`).
 3. Optionally mention defaults in the system instruction (e.g. news date defaults to today — the builder already fills today when omitted).
 
-Builders in `buildContentChange()` still apply deterministic defaults (slugs, today’s date, photo path). Prefer fixing Gemini output when the *copy* is wrong; prefer builder defaults when the value is mechanical.
+Builders in `buildContentChange()` still apply deterministic defaults (slugs, today’s date, photo path). Lessons and book-page tools **merge** into existing files via `gray-matter` so rates updates do not wipe philosophy copy (and vice versa). Prefer fixing Gemini output when the *copy* is wrong; prefer builder defaults when the value is mechanical.
 
 ## Model changes
 
