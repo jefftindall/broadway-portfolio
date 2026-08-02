@@ -51,8 +51,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     </div>
 
     <div id="publisher-gate" class="mt-8 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted">
-      <p>You’re signed in, but this account can’t publish updates.</p>
-      <p class="mt-3">
+      <p id="publisher-denied-msg">You’re signed in, but this account can’t publish updates.</p>
+      <p id="publisher-correlation-wrap" class="mt-3">
         Share this reference with an admin:&nbsp;<code
           id="publisher-correlation"
           class="break-all text-spotlight"></code>
@@ -213,6 +213,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     const accessCheck = document.getElementById('access-check')!;
     const authGate = document.getElementById('auth-gate')!;
     const publisherGate = document.getElementById('publisher-gate')!;
+    const publisherDeniedMsg = document.getElementById('publisher-denied-msg')!;
+    const publisherCorrelationWrap = document.getElementById('publisher-correlation-wrap')!;
     const publisherCorrelation = document.getElementById('publisher-correlation')!;
     const authUser = document.getElementById('auth-user')!;
     const authUserName = document.getElementById('auth-user-name')!;
@@ -308,11 +310,23 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       studioApp.classList.add('hidden');
     }
 
-    function showPublisherDenied(correlationId?: string) {
+    function showPublisherDenied(
+      correlationId?: string,
+      opts: { apiUnavailable?: boolean } = {},
+    ) {
       hideAccessCheck();
       authGate.classList.add('hidden');
       studioApp.classList.add('hidden');
-      publisherCorrelation.textContent = correlationId || 'unavailable';
+      if (opts.apiUnavailable) {
+        publisherDeniedMsg.textContent =
+          'You’re signed in, but we couldn’t verify publisher access. The Studio API may be temporarily unavailable — try again in a few minutes.';
+        publisherCorrelationWrap.classList.add('hidden');
+      } else {
+        publisherDeniedMsg.textContent =
+          'You’re signed in, but this account can’t publish updates.';
+        publisherCorrelationWrap.classList.remove('hidden');
+        publisherCorrelation.textContent = correlationId || 'unavailable';
+      }
       publisherGate.classList.remove('hidden');
     }
 
@@ -573,14 +587,22 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       void pollOnce(sha);
     }
 
-    async function checkPublisherStatus(): Promise<{ authorized: boolean; correlationId?: string }> {
-      const res = await fetch('/api/publisherStatus');
-      if (!res.ok) return { authorized: false };
-      const data = await res.json();
-      return {
-        authorized: Boolean(data?.authorized),
-        correlationId: typeof data?.correlationId === 'string' ? data.correlationId : undefined,
-      };
+    async function checkPublisherStatus(): Promise<{
+      authorized: boolean;
+      correlationId?: string;
+      apiUnavailable?: boolean;
+    }> {
+      try {
+        const res = await fetch('/api/publisherStatus');
+        if (!res.ok) return { authorized: false, apiUnavailable: true };
+        const data = await res.json();
+        return {
+          authorized: Boolean(data?.authorized),
+          correlationId: typeof data?.correlationId === 'string' ? data.correlationId : undefined,
+        };
+      } catch {
+        return { authorized: false, apiUnavailable: true };
+      }
     }
 
     async function checkAuth() {
@@ -603,15 +625,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       authUserName.textContent = displayNameFromPrincipal(clientPrincipal);
       authUser.classList.remove('hidden');
 
-      let status: { authorized: boolean; correlationId?: string } = { authorized: false };
+      let status: { authorized: boolean; correlationId?: string; apiUnavailable?: boolean } = {
+        authorized: false,
+      };
       try {
         status = await checkPublisherStatus();
       } catch {
-        status = { authorized: false };
+        status = { authorized: false, apiUnavailable: true };
       }
 
       if (!status.authorized) {
-        showPublisherDenied(status.correlationId);
+        showPublisherDenied(status.correlationId, { apiUnavailable: status.apiUnavailable });
         return false;
       }
 

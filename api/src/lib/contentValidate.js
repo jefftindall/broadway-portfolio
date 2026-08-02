@@ -6,7 +6,7 @@ import {
   newsFrontmatterSchema,
   pagesFrontmatterSchema,
   showFrontmatterSchema,
-} from '../../../shared/contentSchemas.js';
+} from './contentSchemas.js';
 
 const LESSONS_BOOK_PAGE = 'src/content/pages/lessons-book.md';
 

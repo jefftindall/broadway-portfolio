@@ -6,7 +6,7 @@ import {
   newsFrontmatterSchema,
   pagesFrontmatterSchema,
   showFrontmatterSchema,
-} from '../shared/contentSchemas.js';
+} from '../api/src/lib/contentSchemas.js';
 
 const shows = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/shows' }),
