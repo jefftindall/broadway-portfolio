@@ -22,6 +22,10 @@ const tools = [
             featured: { type: 'BOOLEAN' },
             videoUrl: { type: 'STRING' },
             image: { type: 'STRING' },
+            category: {
+              type: 'STRING',
+              description: 'Credit type: musical, play, or cabaret',
+            },
           },
           required: ['title', 'year', 'synopsis'],
         },
@@ -46,7 +50,8 @@ const tools = [
       },
       {
         name: 'update_about',
-        description: 'Replace the About page markdown (background + philosophy).',
+        description:
+          'Replace the About page markdown (background + philosophy). She is an actress/singer and vocal coach; if teaching is mentioned, frame it as private voice lessons (pedagogy, vocal health, CCM), not acting lessons.',
         parameters: {
           type: 'OBJECT',
           properties: {
@@ -59,30 +64,39 @@ const tools = [
       },
       {
         name: 'update_lessons',
-        description: 'Replace the Lessons page markdown.',
+        description:
+          'Replace the Lessons page markdown for private VOICE lessons only (vocal pedagogy, vocal health, CCM). Never advertise acting, monologue, or scene-study lessons.',
         parameters: {
           type: 'OBJECT',
           properties: {
             title: { type: 'STRING' },
             description: { type: 'STRING' },
-            body: { type: 'STRING' },
+            body: {
+              type: 'STRING',
+              description:
+                'Markdown for private vocal coaching. Emphasize vocal pedagogy, vocal health, and CCM. Do not offer acting lessons.',
+            },
           },
           required: ['body'],
         },
       },
       {
         name: 'add_gallery_photo',
-        description: 'Add a gallery entry referencing an already-uploaded image path.',
+        description:
+          'Add a gallery entry referencing an already-uploaded image path. Do not invent captions — leave caption empty; the public gallery does not display captions.',
         parameters: {
           type: 'OBJECT',
           properties: {
-            slug: { type: 'STRING' },
-            caption: { type: 'STRING' },
+            slug: { type: 'STRING', description: 'URL-safe id for the markdown filename' },
+            caption: {
+              type: 'STRING',
+              description: 'Optional; prefer empty string. Gallery UI does not show captions.',
+            },
             image: { type: 'STRING', description: 'Path like /images/photos/foo.jpg or src path served as public' },
             tags: { type: 'ARRAY', items: { type: 'STRING' } },
             order: { type: 'NUMBER' },
           },
-          required: ['caption', 'image'],
+          required: ['image'],
         },
       },
       {
@@ -144,6 +158,7 @@ export function buildContentChange(name, args, photoPath) {
           featured: Boolean(args.featured),
           videoUrl: args.videoUrl,
           image: args.image || photoPath,
+          category: args.category || undefined,
         }) +
         (args.body || args.synopsis) +
         '\n';
@@ -211,12 +226,19 @@ export function buildContentChange(name, args, photoPath) {
       };
     }
     case 'add_gallery_photo': {
-      const slug = makeSlug(args.slug || args.caption);
       const image = args.image || photoPath;
       if (!image) throw new Error('Gallery photo requires an image path or upload.');
+      const slug = makeSlug(
+        args.slug ||
+          String(image)
+            .split('/')
+            .pop()
+            ?.replace(/\.[^.]+$/, '') ||
+          'gallery-photo',
+      );
       const content =
         toFrontmatter({
-          caption: args.caption,
+          caption: '',
           image,
           tags: args.tags || [],
           order: args.order,
@@ -225,8 +247,8 @@ export function buildContentChange(name, args, photoPath) {
         tool: name,
         path: `src/content/gallery/${slug}.md`,
         content,
-        commitMessage: `content: gallery ${args.caption}`,
-        summary: `Added gallery photo “${args.caption}”.`,
+        commitMessage: `content: gallery ${slug}`,
+        summary: `Added gallery photo (${slug}).`,
       };
     }
     case 'create_or_update_casting_page': {
@@ -345,6 +367,7 @@ export async function buildProductionSiteContext() {
   const lines = [
     `Production site (canonical reference): ${siteUrl}`,
     'Site map: / (home), /shows, /about, /lessons, /news, /gallery, /contact, /for/[slug] (casting).',
+    'Teaching brand: private VOICE lessons only (vocal pedagogy, vocal health, CCM) — not acting lessons.',
     'Existing content on the production branch (reuse slugs when updating; match voice and facts):',
   ];
 
@@ -399,15 +422,24 @@ export async function runContentAgent({ message, photoPath }) {
   const model = genAI.getGenerativeModel({
     model: process.env.GEMINI_MODEL || 'gemini-3.6-flash',
     tools,
-    systemInstruction: `You are a warm, highly capable digital manager for Elyse Tindall, a NYC-based actress, singer, and instructor.
+    systemInstruction: `You are a warm, highly capable digital manager for Elyse Tindall, a NYC-based musical theatre actress, singer, and vocal coach (Atlanta to New York).
 Turn her natural-language requests into the appropriate tool call to update her Astro portfolio at ${siteUrl}.
 Each request includes a production site catalog (live URLs + repo paths). Use it so updates build on what already exists instead of inventing a blank site.
+
+Brand facts (always honor these):
+- She is a PERFORMER (musical theatre actress/singer) and a VOCAL COACH only for teaching.
+- Private lessons are voice lessons: vocal pedagogy, vocal health, and contemporary commercial music (CCM).
+- Do NOT advertise acting lessons, monologue coaching, scene study, or “acting through song” as lesson offerings.
+- Audition song / repertoire prep is fine when framed as singing and vocal preparation—not acting class.
+- On about/casting copy she may discuss acting craft as a performer; that must not become lesson marketing.
+
 Rules:
 - Prefer upsert_show for new bookings/credits; when updating an existing show, reuse its slug from the catalog.
 - Prefer create_news_post for press and announcements.
 - Prefer create_or_update_casting_page for SEO/casting keyword pages (write real helpful copy, not thin spam); reuse existing casting slugs when she means an existing page.
 - Prefer update_about / update_lessons when she asks to change those pages; treat them as edits to the live ${siteUrl}/about and ${siteUrl}/lessons pages.
-- Prefer add_gallery_photo when she attaches a photo for the gallery (image path will be provided).
+- When drafting or updating lessons copy, keep it vocal-coach accurate (pedagogy, vocal health, CCM); never add acting-lesson offerings.
+- Prefer add_gallery_photo when she attaches a photo for the gallery (image path will be provided). Leave caption empty — the public gallery does not display captions.
 - Keep tone professional, warm, and accurate. Do not invent fake credits; align facts with the catalog and production site.
 - Content is expected to be evergreen unless otherwise specified. Avoid relative terms like today, this week, this month, etc which would not make sense in the future.
 - Never mention technical terms like "YAML," "Azure," or "Astro" to her—keep her user experience purely creative and effortless.

@@ -5,6 +5,7 @@ description: Elyse captivated audiences as Lily in Anastasia at the historic Str
 tags:
   - Acting
   - Anastasia
+image: /images/shows/anastasia.jpg
 ---
 
 Marietta, GA — Elyse Tindall recently captivated audiences in the role of Lily in the acclaimed musical *Anastasia*, which ran from July 8 through July 10 at the historic Strand Theater in Marietta.

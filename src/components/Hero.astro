@@ -1,0 +1,62 @@
+---
+import { site } from '../lib/site';
+import CtaLink from './CtaLink.astro';
+
+interface Props {
+  image?: string;
+  support?: string;
+}
+
+const {
+  image = site.heroImage,
+  support = 'Atlanta-raised. New York–based. On stage as an actress — and in the studio as a vocal coach.',
+} = Astro.props;
+---
+
+<section class="relative min-h-[88vh] overflow-hidden" aria-labelledby="hero-heading">
+  <div class="absolute inset-0">
+    <img
+      src={image}
+      alt={`${site.name}, musical theatre actress`}
+      class="h-full w-full object-cover object-[center_20%]"
+      width="1600"
+      height="2000"
+      fetchpriority="high"
+      decoding="async"
+    />
+    <div
+      class="absolute inset-0 bg-gradient-to-r from-ink via-ink/80 to-ink/35"
+      aria-hidden="true"
+    >
+    </div>
+    <div
+      class="absolute inset-0 bg-gradient-to-t from-ink via-transparent to-ink/40"
+      aria-hidden="true"
+    >
+    </div>
+  </div>
+
+  <div class="relative mx-auto flex min-h-[88vh] max-w-6xl items-end px-6 pb-16 pt-28 md:pb-24 md:pt-32">
+    <div class="max-w-xl">
+      <p class="fade-up text-sm uppercase tracking-[0.25em] text-gold">
+        {site.jobTitle}
+      </p>
+      <h1
+        id="hero-heading"
+        class="fade-up-delay mt-4 font-display text-6xl leading-[0.92] text-spotlight md:text-7xl lg:text-8xl"
+      >
+        {site.name}
+      </h1>
+      <p class="fade-up-delay-2 mt-5 max-w-md text-lg text-spotlight/90">
+        {support}
+      </p>
+      <p class="fade-up-delay-2 mt-2 text-sm text-muted">
+        Atlanta to New York
+      </p>
+      <div class="fade-up-delay-2 mt-10 flex flex-wrap gap-4">
+        <CtaLink href="/lessons#inquire">Book a Lesson</CtaLink>
+        <CtaLink href="#reel" variant="secondary">Watch Reel</CtaLink>
+      </div>
+    </div>
+  </div>
+</section>

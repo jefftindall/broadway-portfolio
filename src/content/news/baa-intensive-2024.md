@@ -5,6 +5,7 @@ description: Elyse completed a Broadway Artists Alliance Musical Theatre intensi
 tags:
   - Training
   - New York
+image: /images/gallery/baa.jpg
 ---
 
 **Broadway Artists Alliance — Press Release 2024 Summer Session Four**

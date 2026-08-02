@@ -13,7 +13,8 @@
     "check": "astro check",
     "lint": "node scripts/lint.mjs",
     "lint:api": "node scripts/lint-api.mjs",
-    "lint:terraform": "node scripts/lint-terraform.mjs"
+    "lint:terraform": "node scripts/lint-terraform.mjs",
+    "ig:download": "node scripts/download-instagram-media.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",
+    "playwright": "^1.54.2",
     "typescript": "^5.9.2"
   }
 }

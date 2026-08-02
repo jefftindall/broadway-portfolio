@@ -1,9 +1,14 @@
 ---
-import { getCollection, getEntry } from 'astro:content';
+import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/Hero.astro';
+import LessonsModule from '../components/LessonsModule.astro';
+import ContactLanes from '../components/ContactLanes.astro';
+import SectionHeader from '../components/SectionHeader.astro';
 import ShowCard from '../components/ShowCard.astro';
 import PostCard from '../components/PostCard.astro';
-import LessonCta from '../components/LessonCta.astro';
+import VideoEmbed from '../components/VideoEmbed.astro';
+import GlassPanel from '../components/GlassPanel.astro';
 import { site } from '../lib/site';
 
 const shows = (await getCollection('shows')).sort(
@@ -15,102 +20,126 @@ const news = (await getCollection('news'))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
   .slice(0, 2);
 
-const about = await getEntry('pages', 'about');
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Person',
+      '@id': `${site.url}/#person`,
+      name: site.name,
+      url: site.url,
+      email: site.email,
+      jobTitle: site.jobTitle,
+      description: site.description,
+      image: new URL(site.heroImage, site.url).href,
+      sameAs: [site.instagram],
+      knowsAbout: site.knowsAbout,
+      homeLocation: { '@type': 'Place', name: 'New York, NY' },
+      address: {
+        '@type': 'PostalAddress',
+        addressLocality: 'New York',
+        addressRegion: 'NY',
+        addressCountry: 'US',
+      },
+    },
+    {
+      '@type': 'WebSite',
+      '@id': `${site.url}/#website`,
+      url: site.url,
+      name: site.name,
+      description: site.description,
+      publisher: { '@id': `${site.url}/#person` },
+    },
+    {
+      '@type': 'VideoObject',
+      name: 'NYC Cabaret — Stage Kiss',
+      description: 'Elyse Tindall performs Stage Kiss at Ripley-Grier Studios, New York City.',
+      thumbnailUrl: new URL('/images/photos/cabaret-reel-poster.jpg', site.url).href,
+      uploadDate: '2024-08-01',
+      contentUrl: site.reelUrl,
+      embedUrl: 'https://www.youtube.com/embed/41jdPTkN_Sw',
+    },
+  ],
+};
 ---
 
-<BaseLayout>
-  <section class="relative overflow-hidden">
-    <div class="mx-auto grid max-w-6xl gap-12 px-6 py-20 md:grid-cols-[1.1fr_0.9fr] md:py-28 lg:py-32">
-      <div>
-        <p class="fade-up text-sm uppercase tracking-[0.25em] text-gel">Actress · Musical Theatre</p>
-        <h1 class="fade-up-delay mt-4 font-display text-6xl leading-[0.95] text-spotlight md:text-7xl lg:text-8xl">
-          {site.name}
-        </h1>
-        <p class="fade-up-delay-2 mt-6 max-w-md text-lg text-muted">
-          Atlanta-raised. New York–based. Building a life on stage — one honest performance at a time.
-        </p>
-        <div class="fade-up-delay-2 mt-10 flex flex-wrap gap-4">
-          <a
-            href="/contact"
-            class="rounded-sm bg-gold px-6 py-3 text-sm font-semibold text-ink hover:brightness-110"
-          >
-            Casting materials
-          </a>
-          <a
-            href="/lessons"
-            class="rounded-sm border border-line px-6 py-3 text-sm text-spotlight hover:border-gold"
-          >
-            Lessons
-          </a>
-        </div>
+<BaseLayout
+  description={site.description}
+  image={site.heroImage}
+  jsonLd={jsonLd}
+  hideFooterCta
+>
+  <Hero />
+
+  <LessonsModule compact />
+
+  <section class="section-y" aria-labelledby="performance-heading">
+    <div class="mx-auto max-w-6xl px-6">
+      <div id="performance-heading">
+        <SectionHeader
+          eyebrow="Performance"
+          title="Stage & reel"
+          support="Recent credits and the NYC cabaret monologue from Stage Kiss."
+          href="/shows"
+          linkLabel="All credits →"
+        />
       </div>
-      <div class="fade-up relative min-h-[22rem] overflow-hidden rounded-sm border border-line bg-panel">
-        <div
-          class="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(196,163,90,0.35),transparent_55%),radial-gradient(circle_at_80%_70%,rgba(61,139,139,0.25),transparent_50%),linear-gradient(160deg,#241f1a,#0e0d0c)]"
-        >
+
+      <div class="mt-10 grid gap-10 lg:grid-cols-[1fr_1.05fr]">
+        <div>
+          {
+            featured.map((show) => (
+              <ShowCard
+                title={show.data.title}
+                year={show.data.year}
+                role={show.data.role}
+                venue={show.data.venue}
+                synopsis={show.data.synopsis}
+                featured={show.data.featured}
+                image={show.data.image}
+              />
+            ))
+          }
         </div>
-        <div class="absolute inset-0 flex flex-col justify-end p-8">
-          <p class="font-display text-3xl text-spotlight">On stage &amp; in the room</p>
-          <p class="mt-2 text-sm text-muted">Shows · Cabaret · Coaching</p>
+        <div id="reel">
+          <GlassPanel strong class="overflow-hidden p-2 md:p-3">
+            <VideoEmbed url={site.reelUrl} title="NYC Cabaret — Stage Kiss reel" />
+            <div class="px-3 pb-3 pt-4 md:px-4">
+              <p class="font-display text-2xl text-spotlight">Watch reel</p>
+              <p class="mt-1 text-sm text-muted">
+                Stage Kiss — NYC debut at Ripley-Grier Studios
+              </p>
+            </div>
+          </GlassPanel>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="mx-auto max-w-6xl px-6 py-16">
-    <div class="flex items-end justify-between gap-4">
-      <h2 class="font-display text-4xl text-spotlight">Recent shows</h2>
-      <a href="/shows" class="text-sm text-gel hover:text-spotlight">All credits →</a>
-    </div>
-    <div class="mt-4">
-      {
-        featured.map((show) => (
-          <ShowCard
-            title={show.data.title}
-            year={show.data.year}
-            role={show.data.role}
-            venue={show.data.venue}
-            synopsis={show.data.synopsis}
-            featured={show.data.featured}
-          />
-        ))
-      }
-    </div>
-  </section>
+  <ContactLanes />
 
-  {
-    about && (
-      <section class="mx-auto max-w-6xl px-6 py-16">
-        <div class="grid gap-10 md:grid-cols-2">
-          <div>
-            <h2 class="font-display text-4xl text-spotlight">About</h2>
-            <p class="mt-4 text-muted">{about.data.description}</p>
-            <a href="/about" class="mt-6 inline-block text-sm text-gold hover:text-spotlight">
-              Background & philosophy →
-            </a>
-          </div>
-          <LessonCta />
-        </div>
-      </section>
-    )
-  }
-
-  <section class="mx-auto max-w-6xl px-6 py-16">
-    <div class="flex items-end justify-between gap-4">
-      <h2 class="font-display text-4xl text-spotlight">News</h2>
-      <a href="/news" class="text-sm text-gel hover:text-spotlight">All news →</a>
-    </div>
-    <div class="mt-2">
-      {
-        news.map((post) => (
-          <PostCard
-            title={post.data.title}
-            description={post.data.description}
-            date={post.data.date}
-            href={`/news/${post.id}`}
-          />
-        ))
-      }
+  <section class="section-y border-t border-line" aria-labelledby="news-heading">
+    <div class="mx-auto max-w-6xl px-6">
+      <div id="news-heading">
+        <SectionHeader
+          eyebrow="Updates"
+          title="News"
+          href="/news"
+          linkLabel="All news →"
+        />
+      </div>
+      <div class="mt-6">
+        {
+          news.map((post) => (
+            <PostCard
+              title={post.data.title}
+              description={post.data.description}
+              date={post.data.date}
+              href={`/news/${post.id}`}
+            />
+          ))
+        }
+      </div>
     </div>
   </section>
 </BaseLayout>

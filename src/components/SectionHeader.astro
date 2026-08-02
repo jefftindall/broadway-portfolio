@@ -1,0 +1,42 @@
+---
+interface Props {
+  eyebrow?: string;
+  title: string;
+  support?: string;
+  href?: string;
+  linkLabel?: string;
+  class?: string;
+}
+
+const {
+  eyebrow,
+  title,
+  support,
+  href,
+  linkLabel = 'View all →',
+  class: className = '',
+} = Astro.props;
+---
+
+<div class:list={['flex flex-wrap items-end justify-between gap-4', className]}>
+  <div class="max-w-2xl">
+    {
+      eyebrow && (
+        <p class="text-sm uppercase tracking-[0.25em] text-gel">{eyebrow}</p>
+      )
+    }
+    <h2 class:list={['font-display text-4xl text-spotlight md:text-5xl', eyebrow && 'mt-3']}>
+      {title}
+    </h2>
+    {
+      support && <p class="mt-3 max-w-xl text-muted">{support}</p>
+    }
+  </div>
+  {
+    href && (
+      <a href={href} class="text-sm text-gel hover:text-spotlight">
+        {linkLabel}
+      </a>
+    )
+  }
+</div>

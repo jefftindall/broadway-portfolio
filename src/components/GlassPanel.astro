@@ -1,0 +1,20 @@
+---
+type PanelTag = 'div' | 'section' | 'article' | 'aside';
+
+interface Props {
+  class?: string;
+  strong?: boolean;
+  as?: PanelTag;
+}
+
+const {
+  class: className = '',
+  strong = false,
+  as: Tag = 'div',
+}: Props = Astro.props;
+---
+
+
+<Tag class:list={[strong ? 'glass-panel-strong' : 'glass-panel', 'rounded-sm', className]}>
+  <slot />
+</Tag>

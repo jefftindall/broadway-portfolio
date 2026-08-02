@@ -7,13 +7,14 @@ interface Props {
   image?: string;
   canonicalPath: string;
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
+  noIndex?: boolean;
 }
 
-const { title, description, image, canonicalPath, jsonLd } = Astro.props;
+const { title, description, image, canonicalPath, jsonLd, noIndex = false } = Astro.props;
 const canonical = new URL(canonicalPath, site.url).href;
 const ogImage = image
   ? new URL(image, site.url).href
-  : new URL('/images/og-default.svg', site.url).href;
+  : new URL('/images/og-default.jpg', site.url).href;
 
 const defaultPerson = {
   '@context': 'https://schema.org',
@@ -21,8 +22,15 @@ const defaultPerson = {
   name: site.name,
   url: site.url,
   email: site.email,
-  jobTitle: 'Actress',
+  jobTitle: site.jobTitle,
   description: site.description,
+  image: new URL(site.heroImage, site.url).href,
+  sameAs: [site.instagram],
+  knowsAbout: site.knowsAbout,
+  homeLocation: {
+    '@type': 'Place',
+    name: 'New York, NY',
+  },
   address: {
     '@type': 'PostalAddress',
     addressLocality: 'New York',
@@ -41,6 +49,7 @@ const structured = jsonLd
 <title>{title}</title>
 <meta name="description" content={description} />
 <link rel="canonical" href={canonical} />
+{noIndex && <meta name="robots" content="noindex, nofollow" />}
 
 <meta property="og:type" content="website" />
 <meta property="og:title" content={title} />

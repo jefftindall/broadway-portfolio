@@ -1,24 +1,21 @@
 ---
 import { site } from '../lib/site';
+import GlassPanel from './GlassPanel.astro';
+import CtaLink from './CtaLink.astro';
 ---
 
-<div class="rounded-sm border border-line bg-panel/60 p-8 md:p-10">
-  <h2 class="font-display text-3xl text-spotlight">Study with Elyse</h2>
+<GlassPanel strong class="p-8 md:p-10">
+  <h2 class="font-display text-3xl text-spotlight">Study voice with Elyse</h2>
   <p class="mt-3 max-w-xl text-muted">
-    Musical theatre coaching for students who want craft, confidence, and audition readiness.
+    Private voice lessons rooted in vocal pedagogy, vocal health, and CCM — NYC or Zoom.
   </p>
   <div class="mt-6 flex flex-wrap gap-4">
-    <a
-      href="/lessons"
-      class="rounded-sm bg-gel px-5 py-3 text-sm font-semibold text-spotlight hover:brightness-110"
-    >
-      Lessons
-    </a>
-    <a
+    <CtaLink href="/lessons" variant="gel">Lessons</CtaLink>
+    <CtaLink
       href={`mailto:${site.email}?subject=${encodeURIComponent('Lesson Inquiry')}`}
-      class="rounded-sm border border-line px-5 py-3 text-sm text-spotlight hover:border-gold"
+      variant="secondary"
     >
       Email to inquire
-    </a>
+    </CtaLink>
   </div>
-</div>
+</GlassPanel>

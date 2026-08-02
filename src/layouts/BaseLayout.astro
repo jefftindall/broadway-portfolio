@@ -12,6 +12,7 @@ interface Props {
   canonicalPath?: string;
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
   hideFooterCta?: boolean;
+  noIndex?: boolean;
 }
 
 const {
@@ -21,6 +22,7 @@ const {
   canonicalPath,
   jsonLd,
   hideFooterCta = false,
+  noIndex = false,
 } = Astro.props;
 
 const pageTitle = title ? `${title} · ${site.name}` : `${site.name} · ${site.tagline}`;
@@ -39,6 +41,7 @@ const pageTitle = title ? `${title} · ${site.name}` : `${site.name} · ${site.t
       image={image}
       canonicalPath={canonicalPath ?? Astro.url.pathname}
       jsonLd={jsonLd}
+      noIndex={noIndex}
     />
   </head>
   <body class="site-bg antialiased">

@@ -28,8 +28,9 @@ const jsonLd = {
   name: site.name,
   url: site.url,
   email: site.email,
-  jobTitle: 'Actress',
-  knowsAbout: [keyword, ...relatedSkills],
+  jobTitle: site.jobTitle,
+  sameAs: [site.instagram],
+  knowsAbout: [keyword, ...relatedSkills, ...site.knowsAbout],
   description,
 };
 ---

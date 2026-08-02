@@ -1,0 +1,65 @@
+---
+interface Props {
+  src: string;
+  alt: string;
+  caption?: string;
+  href?: string;
+  aspect?: 'video' | 'portrait' | 'square';
+  class?: string;
+}
+
+const {
+  src,
+  alt,
+  caption,
+  href,
+  aspect = 'portrait',
+  class: className = '',
+} = Astro.props;
+
+const aspectClass =
+  aspect === 'video' ? 'aspect-video' : aspect === 'square' ? 'aspect-square' : 'aspect-[3/4]';
+
+const shellClass = [
+  'group overflow-hidden rounded-sm border border-line',
+  className,
+];
+---
+
+{
+  href ? (
+    <a href={href} class:list={shellClass}>
+      <div class:list={['relative overflow-hidden bg-panel', aspectClass]}>
+        <img
+          src={src}
+          alt={alt}
+          class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+          loading="lazy"
+          decoding="async"
+        />
+        {caption && (
+          <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/90 via-ink/40 to-transparent p-4 pt-12">
+            <p class="font-display text-xl text-spotlight">{caption}</p>
+          </div>
+        )}
+      </div>
+    </a>
+  ) : (
+    <figure class:list={shellClass}>
+      <div class:list={['relative overflow-hidden bg-panel', aspectClass]}>
+        <img
+          src={src}
+          alt={alt}
+          class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+          loading="lazy"
+          decoding="async"
+        />
+        {caption && (
+          <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/90 via-ink/40 to-transparent p-4 pt-12">
+            <p class="font-display text-xl text-spotlight">{caption}</p>
+          </div>
+        )}
+      </div>
+    </figure>
+  )
+}

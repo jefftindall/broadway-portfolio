@@ -1,0 +1,81 @@
+---
+import { lessonOfferings, lessonRates, site } from '../lib/site';
+import SectionHeader from './SectionHeader.astro';
+import GlassPanel from './GlassPanel.astro';
+import CtaLink from './CtaLink.astro';
+
+interface Props {
+  compact?: boolean;
+}
+
+const { compact = false } = Astro.props;
+const inquireHref = `mailto:${site.email}?subject=${encodeURIComponent('Lesson Inquiry')}`;
+---
+
+<section class="section-y" aria-labelledby="lessons-heading">
+  <div class="mx-auto max-w-6xl px-6">
+    <div id="lessons-heading">
+      <SectionHeader
+        eyebrow="Private voice lessons"
+        title="Vocal coaching"
+        support="Pedagogy-informed private voice lessons in New York City or on Zoom — vocal health first, with a specialty in contemporary commercial music (CCM)."
+        href={compact ? '/lessons' : undefined}
+        linkLabel="Full lessons page →"
+      />
+    </div>
+
+    <div class="mt-10 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+      <div class="relative overflow-hidden rounded-sm border border-line">
+        <img
+          src="/images/lessons/lessons-banner.jpg"
+          alt=""
+          class="absolute inset-0 h-full w-full object-cover"
+          width="1600"
+          height="900"
+          loading="lazy"
+          aria-hidden="true"
+        />
+        <div class="absolute inset-0 bg-ink/70" aria-hidden="true"></div>
+        <div class="relative grid gap-4 p-6 sm:grid-cols-2 md:p-8">
+          {
+            lessonOfferings.map((item) => (
+              <GlassPanel class="p-5">
+                <h3 class="font-display text-2xl text-spotlight">{item.title}</h3>
+                <p class="mt-2 text-sm text-muted">{item.description}</p>
+              </GlassPanel>
+            ))
+          }
+        </div>
+      </div>
+
+      <GlassPanel strong class="flex flex-col justify-between p-6 md:p-8">
+        <div>
+          <h3 class="font-display text-3xl text-spotlight">Rates & format</h3>
+          <ul class="mt-6 space-y-4">
+            {
+              lessonRates.map((rate) => (
+                <li class="flex items-baseline justify-between gap-4 border-b border-line pb-3">
+                  <span class="text-muted">{rate.label}</span>
+                  <span class="font-display text-2xl text-gold">{rate.price}</span>
+                </li>
+              ))
+            }
+          </ul>
+          <p class="mt-6 text-sm text-muted">
+            In-person in New York City or online via Zoom. Private voice lessons only — focused on technique, vocal health, and CCM.
+          </p>
+        </div>
+        <div class="mt-8 flex flex-wrap gap-3">
+          <CtaLink href={inquireHref}>Email to inquire</CtaLink>
+          {
+            compact && (
+              <CtaLink href="/lessons" variant="secondary">
+                Learn more
+              </CtaLink>
+            )
+          }
+        </div>
+      </GlassPanel>
+    </div>
+  </div>
+</section>

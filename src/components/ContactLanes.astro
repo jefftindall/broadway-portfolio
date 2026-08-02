@@ -1,0 +1,59 @@
+---
+import { site } from '../lib/site';
+import GlassPanel from './GlassPanel.astro';
+import CtaLink from './CtaLink.astro';
+import SectionHeader from './SectionHeader.astro';
+
+interface Props {
+  showHeader?: boolean;
+}
+
+const { showHeader = true } = Astro.props;
+---
+
+<section class="section-y" aria-labelledby="contact-lanes-heading">
+  <div class="mx-auto max-w-6xl px-6">
+    <div id="contact-lanes-heading">
+      {
+        showHeader ? (
+          <SectionHeader
+            eyebrow="Get in touch"
+            title="Casting & lessons"
+            support="One inbox — use the subject lines below so casting and student emails stay organized."
+          />
+        ) : (
+          <h2 class="sr-only">Contact options</h2>
+        )
+      }
+    </div>
+
+    <div class:list={['grid gap-6 md:grid-cols-2', showHeader && 'mt-10']}>
+      <GlassPanel strong class="flex flex-col p-6 md:p-8" as="article">
+        <h3 class="font-display text-3xl text-spotlight">Casting &amp; agents</h3>
+        <p class="mt-3 flex-1 text-sm text-muted">
+          Headshot, resume, reel, and availability for casting directors and representation.
+        </p>
+        <CtaLink
+          class="mt-8 self-start"
+          href={`mailto:${site.email}?subject=${encodeURIComponent('Casting Inquiry')}`}
+        >
+          Email for casting
+        </CtaLink>
+      </GlassPanel>
+
+      <GlassPanel strong class="flex flex-col p-6 md:p-8" as="article">
+        <h3 class="font-display text-3xl text-spotlight">Voice lesson inquiries</h3>
+        <p class="mt-3 flex-1 text-sm text-muted">
+          Private vocal coaching for singers and parents — pedagogy, vocal health, and CCM. NYC or Zoom.
+        </p>
+        <CtaLink
+          class="mt-8 self-start"
+          variant="secondary"
+          href={`mailto:${site.email}?subject=${encodeURIComponent('Lesson Inquiry')}`}
+        >
+          Email for lessons
+        </CtaLink>
+      </GlassPanel>
+    </div>
+  </div>
+</section>

@@ -1,38 +1,79 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import MediaCard from '../components/MediaCard.astro';
+import { site } from '../lib/site';
 
 const items = (await getCollection('gallery')).sort(
   (a, b) => (a.data.order ?? 99) - (b.data.order ?? 99),
 );
+
+const tags = ['all', ...new Set(items.flatMap((i) => i.data.tags))];
 ---
 
 <BaseLayout
   title="Gallery"
-  description="Photos of actress Elyse Tindall — headshots and performance stills."
+  description={`Photos of ${site.name} — headshots, travel, and performance.`}
+  image="/images/gallery/headshot.jpg"
 >
-  <section class="mx-auto max-w-6xl px-6 py-16 md:py-24">
+  <section class="mx-auto max-w-6xl px-6 py-16 md:py-24" data-gallery>
     <p class="text-sm uppercase tracking-[0.2em] text-gel">Media</p>
     <h1 class="mt-3 font-display text-5xl text-spotlight md:text-6xl">Gallery</h1>
     <p class="mt-4 max-w-2xl text-muted">
-      Replace these placeholders with production headshots and stills via Studio or a git commit.
+      Selected photos from stage, travel, and everyday life.
     </p>
+
+    <div
+      class="mt-8 flex flex-wrap gap-2"
+      role="tablist"
+      aria-label="Filter gallery by tag"
+    >
+      {
+        tags.map((tag, i) => (
+          <button
+            type="button"
+            role="tab"
+            data-gallery-filter={tag}
+            aria-selected={i === 0 ? 'true' : 'false'}
+            class="gallery-filter min-h-11 rounded-sm border border-line px-4 py-2 text-sm capitalize text-muted transition aria-selected:border-gold aria-selected:bg-gold/15 aria-selected:text-spotlight"
+          >
+            {tag}
+          </button>
+        ))
+      }
+    </div>
+
     <div class="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {
         items.map((item) => (
-          <figure class="overflow-hidden rounded-sm border border-line bg-panel">
-            <img
-              src={item.data.image}
-              alt={item.data.caption}
-              class="aspect-[3/4] w-full object-cover"
-              loading="lazy"
-            />
-            <figcaption class="border-t border-line px-4 py-3 text-sm text-muted">
-              {item.data.caption}
-            </figcaption>
-          </figure>
+          <div class="gallery-item" data-tags={item.data.tags.join(' ')}>
+            <MediaCard src={item.data.image} alt="" />
+          </div>
         ))
       }
     </div>
   </section>
+
+  <script>
+    function initGalleryFilters() {
+      document.querySelectorAll<HTMLElement>('[data-gallery]').forEach((root) => {
+        const buttons = root.querySelectorAll<HTMLButtonElement>('.gallery-filter');
+        const items = root.querySelectorAll<HTMLElement>('.gallery-item');
+
+        buttons.forEach((btn) => {
+          btn.addEventListener('click', () => {
+            const filter = btn.dataset.galleryFilter ?? 'all';
+            buttons.forEach((b) => b.setAttribute('aria-selected', String(b === btn)));
+            items.forEach((item) => {
+              const tags = (item.dataset.tags ?? '').split(/\s+/).filter(Boolean);
+              item.hidden = !(filter === 'all' || tags.includes(filter));
+            });
+          });
+        });
+      });
+    }
+
+    initGalleryFilters();
+    document.addEventListener('astro:page-load', initGalleryFilters);
+  </script>
 </BaseLayout>

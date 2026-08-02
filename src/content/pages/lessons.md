@@ -1,30 +1,27 @@
 ---
-title: "Private Lessons & Coaching | Elyse Tindall"
-description: "Private vocal, acting, and audition prep coaching with Elyse Tindall in NYC and online. Rates: $60/30-min or $100/60-min."
+title: "Private Voice Lessons | Elyse Tindall"
+description: "Private vocal coaching with Elyse Tindall in NYC and online — vocal pedagogy, vocal health, and contemporary commercial music (CCM). Rates: $60/30-min or $100/60-min."
 updated: "2026-08-01"
 ---
-# Private Vocal & Acting Lessons with Elyse Tindall
 
-Whether preparing for upcoming auditions, honing vocal technique, or building confidence on stage, personalized private instruction tailored to your unique artistic goals is key to unlocking your full potential.
+Whether you are building a healthier instrument, refining CCM style, or preparing audition songs, private voice lessons are tailored to your goals as a singer.
 
-## Instruction & Coaching Philosophy
+## Instruction & coaching philosophy
 
-With a strong foundation in musical theatre, healthy vocal mechanics, and dramatic storytelling, I offer personalized coaching for performers of all ages and skill levels. My goal is to foster a warm, encouraging environment where singers and actors can safely build vocal strength, refine technique, and discover their authentic artistic voice.
+I am a vocal coach with a strong foundation in vocal pedagogy and a clear emphasis on vocal health. Lessons focus on how the voice works and how to use it sustainably — so you can grow range, clarity, and stylistic freedom without strain.
 
-### Core Areas of Focus
+I specialize in contemporary commercial music (CCM), including styles common to today’s musical theatre and commercial singing. My goal is a warm, encouraging studio where singers of all ages and levels can build reliable technique and an authentic artistic voice.
 
-* **Vocal Technique & Health:** Developing healthy breath support, vocal alignment, resonance, tone control, and building range without strain.
-* **Audition Prep & Repertoire Selection:** Curating and perfecting audition cuts, building a versatile repertoire binder, and mastering musical theatre storytelling.
-* **Acting Through Song & Monologues:** Character study, song interpretation, text analysis, and emotional connection.
-* **Performance & Audition Technique:** Building stage presence, audition etiquette, and confidence in high-pressure settings.
+## Core areas of focus
 
-## Rates & Session Structure
+* **Vocal Pedagogy & Technique:** Breath, registration, resonance, alignment, and coordinated phonation grounded in how the voice functions.
+* **Vocal Health:** Sustainable practice, warm-ups, recovery, and strategies that protect the instrument for the long haul.
+* **Contemporary Commercial Music (CCM):** Style-specific tools for pop, rock, musical theatre belt/mix, and related commercial styles — with healthy technique first.
+* **Repertoire & Audition Songs:** Choosing cuts, polishing songs for the book, and singing with clarity and intention in the room.
+
+## Rates & session structure
 
 * **30-Minute Session:** $60
 * **60-Minute Session:** $100
 
-*Sessions are offered in-person in New York City or online via Zoom.*
-
-## Inquire & Book
-
-To schedule a lesson or ask any questions about coaching, please visit the [Contact page](/contact) to reach out directly.
+Sessions are offered in-person in New York City or online via Zoom. These are private **voice** lessons — not acting or monologue coaching.

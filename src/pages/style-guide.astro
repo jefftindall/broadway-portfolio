@@ -1,0 +1,228 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SectionHeader from '../components/SectionHeader.astro';
+import CtaLink from '../components/CtaLink.astro';
+import GlassPanel from '../components/GlassPanel.astro';
+import MediaCard from '../components/MediaCard.astro';
+import ShowCard from '../components/ShowCard.astro';
+import LessonCta from '../components/LessonCta.astro';
+import { site } from '../lib/site';
+
+const colors = [
+  { name: 'ink', value: '#0e0d0c', swatch: 'bg-ink', note: 'Page base' },
+  { name: 'stage', value: '#1a1612', swatch: 'bg-stage', note: 'Depth / hover' },
+  { name: 'panel', value: '#241f1a', swatch: 'bg-panel', note: 'Solid surfaces' },
+  { name: 'spotlight', value: '#f3ebe0', swatch: 'bg-spotlight', note: 'Primary text' },
+  { name: 'muted', value: '#b8a99a', swatch: 'bg-muted', note: 'Secondary text' },
+  { name: 'gold', value: '#c4a35a', swatch: 'bg-gold', note: 'Primary accent / CTA' },
+  { name: 'gel', value: '#3d8b8b', swatch: 'bg-gel', note: 'Eyebrow / links' },
+];
+---
+
+<BaseLayout
+  title="Style guide"
+  description="Brand and UI style guide for the Elyse Tindall portfolio."
+  hideFooterCta
+  noIndex
+>
+  <section class="border-b border-line">
+    <div class="mx-auto max-w-6xl px-6 py-16 md:py-20">
+      <p class="text-sm uppercase tracking-[0.25em] text-gel">Internal reference</p>
+      <h1 class="mt-3 font-display text-5xl text-spotlight md:text-6xl">Style guide</h1>
+      <p class="mt-4 max-w-2xl text-muted">
+        Visual system for {site.name} — {site.jobTitle}. Tokens from
+        <code class="text-gold">src/styles/global.css</code>; written rules in
+        <code class="text-gold">docs/style-guide.md</code>.
+      </p>
+    </div>
+  </section>
+
+  <section class="section-y border-b border-line" id="brand">
+    <div class="mx-auto max-w-6xl px-6">
+      <SectionHeader
+        eyebrow="Brand"
+        title="Positioning"
+        support="Atlanta to New York · performance and private voice lessons share equal weight."
+      />
+      <dl class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div>
+          <dt class="text-sm uppercase tracking-[0.2em] text-gel">Name</dt>
+          <dd class="mt-2 font-display text-3xl text-spotlight">{site.name}</dd>
+        </div>
+        <div>
+          <dt class="text-sm uppercase tracking-[0.2em] text-gel">Role</dt>
+          <dd class="mt-2 text-lg text-spotlight">{site.jobTitle}</dd>
+        </div>
+        <div>
+          <dt class="text-sm uppercase tracking-[0.2em] text-gel">Tagline</dt>
+          <dd class="mt-2 text-lg text-muted">{site.tagline}</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="section-y border-b border-line" id="color">
+    <div class="mx-auto max-w-6xl px-6">
+      <SectionHeader
+        eyebrow="Color"
+        title="Palette"
+        support="Warm spotlight gold on deep stage dark; teal gel for secondary signals."
+      />
+      <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {
+          colors.map((c) => (
+            <div class="overflow-hidden rounded-sm border border-line">
+              <div class:list={['h-24', c.swatch]}></div>
+              <div class="bg-panel/80 p-4">
+                <p class="font-display text-xl text-spotlight">{c.name}</p>
+                <p class="mt-1 font-mono text-xs text-muted">{c.value}</p>
+                <p class="mt-2 text-sm text-muted">{c.note}</p>
+              </div>
+            </div>
+          ))
+        }
+        <div class="overflow-hidden rounded-sm border border-line">
+          <div class="glass-panel-strong flex h-24 items-center justify-center text-sm text-muted">
+            glass-strong
+          </div>
+          <div class="bg-panel/80 p-4">
+            <p class="font-display text-xl text-spotlight">glass</p>
+            <p class="mt-1 font-mono text-xs text-muted">.glass-panel / -strong</p>
+            <p class="mt-2 text-sm text-muted">Interactive modules</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-y border-b border-line" id="type">
+    <div class="mx-auto max-w-6xl px-6">
+      <SectionHeader
+        eyebrow="Typography"
+        title="Type scale"
+        support="Cormorant Garamond for brand and headlines; Figtree for UI and body."
+      />
+      <div class="mt-10 space-y-8">
+        <div>
+          <p class="text-sm text-gel">Display / brand</p>
+          <p class="mt-2 font-display text-6xl leading-[0.92] text-spotlight md:text-7xl">
+            {site.name}
+          </p>
+        </div>
+        <div>
+          <p class="text-sm text-gel">Section title</p>
+          <p class="mt-2 font-display text-4xl text-spotlight md:text-5xl">Vocal coaching</p>
+        </div>
+        <div>
+          <p class="text-sm text-gel">Eyebrow</p>
+          <p class="mt-2 text-sm uppercase tracking-[0.25em] text-gel">Private voice lessons</p>
+        </div>
+        <div>
+          <p class="text-sm text-gel">Body</p>
+          <p class="mt-2 max-w-xl text-lg text-muted">
+            Atlanta-raised. New York–based. On stage as an actress — and in the studio as a vocal coach.
+          </p>
+        </div>
+        <div class="prose-site">
+          <p class="text-sm text-gel not-prose mb-2">Prose (.prose-site)</p>
+          <h3>Philosophy</h3>
+          <p>
+            Theatre is honesty under lights — find the human truth, then share it generously.
+            <a href="/about">Read more</a> and stay <strong>prepared</strong> in the room.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-y border-b border-line" id="buttons">
+    <div class="mx-auto max-w-6xl px-6">
+      <SectionHeader
+        eyebrow="Actions"
+        title="Buttons & links"
+        support="CtaLink variants — min height 44px for touch."
+      />
+      <div class="mt-10 flex flex-wrap gap-4">
+        <CtaLink href="#buttons">Primary</CtaLink>
+        <CtaLink href="#buttons" variant="secondary">Secondary</CtaLink>
+        <CtaLink href="#buttons" variant="gel">Gel</CtaLink>
+        <a href="#buttons" class="text-sm text-gel underline underline-offset-4 hover:text-spotlight">
+          Text link
+        </a>
+      </div>
+      <p class="mt-6 text-sm text-muted">
+        Focus a control with Tab to see the gold <code class="text-gold">:focus-visible</code> ring.
+      </p>
+    </div>
+  </section>
+
+  <section class="section-y border-b border-line" id="surfaces">
+    <div class="mx-auto max-w-6xl px-6">
+      <SectionHeader
+        eyebrow="Surfaces"
+        title="Panels"
+        support="Glass for interactive modules; solid panel for media backs."
+      />
+      <div class="mt-10 grid gap-6 md:grid-cols-2">
+        <GlassPanel class="p-6 md:p-8">
+          <h3 class="font-display text-2xl text-spotlight">Glass panel</h3>
+          <p class="mt-2 text-sm text-muted">Default translucent surface with blur.</p>
+        </GlassPanel>
+        <GlassPanel strong class="p-6 md:p-8">
+          <h3 class="font-display text-2xl text-spotlight">Glass strong</h3>
+          <p class="mt-2 text-sm text-muted">Rates, contact lanes, inquire blocks.</p>
+        </GlassPanel>
+      </div>
+      <div class="mt-8">
+        <LessonCta />
+      </div>
+    </div>
+  </section>
+
+  <section class="section-y border-b border-line" id="media">
+    <div class="mx-auto max-w-6xl px-6">
+      <SectionHeader
+        eyebrow="Media"
+        title="Cards & credits"
+        support="Real photography only — no placeholders on public pages."
+      />
+      <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <MediaCard
+          src={site.heroImage}
+          alt="Elyse Tindall headshot"
+        />
+        <MediaCard
+          src="/images/photos/cabaret-reel-poster.jpg"
+          alt="Cabaret reel still"
+          aspect="video"
+        />
+        <div class="rounded-sm border border-line bg-panel p-4">
+          <ShowCard
+            title="Anastasia"
+            year={2025}
+            role="Lily"
+            venue="Strand Theater"
+            synopsis="Sample credit row with optional thumbnail on live pages."
+            featured
+            image="/images/shows/anastasia.jpg"
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-y" id="motion">
+    <div class="mx-auto max-w-6xl px-6">
+      <SectionHeader
+        eyebrow="Motion"
+        title="Presence, not noise"
+        support="Staggered fade-up on entry; keep loops off the marketing surface."
+      />
+      <div class="mt-10 space-y-3">
+        <p class="fade-up font-display text-3xl text-spotlight">.fade-up</p>
+        <p class="fade-up-delay font-display text-3xl text-spotlight">.fade-up-delay</p>
+        <p class="fade-up-delay-2 font-display text-3xl text-spotlight">.fade-up-delay-2</p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

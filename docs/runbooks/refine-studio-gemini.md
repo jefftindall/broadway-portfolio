@@ -42,11 +42,22 @@ If announcements become show credits (or the reverse), tighten the preference ru
 
 Also update the matching tool `description` so it restates when to use that tool.
 
+## Brand facts for teaching copy
+
+Keep these in `systemInstruction` (and the `update_lessons` tool description):
+
+- Elyse teaches as a **vocal coach only** — private voice lessons.
+- Strengths to reflect: **vocal pedagogy**, **vocal health**, **contemporary commercial music (CCM)**.
+- **Never** advertise acting lessons, monologue coaching, scene study, or acting-through-song as lesson offerings.
+- Audition **song** prep is fine when framed as singing/vocal work.
+- Performance/acting craft may appear on About or casting pages as artist biography — not as lesson marketing.
+
 ## Improving tone and accuracy
 
 - Keep “professional, warm, accurate” (or replace with clearer brand language).
 - Keep **Do not invent fake credits** (and similar) as explicit rules.
 - If Gemini pads thin SEO pages, say so under `create_or_update_casting_page` (helpful copy, no keyword stuffing).
+- If lessons drafts drift into acting-coach language, re-check the brand facts block in `systemInstruction`.
 
 ## Improving missing or wrong fields
 

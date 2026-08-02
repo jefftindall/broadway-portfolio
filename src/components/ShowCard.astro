@@ -6,9 +6,10 @@ interface Props {
   venue?: string;
   synopsis: string;
   featured?: boolean;
+  image?: string;
 }
 
-const { title, year, role, venue, synopsis, featured } = Astro.props;
+const { title, year, role, venue, synopsis, featured, image } = Astro.props;
 ---
 
 <article
@@ -17,16 +18,35 @@ const { title, year, role, venue, synopsis, featured } = Astro.props;
     featured && 'border-l-2 border-l-gold pl-6',
   ]}
 >
-  <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-    <h3 class="font-display text-2xl text-spotlight md:text-3xl">{title}</h3>
-    <span class="text-sm text-gold">{year}</span>
+  <div class:list={['gap-6', image && 'grid md:grid-cols-[140px_1fr]']}>
+    {
+      image && (
+        <div class="overflow-hidden rounded-sm border border-line bg-panel">
+          <img
+            src={image}
+            alt=""
+            class="aspect-[3/4] h-full w-full object-cover md:aspect-auto md:min-h-[10rem]"
+            loading="lazy"
+            decoding="async"
+            width="280"
+            height="360"
+          />
+        </div>
+      )
+    }
+    <div>
+      <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <h3 class="font-display text-2xl text-spotlight md:text-3xl">{title}</h3>
+        <span class="text-sm text-gold">{year}</span>
+      </div>
+      {
+        (role || venue) && (
+          <p class="mt-2 text-sm text-muted">
+            {[role, venue].filter(Boolean).join(' · ')}
+          </p>
+        )
+      }
+      <p class="mt-3 max-w-2xl text-muted">{synopsis}</p>
+    </div>
   </div>
-  {
-    (role || venue) && (
-      <p class="mt-2 text-sm text-muted">
-        {[role, venue].filter(Boolean).join(' · ')}
-      </p>
-    )
-  }
-  <p class="mt-3 max-w-2xl text-muted">{synopsis}</p>
 </article>

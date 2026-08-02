@@ -1,49 +1,40 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import ContactLanes from '../components/ContactLanes.astro';
 import { site } from '../lib/site';
 ---
 
 <BaseLayout
   title="Contact"
-  description="Contact Elyse Tindall for casting materials or lesson inquiries."
+  description="Contact Elyse Tindall for casting materials or private voice lesson inquiries."
+  image={site.heroImage}
+  hideFooterCta
 >
-  <section class="mx-auto max-w-3xl px-6 py-16 md:py-24">
+  <section class="mx-auto max-w-6xl px-6 py-16 md:py-24">
     <p class="text-sm uppercase tracking-[0.2em] text-gel">Get in touch</p>
     <h1 class="mt-3 font-display text-5xl text-spotlight md:text-6xl">Contact</h1>
-    <p class="mt-4 text-muted">
+    <p class="mt-4 max-w-2xl text-muted">
       One inbox — please use the subject lines below so casting and lesson emails stay organized.
     </p>
+  </section>
 
-    <div class="mt-12 grid gap-6 md:grid-cols-2">
-      <div class="rounded-sm border border-line bg-panel/50 p-6">
-        <h2 class="font-display text-2xl text-spotlight">Casting &amp; agents</h2>
-        <p class="mt-3 text-sm text-muted">
-          Headshot, resume, reel, and availability.
-        </p>
-        <a
-          href={`mailto:${site.email}?subject=${encodeURIComponent('Casting Inquiry')}`}
-          class="mt-6 inline-flex rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110"
-        >
-          Email for casting
-        </a>
-      </div>
-      <div class="rounded-sm border border-line bg-panel/50 p-6">
-        <h2 class="font-display text-2xl text-spotlight">Lessons</h2>
-        <p class="mt-3 text-sm text-muted">
-          Coaching inquiries for students and parents.
-        </p>
-        <a
-          href={`mailto:${site.email}?subject=${encodeURIComponent('Lesson Inquiry')}`}
-          class="mt-6 inline-flex rounded-sm border border-line px-5 py-3 text-sm text-spotlight hover:border-gold"
-        >
-          Email for lessons
-        </a>
-      </div>
-    </div>
+  <ContactLanes showHeader={false} />
 
-    <p class="mt-10 text-sm text-muted">
+  <section class="mx-auto max-w-6xl px-6 pb-20">
+    <p class="text-sm text-muted">
       Direct email:{' '}
-      <a class="text-gel underline underline-offset-4" href={`mailto:${site.email}`}>{site.email}</a>
+      <a class="text-gel underline underline-offset-4" href={`mailto:${site.email}`}>
+        {site.email}
+      </a>
+      {' · '}
+      <a
+        class="text-gel underline underline-offset-4"
+        href={site.instagram}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Instagram
+      </a>
     </p>
   </section>
 </BaseLayout>
