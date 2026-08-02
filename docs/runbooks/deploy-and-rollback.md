@@ -8,7 +8,7 @@
    - If `infra/` changed: **Terraform apply staging**, then **Deploy Staging**, then **Smoke Staging**, then **Terraform apply prod**, then **Deploy Production**
    - If `infra/` did not change: **Deploy Staging**, then **Smoke Staging**, then **Deploy Production** (Terraform apply jobs are skipped)
 
-**Smoke Staging** runs Playwright against the live staging hostname (desktop + mobile viewports): home, shows, gallery, lessons, materials + resume PDF, about, and contact. Production never deploys unless staging deploy **and** smoke both succeed for that run.
+**Smoke Staging** runs Playwright against the live staging hostname (desktop + mobile viewports): route availability, SEO shell (`robots.txt`, sitemap), downloads, anonymous `/studio` redirect, and extended routes (`/news`, `/lessons/book`, `/for/*`). **Journey tests** in the same job exercise casting, lessons, news, gallery, and navigation flows (desktop full suite + mobile subset). See [testing-strategy.md](testing-strategy.md). Production never deploys unless staging deploy **and** verification both succeed for that run.
 
 Optional: add required reviewers on the GitHub Environment **prod** for a manual approval gate after smoke.
 

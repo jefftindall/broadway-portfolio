@@ -1,26 +1,9 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { sampleCastingSlug, sampleShowTitle } from '../helpers/content';
+import { waitForOk, waitForRequestOk, isStaticWebAppHost } from '../helpers/propagation';
 
-const PROPAGATION_DEADLINE_MS = 4 * 60 * 1000;
-const PROPAGATION_POLL_MS = 5_000;
-
-/** Wait until staging serves HTTP 200 for a path (SWA CDN propagation). */
-async function waitForOk(page: Page, path: string) {
-  const deadline = Date.now() + PROPAGATION_DEADLINE_MS;
-  let lastStatus = 0;
-  let lastError = '';
-  while (Date.now() < deadline) {
-    try {
-      const response = await page.goto(path, { waitUntil: 'domcontentloaded' });
-      lastStatus = response?.status() ?? 0;
-      if (lastStatus >= 200 && lastStatus < 400) return response!;
-      lastError = `HTTP ${lastStatus}`;
-    } catch (err) {
-      lastError = err instanceof Error ? err.message : String(err);
-    }
-    await page.waitForTimeout(PROPAGATION_POLL_MS);
-  }
-  throw new Error(`Timed out waiting for ${path} (last: ${lastError || lastStatus})`);
-}
+const castingSlug = sampleCastingSlug();
+const showTitle = sampleShowTitle();
 
 test.describe('public staging smoke', () => {
   test('home shows brand and Stage & reel', async ({ page }) => {
@@ -29,10 +12,10 @@ test.describe('public staging smoke', () => {
     await expect(page.getByRole('heading', { name: /Stage & reel/i })).toBeVisible();
   });
 
-  test('shows page lists credits', async ({ page }) => {
+  test('shows page lists credits from content', async ({ page }) => {
     await waitForOk(page, '/shows');
     await expect(page.getByRole('heading', { name: 'Shows', level: 1 })).toBeVisible();
-    await expect(page.getByRole('heading', { name: /The Little Mermaid|Site 19|Anastasia/i }).first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: new RegExp(showTitle, 'i') }).first()).toBeVisible();
   });
 
   test('gallery loads', async ({ page }) => {
@@ -47,17 +30,41 @@ test.describe('public staging smoke', () => {
     await expect(page.getByText(/voice|vocal|CCM|pedagogy/i).first()).toBeVisible();
   });
 
-  test('materials page and resume PDF', async ({ page, request }) => {
+  test('lessons book page loads', async ({ page }) => {
+    await waitForOk(page, '/lessons/book');
+    await expect(page.getByRole('heading', { name: /Rates & scheduling/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Rates', level: 2 })).toBeVisible();
+  });
+
+  test('news index loads', async ({ page }) => {
+    await waitForOk(page, '/news');
+    await expect(page.getByRole('heading', { name: 'News', level: 1 })).toBeVisible();
+  });
+
+  test('casting landing page loads', async ({ page }) => {
+    await waitForOk(page, `/for/${castingSlug}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  });
+
+  test('materials page and downloads', async ({ page, request }) => {
     await waitForOk(page, '/materials');
     await expect(page.getByRole('heading', { name: 'Materials', level: 1 })).toBeVisible();
     await expect(page.getByRole('link', { name: /Resume \(PDF\)/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Theatrical headshot/i })).toBeVisible();
 
-    const pdf = await request.get('/downloads/elyse-tindall-resume.pdf');
-    expect(pdf.status()).toBe(200);
-    const contentType = pdf.headers()['content-type'] ?? '';
-    expect(contentType).toMatch(/pdf|octet-stream/i);
-    const body = await pdf.body();
-    expect(body.byteLength).toBeGreaterThan(500);
+    const pdf = await waitForRequestOk(request, '/downloads/elyse-tindall-resume.pdf');
+    const pdfType = pdf.headers()['content-type'] ?? '';
+    expect(pdfType).toMatch(/pdf|octet-stream/i);
+    const pdfBody = await pdf.body();
+    expect(pdfBody.byteLength).toBeGreaterThan(500);
+
+    const headshot = await waitForRequestOk(
+      request,
+      '/downloads/elyse-tindall-headshot-theatrical.jpg',
+    );
+    const headshotType = headshot.headers()['content-type'] ?? '';
+    expect(headshotType).toMatch(/jpe?g|octet-stream/i);
+    expect((await headshot.body()).byteLength).toBeGreaterThan(500);
   });
 
   test('about page loads', async ({ page }) => {
@@ -68,5 +75,25 @@ test.describe('public staging smoke', () => {
   test('contact page loads', async ({ page }) => {
     await waitForOk(page, '/contact');
     await expect(page.getByRole('heading', { name: 'Contact', level: 1 })).toBeVisible();
+  });
+
+  test('robots.txt and sitemap are served', async ({ request }) => {
+    const robots = await waitForRequestOk(request, '/robots.txt');
+    expect(await robots.text()).toMatch(/Sitemap:/i);
+
+    const sitemap = await waitForRequestOk(request, '/sitemap-index.xml');
+    expect(sitemap.headers()['content-type'] ?? '').toMatch(/xml/i);
+    expect(await sitemap.text()).toMatch(/sitemap/i);
+  });
+
+  test('anonymous studio requires sign-in', async ({ request }) => {
+    test.skip(!isStaticWebAppHost(), 'SWA auth is only enforced on deployed hosts');
+    const response = await request.get('/studio', { maxRedirects: 0 });
+    expect(response.status(), 'studio should redirect unauthenticated users').toBeGreaterThanOrEqual(
+      300,
+    );
+    expect(response.status()).toBeLessThan(400);
+    const location = response.headers()['location'] ?? '';
+    expect(location).toMatch(/\.auth\/login/i);
   });
 });
