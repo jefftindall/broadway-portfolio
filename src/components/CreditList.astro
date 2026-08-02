@@ -9,7 +9,6 @@ export interface CreditItem {
   role?: string;
   venue?: string;
   synopsis: string;
-  featured?: boolean;
   category?: string;
   image?: string;
   videoUrl?: string;
@@ -64,7 +63,6 @@ const categories = [
             role={show.role}
             venue={show.venue}
             synopsis={show.synopsis}
-            featured={show.featured}
             image={show.image}
           />
           {showVideos && show.videoUrl && (
