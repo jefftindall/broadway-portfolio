@@ -3,6 +3,7 @@ import matter from 'gray-matter';
 import { trackEvent } from './telemetry.js';
 import slugify from 'slugify';
 import { commitFile, listRepoFiles, readRepoTextFile, toFrontmatter } from './github.js';
+import { validateContentFile } from './contentValidate.js';
 
 const LESSONS_PAGE = 'src/content/pages/lessons.md';
 const LESSONS_BOOK_PAGE = 'src/content/pages/lessons-book.md';
@@ -242,6 +243,14 @@ async function mergeMarkdownPage(path, { data = {}, body } = {}) {
 }
 
 /**
+ * @param {{ tool: string, path: string, content: string, commitMessage: string, summary: string }} change
+ */
+function finalizeContentChange(change) {
+  validateContentFile(change.path, change.content);
+  return change;
+}
+
+/**
  * @param {string} path
  * @returns {boolean}
  */
@@ -257,6 +266,8 @@ export function isAllowedContentPath(path) {
  */
 export async function buildContentChange(name, args, photoPath) {
   const today = todayIsoDate();
+  /** @type {{ tool: string, path: string, content: string, commitMessage: string, summary: string }} */
+  let change;
 
   switch (name) {
     case 'upsert_show': {
@@ -275,13 +286,14 @@ export async function buildContentChange(name, args, photoPath) {
         }) +
         (args.body || args.synopsis) +
         '\n';
-      return {
+      change = {
         tool: name,
         path: `src/content/shows/${slug}.md`,
         content,
         commitMessage: `content: upsert show ${args.title}`,
         summary: `Updated show “${args.title}” at /shows.`,
       };
+      break;
     }
     case 'create_news_post': {
       const slug = makeSlug(args.slug || args.title);
@@ -296,13 +308,14 @@ export async function buildContentChange(name, args, photoPath) {
         }) +
         args.body +
         '\n';
-      return {
+      change = {
         tool: name,
         path: `src/content/news/${slug}.md`,
         content,
         commitMessage: `content: news ${args.title}`,
         summary: `Published news post “${args.title}” at /news/${slug}.`,
       };
+      break;
     }
     case 'update_about': {
       const content =
@@ -313,23 +326,25 @@ export async function buildContentChange(name, args, photoPath) {
         }) +
         args.body +
         '\n';
-      return {
+      change = {
         tool: name,
         path: 'src/content/pages/about.md',
         content,
         commitMessage: 'content: update about page',
         summary: 'Updated the About page.',
       };
+      break;
     }
     case 'update_lessons_copy': {
       const content = await mergeMarkdownPage(LESSONS_PAGE, { body: args.body });
-      return {
+      change = {
         tool: name,
         path: LESSONS_PAGE,
         content,
         commitMessage: 'content: update lessons copy',
         summary: 'Updated lessons philosophy and details at /lessons.',
       };
+      break;
     }
     case 'update_lessons_seo': {
       const data = {};
@@ -339,25 +354,27 @@ export async function buildContentChange(name, args, photoPath) {
         throw new Error('update_lessons_seo requires title and/or description.');
       }
       const content = await mergeMarkdownPage(LESSONS_PAGE, { data });
-      return {
+      change = {
         tool: name,
         path: LESSONS_PAGE,
         content,
         commitMessage: 'content: update lessons seo',
         summary: 'Updated Lessons page title/description.',
       };
+      break;
     }
     case 'update_lesson_rates': {
       const rates = normalizeLessonRates(args.rates);
       if (!rates.length) throw new Error('update_lesson_rates requires at least one rate.');
       const content = await mergeMarkdownPage(LESSONS_BOOK_PAGE, { data: { rates } });
-      return {
+      change = {
         tool: name,
         path: LESSONS_BOOK_PAGE,
         content,
         commitMessage: 'content: update lesson rates',
         summary: 'Updated lesson rates at /lessons/book.',
       };
+      break;
     }
     case 'update_lesson_scheduling': {
       const data = {};
@@ -369,13 +386,14 @@ export async function buildContentChange(name, args, photoPath) {
         throw new Error('update_lesson_scheduling requires format, scheduling, and/or body.');
       }
       const content = await mergeMarkdownPage(LESSONS_BOOK_PAGE, patch);
-      return {
+      change = {
         tool: name,
         path: LESSONS_BOOK_PAGE,
         content,
         commitMessage: 'content: update lesson scheduling',
         summary: 'Updated lesson scheduling details at /lessons/book.',
       };
+      break;
     }
     case 'update_lesson_book_seo': {
       const data = {};
@@ -385,13 +403,14 @@ export async function buildContentChange(name, args, photoPath) {
         throw new Error('update_lesson_book_seo requires title and/or description.');
       }
       const content = await mergeMarkdownPage(LESSONS_BOOK_PAGE, { data });
-      return {
+      change = {
         tool: name,
         path: LESSONS_BOOK_PAGE,
         content,
         commitMessage: 'content: update lesson book seo',
         summary: 'Updated book-a-lesson page title/description.',
       };
+      break;
     }
     case 'add_gallery_photo': {
       const image = args.image || photoPath;
@@ -411,13 +430,14 @@ export async function buildContentChange(name, args, photoPath) {
           tags: args.tags || [],
           order: args.order,
         }) + '\n';
-      return {
+      change = {
         tool: name,
         path: `src/content/gallery/${slug}.md`,
         content,
         commitMessage: `content: gallery ${slug}`,
         summary: `Added gallery photo (${slug}).`,
       };
+      break;
     }
     case 'create_or_update_casting_page': {
       const slug = makeSlug(args.slug || args.keyword);
@@ -432,17 +452,20 @@ export async function buildContentChange(name, args, photoPath) {
         }) +
         args.body +
         '\n';
-      return {
+      change = {
         tool: name,
         path: `src/content/casting/${slug}.md`,
         content,
         commitMessage: `content: casting page ${args.keyword}`,
         summary: `Casting page ready at /for/${slug}.`,
       };
+      break;
     }
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
+
+  return finalizeContentChange(change);
 }
 
 /**
@@ -481,6 +504,7 @@ export async function applyContentChanges(changes) {
       throw new Error(`Disallowed content path: ${path}`);
     }
     const content = String(change.content ?? '');
+    validateContentFile(path, content);
     const commitMessage = String(change.commitMessage || change.message || `content: update ${path}`);
     const committed = await commitFile({ path, content, message: commitMessage });
     if (committed.commitSha) commitSha = committed.commitSha;

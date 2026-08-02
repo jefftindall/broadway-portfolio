@@ -78,7 +78,7 @@ When drafts omit `date`, invent slugs poorly, or leave empty `body`:
 2. Add a short `description` on the property (e.g. `ISO date YYYY-MM-DD`).
 3. Optionally mention defaults in the system instruction (e.g. news date defaults to today — the builder already fills today when omitted).
 
-Builders in `buildContentChange()` still apply deterministic defaults (slugs, today’s date, photo path). Lessons and book-page tools **merge** into existing files via `gray-matter` so rates updates do not wipe philosophy copy (and vice versa). Prefer fixing Gemini output when the *copy* is wrong; prefer builder defaults when the value is mechanical.
+Builders in `buildContentChange()` still apply deterministic defaults (slugs, today’s date, photo path). Lessons and book-page tools **merge** into existing files via `gray-matter` so rates updates do not wipe philosophy copy (and vice versa). Before draft or publish, `validateContentFile()` checks frontmatter against the shared Zod schemas in [`shared/contentSchemas.js`](../../shared/contentSchemas.js) (same rules as `astro check`). Invalid drafts return a friendly 400 with `correlationId` — not a raw Zod dump. Prefer fixing Gemini output when the *copy* is wrong; prefer builder defaults when the value is mechanical.
 
 ## Model changes
 
