@@ -1,0 +1,14 @@
+{
+  "install": "npm ci && npm ci --prefix api",
+  "ports": [
+    { "name": "Astro dev", "port": 4321 },
+    { "name": "Azure Functions", "port": 7071 }
+  ],
+  "terminals": [
+    {
+      "name": "site",
+      "command": "npm run dev -- --host 0.0.0.0 --port 4321",
+      "description": "Public Astro site for browser / computer-use checks"
+    }
+  ]
+}

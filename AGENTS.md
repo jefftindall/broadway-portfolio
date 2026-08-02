@@ -2,7 +2,7 @@ See README.md and docs/ for project guidance.
 
 ## Cursor Cloud specific instructions
 
-Single-product Astro portfolio + optional Gemini-powered "Studio" Azure Functions API. Node >= 22.12 is required (see root `package.json` engines). The startup update script installs npm deps for the root site and `api/` (`npm ci` in both) and idempotently ensures the Terraform CLI and TFLint are on `PATH` (install-if-missing), so `npm run lint` works out of the box. Azure Functions Core Tools (`func`) is present in the base image but is **not** installed by the update script.
+Single-product Astro portfolio + optional Gemini-powered "Studio" Azure Functions API. Node >= 22.12 is required (see root `package.json` engines). Cloud agent runtime is defined in [`.cursor/environment.json`](.cursor/environment.json): the `install` script runs `npm ci` for the root site and `api/`. Bake Node, Terraform (>= 1.5), TFLint (`tflint --init` in `infra/`), and Azure CLI (`az`) into the Cursor Cloud environment **snapshot** (then set `"snapshot"` in `environment.json`). Azure Functions Core Tools (`func`) may be present on the base/snapshot image but is **not** part of `install`. The `site` terminal starts Astro on port 4321 for browser / computer-use checks.
 
 ### Lint and static analysis (required before commit)
 
@@ -21,7 +21,7 @@ This mirrors the PR gate workflow [`.github/workflows/static-analysis.yml`](.git
 | API JS syntax | `npm run lint:api` | API syntax |
 | Terraform plan (CI only, after the checks above) | — | Plan staging / Plan prod (PRs touching `infra/`) |
 
-Requirements for Terraform lint locally: Terraform >= 1.5 and [TFLint](https://github.com/terraform-linters/tflint) on `PATH` (`tflint --init` uses [`infra/.tflint.hcl`](infra/.tflint.hcl)). In Cursor Cloud these are provisioned by the startup update script; if they are ever missing (e.g. a network failure during startup), reinstall them before committing rather than skipping the gate. Do not commit if lint fails; do not skip these checks.
+Requirements for Terraform lint: Terraform >= 1.5 and [TFLint](https://github.com/terraform-linters/tflint) on `PATH` (`tflint --init` uses [`infra/.tflint.hcl`](infra/.tflint.hcl)). On Cursor Cloud these come from the environment snapshot; if they are missing, install them before committing rather than skipping the gate. Do not commit if lint fails; do not skip these checks.
 
 ### Brand (teaching)
 - Elyse is a musical theatre **actress** and **vocal coach**. Private lessons are **voice lessons only** (vocal pedagogy, vocal health, CCM).
