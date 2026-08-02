@@ -16,7 +16,7 @@ Optional: set `alert_email` when applying Terraform to create an action group + 
 - Log Analytics + App Insights retention: **30 days**
 - Daily ingestion cap: **1 GB** per App Insights component (cap notifications enabled)
 - Browser sampling: **25%** staging, **10%** prod (`PUBLIC_APPINSIGHTS_SAMPLE_PERCENT`) for pageviews / generic fetch
-- **Studio UI publish events are force-sampled at 100%** (`StudioPublishUiSuccess` / `StudioPublishUiFailed`) and flushed after track
+- **Studio UI publish events are force-sampled at 100%** (`StudioPublishUiSuccess` / `StudioPublishUiFailed` / `StudioPublishToProdCompleted` and metric `StudioPublishToProdDurationMs`) and flushed after track
 - Server: adaptive sampling in `api/host.json` for Request/Dependency, with **`excludedTypes: Event;Exception`** so custom events and exceptions are never dropped
 - Custom Functions `TelemetryClient` uses `samplingPercentage = 100` and `flush()` on deny / 500 paths
 - Availability test: **prod only**, homepage every **10 minutes**, one geo (`us-va-ash-azr`)
@@ -48,6 +48,8 @@ User-facing messages stay short and non-technical. Full provider/SDK detail is o
 | `GET /api/publishStatus` | Studio Done-step pipeline poll (`sha` → Actions run status) |
 | Page views / client errors / fetch | Browser SDK in `BaseLayout` |
 | `StudioPublishUiSuccess` / `StudioPublishUiFailed` | Studio UI (always sampled; `reason` + optional `correlationId` on failures) |
+| `StudioPublishToProdCompleted` | Studio Done-step when Deploy Production succeeds (`durationMs` from Publish click; always sampled) |
+| `StudioPublishToProdDurationMs` | Browser custom metric (same window as above; always sampled) |
 | `DeployCompleted` | GitHub Actions after SWA upload |
 
 Gemini model-side traces stay in Google — not App Insights. Coarse `errorKind` values include `gemini_quota`, `gemini`, `github`, `config`, `unknown`.
@@ -117,9 +119,26 @@ Studio / publish events:
 
 ```kusto
 customEvents
-| where name in ("StudioAccessDenied", "StudioPublishDenied", "StudioDraftRequested", "StudioDraftFailed", "StudioPublishRequested", "StudioPublishFailed", "StudioToolExecuted", "GitHubCommitSucceeded", "GitHubCommitFailed", "StudioPublishUiSuccess", "StudioPublishUiFailed", "DeployCompleted")
+| where name in ("StudioAccessDenied", "StudioPublishDenied", "StudioDraftRequested", "StudioDraftFailed", "StudioPublishRequested", "StudioPublishFailed", "StudioToolExecuted", "GitHubCommitSucceeded", "GitHubCommitFailed", "StudioPublishUiSuccess", "StudioPublishUiFailed", "StudioPublishToProdCompleted", "DeployCompleted")
 | order by timestamp desc
 | take 100
+```
+
+Publish → production latency (from Studio Publish click until Deploy Production succeeds):
+
+```kusto
+customEvents
+| where name == "StudioPublishToProdCompleted"
+| extend durationMs = todouble(customDimensions.durationMs)
+| summarize avg(durationMs), percentile(durationMs, 50), percentile(durationMs, 95), count() by bin(timestamp, 1d)
+| order by timestamp desc
+```
+
+```kusto
+customMetrics
+| where name == "StudioPublishToProdDurationMs"
+| summarize avg(value), percentile(value, 50), percentile(value, 95), count() by bin(timestamp, 1d)
+| order by timestamp desc
 ```
 
 Deploy timeline:
