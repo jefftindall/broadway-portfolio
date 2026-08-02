@@ -50,6 +50,7 @@ func start
   - [Add casting page](docs/runbooks/add-casting-page.md)
   - [Troubleshoot build](docs/runbooks/troubleshoot-build.md)
   - [DNS and domain](docs/runbooks/dns-and-domain.md)
+  - [WordPress (EasyWP) → Azure cutover](docs/runbooks/wordpress-to-azure-cutover.md)
   - [Cost and quotas](docs/runbooks/cost-and-quotas.md)
   - [Observability](docs/runbooks/observability.md)
   - [Refine Studio Gemini instructions](docs/runbooks/refine-studio-gemini.md)

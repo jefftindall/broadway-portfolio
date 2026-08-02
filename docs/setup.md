@@ -257,11 +257,15 @@ The registration is single-tenant and the API enforces the Key Vault allowlist, 
 
 ## 6. Custom domain / DNS cutover (prod only)
 
+Full procedure (Namecheap EasyWP → Azure, legacy 301s, search consoles, decommission): [WordPress → Azure cutover runbook](runbooks/wordpress-to-azure-cutover.md).
+
+Summary:
+
 1. Prod Terraform already sets `custom_domain = "elysetindall.com"`
 2. Create the TXT validation record from `custom_domain_validation_token` (see [dns-and-domain runbook](runbooks/dns-and-domain.md))
-3. After validation, set apex `A`/`ALIAS` or `CNAME` per Azure SWA DNS instructions
-4. Optionally add `www` as a second hostname with redirect to apex
-5. Verify HTTPS and that WordPress is no longer serving traffic
+3. Deploy legacy WordPress 301s via `public/staticwebapp.config.json` (staging → smoke → prod) before flipping DNS
+4. In Namecheap Advanced DNS, replace EasyWP apex/`www` records with Azure SWA ALIAS/A + CNAME
+5. Verify HTTPS, redirects, and that EasyWP no longer serves apex traffic
 6. Smoke-test: home, shows, lessons, a `/for/...` page, and authenticated Studio publish
 
 ## 7. First authenticated publish test
