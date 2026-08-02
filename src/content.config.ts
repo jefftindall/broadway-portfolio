@@ -42,12 +42,21 @@ const gallery = defineCollection({
   }),
 });
 
+const lessonRate = z.object({
+  label: z.string(),
+  price: z.string(),
+  priceAmount: z.number().optional(),
+});
+
 const pages = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/pages' }),
   schema: z.object({
     title: z.string(),
     description: z.string(),
     updated: z.coerce.date().optional(),
+    rates: z.array(lessonRate).optional(),
+    format: z.string().optional(),
+    scheduling: z.string().optional(),
   }),
 });
 

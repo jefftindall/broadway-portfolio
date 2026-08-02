@@ -1,0 +1,122 @@
+---
+import { getEntry, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { site } from '../../lib/site';
+import GlassPanel from '../../components/GlassPanel.astro';
+import CtaLink from '../../components/CtaLink.astro';
+
+const entry = await getEntry('pages', 'lessons-book');
+if (!entry) throw new Error('Missing lessons book page content');
+
+const rates = entry.data.rates ?? [];
+if (!rates.length) throw new Error('Lessons book page requires rates');
+
+const { Content } = await render(entry);
+
+const inquireHref = `mailto:${site.email}?subject=${encodeURIComponent('Lesson Inquiry')}`;
+const bookUrl = `${site.url}/lessons/book`;
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'EducationalOrganization',
+    name: `${site.name} Private Voice Lessons`,
+    description: entry.data.description,
+    url: bookUrl,
+    email: site.email,
+    areaServed: ['New York, NY', 'Online'],
+    founder: {
+      '@type': 'Person',
+      name: site.name,
+      jobTitle: site.jobTitle,
+      url: site.url,
+    },
+    teaches: site.knowsAbout,
+  },
+  ...rates.map((rate) => ({
+    '@context': 'https://schema.org',
+    '@type': 'Offer',
+    name: `${rate.label} — private voice lesson`,
+    description:
+      'Private vocal coaching session with Elyse Tindall — pedagogy, vocal health, and CCM.',
+    price: (rate.priceAmount ?? (Number.parseFloat(rate.price.replace(/[^0-9.]/g, '')) || 0)).toFixed(2),
+    priceCurrency: 'USD',
+    url: bookUrl,
+    seller: { '@type': 'Person', name: site.name, email: site.email },
+    availability: 'https://schema.org/InStock',
+  })),
+];
+---
+
+<BaseLayout
+  title="Book a Lesson"
+  description={entry.data.description}
+  image="/images/lessons/lessons-banner.jpg"
+  jsonLd={jsonLd}
+  hideFooterCta
+>
+  <section class="relative overflow-hidden border-b border-line">
+    <div class="absolute inset-0">
+      <img
+        src="/images/lessons/lessons-banner.jpg"
+        alt=""
+        class="h-full w-full object-cover"
+        width="1600"
+        height="900"
+        aria-hidden="true"
+      />
+      <div class="absolute inset-0 bg-ink/75" aria-hidden="true"></div>
+    </div>
+    <div class="relative mx-auto max-w-6xl px-6 py-20 md:py-28">
+      <p class="text-sm uppercase tracking-[0.25em] text-gold">Private voice lessons</p>
+      <h1 class="mt-3 max-w-2xl font-display text-5xl text-spotlight md:text-6xl lg:text-7xl">
+        Rates &amp; scheduling
+      </h1>
+      <p class="mt-5 max-w-xl text-lg text-muted">
+        Ready to study voice? Review session options below, then email to inquire about availability.
+      </p>
+      <div class="mt-10 flex flex-wrap gap-4">
+        <CtaLink href={inquireHref}>Email to inquire</CtaLink>
+        <CtaLink href="/lessons" variant="secondary">About lessons</CtaLink>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-y" aria-labelledby="booking-heading">
+    <div class="mx-auto grid max-w-6xl gap-12 px-6 lg:grid-cols-2">
+      <div id="booking-heading">
+        <GlassPanel strong class="p-6 md:p-8">
+          <h2 class="font-display text-3xl text-spotlight">Rates</h2>
+          <ul class="mt-6 space-y-4">
+            {
+              rates.map((rate) => (
+                <li class="flex items-baseline justify-between gap-4 border-b border-line pb-3">
+                  <span class="text-muted">{rate.label}</span>
+                  <span class="font-display text-2xl text-gold">{rate.price}</span>
+                </li>
+              ))
+            }
+          </ul>
+          {
+            entry.data.format && (
+              <p class="mt-6 text-sm text-muted">{entry.data.format}</p>
+            )
+          }
+          {
+            entry.data.scheduling && (
+              <p class="mt-4 text-sm text-muted">{entry.data.scheduling}</p>
+            )
+          }
+          <CtaLink class="mt-8" href={inquireHref}>Email to inquire</CtaLink>
+        </GlassPanel>
+      </div>
+      <div>
+        <p class="text-sm uppercase tracking-[0.2em] text-gel">Before you book</p>
+        <h2 class="mt-3 font-display text-4xl text-spotlight">What to expect</h2>
+        <div class="prose-site mt-8">
+          <Content />
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

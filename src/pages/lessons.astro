@@ -1,7 +1,7 @@
 ---
 import { getEntry, render } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { lessonOfferings, lessonRates, site } from '../lib/site';
+import { lessonOfferings, site } from '../lib/site';
 import GlassPanel from '../components/GlassPanel.astro';
 import CtaLink from '../components/CtaLink.astro';
 import SectionHeader from '../components/SectionHeader.astro';
@@ -10,48 +10,22 @@ const entry = await getEntry('pages', 'lessons');
 if (!entry) throw new Error('Missing lessons page content');
 const { Content } = await render(entry);
 
-const inquireHref = `mailto:${site.email}?subject=${encodeURIComponent('Lesson Inquiry')}`;
-
-const jsonLd = [
-  {
-    '@context': 'https://schema.org',
-    '@type': 'EducationalOrganization',
-    name: `${site.name} Private Voice Lessons`,
-    description: entry.data.description,
-    url: `${site.url}/lessons`,
-    email: site.email,
-    areaServed: ['New York, NY', 'Online'],
-    founder: {
-      '@type': 'Person',
-      name: site.name,
-      jobTitle: site.jobTitle,
-      url: site.url,
-    },
-    teaches: site.knowsAbout,
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'EducationalOrganization',
+  name: `${site.name} Private Voice Lessons`,
+  description: entry.data.description,
+  url: `${site.url}/lessons`,
+  email: site.email,
+  areaServed: ['New York, NY', 'Online'],
+  founder: {
+    '@type': 'Person',
+    name: site.name,
+    jobTitle: site.jobTitle,
+    url: site.url,
   },
-  {
-    '@context': 'https://schema.org',
-    '@type': 'Offer',
-    name: '30-minute private voice lesson',
-    description: 'Private vocal coaching session with Elyse Tindall — pedagogy, vocal health, and CCM.',
-    price: '60.00',
-    priceCurrency: 'USD',
-    url: `${site.url}/lessons`,
-    seller: { '@type': 'Person', name: site.name, email: site.email },
-    availability: 'https://schema.org/InStock',
-  },
-  {
-    '@context': 'https://schema.org',
-    '@type': 'Offer',
-    name: '60-minute private voice lesson',
-    description: 'Private vocal coaching session with Elyse Tindall — pedagogy, vocal health, and CCM.',
-    price: '100.00',
-    priceCurrency: 'USD',
-    url: `${site.url}/lessons`,
-    seller: { '@type': 'Person', name: site.name, email: site.email },
-    availability: 'https://schema.org/InStock',
-  },
-];
+  teaches: site.knowsAbout,
+};
 ---
 
 <BaseLayout
@@ -82,7 +56,7 @@ const jsonLd = [
         Pedagogy-informed private voice lessons with an emphasis on vocal health and contemporary commercial music (CCM) — Atlanta roots, New York studio.
       </p>
       <div class="mt-10 flex flex-wrap gap-4">
-        <CtaLink href="#inquire">Book a Lesson</CtaLink>
+        <CtaLink href="/lessons/book">Book a lesson</CtaLink>
         <CtaLink href="/contact" variant="secondary">Contact</CtaLink>
       </div>
     </div>
@@ -111,32 +85,15 @@ const jsonLd = [
   </section>
 
   <section class="section-y border-t border-line">
-    <div class="mx-auto grid max-w-6xl gap-12 px-6 lg:grid-cols-2">
-      <div>
-        <p class="text-sm uppercase tracking-[0.2em] text-gel">Approach</p>
-        <h2 class="mt-3 font-display text-4xl text-spotlight">Philosophy &amp; details</h2>
-        <div class="prose-site mt-8">
-          <Content />
-        </div>
+    <div class="mx-auto max-w-3xl px-6">
+      <p class="text-sm uppercase tracking-[0.2em] text-gel">Approach</p>
+      <h2 class="mt-3 font-display text-4xl text-spotlight">Philosophy &amp; details</h2>
+      <div class="prose-site mt-8">
+        <Content />
       </div>
-      <div id="inquire" class="lg:pt-10">
-        <GlassPanel strong class="p-6 md:p-8">
-          <h2 class="font-display text-3xl text-spotlight">Rates &amp; inquire</h2>
-          <ul class="mt-6 space-y-4">
-            {
-              lessonRates.map((rate) => (
-                <li class="flex items-baseline justify-between gap-4 border-b border-line pb-3">
-                  <span class="text-muted">{rate.label}</span>
-                  <span class="font-display text-2xl text-gold">{rate.price}</span>
-                </li>
-              ))
-            }
-          </ul>
-          <p class="mt-6 text-sm text-muted">
-            In-person in New York City or online via Zoom. Tell me about your goals, schedule, and preferred format.
-          </p>
-          <CtaLink class="mt-8" href={inquireHref}>Email to inquire</CtaLink>
-        </GlassPanel>
+      <div class="mt-12 flex flex-wrap gap-4">
+        <CtaLink href="/lessons/book">Rates &amp; scheduling</CtaLink>
+        <CtaLink href="/contact" variant="secondary">Contact</CtaLink>
       </div>
     </div>
   </section>

@@ -52,8 +52,3 @@ export const lessonOfferings = [
       'Song choice, cuts, and vocal storytelling for callbacks and books — singing-focused preparation for the room.',
   },
 ] as const;
-
-export const lessonRates = [
-  { label: '30-minute session', price: '$60' },
-  { label: '60-minute session', price: '$100' },
-] as const;
