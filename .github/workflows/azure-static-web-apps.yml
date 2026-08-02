@@ -234,6 +234,12 @@ jobs:
           CI: true
         run: npm run test:smoke
 
+      - name: Run staging journeys (desktop + mobile subset)
+        env:
+          BASE_URL: https://${{ steps.host.outputs.hostname }}
+          CI: true
+        run: npm run test:journey
+
   terraform_prod:
     name: Terraform Apply Production
     needs: [changes, deploy_staging, smoke_staging]
