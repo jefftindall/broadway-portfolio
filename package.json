@@ -16,6 +16,7 @@
     "lint:terraform": "node scripts/lint-terraform.mjs",
     "resume:pdf": "node scripts/generate-resume-pdf.mjs",
     "test:smoke": "playwright test --config=playwright.smoke.config.ts",
+    "test:journey": "playwright test --config=playwright.journey.config.ts",
     "ig:download": "node scripts/download-instagram-media.mjs"
   },
   "dependencies": {
