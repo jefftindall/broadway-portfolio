@@ -1,0 +1,15 @@
+---
+/**
+ * Chronological age from SITE_DATE_OF_BIRTH at build time.
+ * DOB is never sent to the browser — age refreshes on each deploy.
+ */
+import { ageInYears } from '../lib/age';
+
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<span class={className}>{ageInYears()}</span>

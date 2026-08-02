@@ -11,9 +11,10 @@ Tokens and utilities live in [`src/styles/global.css`](../src/styles/global.css)
 | Name | Elyse Tindall |
 | Role | Musical Theatre Actress & Vocal Coach |
 | Narrative | Atlanta to New York |
+| Contact | From Key Vault / `.env` (`SITE_CONTACT_EMAIL`, `SITE_CONTACT_PHONE`) — not stored in git |
 | Tone | Warm, editorial, confident — Broadway glamour without cold luxury |
 
-Do not use outdated biographical framing (e.g. age-focused teen copy). Lessons and performance share equal brand weight.
+Do not use outdated biographical framing (e.g. age-focused teen copy). Chronological age may appear as a casting fact (derived at build from `SITE_DATE_OF_BIRTH` in Key Vault / local `.env`); never publish the date of birth. Lessons and performance share equal brand weight.
 
 **Teaching (lessons only):** private **voice** lessons — vocal pedagogy, vocal health, CCM. Do not advertise acting lessons.
 

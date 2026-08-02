@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const showCategory = z.enum(['musical', 'play', 'cabaret']).default('musical');
+export const showCategory = z.enum(['musical', 'play', 'cabaret', 'film']).default('musical');
 
 export const lessonRateSchema = z.object({
   label: z.string().min(1),
@@ -15,9 +15,12 @@ export const showFrontmatterSchema = z.object({
   venue: z.string().optional(),
   synopsis: z.string().min(1),
   image: z.string().optional(),
+  /** CSS object-position for credit thumbnails (e.g. "18% 40%") when the subject is off-center */
+  imageFocus: z.string().default('center top'),
   videoUrl: z.string().url().optional(),
   category: showCategory,
   featured: z.boolean().default(false),
+  /** Within the same year, lower order = newer (credits and homepage featured sort newest first). */
   order: z.number().optional(),
 });
 
@@ -36,6 +39,8 @@ export const galleryFrontmatterSchema = z.object({
   image: z.string().min(1),
   tags: z.array(z.string()).default([]),
   order: z.number().optional(),
+  /** CSS object-position for gallery tiles (e.g. "50% 18%", "center top") */
+  focus: z.string().default('center'),
 });
 
 export const pagesFrontmatterSchema = z.object({

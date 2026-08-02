@@ -166,10 +166,10 @@ curl -sI https://elysetindall.com/sitemap-index.xml | head -5
 | ID | Title | Status | Depends on | Primary files / runbooks |
 |----|-------|--------|------------|--------------------------|
 | `DISC-P1-001` | Reorder homepage for casting (hero CTAs + section order) | `done` | `DISC-P0-001` | `src/pages/index.astro`, `src/components/Hero.astro` |
-| `DISC-P1-002` | Add `/materials` page with reel, downloads, and casting CTA | `planned` | `DISC-P0-001`, `DISC-GAP-001`, `DISC-GAP-002` | New `src/pages/materials.astro`, `public/downloads/` |
+| `DISC-P1-002` | Add `/materials` page with reel, downloads, and casting CTA | `done` | `DISC-P0-001`, `DISC-GAP-001`, `DISC-GAP-002` | New `src/pages/materials.astro`, `public/downloads/` |
 | `DISC-P1-003` | Add performer facts block (range, type, union, availability) | `planned` | `DISC-GAP-003` | `src/lib/site.ts`, `src/components/PerformerFacts.astro`, `src/pages/about.astro`, `src/pages/contact.astro` |
 | `DISC-P1-004` | Enrich JSON-LD and `site.ts` for performer + AI discoverability | `planned` | `DISC-P1-003` | `src/lib/site.ts`, `src/components/Seo.astro`, `src/pages/index.astro` |
-| `DISC-P1-005` | Add nav/footer link to Materials | `planned` | `DISC-P1-002` | `src/lib/site.ts` (`nav`), `src/components/Footer.astro` |
+| `DISC-P1-005` | Add nav/footer link to Materials | `done` | `DISC-P1-002` | `src/lib/site.ts` (`nav`), `src/components/Footer.astro` |
 | `DISC-P1-006` | Surface Tiffany King quote on site | `planned` | — | `src/pages/index.astro` or `src/pages/about.astro` |
 | `DISC-P1-007` | Add sticky mobile “Materials” shortcut | `planned` | `DISC-P1-002` | `src/layouts/BaseLayout.astro` or new component |
 
@@ -186,7 +186,7 @@ curl -sI https://elysetindall.com/sitemap-index.xml | head -5
 
 **Brand note:** Lessons remain in nav and footer; this item only changes homepage priority for casting discoverability.
 
-**Follow-up (do not skip):** The hero primary CTA currently uses a `mailto:` link with subject `Casting Inquiry` because `/materials` does not exist yet. When **`DISC-P1-002`** ships, update `src/components/Hero.astro` so “Request materials” points to `/materials/` instead of mailto. Track this under `DISC-P1-002` acceptance criteria below.
+**Follow-up:** ~~Hero primary CTA used mailto until `/materials` existed.~~ Resolved in `DISC-P1-002` — hero now links to `/materials/`.
 
 </details>
 
@@ -195,14 +195,16 @@ curl -sI https://elysetindall.com/sitemap-index.xml | head -5
 
 **Acceptance criteria**
 
-- [ ] Route `/materials/` live and in sitemap
-- [ ] Embedded reel (same YouTube as `site.reelUrl`)
-- [ ] Download link: resume PDF (`/downloads/elyse-tindall-resume.pdf` or equivalent)
-- [ ] Download link: headshot (theatrical + commercial if available)
-- [ ] Email CTA with subject `Casting Inquiry` pre-filled
-- [ ] Page `title` / `description` optimized for “Elyse Tindall materials” queries
-- [ ] `noIndex` is **not** set
-- [ ] Update hero primary CTA in `src/components/Hero.astro`: change “Request materials” from `mailto:` to `/materials/` (see follow-up note on `DISC-P1-001`)
+- [x] Route `/materials/` live and in sitemap
+- [x] Embedded reel (same YouTube as `site.reelUrl`)
+- [x] Download link: resume PDF (`/downloads/elyse-tindall-resume.pdf` or equivalent)
+- [x] Download link: headshot (theatrical + commercial if available)
+- [x] Email CTA with subject `Casting Inquiry` pre-filled
+- [x] Page `title` / `description` optimized for “Elyse Tindall materials” queries
+- [x] `noIndex` is **not** set
+- [x] Update hero primary CTA in `src/components/Hero.astro`: change “Request materials” from `mailto:` to `/materials/` (see follow-up note on `DISC-P1-001`)
+
+**Notes:** Theatrical headshot ships at `/downloads/elyse-tindall-headshot-theatrical.jpg`. Commercial headshot still outstanding (`DISC-GAP-002` partial). Resume PDF is generated from `src/content/shows` + `src/content/resume-meta.json` (`npm run resume:pdf`; also runs automatically as part of `npm run build`).
 
 </details>
 
@@ -416,8 +418,8 @@ Items Elyse (or representation) must supply before related actions can ship.
 
 | ID | Asset / fact | Blocks | Status |
 |----|--------------|--------|--------|
-| `DISC-GAP-001` | Resume PDF (current, casting-formatted) | `DISC-P1-002` | `needed` |
-| `DISC-GAP-002` | Headshot files (theatrical; commercial if available) | `DISC-P1-002` | `needed` |
+| `DISC-GAP-001` | Resume PDF (current, casting-formatted) | `DISC-P1-002` | `done` |
+| `DISC-GAP-002` | Headshot files (theatrical; commercial if available) | `DISC-P1-002` | `partial` (theatrical only) |
 | `DISC-GAP-003` | Performer spec: playing age, vocal range, ethnicity/presenting, union, height, availability | `DISC-P1-003`, `DISC-P1-004`, `DISC-P2-001`–`003` | `needed` |
 | `DISC-GAP-004` | 2–3 vocal demo recordings (YouTube unlisted or public) | `DISC-P2-009` | `needed` |
 | `DISC-GAP-005` | Confirmation whether to publish “seeking representation” publicly | `DISC-P2-005` | `needed` |

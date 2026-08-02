@@ -69,3 +69,10 @@ resource "azurerm_role_assignment" "github_actions_swa_contributor" {
   role_definition_name = "Contributor"
   principal_id         = azuread_service_principal.github_actions.object_id
 }
+
+# Deploy jobs read SITE-* secrets from Key Vault at build time.
+resource "azurerm_role_assignment" "github_actions_kv_secrets_user" {
+  scope                = azurerm_key_vault.main.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azuread_service_principal.github_actions.object_id
+}

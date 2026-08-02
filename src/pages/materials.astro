@@ -1,0 +1,120 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import VideoEmbed from '../components/VideoEmbed.astro';
+import GlassPanel from '../components/GlassPanel.astro';
+import CtaLink from '../components/CtaLink.astro';
+import Age from '../components/Age.astro';
+import { site } from '../lib/site';
+
+const castingMailto = `mailto:${site.email}?subject=${encodeURIComponent('Casting Inquiry')}`;
+
+const downloads = [
+  {
+    label: 'Resume (PDF)',
+    href: site.materials.resumePdf,
+    hint: 'Current casting resume',
+    download: 'elyse-tindall-resume.pdf',
+  },
+  {
+    label: 'Theatrical headshot',
+    href: site.materials.headshotTheatrical,
+    hint: 'JPG for submissions',
+    download: 'elyse-tindall-headshot-theatrical.jpg',
+  },
+] as const;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: `Materials | ${site.name}`,
+  description:
+    'Elyse Tindall materials for casting — reel, resume PDF, theatrical headshot, and contact for casting inquiries.',
+  url: new URL('/materials/', site.url).href,
+  about: {
+    '@type': 'Person',
+    name: site.name,
+    email: site.email,
+    telephone: site.phone,
+    jobTitle: site.jobTitle,
+    url: site.url,
+  },
+};
+---
+
+<BaseLayout
+  title="Materials"
+  description="Elyse Tindall materials for casting directors and agents — watch the reel, download resume and headshot, or email a casting inquiry."
+  image={site.heroImage}
+  jsonLd={jsonLd}
+>
+  <section class="mx-auto max-w-6xl px-6 py-16 md:py-24">
+    <p class="text-sm uppercase tracking-[0.2em] text-gel">For casting</p>
+    <h1 class="mt-3 font-display text-5xl text-spotlight md:text-6xl">Materials</h1>
+    <p class="mt-4 max-w-2xl text-lg text-muted">
+      Reel, resume, and headshot for {site.name} — musical theatre actress based in {site.location}.
+    </p>
+    <p class="mt-3 text-sm text-muted">
+      Age <Age /> · {site.jobTitle}
+    </p>
+    <div class="mt-8 flex flex-wrap gap-4">
+      <CtaLink href={castingMailto}>Email casting inquiry</CtaLink>
+      <CtaLink href="#reel" variant="secondary">Watch reel</CtaLink>
+    </div>
+  </section>
+
+  <section class="border-t border-line" aria-labelledby="reel-heading">
+    <div class="mx-auto max-w-6xl px-6 py-16 md:py-20">
+      <div class="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
+        <div id="reel">
+          <h2 id="reel-heading" class="font-display text-3xl text-spotlight md:text-4xl">Reel</h2>
+          <p class="mt-2 text-sm text-muted">NYC Cabaret — Stage Kiss at Ripley-Grier Studios</p>
+          <div class="mt-6">
+            <VideoEmbed url={site.reelUrl} title="NYC Cabaret — Stage Kiss reel" />
+          </div>
+        </div>
+
+        <div>
+          <h2 class="font-display text-3xl text-spotlight md:text-4xl">Downloads</h2>
+          <p class="mt-2 text-sm text-muted">Use for submissions and casting packets.</p>
+          <ul class="mt-6 space-y-4">
+            {
+              downloads.map((item) => (
+                <li>
+                  <GlassPanel strong class="p-5 md:p-6" as="div">
+                    <a
+                      href={item.href}
+                      download={item.download}
+                      class="group block focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                    >
+                      <p class="font-display text-2xl text-spotlight group-hover:text-gold transition">
+                        {item.label}
+                      </p>
+                      <p class="mt-1 text-sm text-muted">{item.hint}</p>
+                      <p class="mt-3 text-sm text-gel">Download →</p>
+                    </a>
+                  </GlassPanel>
+                </li>
+              ))
+            }
+          </ul>
+
+          <GlassPanel class="mt-6 p-5 md:p-6" as="aside">
+            <p class="text-sm uppercase tracking-[0.2em] text-gel">Direct contact</p>
+            <p class="mt-3 text-sm text-muted">
+              <a class="text-gel underline underline-offset-4" href={`mailto:${site.email}`}>
+                {site.email}
+              </a>
+              {' · '}
+              <a class="text-gel underline underline-offset-4" href={site.telHref}>
+                {site.phone}
+              </a>
+            </p>
+            <CtaLink class="mt-6" href={castingMailto}>
+              Email casting inquiry
+            </CtaLink>
+          </GlassPanel>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

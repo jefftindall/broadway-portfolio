@@ -6,9 +6,9 @@ updated: 2026-08-01
 
 ## Background
 
-Elyse Tindall is a musical theatre actress and vocal coach from Atlanta, Georgia, now based in New York City. She is an alumna of the Broadway Artists Alliance and has trained at the University of the Arts. Her credits include *Anastasia* (Lily), *Miss You Like Hell*, *Almost, Maine*, *Little Women*, industry showcases, and off-Broadway cabarets — including her NYC debut at Ripley-Grier Studios.
+Elyse Tindall is a musical theatre actress and vocal coach from Atlanta, Georgia, now based in New York City. She is an alumna of the Broadway Artists Alliance and has trained at the University of the Arts. Her credits include *The Little Mermaid* (Ursula), *Anastasia* (Lily), *Echoes of the Fork* and *Site 19* (film — cast and music collaborator), *Miss You Like Hell* (ensemble / Olivia understudy — inaugural production), *Almost, Maine* (Hope), *Little Women* (Amy), industry showcases, and off-Broadway cabarets — including Broadway Artists Alliance at Don't Tell Mama and her NYC debut at Ripley-Grier Studios.
 
-Alongside her performance work, she teaches private voice lessons grounded in vocal pedagogy, with a strong emphasis on vocal health and contemporary commercial music (CCM).
+Alongside her performance work, she teaches private voice lessons grounded in vocal pedagogy, with a strong emphasis on vocal health and contemporary commercial music (CCM). Special skills include piano, dance (jazz, tap, ballet), hand-to-hand stage combat, and certified scuba diving.
 
 ## Philosophy
 

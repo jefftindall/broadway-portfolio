@@ -29,9 +29,11 @@ Requirements for Terraform lint: Terraform >= 1.5 and [TFLint](https://github.co
 - See [`docs/style-guide.md`](docs/style-guide.md) and [`docs/runbooks/refine-studio-gemini.md`](docs/runbooks/refine-studio-gemini.md).
 
 ### Public site (primary service)
-- Dev server: `npm run dev` (Astro, serves on port 4321). Build: `npm run build` (static output to `dist/`).
-- Verification: `npm run lint` plus `npm run build` and manual smoke tests. There is no separate unit-test runner.
+- Dev server: `npm run dev` (Astro, serves on port 4321). Build: `npm run build` (runs `resume:pdf` then Astro → `dist/`).
+- Verification: `npm run lint` plus `npm run build` and manual smoke tests. Post-staging CD runs `npm run test:smoke` (Playwright, desktop + mobile) before production.
 - Content is markdown under `src/content/` (`shows`, `news`, `gallery`, `pages`, `casting`) with Zod schemas in `src/content.config.ts`. Adding a markdown file adds a live route (e.g. a new `src/content/news/*.md` appears on `/news` and `/news/<id>`).
+- **Featured shows:** Set `featured: true` only on headline credits. The homepage always shows the **three most recent** featured shows by `year`, then `order` (lower = newer within a year) via [`src/lib/shows.ts`](src/lib/shows.ts) (`getFeaturedShowsForHome`). When adding a new featured credit, mark it featured and set `order` so newer months sort first — it will surface on home automatically if it is among the three newest.
+- **Resume PDF:** Generated from `src/content/shows/*.md` + [`src/content/resume-meta.json`](src/content/resume-meta.json) by [`scripts/generate-resume-pdf.mjs`](scripts/generate-resume-pdf.mjs). Theater = musical/play/cabaret; film = `category: film`. Featured first within each section, then year/order. Run `npm run resume:pdf` after show edits (or rely on `npm run build`, which always regenerates before shipping). Commit the updated `public/downloads/elyse-tindall-resume.pdf` when shows change so the repo artifact stays reviewable.
 
 ### Studio API (`api/`, optional local)
 - Requires **Azure Functions Core Tools** (`func`), which is present in the Cursor Cloud base image (v4) but is NOT part of `npm` deps and NOT installed by the update script. If it is ever missing, install it separately (`npm i -g azure-functions-core-tools@4`).

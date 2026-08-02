@@ -47,7 +47,12 @@ const tags = ['all', ...new Set(items.flatMap((i) => i.data.tags))];
       {
         items.map((item) => (
           <div class="gallery-item" data-tags={item.data.tags.join(' ')}>
-            <MediaCard src={item.data.image} alt="" />
+            <MediaCard
+              src={item.data.image}
+              alt={item.data.caption || ''}
+              caption={item.data.caption || undefined}
+              objectPosition={item.data.focus}
+            />
           </div>
         ))
       }

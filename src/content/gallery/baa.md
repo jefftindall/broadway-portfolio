@@ -4,5 +4,6 @@ image: /images/gallery/baa.jpg
 tags:
   - training
   - new-york
-order: 11
+order: 41
+focus: "50% 45%"
 ---

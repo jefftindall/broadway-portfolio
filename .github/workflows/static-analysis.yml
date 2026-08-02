@@ -65,6 +65,11 @@ jobs:
   site:
     name: Site check
     runs-on: ubuntu-latest
+    env:
+      # Non-personal dummies so astro check can load site.ts without Key Vault.
+      SITE_CONTACT_EMAIL: check@example.com
+      SITE_CONTACT_PHONE: "000-000-0000"
+      SITE_DATE_OF_BIRTH: "2000-01-01"
     steps:
       - uses: actions/checkout@v7
 

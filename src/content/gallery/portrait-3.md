@@ -1,8 +1,9 @@
 ---
-caption: ""
+caption: London — South Bank
 image: /images/gallery/portrait-3.jpg
 tags:
   - portrait
   - travel
-order: 6
+order: 5
+focus: "50% 55%"
 ---
