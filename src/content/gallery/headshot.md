@@ -1,7 +1,8 @@
 ---
-caption: Headshot — Elyse Tindall
-image: /images/placeholder-portrait.svg
+caption: ""
+image: /images/gallery/headshot.jpg
 tags:
   - headshot
+  - portrait
 order: 1
 ---

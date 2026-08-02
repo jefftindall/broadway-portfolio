@@ -13,7 +13,9 @@
   --color-muted: #b8a99a;
   --color-gold: #c4a35a;
   --color-gel: #3d8b8b;
-  --color-line: rgba(243, 235, 224, 0.12);
+  --color-line: rgba(243, 235, 224, 0.14);
+  --color-glass: rgba(26, 22, 18, 0.55);
+  --color-glass-strong: rgba(36, 31, 26, 0.72);
 }
 
 html {
@@ -41,6 +43,11 @@ h3,
   color: var(--color-ink);
 }
 
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 3px;
+}
+
 .site-bg {
   background:
     radial-gradient(ellipse 80% 50% at 50% -10%, rgba(196, 163, 90, 0.18), transparent 55%),
@@ -48,6 +55,30 @@ h3,
     radial-gradient(ellipse 50% 35% at 0% 80%, rgba(61, 139, 139, 0.08), transparent 45%),
     linear-gradient(180deg, var(--color-ink) 0%, var(--color-stage) 100%);
   background-attachment: fixed;
+}
+
+.glass-panel {
+  background: var(--color-glass);
+  border: 1px solid var(--color-line);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.glass-panel-strong {
+  background: var(--color-glass-strong);
+  border: 1px solid var(--color-line);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.section-y {
+  padding-block: 4rem;
+}
+
+@media (min-width: 768px) {
+  .section-y {
+    padding-block: 5.5rem;
+  }
 }
 
 .fade-up {
@@ -99,4 +130,14 @@ h3,
 .prose-site strong {
   color: var(--color-spotlight);
   font-weight: 600;
+}
+
+.prose-site ul {
+  margin-top: 0.75rem;
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+
+.prose-site li + li {
+  margin-top: 0.4rem;
 }

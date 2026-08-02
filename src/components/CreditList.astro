@@ -1,0 +1,102 @@
+---
+import ShowCard from './ShowCard.astro';
+import VideoEmbed from './VideoEmbed.astro';
+
+export interface CreditItem {
+  id: string;
+  title: string;
+  year: number;
+  role?: string;
+  venue?: string;
+  synopsis: string;
+  featured?: boolean;
+  category?: string;
+  image?: string;
+  videoUrl?: string;
+}
+
+interface Props {
+  items: CreditItem[];
+  showFilters?: boolean;
+  showVideos?: boolean;
+}
+
+const { items, showFilters = true, showVideos = true } = Astro.props;
+
+const categories = [
+  { id: 'all', label: 'All' },
+  { id: 'musical', label: 'Musical' },
+  { id: 'play', label: 'Play' },
+  { id: 'cabaret', label: 'Cabaret' },
+];
+---
+
+<div class="credit-list" data-credit-list>
+  {
+    showFilters && (
+      <div
+        class="flex flex-wrap gap-2"
+        role="tablist"
+        aria-label="Filter credits by type"
+      >
+        {categories.map((cat, i) => (
+          <button
+            type="button"
+            role="tab"
+            data-filter={cat.id}
+            aria-selected={i === 0 ? 'true' : 'false'}
+            class="credit-filter min-h-11 rounded-sm border border-line px-4 py-2 text-sm text-muted transition aria-selected:border-gold aria-selected:bg-gold/15 aria-selected:text-spotlight"
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
+    )
+  }
+
+  <div class="mt-6" role="tabpanel">
+    {
+      items.map((show) => (
+        <div class="credit-item" data-category={show.category ?? 'musical'}>
+          <ShowCard
+            title={show.title}
+            year={show.year}
+            role={show.role}
+            venue={show.venue}
+            synopsis={show.synopsis}
+            featured={show.featured}
+            image={show.image}
+          />
+          {showVideos && show.videoUrl && (
+            <div class="mb-8 max-w-2xl">
+              <VideoEmbed url={show.videoUrl} title={show.title} />
+            </div>
+          )}
+        </div>
+      ))
+    }
+  </div>
+</div>
+
+<script>
+  function initCreditFilters() {
+    document.querySelectorAll<HTMLElement>('[data-credit-list]').forEach((root) => {
+      const buttons = root.querySelectorAll<HTMLButtonElement>('.credit-filter');
+      const items = root.querySelectorAll<HTMLElement>('.credit-item');
+
+      buttons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const filter = btn.dataset.filter ?? 'all';
+          buttons.forEach((b) => b.setAttribute('aria-selected', String(b === btn)));
+          items.forEach((item) => {
+            const cat = item.dataset.category ?? 'musical';
+            item.hidden = !(filter === 'all' || cat === filter);
+          });
+        });
+      });
+    });
+  }
+
+  initCreditFilters();
+  document.addEventListener('astro:page-load', initCreditFilters);
+</script>

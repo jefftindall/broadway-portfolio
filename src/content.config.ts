@@ -1,6 +1,8 @@
 import { defineCollection, z } from 'astro:content';
 import { glob } from 'astro/loaders';
 
+const showCategory = z.enum(['musical', 'play', 'cabaret']).default('musical');
+
 const shows = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/shows' }),
   schema: z.object({
@@ -11,6 +13,7 @@ const shows = defineCollection({
     synopsis: z.string(),
     image: z.string().optional(),
     videoUrl: z.string().url().optional(),
+    category: showCategory,
     featured: z.boolean().default(false),
     order: z.number().optional(),
   }),
@@ -32,7 +35,7 @@ const news = defineCollection({
 const gallery = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/gallery' }),
   schema: z.object({
-    caption: z.string(),
+    caption: z.string().default(''),
     image: z.string(),
     tags: z.array(z.string()).default([]),
     order: z.number().optional(),

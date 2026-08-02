@@ -1,45 +1,69 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import ShowCard from '../components/ShowCard.astro';
+import CreditList from '../components/CreditList.astro';
 import VideoEmbed from '../components/VideoEmbed.astro';
+import GlassPanel from '../components/GlassPanel.astro';
+import { site } from '../lib/site';
 
 const shows = (await getCollection('shows')).sort((a, b) => {
   if (b.data.year !== a.data.year) return b.data.year - a.data.year;
   return (a.data.order ?? 99) - (b.data.order ?? 99);
 });
+
+const items = shows.map((show) => ({
+  id: show.id,
+  title: show.data.title,
+  year: show.data.year,
+  role: show.data.role,
+  venue: show.data.venue,
+  synopsis: show.data.synopsis,
+  featured: show.data.featured,
+  category: show.data.category,
+  image: show.data.image,
+  videoUrl: show.data.videoUrl,
+}));
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'VideoObject',
+  name: 'NYC Cabaret — Stage Kiss',
+  description: 'Elyse Tindall performs Stage Kiss at Ripley-Grier Studios, New York City.',
+  thumbnailUrl: new URL('/images/photos/cabaret-reel-poster.jpg', site.url).href,
+  uploadDate: '2024-08-01',
+  contentUrl: site.reelUrl,
+  embedUrl: 'https://www.youtube.com/embed/41jdPTkN_Sw',
+};
 ---
 
 <BaseLayout
   title="Shows"
   description="Stage credits for Elyse Tindall — musicals, plays, and NYC cabaret."
+  image="/images/shows/nyc-cabaret.jpg"
+  jsonLd={jsonLd}
 >
   <section class="mx-auto max-w-6xl px-6 py-16 md:py-24">
     <p class="text-sm uppercase tracking-[0.2em] text-gel">Credits</p>
     <h1 class="mt-3 font-display text-5xl text-spotlight md:text-6xl">Shows</h1>
     <p class="mt-4 max-w-2xl text-muted">
-      Fresh credits for casting — roles, venues, and recent work. Updated as bookings land.
+      Roles, venues, and recent work for casting — filter by musical, play, or cabaret.
     </p>
-    <div class="mt-10">
-      {
-        shows.map((show) => (
-          <div>
-            <ShowCard
-              title={show.data.title}
-              year={show.data.year}
-              role={show.data.role}
-              venue={show.data.venue}
-              synopsis={show.data.synopsis}
-              featured={show.data.featured}
-            />
-            {show.data.videoUrl && (
-              <div class="mb-8 max-w-2xl">
-                <VideoEmbed url={show.data.videoUrl} title={show.data.title} />
-              </div>
-            )}
-          </div>
-        ))
-      }
+
+    <div id="reel" class="mt-12">
+      <GlassPanel strong class="overflow-hidden p-2 md:grid md:grid-cols-[1.2fr_0.8fr] md:gap-6 md:p-3">
+        <VideoEmbed url={site.reelUrl} title="NYC Cabaret — Stage Kiss reel" />
+        <div class="flex flex-col justify-center px-4 py-5 md:px-2">
+          <p class="text-sm uppercase tracking-[0.2em] text-gold">Reel</p>
+          <h2 class="mt-2 font-display text-3xl text-spotlight">Stage Kiss — NYC Cabaret</h2>
+          <p class="mt-2 text-sm text-muted">
+            Ripley-Grier Studios, New York City
+          </p>
+        </div>
+      </GlassPanel>
+    </div>
+
+    <div class="mt-14">
+      <CreditList items={items} showVideos={false} />
     </div>
   </section>
 </BaseLayout>

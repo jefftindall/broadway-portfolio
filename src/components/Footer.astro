@@ -1,12 +1,14 @@
 ---
 import { site } from '../lib/site';
+import CtaLink from './CtaLink.astro';
+
 interface Props {
   hideCta?: boolean;
 }
 const { hideCta = false } = Astro.props;
 ---
 
-<footer class="mt-24 border-t border-line">
+<footer class="mt-16 border-t border-line md:mt-24">
   {
     !hideCta && (
       <div class="mx-auto max-w-6xl px-6 py-16 text-center">
@@ -15,18 +17,10 @@ const { hideCta = false } = Astro.props;
           Casting inquiries, lesson questions, or press — reach out anytime.
         </p>
         <div class="mt-8 flex flex-wrap justify-center gap-4">
-          <a
-            href="/contact"
-            class="rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110"
-          >
-            Contact
-          </a>
-          <a
-            href="/lessons"
-            class="rounded-sm border border-line px-5 py-3 text-sm text-spotlight hover:border-gold"
-          >
+          <CtaLink href="/contact">Contact</CtaLink>
+          <CtaLink href="/lessons" variant="secondary">
             Lessons
-          </a>
+          </CtaLink>
         </div>
       </div>
     )
@@ -35,8 +29,10 @@ const { hideCta = false } = Astro.props;
     class="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-8 text-sm text-muted md:flex-row"
   >
     <p>© {new Date().getFullYear()} {site.name}</p>
-    <div class="flex gap-6">
-      <a href={site.instagram} class="hover:text-spotlight">Instagram</a>
+    <div class="flex flex-wrap justify-center gap-6">
+      <a href={site.instagram} class="hover:text-spotlight" rel="noopener noreferrer" target="_blank">
+        Instagram
+      </a>
       <a href={`mailto:${site.email}`} class="hover:text-spotlight">{site.email}</a>
     </div>
   </div>

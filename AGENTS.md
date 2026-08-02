@@ -23,6 +23,11 @@ This mirrors the PR gate workflow [`.github/workflows/static-analysis.yml`](.git
 
 Requirements for Terraform lint locally: Terraform >= 1.5 and [TFLint](https://github.com/terraform-linters/tflint) on `PATH` (`tflint --init` uses [`infra/.tflint.hcl`](infra/.tflint.hcl)). Do not commit if lint fails; do not skip these checks.
 
+### Brand (teaching)
+- Elyse is a musical theatre **actress** and **vocal coach**. Private lessons are **voice lessons only** (vocal pedagogy, vocal health, CCM).
+- Do **not** advertise acting lessons, monologue coaching, or scene study. Studio Gemini prompts in [`api/src/lib/gemini.js`](api/src/lib/gemini.js) encode the same rules — keep them aligned when editing copy or prompts.
+- See [`docs/style-guide.md`](docs/style-guide.md) and [`docs/runbooks/refine-studio-gemini.md`](docs/runbooks/refine-studio-gemini.md).
+
 ### Public site (primary service)
 - Dev server: `npm run dev` (Astro, serves on port 4321). Build: `npm run build` (static output to `dist/`).
 - Verification: `npm run lint` plus `npm run build` and manual smoke tests. There is no separate unit-test runner.
