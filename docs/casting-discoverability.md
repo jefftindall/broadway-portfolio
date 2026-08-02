@@ -186,6 +186,8 @@ curl -sI https://elysetindall.com/sitemap-index.xml | head -5
 
 **Brand note:** Lessons remain in nav and footer; this item only changes homepage priority for casting discoverability.
 
+**Follow-up (do not skip):** The hero primary CTA currently uses a `mailto:` link with subject `Casting Inquiry` because `/materials` does not exist yet. When **`DISC-P1-002`** ships, update `src/components/Hero.astro` so “Request materials” points to `/materials/` instead of mailto. Track this under `DISC-P1-002` acceptance criteria below.
+
 </details>
 
 <details>
@@ -200,6 +202,7 @@ curl -sI https://elysetindall.com/sitemap-index.xml | head -5
 - [ ] Email CTA with subject `Casting Inquiry` pre-filled
 - [ ] Page `title` / `description` optimized for “Elyse Tindall materials” queries
 - [ ] `noIndex` is **not** set
+- [ ] Update hero primary CTA in `src/components/Hero.astro`: change “Request materials” from `mailto:` to `/materials/` (see follow-up note on `DISC-P1-001`)
 
 </details>
 
