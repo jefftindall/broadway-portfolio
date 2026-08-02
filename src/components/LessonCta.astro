@@ -1,5 +1,4 @@
 ---
-import { site } from '../lib/site';
 import GlassPanel from './GlassPanel.astro';
 import CtaLink from './CtaLink.astro';
 ---
@@ -11,11 +10,8 @@ import CtaLink from './CtaLink.astro';
   </p>
   <div class="mt-6 flex flex-wrap gap-4">
     <CtaLink href="/lessons" variant="gel">Lessons</CtaLink>
-    <CtaLink
-      href={`mailto:${site.email}?subject=${encodeURIComponent('Lesson Inquiry')}`}
-      variant="secondary"
-    >
-      Email to inquire
+    <CtaLink href="/lessons/book" variant="secondary">
+      Book a lesson
     </CtaLink>
   </div>
 </GlassPanel>

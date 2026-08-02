@@ -28,6 +28,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.4",
     "playwright": "^1.54.2",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "zod": "^4.4.3"
   }
 }

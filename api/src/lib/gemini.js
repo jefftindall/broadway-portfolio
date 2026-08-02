@@ -1,7 +1,22 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import matter from 'gray-matter';
 import { trackEvent } from './telemetry.js';
 import slugify from 'slugify';
 import { commitFile, listRepoFiles, readRepoTextFile, toFrontmatter } from './github.js';
+import { validateContentFile } from './contentValidate.js';
+
+const LESSONS_PAGE = 'src/content/pages/lessons.md';
+const LESSONS_BOOK_PAGE = 'src/content/pages/lessons-book.md';
+
+const lessonRateSchema = {
+  type: 'OBJECT',
+  properties: {
+    label: { type: 'STRING', description: 'Session label, e.g. 30-minute session' },
+    price: { type: 'STRING', description: 'Display price, e.g. $60' },
+    priceAmount: { type: 'NUMBER', description: 'Numeric USD amount for structured data, e.g. 60' },
+  },
+  required: ['label', 'price'],
+};
 
 const tools = [
   {
@@ -63,21 +78,81 @@ const tools = [
         },
       },
       {
-        name: 'update_lessons',
+        name: 'update_lessons_copy',
         description:
-          'Replace the Lessons page markdown for private VOICE lessons only (vocal pedagogy, vocal health, CCM). Never advertise acting, monologue, or scene-study lessons.',
+          'Update the Lessons page philosophy and details markdown at /lessons only. Private VOICE lessons (vocal pedagogy, vocal health, CCM). Never advertise acting, monologue, or scene-study lessons. Does not change rates or scheduling — use update_lesson_rates / update_lesson_scheduling for the book page.',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            body: {
+              type: 'STRING',
+              description:
+                'Markdown body for philosophy and teaching approach. Do not include dollar amounts or a rates section.',
+            },
+          },
+          required: ['body'],
+        },
+      },
+      {
+        name: 'update_lessons_seo',
+        description:
+          'Update Lessons page title and/or meta description at /lessons. Does not change body copy or rates.',
         parameters: {
           type: 'OBJECT',
           properties: {
             title: { type: 'STRING' },
             description: { type: 'STRING' },
-            body: {
-              type: 'STRING',
-              description:
-                'Markdown for private vocal coaching. Emphasize vocal pedagogy, vocal health, and CCM. Do not offer acting lessons.',
+          },
+        },
+      },
+      {
+        name: 'update_lesson_rates',
+        description:
+          'Update lesson pricing on the book-a-lesson page at /lessons/book only. Does not change lessons philosophy or scheduling copy.',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            rates: {
+              type: 'ARRAY',
+              items: lessonRateSchema,
+              description: 'Full list of session rates to display',
             },
           },
-          required: ['body'],
+          required: ['rates'],
+        },
+      },
+      {
+        name: 'update_lesson_scheduling',
+        description:
+          'Update format, scheduling instructions, and/or policy copy on /lessons/book. Does not change rates.',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            format: {
+              type: 'STRING',
+              description: 'How lessons are offered, e.g. in-person NYC or Zoom',
+            },
+            scheduling: {
+              type: 'STRING',
+              description: 'How to inquire and what to include in an email',
+            },
+            body: {
+              type: 'STRING',
+              description: 'Optional markdown for the “What to expect” section',
+            },
+          },
+        },
+      },
+      {
+        name: 'update_lesson_book_seo',
+        description:
+          'Update book-a-lesson page title and/or meta description at /lessons/book. Does not change rates or body.',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            title: { type: 'STRING' },
+            description: { type: 'STRING' },
+          },
         },
       },
       {
@@ -128,6 +203,53 @@ function makeSlug(input, fallback) {
   return slugify(base, { lower: true, strict: true });
 }
 
+function todayIsoDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/**
+ * @param {Array<{ label?: string, price?: string, priceAmount?: number }>} rates
+ */
+function normalizeLessonRates(rates) {
+  return (rates || [])
+    .map((rate) => {
+      const label = String(rate.label || '').trim();
+      const price = String(rate.price || '').trim();
+      if (!label || !price) return null;
+      const parsedAmount = Number.parseFloat(price.replace(/[^0-9.]/g, ''));
+      const priceAmount =
+        typeof rate.priceAmount === 'number' && !Number.isNaN(rate.priceAmount)
+          ? rate.priceAmount
+          : Number.isNaN(parsedAmount)
+            ? undefined
+            : parsedAmount;
+      return priceAmount === undefined ? { label, price } : { label, price, priceAmount };
+    })
+    .filter(Boolean);
+}
+
+/**
+ * Merge frontmatter and/or body into an existing markdown page from GitHub.
+ * @param {string} path
+ * @param {{ data?: Record<string, unknown>, body?: string }} patch
+ */
+async function mergeMarkdownPage(path, { data = {}, body } = {}) {
+  const existing = await readRepoTextFile(path);
+  const parsed = existing ? matter(existing) : { data: {}, content: '' };
+  const mergedData = { ...parsed.data, ...data, updated: todayIsoDate() };
+  const mergedBody = body !== undefined ? body : parsed.content;
+  const normalizedBody = String(mergedBody || '').trim();
+  return matter.stringify(normalizedBody ? `${normalizedBody}\n` : '', mergedData);
+}
+
+/**
+ * @param {{ tool: string, path: string, content: string, commitMessage: string, summary: string }} change
+ */
+function finalizeContentChange(change) {
+  validateContentFile(change.path, change.content);
+  return change;
+}
+
 /**
  * @param {string} path
  * @returns {boolean}
@@ -140,10 +262,12 @@ export function isAllowedContentPath(path) {
 
 /**
  * Build a proposed file change from a Gemini tool call (no GitHub write).
- * @returns {{ tool: string, path: string, content: string, commitMessage: string, summary: string }}
+ * @returns {Promise<{ tool: string, path: string, content: string, commitMessage: string, summary: string }>}
  */
-export function buildContentChange(name, args, photoPath) {
-  const today = new Date().toISOString().slice(0, 10);
+export async function buildContentChange(name, args, photoPath) {
+  const today = todayIsoDate();
+  /** @type {{ tool: string, path: string, content: string, commitMessage: string, summary: string }} */
+  let change;
 
   switch (name) {
     case 'upsert_show': {
@@ -162,13 +286,14 @@ export function buildContentChange(name, args, photoPath) {
         }) +
         (args.body || args.synopsis) +
         '\n';
-      return {
+      change = {
         tool: name,
         path: `src/content/shows/${slug}.md`,
         content,
         commitMessage: `content: upsert show ${args.title}`,
         summary: `Updated show “${args.title}” at /shows.`,
       };
+      break;
     }
     case 'create_news_post': {
       const slug = makeSlug(args.slug || args.title);
@@ -183,13 +308,14 @@ export function buildContentChange(name, args, photoPath) {
         }) +
         args.body +
         '\n';
-      return {
+      change = {
         tool: name,
         path: `src/content/news/${slug}.md`,
         content,
         commitMessage: `content: news ${args.title}`,
         summary: `Published news post “${args.title}” at /news/${slug}.`,
       };
+      break;
     }
     case 'update_about': {
       const content =
@@ -200,30 +326,91 @@ export function buildContentChange(name, args, photoPath) {
         }) +
         args.body +
         '\n';
-      return {
+      change = {
         tool: name,
         path: 'src/content/pages/about.md',
         content,
         commitMessage: 'content: update about page',
         summary: 'Updated the About page.',
       };
+      break;
     }
-    case 'update_lessons': {
-      const content =
-        toFrontmatter({
-          title: args.title || 'Lessons',
-          description: args.description || 'Lessons with Elyse Tindall',
-          updated: today,
-        }) +
-        args.body +
-        '\n';
-      return {
+    case 'update_lessons_copy': {
+      const content = await mergeMarkdownPage(LESSONS_PAGE, { body: args.body });
+      change = {
         tool: name,
-        path: 'src/content/pages/lessons.md',
+        path: LESSONS_PAGE,
         content,
-        commitMessage: 'content: update lessons page',
-        summary: 'Updated the Lessons page.',
+        commitMessage: 'content: update lessons copy',
+        summary: 'Updated lessons philosophy and details at /lessons.',
       };
+      break;
+    }
+    case 'update_lessons_seo': {
+      const data = {};
+      if (args.title) data.title = args.title;
+      if (args.description) data.description = args.description;
+      if (!Object.keys(data).length) {
+        throw new Error('update_lessons_seo requires title and/or description.');
+      }
+      const content = await mergeMarkdownPage(LESSONS_PAGE, { data });
+      change = {
+        tool: name,
+        path: LESSONS_PAGE,
+        content,
+        commitMessage: 'content: update lessons seo',
+        summary: 'Updated Lessons page title/description.',
+      };
+      break;
+    }
+    case 'update_lesson_rates': {
+      const rates = normalizeLessonRates(args.rates);
+      if (!rates.length) throw new Error('update_lesson_rates requires at least one rate.');
+      const content = await mergeMarkdownPage(LESSONS_BOOK_PAGE, { data: { rates } });
+      change = {
+        tool: name,
+        path: LESSONS_BOOK_PAGE,
+        content,
+        commitMessage: 'content: update lesson rates',
+        summary: 'Updated lesson rates at /lessons/book.',
+      };
+      break;
+    }
+    case 'update_lesson_scheduling': {
+      const data = {};
+      if (args.format) data.format = args.format;
+      if (args.scheduling) data.scheduling = args.scheduling;
+      const patch = { data };
+      if (args.body !== undefined) patch.body = args.body;
+      if (!Object.keys(data).length && args.body === undefined) {
+        throw new Error('update_lesson_scheduling requires format, scheduling, and/or body.');
+      }
+      const content = await mergeMarkdownPage(LESSONS_BOOK_PAGE, patch);
+      change = {
+        tool: name,
+        path: LESSONS_BOOK_PAGE,
+        content,
+        commitMessage: 'content: update lesson scheduling',
+        summary: 'Updated lesson scheduling details at /lessons/book.',
+      };
+      break;
+    }
+    case 'update_lesson_book_seo': {
+      const data = {};
+      if (args.title) data.title = args.title;
+      if (args.description) data.description = args.description;
+      if (!Object.keys(data).length) {
+        throw new Error('update_lesson_book_seo requires title and/or description.');
+      }
+      const content = await mergeMarkdownPage(LESSONS_BOOK_PAGE, { data });
+      change = {
+        tool: name,
+        path: LESSONS_BOOK_PAGE,
+        content,
+        commitMessage: 'content: update lesson book seo',
+        summary: 'Updated book-a-lesson page title/description.',
+      };
+      break;
     }
     case 'add_gallery_photo': {
       const image = args.image || photoPath;
@@ -243,13 +430,14 @@ export function buildContentChange(name, args, photoPath) {
           tags: args.tags || [],
           order: args.order,
         }) + '\n';
-      return {
+      change = {
         tool: name,
         path: `src/content/gallery/${slug}.md`,
         content,
         commitMessage: `content: gallery ${slug}`,
         summary: `Added gallery photo (${slug}).`,
       };
+      break;
     }
     case 'create_or_update_casting_page': {
       const slug = makeSlug(args.slug || args.keyword);
@@ -264,17 +452,20 @@ export function buildContentChange(name, args, photoPath) {
         }) +
         args.body +
         '\n';
-      return {
+      change = {
         tool: name,
         path: `src/content/casting/${slug}.md`,
         content,
         commitMessage: `content: casting page ${args.keyword}`,
         summary: `Casting page ready at /for/${slug}.`,
       };
+      break;
     }
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
+
+  return finalizeContentChange(change);
 }
 
 /**
@@ -289,6 +480,7 @@ export function publicUrlForContentPath(path) {
   if (/^src\/content\/shows\/[^/]+\.md$/.test(p)) return '/shows';
   if (p === 'src/content/pages/about.md') return '/about';
   if (p === 'src/content/pages/lessons.md') return '/lessons';
+  if (p === 'src/content/pages/lessons-book.md') return '/lessons/book';
   if (/^src\/content\/gallery\/[^/]+\.md$/.test(p)) return '/gallery';
   if ((m = /^src\/content\/casting\/([^/]+)\.md$/.exec(p))) return `/for/${m[1]}`;
   if ((m = /^public\/(images\/photos\/[^/]+)$/.exec(p))) return `/${m[1]}`;
@@ -312,6 +504,7 @@ export async function applyContentChanges(changes) {
       throw new Error(`Disallowed content path: ${path}`);
     }
     const content = String(change.content ?? '');
+    validateContentFile(path, content);
     const commitMessage = String(change.commitMessage || change.message || `content: update ${path}`);
     const committed = await commitFile({ path, content, message: commitMessage });
     if (committed.commitSha) commitSha = committed.commitSha;
@@ -366,7 +559,7 @@ export async function buildProductionSiteContext() {
   const siteUrl = productionSiteUrl();
   const lines = [
     `Production site (canonical reference): ${siteUrl}`,
-    'Site map: / (home), /shows, /about, /lessons, /news, /gallery, /contact, /for/[slug] (casting).',
+    'Site map: / (home), /shows, /about, /lessons, /lessons/book, /news, /gallery, /contact, /for/[slug] (casting).',
     'Teaching brand: private VOICE lessons only (vocal pedagogy, vocal health, CCM) — not acting lessons.',
     'Existing content on the production branch (reuse slugs when updating; match voice and facts):',
   ];
@@ -437,8 +630,14 @@ Rules:
 - Prefer upsert_show for new bookings/credits; when updating an existing show, reuse its slug from the catalog.
 - Prefer create_news_post for press and announcements.
 - Prefer create_or_update_casting_page for SEO/casting keyword pages (write real helpful copy, not thin spam); reuse existing casting slugs when she means an existing page.
-- Prefer update_about / update_lessons when she asks to change those pages; treat them as edits to the live ${siteUrl}/about and ${siteUrl}/lessons pages.
-- When drafting or updating lessons copy, keep it vocal-coach accurate (pedagogy, vocal health, CCM); never add acting-lesson offerings.
+- Prefer update_about when she asks to change her biography or performer background at ${siteUrl}/about.
+- Prefer update_lessons_copy when she asks to change lessons philosophy, approach, or teaching details at ${siteUrl}/lessons. Never include dollar amounts or rates in that copy.
+- Prefer update_lessons_seo only when she explicitly wants to change the Lessons page title or search description.
+- Prefer update_lesson_rates when she asks to change lesson prices or session rates. This updates ${siteUrl}/lessons/book only — provide the full rates list.
+- Prefer update_lesson_scheduling when she asks about lesson format (NYC/Zoom), how to book, scheduling, or what students should expect on the book page.
+- Prefer update_lesson_book_seo only when she explicitly wants to change the book-a-lesson page title or search description.
+- Never use lessons tools to change show credits, news, or gallery content.
+- When drafting lessons copy, keep it vocal-coach accurate (pedagogy, vocal health, CCM); never add acting-lesson offerings.
 - Prefer add_gallery_photo when she attaches a photo for the gallery (image path will be provided). Leave caption empty — the public gallery does not display captions.
 - Keep tone professional, warm, and accurate. Do not invent fake credits; align facts with the catalog and production site.
 - Content is expected to be evergreen unless otherwise specified. Avoid relative terms like today, this week, this month, etc which would not make sense in the future.
@@ -478,7 +677,7 @@ Rules:
 
   const changes = [];
   for (const call of functionCalls) {
-    const change = buildContentChange(call.name, call.args || {}, photoPath);
+    const change = await buildContentChange(call.name, call.args || {}, photoPath);
     trackEvent('StudioToolExecuted', { tool: call.name, mode: 'draft' });
     changes.push(change);
   }

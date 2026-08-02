@@ -11,6 +11,8 @@ const MSG_GENERIC =
   'Something went wrong while publishing. Share the reference below with support.';
 const MSG_UPLOAD =
   'Something went wrong while uploading. Share the reference below with support.';
+const MSG_CONTENT_INVALID =
+  'Some content fields are invalid. Review the preview and fix missing or incorrect values before publishing.';
 
 /**
  * @param {unknown} err
@@ -19,6 +21,14 @@ const MSG_UPLOAD =
 export function classifyStudioError(err, { operation = 'updateContent' } = {}) {
   const message = err instanceof Error ? err.message : String(err || '');
   const lower = message.toLowerCase();
+
+  if (err instanceof Error && err.name === 'StudioContentValidationError') {
+    return {
+      errorKind: 'content_validation',
+      status: 400,
+      error: err.message || MSG_CONTENT_INVALID,
+    };
+  }
 
   if (
     /missing gemini_api_key|missing github_|github_app|github_token|not configured/i.test(
