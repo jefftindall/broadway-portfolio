@@ -2,7 +2,7 @@ See README.md and docs/ for project guidance.
 
 ## Cursor Cloud specific instructions
 
-Single-product Astro portfolio + optional Gemini-powered "Studio" Azure Functions API. Node >= 22.12 is required (see root `package.json` engines). Dependencies for the root site and `api/` are installed automatically by the startup update script (`npm ci` in both).
+Single-product Astro portfolio + optional Gemini-powered "Studio" Azure Functions API. Node >= 22.12 is required (see root `package.json` engines). The startup update script installs npm deps for the root site and `api/` (`npm ci` in both) and idempotently ensures the Terraform CLI and TFLint are on `PATH` (install-if-missing), so `npm run lint` works out of the box. Azure Functions Core Tools (`func`) is present in the base image but is **not** installed by the update script.
 
 ### Lint and static analysis (required before commit)
 
@@ -21,7 +21,7 @@ This mirrors the PR gate workflow [`.github/workflows/static-analysis.yml`](.git
 | API JS syntax | `npm run lint:api` | API syntax |
 | Terraform plan (CI only, after the checks above) | — | Plan staging / Plan prod (PRs touching `infra/`) |
 
-Requirements for Terraform lint locally: Terraform >= 1.5 and [TFLint](https://github.com/terraform-linters/tflint) on `PATH` (`tflint --init` uses [`infra/.tflint.hcl`](infra/.tflint.hcl)). Do not commit if lint fails; do not skip these checks.
+Requirements for Terraform lint locally: Terraform >= 1.5 and [TFLint](https://github.com/terraform-linters/tflint) on `PATH` (`tflint --init` uses [`infra/.tflint.hcl`](infra/.tflint.hcl)). In Cursor Cloud these are provisioned by the startup update script; if they are ever missing (e.g. a network failure during startup), reinstall them before committing rather than skipping the gate. Do not commit if lint fails; do not skip these checks.
 
 ### Brand (teaching)
 - Elyse is a musical theatre **actress** and **vocal coach**. Private lessons are **voice lessons only** (vocal pedagogy, vocal health, CCM).
@@ -34,7 +34,7 @@ Requirements for Terraform lint locally: Terraform >= 1.5 and [TFLint](https://g
 - Content is markdown under `src/content/` (`shows`, `news`, `gallery`, `pages`, `casting`) with Zod schemas in `src/content.config.ts`. Adding a markdown file adds a live route (e.g. a new `src/content/news/*.md` appears on `/news` and `/news/<id>`).
 
 ### Studio API (`api/`, optional local)
-- Requires **Azure Functions Core Tools** (`func`) which is NOT part of `npm` deps and NOT installed by the update script — install it separately (`npm i -g azure-functions-core-tools@4`) if you need to run the API.
+- Requires **Azure Functions Core Tools** (`func`), which is present in the Cursor Cloud base image (v4) but is NOT part of `npm` deps and NOT installed by the update script. If it is ever missing, install it separately (`npm i -g azure-functions-core-tools@4`).
 - Copy `api/local.settings.json.example` → `api/local.settings.json` (gitignored), then run `func start` (port 7071). Endpoints: `POST /api/updateContent`, `POST /api/uploadMedia`.
 - With `AZURE_FUNCTIONS_ENVIRONMENT=Development` (already set in the example settings) the SWA auth allowlist check is skipped, so endpoints are callable locally without SWA auth. However `updateContent` still needs `GEMINI_API_KEY` and GitHub App creds (or `GITHUB_TOKEN`) to actually publish — without them it returns a sanitized 500 plus `correlationId` (not the raw missing-key string).
 - Default model is `gemini-3.6-flash` (`GEMINI_MODEL`). Do not reinstate shut-down IDs such as `gemini-2.0-flash`.
