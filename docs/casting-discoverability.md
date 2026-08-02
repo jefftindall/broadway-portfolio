@@ -165,7 +165,7 @@ curl -sI https://elysetindall.com/sitemap-index.xml | head -5
 
 | ID | Title | Status | Depends on | Primary files / runbooks |
 |----|-------|--------|------------|--------------------------|
-| `DISC-P1-001` | Reorder homepage for casting (hero CTAs + section order) | `planned` | `DISC-P0-001` | `src/pages/index.astro`, `src/components/Hero.astro` |
+| `DISC-P1-001` | Reorder homepage for casting (hero CTAs + section order) | `done` | `DISC-P0-001` | `src/pages/index.astro`, `src/components/Hero.astro` |
 | `DISC-P1-002` | Add `/materials` page with reel, downloads, and casting CTA | `planned` | `DISC-P0-001`, `DISC-GAP-001`, `DISC-GAP-002` | New `src/pages/materials.astro`, `public/downloads/` |
 | `DISC-P1-003` | Add performer facts block (range, type, union, availability) | `planned` | `DISC-GAP-003` | `src/lib/site.ts`, `src/components/PerformerFacts.astro`, `src/pages/about.astro`, `src/pages/contact.astro` |
 | `DISC-P1-004` | Enrich JSON-LD and `site.ts` for performer + AI discoverability | `planned` | `DISC-P1-003` | `src/lib/site.ts`, `src/components/Seo.astro`, `src/pages/index.astro` |
@@ -178,11 +178,11 @@ curl -sI https://elysetindall.com/sitemap-index.xml | head -5
 
 **Acceptance criteria**
 
-- [ ] Hero primary CTA: **Request materials** (mailto or `/materials`)
-- [ ] Hero secondary CTA: **Watch reel** (`#reel`)
-- [ ] “Book a Lesson” is not the primary hero CTA
-- [ ] Performance / reel section appears **above** the lessons module on homepage
-- [ ] Mobile first screen communicates actress + reel path without scrolling past lessons
+- [x] Hero primary CTA: **Request materials** (mailto or `/materials`)
+- [x] Hero secondary CTA: **Watch reel** (`#reel`)
+- [x] “Book a Lesson” is not the primary hero CTA
+- [x] Performance / reel section appears **above** the lessons module on homepage
+- [x] Mobile first screen communicates actress + reel path without scrolling past lessons
 
 **Brand note:** Lessons remain in nav and footer; this item only changes homepage priority for casting discoverability.
 
