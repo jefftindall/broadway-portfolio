@@ -1,6 +1,156 @@
 {
   "routes": [
     {
+      "route": "/about-me/attachment/*",
+      "redirect": "/gallery",
+      "statusCode": 301
+    },
+    {
+      "route": "/about-me",
+      "redirect": "/about",
+      "statusCode": 301
+    },
+    {
+      "route": "/about-me/",
+      "redirect": "/about",
+      "statusCode": 301
+    },
+    {
+      "route": "/about/",
+      "redirect": "/about",
+      "statusCode": 301
+    },
+    {
+      "route": "/contact/",
+      "redirect": "/contact",
+      "statusCode": 301
+    },
+    {
+      "route": "/lessons/voice-and-vocal-lessons",
+      "redirect": "/lessons",
+      "statusCode": 301
+    },
+    {
+      "route": "/lessons/voice-and-vocal-lessons/",
+      "redirect": "/lessons",
+      "statusCode": 301
+    },
+    {
+      "route": "/lessons/audition-preparation",
+      "redirect": "/lessons",
+      "statusCode": 301
+    },
+    {
+      "route": "/lessons/audition-preparation/",
+      "redirect": "/lessons",
+      "statusCode": 301
+    },
+    {
+      "route": "/lessons/acting-lessons",
+      "redirect": "/lessons",
+      "statusCode": 301
+    },
+    {
+      "route": "/lessons/acting-lessons/",
+      "redirect": "/lessons",
+      "statusCode": 301
+    },
+    {
+      "route": "/lessons/",
+      "redirect": "/lessons",
+      "statusCode": 301
+    },
+    {
+      "route": "/news/",
+      "redirect": "/news",
+      "statusCode": 301
+    },
+    {
+      "route": "/elyse-tindall-shines-as-lily-in-anastasia-at-the-strand-theater",
+      "redirect": "/news/anastasia-strand-2025",
+      "statusCode": 301
+    },
+    {
+      "route": "/elyse-tindall-shines-as-lily-in-anastasia-at-the-strand-theater/",
+      "redirect": "/news/anastasia-strand-2025",
+      "statusCode": 301
+    },
+    {
+      "route": "/elyse-tindall-has-just-completed-a-broadway-artists-alliance-musical-theatre-intensive-in-new-york-city",
+      "redirect": "/news/baa-intensive-2024",
+      "statusCode": 301
+    },
+    {
+      "route": "/elyse-tindall-has-just-completed-a-broadway-artists-alliance-musical-theatre-intensive-in-new-york-city/",
+      "redirect": "/news/baa-intensive-2024",
+      "statusCode": 301
+    },
+    {
+      "route": "/showreel",
+      "redirect": "/materials",
+      "statusCode": 301
+    },
+    {
+      "route": "/showreel/",
+      "redirect": "/materials",
+      "statusCode": 301
+    },
+    {
+      "route": "/filmography",
+      "redirect": "/shows",
+      "statusCode": 301
+    },
+    {
+      "route": "/filmography/",
+      "redirect": "/shows",
+      "statusCode": 301
+    },
+    {
+      "route": "/looking-for/*",
+      "redirect": "/for/available-casting-nyc",
+      "statusCode": 301
+    },
+    {
+      "route": "/looking-for",
+      "redirect": "/for/available-casting-nyc",
+      "statusCode": 301
+    },
+    {
+      "route": "/looking-for/",
+      "redirect": "/for/available-casting-nyc",
+      "statusCode": 301
+    },
+    {
+      "route": "/privacy-policy",
+      "redirect": "/",
+      "statusCode": 301
+    },
+    {
+      "route": "/privacy-policy/",
+      "redirect": "/",
+      "statusCode": 301
+    },
+    {
+      "route": "/category/*",
+      "redirect": "/news",
+      "statusCode": 301
+    },
+    {
+      "route": "/2024/*",
+      "redirect": "/news",
+      "statusCode": 301
+    },
+    {
+      "route": "/2025/*",
+      "redirect": "/news",
+      "statusCode": 301
+    },
+    {
+      "route": "/broadway-actress-and-singer-in-atlanta/*",
+      "redirect": "/gallery",
+      "statusCode": 301
+    },
+    {
       "route": "/studio",
       "allowedRoles": ["authenticated"]
     },
