@@ -1,7 +1,8 @@
 name: Azure Static Web Apps CI/CD
 
 # Deploy only on merge to main when app or infra paths change. PRs run static analysis only.
-# Manual full CD: Actions → Azure Static Web Apps CI/CD (workflow_dispatch) — always runs every stage.
+# Manual full CD from main: Actions → Azure Static Web Apps CI/CD (workflow_dispatch).
+# Manual dispatch from other branches runs staging only; prod stages are skipped.
 # Manual staging-only test: Actions → Staging branch (workflow_dispatch).
 # After Deploy Staging: Smoke Staging (Playwright desktop + mobile) must pass before prod.
 on:
@@ -22,6 +23,7 @@ jobs:
     outputs:
       infra: ${{ steps.outputs.outputs.infra }}
       release: ${{ steps.outputs.outputs.release }}
+      prod: ${{ steps.outputs.outputs.prod }}
     steps:
       - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
@@ -47,18 +49,32 @@ jobs:
               - '.azure/**'
       - id: outputs
         run: |
+          ON_MAIN=false
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            ON_MAIN=true
+          fi
+
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "infra=true" >> "$GITHUB_OUTPUT"
             echo "release=true" >> "$GITHUB_OUTPUT"
-            echo "Manual dispatch — running full CD pipeline."
+            if [ "$ON_MAIN" = "true" ]; then
+              echo "prod=true" >> "$GITHUB_OUTPUT"
+              echo "Manual dispatch on main — running full CD pipeline."
+            else
+              echo "prod=false" >> "$GITHUB_OUTPUT"
+              echo "Manual dispatch not on main — production stages skipped."
+            fi
             exit 0
           fi
+
           INFRA="${{ steps.filter.outputs.infra }}"
           APP="${{ steps.filter.outputs.app }}"
           if [ "$INFRA" = "true" ] || [ "$APP" = "true" ]; then
             echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "prod=true" >> "$GITHUB_OUTPUT"
           else
             echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "prod=false" >> "$GITHUB_OUTPUT"
             echo "No app or infra changes — skipping CD jobs."
           fi
           echo "infra=$INFRA" >> "$GITHUB_OUTPUT"
@@ -277,6 +293,7 @@ jobs:
     name: Terraform Apply Production
     needs: [changes, deploy_staging, smoke_staging]
     if: |
+      needs.changes.outputs.prod == 'true' &&
       needs.changes.outputs.release == 'true' &&
       needs.changes.outputs.infra == 'true' &&
       needs.deploy_staging.result == 'success' &&
@@ -330,9 +347,10 @@ jobs:
 
   deploy_prod:
     name: Deploy Production
-    needs: [deploy_staging, smoke_staging, terraform_prod]
+    needs: [changes, deploy_staging, smoke_staging, terraform_prod]
     if: |
       always() &&
+      needs.changes.outputs.prod == 'true' &&
       needs.deploy_staging.result == 'success' &&
       needs.smoke_staging.result == 'success' &&
       (needs.terraform_prod.result == 'success' || needs.terraform_prod.result == 'skipped')

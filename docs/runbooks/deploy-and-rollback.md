@@ -29,7 +29,9 @@ Use this for async smoke tests of infra and/or app changes without merging:
 
 ## Redeploy without code changes
 
-GitHub → Actions → **Azure Static Web Apps CI/CD** → **Run workflow** (select `main`) to run every CD stage regardless of path filters.
+GitHub → Actions → **Azure Static Web Apps CI/CD** → **Run workflow** and select the **`main`** branch to run every CD stage regardless of path filters.
+
+Manual dispatch from a non-`main` branch runs staging deploy and verification only (production stages are skipped). For branch testing without prod promotion, **Staging branch** is equivalent.
 
 Alternatively, re-run all jobs on a previous `main` push workflow run.
 
