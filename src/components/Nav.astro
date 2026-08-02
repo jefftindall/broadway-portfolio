@@ -15,14 +15,12 @@ const pathname = Astro.url.pathname;
             item.href === '/'
               ? pathname === '/'
               : pathname === item.href || pathname.startsWith(item.href + '/');
-          const lessons = item.href === '/lessons';
           return (
             <a
               href={item.href}
               class:list={[
                 'text-sm transition',
-                lessons && !active && 'text-gold/90 hover:text-gold',
-                active ? 'text-gold' : !lessons && 'text-muted hover:text-spotlight',
+                active ? 'text-gold' : 'text-muted hover:text-spotlight',
               ]}
               aria-current={active ? 'page' : undefined}
             >
