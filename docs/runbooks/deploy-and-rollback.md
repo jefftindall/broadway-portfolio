@@ -4,9 +4,10 @@
 
 1. Open a PR targeting `main`. Actions run **Static analysis** only (no deploys). If the PR touches `infra/`, **Plan staging** / **Plan prod** run after lint/checks and comment the plan on the PR.
 2. Review the plan (when present) and merge when ready.
-3. On merge to `main`, **Azure Static Web Apps CI/CD** runs:
+3. On merge to `main`, **Azure Static Web Apps CI/CD** runs when app or infra paths changed (not on docs-only updates):
    - If `infra/` changed: **Terraform apply staging**, then **Deploy Staging**, then **Smoke Staging**, then **Terraform apply prod**, then **Deploy Production**
-   - If `infra/` did not change: **Deploy Staging**, then **Smoke Staging**, then **Deploy Production** (Terraform apply jobs are skipped)
+   - If only app paths changed: **Deploy Staging**, then **Smoke Staging**, then **Deploy Production** (Terraform apply jobs are skipped)
+   - If neither changed (e.g. `docs/` only): CD jobs are skipped; **Static analysis** still runs on the push
 
 **Smoke Staging** runs Playwright against the live staging hostname (desktop + mobile viewports): route availability, SEO shell (`robots.txt`, sitemap), downloads, anonymous `/studio` redirect, and extended routes (`/news`, `/lessons/book`, `/for/*`). **Journey tests** in the same job exercise casting, lessons, news, gallery, and navigation flows (desktop full suite + mobile subset). See [testing-strategy.md](testing-strategy.md). Production never deploys unless staging deploy **and** verification both succeed for that run.
 
@@ -28,7 +29,11 @@ Use this for async smoke tests of infra and/or app changes without merging:
 
 ## Redeploy without code changes
 
-GitHub → Actions → **Azure Static Web Apps CI/CD** → Re-run jobs (runs on `main` only).
+GitHub → Actions → **Azure Static Web Apps CI/CD** → **Run workflow** and select the **`main`** branch to run every CD stage regardless of path filters.
+
+Manual dispatch from a non-`main` branch runs staging deploy and verification only (production stages are skipped). For branch testing without prod promotion, **Staging branch** is equivalent.
+
+Alternatively, re-run all jobs on a previous `main` push workflow run.
 
 ## Rollback a bad content commit
 
