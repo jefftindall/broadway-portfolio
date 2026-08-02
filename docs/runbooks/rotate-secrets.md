@@ -29,6 +29,34 @@ After updating a vault secret used by the Studio API, sync into SWA (commands be
 
 Requires Azure CLI login with permission to read the vault and update the Static Web App.
 
+## Site contact secrets (build-time)
+
+Email, phone, and date of birth for the public site are **not** in git. They live in Key Vault and are injected only when Astro builds (CI via [`scripts/fetch-site-contact-secrets.sh`](../../scripts/fetch-site-contact-secrets.sh); locally via `.env`).
+
+| Secret name | Env var | Notes |
+|---|---|---|
+| `SITE-CONTACT-EMAIL` | `SITE_CONTACT_EMAIL` | Appears on Contact, Footer, JSON-LD after build |
+| `SITE-CONTACT-PHONE` | `SITE_CONTACT_PHONE` | Same |
+| `SITE-DATE-OF-BIRTH` | `SITE_DATE_OF_BIRTH` | `YYYY-MM-DD`; used only to compute chronological age — never rendered |
+
+Publish the **same** values to **both** vaults:
+
+```bash
+# Staging
+az keyvault secret set --vault-name kv-elyse-staging --name SITE-CONTACT-EMAIL --value "<email>"
+az keyvault secret set --vault-name kv-elyse-staging --name SITE-CONTACT-PHONE --value "<phone>"
+az keyvault secret set --vault-name kv-elyse-staging --name SITE-DATE-OF-BIRTH --value "YYYY-MM-DD"
+
+# Production (required — prod builds read kv-elyse-prod)
+az keyvault secret set --vault-name kv-elyse-prod --name SITE-CONTACT-EMAIL --value "<email>"
+az keyvault secret set --vault-name kv-elyse-prod --name SITE-CONTACT-PHONE --value "<phone>"
+az keyvault secret set --vault-name kv-elyse-prod --name SITE-DATE-OF-BIRTH --value "YYYY-MM-DD"
+```
+
+Terraform creates the secret shells (`REPLACE_ME`) and grants the GitHub Actions deploy principal Key Vault Secrets User. After updating values, the next staging/prod deploy picks them up — no SWA API secret sync needed.
+
+Locally: copy `.env.example` → `.env` and fill the three `SITE_*` vars (gitignored).
+
 ## Rotate Gemini API key
 
 1. Create a new key in Google AI Studio

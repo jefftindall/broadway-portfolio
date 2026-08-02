@@ -4,5 +4,6 @@ image: /images/gallery/nyc-cobblestone.jpg
 tags:
   - travel
   - new-york
-order: 14
+order: 38
+focus: "50% 35%"
 ---

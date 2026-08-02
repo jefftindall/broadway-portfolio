@@ -4,5 +4,6 @@ image: /images/gallery/headshot.jpg
 tags:
   - headshot
   - portrait
-order: 1
+order: 46
+focus: center
 ---

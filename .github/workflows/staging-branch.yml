@@ -1,6 +1,7 @@
 name: Staging branch
 
 # Manual async test: apply staging Terraform + deploy the staging app from any branch.
+# Runs Playwright smoke against staging afterward (does not promote to prod).
 # Automated deploys run only on merge to main (azure-static-web-apps.yml).
 on:
   workflow_dispatch:
@@ -81,6 +82,20 @@ jobs:
           node-version: "22"
           cache: npm
 
+      - name: Azure login (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Fetch site contact secrets from Key Vault
+        env:
+          AZURE_KEY_VAULT_NAME: ${{ vars.AZURE_KEY_VAULT_NAME }}
+        run: |
+          chmod +x scripts/fetch-site-contact-secrets.sh
+          ./scripts/fetch-site-contact-secrets.sh
+
       - name: Install and build
         run: |
           npm ci
@@ -88,13 +103,6 @@ jobs:
 
       - name: Install API dependencies
         run: npm ci --prefix api
-
-      - name: Azure login (OIDC)
-        uses: azure/login@v3
-        with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
       - name: Resolve Static Web Apps deploy token
         id: swa
@@ -152,3 +160,51 @@ jobs:
                 }
               }
             }]"
+
+  smoke_staging:
+    name: Smoke Staging
+    needs: [deploy_staging]
+    if: needs.deploy_staging.result == 'success'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Resolve staging hostname
+        id: host
+        run: |
+          HOST=$(az staticwebapp show \
+            --name "${{ vars.AZURE_STATIC_WEB_APP_NAME }}" \
+            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+            --query defaultHostname -o tsv)
+          if [ -z "$HOST" ]; then
+            echo "::error::Could not resolve staging Static Web App hostname"
+            exit 1
+          fi
+          echo "hostname=$HOST" >> "$GITHUB_OUTPUT"
+          echo "Staging URL: https://$HOST"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run staging smoke (desktop + mobile)
+        env:
+          BASE_URL: https://${{ steps.host.outputs.hostname }}
+          CI: true
+        run: npm run test:smoke

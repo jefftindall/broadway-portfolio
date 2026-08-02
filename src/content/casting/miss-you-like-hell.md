@@ -10,6 +10,6 @@ relatedShows:
 cta: Request materials
 ---
 
-Elyse Tindall’s work in ***Miss You Like Hell*** — Quiara Alegría Hudes’s mother-daughter road-trip musical — reflects her strength in contemporary scores and emotionally grounded storytelling.
+Elyse Tindall performed in the ensemble and understudied **Olivia** (the main character track) in the **inaugural** production of ***Miss You Like Hell*** at Woodstock Arts — Quiara Alegría Hudes’s mother-daughter road-trip musical. The credit reflects her strength in contemporary scores and emotionally grounded storytelling.
 
 Directors casting similar contemporary musical theatre pieces will find a performer comfortable with complex family dynamics and modern musical styles.

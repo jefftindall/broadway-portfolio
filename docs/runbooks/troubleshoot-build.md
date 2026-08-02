@@ -7,7 +7,7 @@
    - Invalid content collection frontmatter (schema mismatch)
    - Syntax error in `.astro` / markdown
    - Missing `AZURE_STATIC_WEB_APPS_API_TOKEN`
-3. Reproduce locally: `npm ci && npm run build`
+3. Reproduce locally: `npm ci && npm run build` (requires `SITE_*` in `.env` — see [rotate-secrets](rotate-secrets.md))
 
 ## Frontmatter / content schema errors
 
@@ -31,3 +31,4 @@ Schemas live in `src/content.config.ts`. Fix the markdown fields (types, require
 - **Any publish failure with a reference ID** — user-facing copy is intentionally non-technical; use the correlation ID in App Insights ([observability](observability.md))
 - **Actions `azure/login` OIDC failure (`AADSTS700213`)** — federated subject mismatch. GitHub sends `repo:owner@OWNER_ID/repo@REPO_ID:...`. Compare the error’s subject to `terraform output github_actions_oidc_subjects`, then fix `github_owner_id` / `github_repo_id` and re-apply.
 - **Actions cannot list SWA secrets** — OIDC principal needs Contributor on the Static Web App (granted by Terraform)
+- **Build fails on missing `SITE_CONTACT_*` / `SITE_DATE_OF_BIRTH`** — Key Vault `SITE-*` secrets missing or still `REPLACE_ME`, or `AZURE_KEY_VAULT_NAME` not set on the GitHub environment ([rotate-secrets](rotate-secrets.md) site contact section). Deploy principal needs Key Vault Secrets User.

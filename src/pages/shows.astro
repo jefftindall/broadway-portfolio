@@ -11,18 +11,6 @@ const shows = (await getCollection('shows')).sort((a, b) => {
   return (a.data.order ?? 99) - (b.data.order ?? 99);
 });
 
-const items = shows.map((show) => ({
-  id: show.id,
-  title: show.data.title,
-  year: show.data.year,
-  role: show.data.role,
-  venue: show.data.venue,
-  synopsis: show.data.synopsis,
-  category: show.data.category,
-  image: show.data.image,
-  videoUrl: show.data.videoUrl,
-}));
-
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'VideoObject',
@@ -37,15 +25,15 @@ const jsonLd = {
 
 <BaseLayout
   title="Shows"
-  description="Stage credits for Elyse Tindall — musicals, plays, and NYC cabaret."
-  image="/images/shows/nyc-cabaret.jpg"
+  description="Credits for Elyse Tindall — musicals, plays, film, and NYC cabaret."
+  image="/images/photos/cabaret-reel-poster.jpg"
   jsonLd={jsonLd}
 >
   <section class="mx-auto max-w-6xl px-6 py-16 md:py-24">
     <p class="text-sm uppercase tracking-[0.2em] text-gel">Credits</p>
     <h1 class="mt-3 font-display text-5xl text-spotlight md:text-6xl">Shows</h1>
     <p class="mt-4 max-w-2xl text-muted">
-      Roles, venues, and recent work for casting — filter by musical, play, or cabaret.
+      Roles, venues, and recent work for casting — filter by musical, play, cabaret, or film.
     </p>
 
     <div id="reel" class="mt-12">
@@ -62,7 +50,7 @@ const jsonLd = {
     </div>
 
     <div class="mt-14">
-      <CreditList items={items} showVideos={false} />
+      <CreditList shows={shows} showVideos={false} />
     </div>
   </section>
 </BaseLayout>

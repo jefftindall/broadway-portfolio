@@ -34,12 +34,26 @@ const tools = [
             venue: { type: 'STRING' },
             synopsis: { type: 'STRING' },
             body: { type: 'STRING', description: 'Longer markdown body' },
-            featured: { type: 'BOOLEAN' },
+            featured: {
+              type: 'BOOLEAN',
+              description:
+                'If true, eligible for homepage Stage & reel (three most recent featured by year, then order). Use sparingly for headline credits only.',
+            },
+            order: {
+              type: 'NUMBER',
+              description:
+                'Sort within the same year; lower = newer (e.g. July before April). Required for correct homepage and credits ordering.',
+            },
             videoUrl: { type: 'STRING' },
             image: { type: 'STRING' },
+            imageFocus: {
+              type: 'STRING',
+              description:
+                'CSS object-position for credit thumbnails when subject is off-center, e.g. "18% 40%"',
+            },
             category: {
               type: 'STRING',
-              description: 'Credit type: musical, play, or cabaret',
+              description: 'Credit type: musical, play, cabaret, or film',
             },
           },
           required: ['title', 'year', 'synopsis'],
@@ -280,8 +294,10 @@ export async function buildContentChange(name, args, photoPath) {
           venue: args.venue,
           synopsis: args.synopsis,
           featured: Boolean(args.featured),
+          order: args.order,
           videoUrl: args.videoUrl,
           image: args.image || photoPath,
+          imageFocus: args.imageFocus,
           category: args.category || undefined,
         }) +
         (args.body || args.synopsis) +
@@ -627,7 +643,7 @@ Brand facts (always honor these):
 - On about/casting copy she may discuss acting craft as a performer; that must not become lesson marketing.
 
 Rules:
-- Prefer upsert_show for new bookings/credits; when updating an existing show, reuse its slug from the catalog.
+- Prefer upsert_show for new bookings/credits; when updating an existing show, reuse its slug from the catalog. Set featured true only for headline credits — the homepage auto-shows the three most recent featured shows by year, then order (lower order = newer within a year).
 - Prefer create_news_post for press and announcements.
 - Prefer create_or_update_casting_page for SEO/casting keyword pages (write real helpful copy, not thin spam); reuse existing casting slugs when she means an existing page.
 - Prefer update_about when she asks to change her biography or performer background at ${siteUrl}/about.

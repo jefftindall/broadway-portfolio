@@ -2,6 +2,7 @@ name: Azure Static Web Apps CI/CD
 
 # Deploy only on merge to main. PRs run static analysis (and Terraform plan) only.
 # Manual staging deploy: Actions → Staging branch (workflow_dispatch).
+# After Deploy Staging: Smoke Staging (Playwright desktop + mobile) must pass before prod.
 on:
   push:
     branches:
@@ -105,6 +106,20 @@ jobs:
           node-version: "22"
           cache: npm
 
+      - name: Azure login (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Fetch site contact secrets from Key Vault
+        env:
+          AZURE_KEY_VAULT_NAME: ${{ vars.AZURE_KEY_VAULT_NAME }}
+        run: |
+          chmod +x scripts/fetch-site-contact-secrets.sh
+          ./scripts/fetch-site-contact-secrets.sh
+
       - name: Install and build
         run: |
           npm ci
@@ -112,13 +127,6 @@ jobs:
 
       - name: Install API dependencies
         run: npm ci --prefix api
-
-      - name: Azure login (OIDC)
-        uses: azure/login@v3
-        with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
       - name: Resolve Static Web Apps deploy token
         id: swa
@@ -178,12 +186,61 @@ jobs:
               }
             }]"
 
+  smoke_staging:
+    name: Smoke Staging
+    needs: [deploy_staging]
+    if: needs.deploy_staging.result == 'success'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Resolve staging hostname
+        id: host
+        run: |
+          HOST=$(az staticwebapp show \
+            --name "${{ vars.AZURE_STATIC_WEB_APP_NAME }}" \
+            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+            --query defaultHostname -o tsv)
+          if [ -z "$HOST" ]; then
+            echo "::error::Could not resolve staging Static Web App hostname"
+            exit 1
+          fi
+          echo "hostname=$HOST" >> "$GITHUB_OUTPUT"
+          echo "Staging URL: https://$HOST"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run staging smoke (desktop + mobile)
+        env:
+          BASE_URL: https://${{ steps.host.outputs.hostname }}
+          CI: true
+        run: npm run test:smoke
+
   terraform_prod:
     name: Terraform Apply Production
-    needs: [changes, deploy_staging]
+    needs: [changes, deploy_staging, smoke_staging]
     if: |
       needs.changes.outputs.infra == 'true' &&
-      needs.deploy_staging.result == 'success'
+      needs.deploy_staging.result == 'success' &&
+      needs.smoke_staging.result == 'success'
     runs-on: ubuntu-latest
     environment: prod
     defaults:
@@ -233,10 +290,11 @@ jobs:
 
   deploy_prod:
     name: Deploy Production
-    needs: [deploy_staging, terraform_prod]
+    needs: [deploy_staging, smoke_staging, terraform_prod]
     if: |
       always() &&
       needs.deploy_staging.result == 'success' &&
+      needs.smoke_staging.result == 'success' &&
       (needs.terraform_prod.result == 'success' || needs.terraform_prod.result == 'skipped')
     runs-on: ubuntu-latest
     environment: prod
@@ -255,6 +313,20 @@ jobs:
           node-version: "22"
           cache: npm
 
+      - name: Azure login (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Fetch site contact secrets from Key Vault
+        env:
+          AZURE_KEY_VAULT_NAME: ${{ vars.AZURE_KEY_VAULT_NAME }}
+        run: |
+          chmod +x scripts/fetch-site-contact-secrets.sh
+          ./scripts/fetch-site-contact-secrets.sh
+
       - name: Install and build
         run: |
           npm ci
@@ -262,13 +334,6 @@ jobs:
 
       - name: Install API dependencies
         run: npm ci --prefix api
-
-      - name: Azure login (OIDC)
-        uses: azure/login@v3
-        with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
       - name: Resolve Static Web Apps deploy token
         id: swa

@@ -7,13 +7,15 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "npm run resume:pdf && astro build",
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",
     "lint": "node scripts/lint.mjs",
     "lint:api": "node scripts/lint-api.mjs",
     "lint:terraform": "node scripts/lint-terraform.mjs",
+    "resume:pdf": "node scripts/generate-resume-pdf.mjs",
+    "test:smoke": "playwright test --config=playwright.smoke.config.ts",
     "ig:download": "node scripts/download-instagram-media.mjs"
   },
   "dependencies": {
@@ -27,6 +29,8 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",
+    "@playwright/test": "^1.54.2",
+    "pdf-lib": "^1.17.1",
     "playwright": "^1.54.2",
     "typescript": "^5.9.2",
     "zod": "^4.4.3"

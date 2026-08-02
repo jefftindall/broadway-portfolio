@@ -1,0 +1,55 @@
+---
+import { render } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  show: CollectionEntry<'shows'>;
+}
+
+const { show } = Astro.props;
+const { Content } = await render(show);
+const { title, year, role, venue, featured, image, imageFocus } = show.data;
+const imgStyle = `object-position: ${imageFocus}`;
+---
+
+<article
+  class:list={[
+    'border-b border-line py-8',
+    featured && 'border-l-2 border-l-gold pl-6',
+  ]}
+>
+  <div class:list={['gap-6', image && 'grid md:grid-cols-[140px_1fr]']}>
+    {
+      image && (
+        <div class="overflow-hidden rounded-sm border border-line bg-panel">
+          <img
+            src={image}
+            alt=""
+            class="aspect-[3/4] h-full w-full object-cover md:aspect-auto md:min-h-[10rem]"
+            style={imgStyle}
+            loading="lazy"
+            decoding="async"
+            width="280"
+            height="360"
+          />
+        </div>
+      )
+    }
+    <div>
+      <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <h3 class="font-display text-2xl text-spotlight md:text-3xl">{title}</h3>
+        <span class="text-sm text-gold">{year}</span>
+      </div>
+      {
+        (role || venue) && (
+          <p class="mt-2 text-sm text-muted">
+            {[role, venue].filter(Boolean).join(' · ')}
+          </p>
+        )
+      }
+      <div class="prose-site mt-4 max-w-3xl text-sm md:text-base">
+        <Content />
+      </div>
+    </div>
+  </div>
+</article>

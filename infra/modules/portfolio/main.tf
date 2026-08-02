@@ -125,6 +125,41 @@ resource "azurerm_key_vault_secret" "allowlist" {
   }
 }
 
+# Site build-time contact facts (email/phone/DOB). Not synced to SWA API —
+# GitHub Actions reads them at build and Astro embeds public fields only.
+resource "azurerm_key_vault_secret" "site_contact_email" {
+  name         = "SITE-CONTACT-EMAIL"
+  value        = "REPLACE_ME"
+  key_vault_id = azurerm_key_vault.main.id
+  depends_on   = [azurerm_role_assignment.kv_admin]
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "azurerm_key_vault_secret" "site_contact_phone" {
+  name         = "SITE-CONTACT-PHONE"
+  value        = "REPLACE_ME"
+  key_vault_id = azurerm_key_vault.main.id
+  depends_on   = [azurerm_role_assignment.kv_admin]
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "azurerm_key_vault_secret" "site_date_of_birth" {
+  name         = "SITE-DATE-OF-BIRTH"
+  value        = "REPLACE_ME"
+  key_vault_id = azurerm_key_vault.main.id
+  depends_on   = [azurerm_role_assignment.kv_admin]
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 # Managed Functions do not resolve @Microsoft.KeyVault(...) app settings — they
 # receive the literal reference string. Read live vault values at plan/apply and
 # write them into SWA configuration. Key Vault remains the source of truth;

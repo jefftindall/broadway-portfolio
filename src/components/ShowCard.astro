@@ -7,9 +7,20 @@ interface Props {
   synopsis: string;
   featured?: boolean;
   image?: string;
+  imageFocus?: string;
 }
 
-const { title, year, role, venue, synopsis, featured, image } = Astro.props;
+const {
+  title,
+  year,
+  role,
+  venue,
+  synopsis,
+  featured,
+  image,
+  imageFocus = 'center top',
+} = Astro.props;
+const imgStyle = `object-position: ${imageFocus}`;
 ---
 
 <article
@@ -26,6 +37,7 @@ const { title, year, role, venue, synopsis, featured, image } = Astro.props;
             src={image}
             alt=""
             class="aspect-[3/4] h-full w-full object-cover md:aspect-auto md:min-h-[10rem]"
+            style={imgStyle}
             loading="lazy"
             decoding="async"
             width="280"

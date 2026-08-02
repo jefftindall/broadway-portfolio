@@ -10,11 +10,10 @@ import PostCard from '../components/PostCard.astro';
 import VideoEmbed from '../components/VideoEmbed.astro';
 import GlassPanel from '../components/GlassPanel.astro';
 import { site } from '../lib/site';
+import { getFeaturedShowsForHome } from '../lib/shows';
 
-const shows = (await getCollection('shows')).sort(
-  (a, b) => (a.data.order ?? 99) - (b.data.order ?? 99),
-);
-const featured = shows.filter((s) => s.data.featured).slice(0, 3);
+const shows = await getCollection('shows');
+const featured = getFeaturedShowsForHome(shows);
 const news = (await getCollection('news'))
   .filter((n) => !n.data.draft)
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
@@ -29,6 +28,7 @@ const jsonLd = {
       name: site.name,
       url: site.url,
       email: site.email,
+      telephone: site.phone,
       jobTitle: site.jobTitle,
       description: site.description,
       image: new URL(site.heroImage, site.url).href,
@@ -95,6 +95,7 @@ const jsonLd = {
                 synopsis={show.data.synopsis}
                 featured={show.data.featured}
                 image={show.data.image}
+                imageFocus={show.data.imageFocus}
               />
             ))
           }

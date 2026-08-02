@@ -1,32 +1,22 @@
 ---
-import ShowCard from './ShowCard.astro';
+import type { CollectionEntry } from 'astro:content';
+import ShowCredit from './ShowCredit.astro';
 import VideoEmbed from './VideoEmbed.astro';
 
-export interface CreditItem {
-  id: string;
-  title: string;
-  year: number;
-  role?: string;
-  venue?: string;
-  synopsis: string;
-  category?: string;
-  image?: string;
-  videoUrl?: string;
-}
-
 interface Props {
-  items: CreditItem[];
+  shows: CollectionEntry<'shows'>[];
   showFilters?: boolean;
   showVideos?: boolean;
 }
 
-const { items, showFilters = true, showVideos = true } = Astro.props;
+const { shows, showFilters = true, showVideos = true } = Astro.props;
 
 const categories = [
   { id: 'all', label: 'All' },
   { id: 'musical', label: 'Musical' },
   { id: 'play', label: 'Play' },
   { id: 'cabaret', label: 'Cabaret' },
+  { id: 'film', label: 'Film' },
 ];
 ---
 
@@ -55,19 +45,12 @@ const categories = [
 
   <div class="mt-6" role="tabpanel">
     {
-      items.map((show) => (
-        <div class="credit-item" data-category={show.category ?? 'musical'}>
-          <ShowCard
-            title={show.title}
-            year={show.year}
-            role={show.role}
-            venue={show.venue}
-            synopsis={show.synopsis}
-            image={show.image}
-          />
-          {showVideos && show.videoUrl && (
+      shows.map((show) => (
+        <div class="credit-item" data-category={show.data.category ?? 'musical'}>
+          <ShowCredit show={show} />
+          {showVideos && show.data.videoUrl && (
             <div class="mb-8 max-w-2xl">
-              <VideoEmbed url={show.videoUrl} title={show.title} />
+              <VideoEmbed url={show.data.videoUrl} title={show.data.title} />
             </div>
           )}
         </div>
