@@ -110,21 +110,23 @@ Snapshot **2026-08-02**. Re-score after `DISC-P0-001` (cutover) and after each t
 
 | ID | Title | Status | Depends on | Primary files / runbooks |
 |----|-------|--------|------------|--------------------------|
-| `DISC-P0-001` | Cut over apex DNS to Astro SWA | `planned` | — | [dns-and-domain.md](runbooks/dns-and-domain.md), [deploy-and-rollback.md](runbooks/deploy-and-rollback.md) |
-| `DISC-P0-002` | Submit sitemap to Google Search Console & Bing Webmaster Tools | `planned` | `DISC-P0-001` | `public/robots.txt`, generated `sitemap-index.xml` |
-| `DISC-P0-003` | Configure 301 redirects from legacy WordPress URLs | `planned` | `DISC-P0-001` | SWA `staticwebapp.config.json` or DNS/host redirect rules |
+| `DISC-P0-001` | Cut over apex DNS to Astro SWA | `planned` | — | [wordpress-to-azure-cutover.md](runbooks/wordpress-to-azure-cutover.md), [dns-and-domain.md](runbooks/dns-and-domain.md), [deploy-and-rollback.md](runbooks/deploy-and-rollback.md) |
+| `DISC-P0-002` | Submit sitemap to Google Search Console & Bing Webmaster Tools | `planned` | `DISC-P0-001` | [wordpress-to-azure-cutover.md](runbooks/wordpress-to-azure-cutover.md) §6, `public/robots.txt`, generated `sitemap-index.xml` |
+| `DISC-P0-003` | Configure 301 redirects from legacy WordPress URLs | `done` | — | [wordpress-to-azure-cutover.md](runbooks/wordpress-to-azure-cutover.md) §2–3, `public/staticwebapp.config.json` |
 
 <details>
 <summary><code>DISC-P0-001</code> — Cut over apex DNS to Astro SWA</summary>
 
 **Acceptance criteria**
 
-- [ ] `https://elysetindall.com/` serves the Astro build (not WordPress)
+- [ ] `https://elysetindall.com/` serves the Astro build (not EasyWP WordPress)
 - [ ] `https://elysetindall.com/shows/` returns 200
 - [ ] `https://elysetindall.com/for/musical-theatre-actress-nyc/` returns 200
 - [ ] `https://elysetindall.com/sitemap-index.xml` returns 200
 - [ ] HTTPS valid on apex
-- [ ] Old WordPress host no longer receives public DNS for apex
+- [ ] EasyWP no longer receives public DNS for apex
+
+**Operator runbook:** [wordpress-to-azure-cutover.md](runbooks/wordpress-to-azure-cutover.md)
 
 **Verification**
 
@@ -145,6 +147,8 @@ curl -sI https://elysetindall.com/sitemap-index.xml | head -5
 - [ ] Bing Webmaster Tools sitemap submitted (optional but recommended)
 - [ ] Index coverage monitored for `/for/*` within 2 weeks of cutover
 
+**Operator runbook:** [wordpress-to-azure-cutover.md](runbooks/wordpress-to-azure-cutover.md) §6
+
 </details>
 
 <details>
@@ -152,10 +156,11 @@ curl -sI https://elysetindall.com/sitemap-index.xml | head -5
 
 **Acceptance criteria**
 
-- [ ] Document all indexed WP URLs from Search Console / site: search
-- [ ] Each legacy URL 301s to the closest Astro equivalent (home, news slug, or `/shows`)
-- [ ] No redirect chains longer than one hop
-- [ ] Spot-check 10 legacy URLs after deploy
+- [x] Document all indexed WP URLs from EasyWP REST inventory / Search Console / site: search
+- [x] Each legacy URL 301s to the closest Astro equivalent (one hop) in `public/staticwebapp.config.json`
+- [ ] Spot-check 10 legacy URLs after DNS cutover
+
+**Operator runbook:** [wordpress-to-azure-cutover.md](runbooks/wordpress-to-azure-cutover.md) §2–3
 
 </details>
 
@@ -423,7 +428,7 @@ Items Elyse (or representation) must supply before related actions can ship.
 | `DISC-GAP-003` | Performer spec: playing age, vocal range, ethnicity/presenting, union, height, availability | `DISC-P1-003`, `DISC-P1-004`, `DISC-P2-001`–`003` | `needed` |
 | `DISC-GAP-004` | 2–3 vocal demo recordings (YouTube unlisted or public) | `DISC-P2-009` | `needed` |
 | `DISC-GAP-005` | Confirmation whether to publish “seeking representation” publicly | `DISC-P2-005` | `needed` |
-| `DISC-GAP-006` | Legacy WordPress URL inventory for redirects | `DISC-P0-003` | `needed` |
+| `DISC-GAP-006` | Legacy WordPress URL inventory for redirects | `DISC-P0-003` | `done` (see [wordpress-to-azure-cutover.md](runbooks/wordpress-to-azure-cutover.md) §2) |
 | `DISC-GAP-007` | Verified external profile URLs (Backstage, Actors Access, YouTube, etc.) | `DISC-P1-004`, `DISC-P3-005` | `needed` |
 
 ---

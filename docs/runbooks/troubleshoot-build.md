@@ -18,7 +18,7 @@ Schemas live in `src/content.config.ts`. Fix the markdown fields (types, require
 1. Check GitHub `main` for the commit
 2. Check Actions status — still running vs failed
 3. Hard-refresh / CDN cache: wait 1–2 minutes more
-4. Confirm you are looking at the custom domain that points to SWA (not old WordPress DNS)
+4. Confirm you are looking at the custom domain that points to SWA (not EasyWP / old WordPress DNS)
 
 ## Studio publish errors
 
