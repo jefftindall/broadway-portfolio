@@ -40,6 +40,7 @@ func start
 ## Documentation
 
 - [Initial setup](docs/setup.md) — Terraform, secrets, GitHub App, OIDC, DNS cutover
+- [Casting discoverability backlog](docs/casting-discoverability.md) — assessment rubric, scores, and `DISC-*` action IDs for SEO/casting work
 - [Brand & UI style guide](docs/style-guide.md) — tokens, type, components (visual: `/style-guide`)
 - Runbooks:
   - [GitHub App (Studio)](docs/runbooks/github-app.md)
