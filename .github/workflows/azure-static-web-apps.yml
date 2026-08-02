@@ -1,12 +1,15 @@
 name: Azure Static Web Apps CI/CD
 
-# Deploy only on merge to main. PRs run static analysis (and Terraform plan) only.
-# Manual staging deploy: Actions → Staging branch (workflow_dispatch).
+# Deploy on merge to main when app or infra paths change. Docs-only (and other
+# non-release) pushes skip Terraform, deploy, and smoke. Manual dispatch always
+# runs every stage. PRs run static analysis (and Terraform plan) only.
+# Manual staging-only deploy: Actions → Staging branch (workflow_dispatch).
 # After Deploy Staging: Smoke Staging (Playwright desktop + mobile) must pass before prod.
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   id-token: write
@@ -18,18 +21,49 @@ jobs:
     name: Detect changes
     runs-on: ubuntu-latest
     outputs:
-      infra: ${{ steps.filter.outputs.infra }}
+      infra: ${{ steps.set.outputs.infra }}
+      app: ${{ steps.set.outputs.app }}
+      release: ${{ steps.set.outputs.release }}
     steps:
       - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
         id: filter
+        if: github.event_name != 'workflow_dispatch'
         with:
           filters: |
             infra:
               - 'infra/**'
+            app:
+              - 'src/**'
+              - 'public/**'
+              - 'api/**'
+              - 'scripts/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'astro.config.mjs'
+              - 'tsconfig.json'
+              - 'staticwebapp.config.json'
               - '.github/workflows/azure-static-web-apps.yml'
-              - '.github/workflows/static-analysis.yml'
-              - '.github/workflows/staging-branch.yml'
+      - name: Set change outputs
+        id: set
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Manual dispatch: treating infra, app, and release as changed."
+            echo "infra=true" >> "$GITHUB_OUTPUT"
+            echo "app=true" >> "$GITHUB_OUTPUT"
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          infra="${{ steps.filter.outputs.infra }}"
+          app="${{ steps.filter.outputs.app }}"
+          release=false
+          if [ "$infra" = "true" ] || [ "$app" = "true" ]; then
+            release=true
+          fi
+          echo "infra=$infra" >> "$GITHUB_OUTPUT"
+          echo "app=$app" >> "$GITHUB_OUTPUT"
+          echo "release=$release" >> "$GITHUB_OUTPUT"
+          echo "Detected infra=$infra app=$app release=$release"
 
   terraform_staging:
     name: Terraform Apply Staging
@@ -88,6 +122,7 @@ jobs:
     if: |
       always() &&
       needs.changes.result == 'success' &&
+      needs.changes.outputs.release == 'true' &&
       (needs.terraform_staging.result == 'success' || needs.terraform_staging.result == 'skipped')
     runs-on: ubuntu-latest
     environment: staging

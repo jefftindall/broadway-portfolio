@@ -120,7 +120,7 @@ For local preview, propagation polling is usually instant; `waitForOk` still wor
 
 ## CI integration
 
-**Azure Static Web Apps CI/CD** and **Staging branch** workflows:
+**Azure Static Web Apps CI/CD** and **Staging branch** workflows (when a release runs):
 
 1. Deploy staging
 2. Resolve staging hostname via Azure CLI
@@ -128,7 +128,7 @@ For local preview, propagation polling is usually instant; `waitForOk` still wor
 4. `npm run test:journey`
 5. Prod deploy only if both pass
 
-On failure: Playwright retains **trace on first retry** (`trace: 'on-first-retry'`). Re-run the workflow or download artifacts from the Actions run.
+Docs-only merges to `main` skip deploy and smoke. Manual **Azure Static Web Apps CI/CD** dispatch always runs the full path. On failure: Playwright retains **trace on first retry** (`trace: 'on-first-retry'`). Re-run via workflow dispatch or download artifacts from the Actions run.
 
 ---
 

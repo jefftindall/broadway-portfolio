@@ -171,13 +171,14 @@ Terraform also manages GitHub Environment variables. The default Actions `GITHUB
 | Workflow | When | What |
 |---|---|---|
 | [static-analysis.yml](../.github/workflows/static-analysis.yml) | Every PR / push to `main` | fmt, TFLint, validate, Astro check, API syntax; then (on PRs that touch `infra/`) `terraform plan` for staging and prod after those checks succeed — **no deploys** |
-| [azure-static-web-apps.yml](../.github/workflows/azure-static-web-apps.yml) | Push / merge to `main` only | If `infra/` changed: apply staging → deploy staging → smoke + journey tests → apply prod → deploy prod; otherwise app deploy staging → verify → prod |
+| [azure-static-web-apps.yml](../.github/workflows/azure-static-web-apps.yml) | Push / merge to `main`, or manual `workflow_dispatch` | Path-filtered: docs-only skips release; app/infra changes deploy (Terraform when `infra/` changes); manual dispatch always runs every stage |
 | [staging-branch.yml](../.github/workflows/staging-branch.yml) | Manual (`workflow_dispatch`) | Apply staging Terraform from the selected branch, deploy the staging SWA, then run Playwright smoke + journeys (async test; no prod) |
 
 Promotion path:
 
 - Pull requests → **Static analysis** only (plan when infra changes); no app or infra deploy
-- Push / merge to `main` → Terraform apply (when infra changes) before each env’s app deploy; **Smoke Staging** (smoke + journey Playwright suites) after staging deploy; prod app only if staging deploy **and** verification succeeded
+- Push / merge to `main` → skip release when only docs/non-app paths changed; otherwise Terraform apply (when infra changes) before each env’s app deploy; **Smoke Staging** after staging deploy; prod only if staging deploy **and** verification succeeded
+- Manual full CD → Actions → **Azure Static Web Apps CI/CD** → Run workflow (every stage; ignores path filters)
 - Manual branch test → Actions → **Staging branch** → pick the branch → Run workflow (includes smoke + journeys)
 
 See [runbooks/testing-strategy.md](runbooks/testing-strategy.md) for persona journeys, local commands, and phased backlog.
