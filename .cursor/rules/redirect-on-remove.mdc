@@ -14,7 +14,7 @@ When a public page or content URL is **removed, renamed, or otherwise stops serv
 
 1. Add a **301** in `public/staticwebapp.config.json` from the old path to the closest live equivalent (home, list page, or new slug).
 2. Mirror the same redirect in root `staticwebapp.config.json`.
-3. Keep redirects **one hop** only; include trailing-slash variants when the old site used them.
+3. Keep redirects **one hop** only. List each path once — Azure SWA treats `/path` and `/path/` as the same route and rejects duplicates (prefer the slashless form).
 4. Place redirect routes **before** `/studio` and `/api/*` auth routes.
 5. Do not invent detail routes Astro does not have (e.g. no `/shows/{slug}` — use `/shows`).
 
