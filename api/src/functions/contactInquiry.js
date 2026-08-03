@@ -10,7 +10,8 @@ const inquirySchema = z
   .object({
     type: z.enum(['casting', 'lesson']),
     name: z.string().trim().min(1).max(200),
-    email: z.string().trim().email().max(320),
+    preferredContact: z.enum(['email', 'phone']),
+    email: z.string().trim().max(320).optional().default(''),
     phone: z.string().trim().max(40).optional().default(''),
     organization: z.string().trim().max(200).optional().default(''),
     format: z.enum(['nyc', 'zoom']).optional(),
@@ -24,6 +25,35 @@ const inquirySchema = z
         path: ['format'],
         message: 'format is required for lesson inquiries',
       });
+    }
+
+    if (data.preferredContact === 'email') {
+      const emailResult = z.string().email().safeParse(data.email);
+      if (!emailResult.success) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['email'],
+          message: 'email is required when preferred contact is email',
+        });
+      }
+    } else if (!data.phone || data.phone.length < 7) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['phone'],
+        message: 'phone is required when preferred contact is phone',
+      });
+    }
+
+    // If a non-preferred email is provided, it must still be valid.
+    if (data.preferredContact === 'phone' && data.email) {
+      const emailResult = z.string().email().safeParse(data.email);
+      if (!emailResult.success) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['email'],
+          message: 'email must be valid when provided',
+        });
+      }
     }
   });
 
@@ -73,7 +103,8 @@ app.http('contactInquiry', {
       await sendInquiryEmail({
         type: inquiry.type,
         name: inquiry.name,
-        email: inquiry.email,
+        preferredContact: inquiry.preferredContact,
+        email: inquiry.email || undefined,
         phone: inquiry.phone || undefined,
         organization: inquiry.organization || undefined,
         format: inquiry.format,
@@ -103,6 +134,7 @@ app.http('contactInquiry', {
       trackEvent('ContactInquiryReceived', {
         correlationId,
         type: inquiry.type,
+        preferredContact: inquiry.preferredContact,
         smsSent: String(smsSent),
       });
       await flush();

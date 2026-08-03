@@ -23,7 +23,6 @@ const jsonLd = [
     name: `${site.name} Private Voice Lessons`,
     description: entry.data.description,
     url: bookUrl,
-    email: site.email,
     areaServed: ['New York, NY', 'Online'],
     founder: {
       '@type': 'Person',
@@ -42,7 +41,7 @@ const jsonLd = [
     price: (rate.priceAmount ?? (Number.parseFloat(rate.price.replace(/[^0-9.]/g, '')) || 0)).toFixed(2),
     priceCurrency: 'USD',
     url: bookUrl,
-    seller: { '@type': 'Person', name: site.name, email: site.email },
+    seller: { '@type': 'Person', name: site.name },
     availability: 'https://schema.org/InStock',
   })),
 ];
@@ -125,7 +124,9 @@ const jsonLd = [
       <h2 id="lesson-form-heading" class="font-display text-3xl text-spotlight md:text-4xl">
         Lesson inquiry
       </h2>
-      <p class="mt-2 text-sm text-muted">Share your goals and availability — Elyse will reply by email.</p>
+      <p class="mt-2 text-sm text-muted">
+        Share your goals and availability — Elyse will follow up using your preferred contact method.
+      </p>
       <GlassPanel strong class="mt-8 p-6 md:p-8">
         <InquiryForm type="lesson" id="lesson-inquiry" />
       </GlassPanel>

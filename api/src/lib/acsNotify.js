@@ -18,7 +18,8 @@ function requireEnv(name) {
  * @param {{
  *   type: 'casting' | 'lesson',
  *   name: string,
- *   email: string,
+ *   preferredContact: 'email' | 'phone',
+ *   email?: string,
  *   phone?: string,
  *   organization?: string,
  *   format?: 'nyc' | 'zoom',
@@ -37,7 +38,8 @@ export async function sendInquiryEmail(inquiry) {
   const lines = [
     `Type: ${inquiry.type}`,
     `Name: ${inquiry.name}`,
-    `Email: ${inquiry.email}`,
+    `Preferred contact: ${inquiry.preferredContact === 'email' ? 'Email' : 'Phone'}`,
+    inquiry.email ? `Email: ${inquiry.email}` : null,
     inquiry.phone ? `Phone: ${inquiry.phone}` : null,
     inquiry.organization ? `Organization: ${inquiry.organization}` : null,
     inquiry.format
@@ -55,8 +57,7 @@ export async function sendInquiryEmail(inquiry) {
     plainText,
   )}</pre>`;
 
-  const client = new EmailClient(connectionString);
-  const poller = await client.beginSend({
+  const payload = {
     senderAddress: sender,
     recipients: {
       to: [{ address: to }],
@@ -66,8 +67,13 @@ export async function sendInquiryEmail(inquiry) {
       plainText,
       html,
     },
-    replyTo: [{ address: inquiry.email, displayName: inquiry.name }],
-  });
+  };
+  if (inquiry.email) {
+    payload.replyTo = [{ address: inquiry.email, displayName: inquiry.name }];
+  }
+
+  const client = new EmailClient(connectionString);
+  const poller = await client.beginSend(payload);
 
   const result = await poller.pollUntilDone();
   if (result.status !== 'Succeeded') {
