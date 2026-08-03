@@ -31,12 +31,12 @@ Requires Azure CLI login with permission to read the vault and update the Static
 
 ## Site contact secrets (build-time)
 
-Email, phone, and date of birth for the public site are **not** in git. They live in Key Vault and are injected only when Astro builds (CI via [`scripts/fetch-site-contact-secrets.sh`](../../scripts/fetch-site-contact-secrets.sh); locally via `.env`).
+Email, phone, and date of birth for builds are **not** in git. They live in Key Vault and are injected when Astro / the resume PDF build (CI via [`scripts/fetch-site-contact-secrets.sh`](../../scripts/fetch-site-contact-secrets.sh); locally via `.env`).
 
 | Secret name | Env var | Notes |
 |---|---|---|
 | `SITE-CONTACT-EMAIL` | `SITE_CONTACT_EMAIL` | Appears on Contact, Footer, JSON-LD after build |
-| `SITE-CONTACT-PHONE` | `SITE_CONTACT_PHONE` | Same |
+| `SITE-CONTACT-PHONE` | `SITE_CONTACT_PHONE` | Resume PDF only — not shown on the public site (falls back to `src/content/resume-meta.json` if unset) |
 | `SITE-DATE-OF-BIRTH` | `SITE_DATE_OF_BIRTH` | `YYYY-MM-DD`; used only to compute chronological age — never rendered |
 
 Publish the **same** values to **both** vaults:

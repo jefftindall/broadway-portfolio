@@ -11,10 +11,7 @@ const pathname = Astro.url.pathname;
     <nav class="hidden items-center gap-6 md:flex" aria-label="Primary">
       {
         nav.map((item) => {
-          const active =
-            item.href === '/'
-              ? pathname === '/'
-              : pathname === item.href || pathname.startsWith(item.href + '/');
+          const active = pathname === item.href || pathname.startsWith(item.href + '/');
           return (
             <a
               href={item.href}
