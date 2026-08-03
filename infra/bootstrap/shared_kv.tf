@@ -100,3 +100,25 @@ resource "github_actions_variable" "azure_shared_key_vault_name" {
   variable_name = "AZURE_SHARED_KEY_VAULT_NAME"
   value         = azurerm_key_vault.shared.name
 }
+
+# Build release uses the prod deploy identity; staging-branch uses staging.
+# Grant both here so CD is not blocked waiting for the other env’s Terraform apply.
+data "azuread_service_principal" "gha_staging" {
+  display_name = "elyse-portfolio-gha-staging"
+}
+
+data "azuread_service_principal" "gha_prod" {
+  display_name = "elyse-portfolio-gha-prod"
+}
+
+resource "azurerm_role_assignment" "shared_kv_gha_staging" {
+  scope                = azurerm_key_vault.shared.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = data.azuread_service_principal.gha_staging.object_id
+}
+
+resource "azurerm_role_assignment" "shared_kv_gha_prod" {
+  scope                = azurerm_key_vault.shared.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = data.azuread_service_principal.gha_prod.object_id
+}
