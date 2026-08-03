@@ -171,7 +171,7 @@ Terraform also manages GitHub Environment variables. The default Actions `GITHUB
 | Workflow | When | What |
 |---|---|---|
 | [static-analysis.yml](../.github/workflows/static-analysis.yml) | Every PR / push to `main` | fmt, TFLint, validate, Astro check, API syntax; then (on PRs that touch `infra/`) `terraform plan` for staging and prod after those checks succeed — **no deploys** |
-| [azure-static-web-apps.yml](../.github/workflows/azure-static-web-apps.yml) | Push / merge to `main` when app or infra paths change; manual (`workflow_dispatch`) from `main` runs full CD | If `infra/` changed: apply staging → deploy staging → smoke + journey tests → apply prod → deploy prod; if only app paths changed: deploy staging → verify → prod (Terraform skipped); docs-only pushes skip CD; manual dispatch from non-`main` branches runs staging only |
+| [azure-static-web-apps.yml](../.github/workflows/azure-static-web-apps.yml) | Push / merge to `main` when app or infra paths change; manual (`workflow_dispatch`) from `main` runs full CD | Single **Build release**; if `infra/` changed: apply staging (parallel with build) → deploy staging → change-aware smoke/journeys → apply prod → deploy prod (same artifact); if only app paths changed: build → deploy staging → verify → prod; docs-only pushes skip CD; manual dispatch from non-`main` branches runs staging only |
 | [staging-branch.yml](../.github/workflows/staging-branch.yml) | Manual (`workflow_dispatch`) | Apply staging Terraform from the selected branch, deploy the staging SWA, then run Playwright smoke + journeys (async test; no prod) |
 
 Promotion path:
