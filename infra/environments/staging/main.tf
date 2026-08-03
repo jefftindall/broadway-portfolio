@@ -42,6 +42,7 @@ provider "azurerm" {
     "Microsoft.Insights",
     "Microsoft.OperationalInsights",
     "Microsoft.AlertsManagement",
+    "Microsoft.Communication",
   ]
 
   features {

@@ -13,6 +13,13 @@
     "GITHUB_OWNER": "jefftindall",
     "GITHUB_REPO": "broadway-portfolio",
     "GITHUB_BRANCH": "main",
-    "ALLOWED_USER_IDS": "elyse@example.com"
+    "ALLOWED_USER_IDS": "elyse@example.com",
+    "ACS_CONNECTION_STRING": "",
+    "ACS_EMAIL_SENDER": "",
+    "CONTACT_NOTIFY_EMAIL": "",
+    "CONTACT_NOTIFY_PHONE": "",
+    "CONTACT_SMS_ENABLED": "false",
+    "ACS_SMS_FROM": "",
+    "TURNSTILE_SECRET_KEY": "1x0000000000000000000000000000000AA"
   }
 }

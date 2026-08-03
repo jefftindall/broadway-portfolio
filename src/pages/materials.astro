@@ -4,9 +4,8 @@ import VideoEmbed from '../components/VideoEmbed.astro';
 import GlassPanel from '../components/GlassPanel.astro';
 import CtaLink from '../components/CtaLink.astro';
 import Age from '../components/Age.astro';
+import InquiryForm from '../components/InquiryForm.astro';
 import { site } from '../lib/site';
-
-const castingMailto = `mailto:${site.email}?subject=${encodeURIComponent('Casting Inquiry')}`;
 
 const downloads = [
   {
@@ -42,7 +41,7 @@ const jsonLd = {
 
 <BaseLayout
   title="Materials"
-  description="Elyse Tindall materials for casting directors and agents — watch the reel, download resume and headshot, or email a casting inquiry."
+  description="Elyse Tindall materials for casting directors and agents — watch the reel, download resume and headshot, or send a casting inquiry."
   image={site.heroImage}
   jsonLd={jsonLd}
 >
@@ -56,7 +55,7 @@ const jsonLd = {
       Age <Age /> · {site.jobTitle}
     </p>
     <div class="mt-8 flex flex-wrap gap-4">
-      <CtaLink href={castingMailto}>Email casting inquiry</CtaLink>
+      <CtaLink href="#casting-inquiry">Casting inquiry</CtaLink>
       <CtaLink href="#reel" variant="secondary">Watch reel</CtaLink>
     </div>
   </section>
@@ -104,12 +103,24 @@ const jsonLd = {
                 {site.email}
               </a>
             </p>
-            <CtaLink class="mt-6" href={castingMailto}>
-              Email casting inquiry
+            <CtaLink class="mt-6" href="#casting-inquiry">
+              Casting inquiry
             </CtaLink>
           </GlassPanel>
         </div>
       </div>
+    </div>
+  </section>
+
+  <section class="border-t border-line" aria-labelledby="casting-form-heading">
+    <div class="mx-auto max-w-2xl px-6 py-16 md:py-20">
+      <h2 id="casting-form-heading" class="font-display text-3xl text-spotlight md:text-4xl">
+        Casting inquiry
+      </h2>
+      <p class="mt-2 text-sm text-muted">Tell Elyse about the project — she’ll reply by email.</p>
+      <GlassPanel strong class="mt-8 p-6 md:p-8">
+        <InquiryForm type="casting" id="casting-inquiry" />
+      </GlassPanel>
     </div>
   </section>
 </BaseLayout>

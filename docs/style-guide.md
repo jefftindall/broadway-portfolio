@@ -74,7 +74,8 @@ Contrast rule: primary CTAs use **gold on ink**. Muted text is secondary only.
 | `CtaLink` | `src/components/CtaLink.astro` | Primary / secondary / gel actions |
 | `GlassPanel` | `src/components/GlassPanel.astro` | Interactive modules (lessons, contact, rates) |
 | `LessonsModule` | `src/components/LessonsModule.astro` | Flagship private voice / vocal coaching block |
-| `ContactLanes` | `src/components/ContactLanes.astro` | Casting vs lesson mailto |
+| `ContactLanes` | `src/components/ContactLanes.astro` | Casting vs lesson lanes (forms on `/contact`; links elsewhere) |
+| `InquiryForm` | `src/components/InquiryForm.astro` | Live casting / lesson forms → `POST /api/contactInquiry` |
 | `ShowCard` / `CreditList` | `src/components/` | Credits; filters by `category` |
 | `MediaCard` | `src/components/MediaCard.astro` | Gallery / media thumbnails |
 | `VideoEmbed` | `src/components/VideoEmbed.astro` | YouTube / Vimeo reel embeds |
@@ -86,7 +87,7 @@ Contrast rule: primary CTAs use **gold on ink**. Muted text is secondary only.
 - **secondary** — outline / line border (alternate action)
 - **gel** — teal fill (supporting emphasis, e.g. lessons teaser)
 
-Mailto subjects: `Casting Inquiry`, `Lesson Inquiry`.
+Inquiry email subjects (set server-side by the contact API): `Casting Inquiry`, `Lesson Inquiry`. Primary CTAs use on-site forms (not mailto). Footer may keep a bare mailto escape hatch.
 
 ## Motion
 

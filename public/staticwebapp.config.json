@@ -105,6 +105,10 @@
       "allowedRoles": ["authenticated"]
     },
     {
+      "route": "/api/contactInquiry",
+      "allowedRoles": ["anonymous", "authenticated"]
+    },
+    {
       "route": "/api/*",
       "allowedRoles": ["authenticated"]
     }

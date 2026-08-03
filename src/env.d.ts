@@ -6,6 +6,7 @@ interface ImportMetaEnv {
   readonly SITE_DATE_OF_BIRTH?: string;
   readonly PUBLIC_APPINSIGHTS_CONNECTION_STRING?: string;
   readonly PUBLIC_APPINSIGHTS_SAMPLE_PERCENT?: string;
+  readonly PUBLIC_TURNSTILE_SITE_KEY?: string;
 }
 
 interface ImportMeta {

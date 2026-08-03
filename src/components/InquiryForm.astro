@@ -1,0 +1,272 @@
+---
+interface Props {
+  type: 'casting' | 'lesson';
+  /** Optional id for deep-links (e.g. casting-inquiry). */
+  id?: string;
+  class?: string;
+}
+
+const { type, id, class: className } = Astro.props;
+const siteKey = String(import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '').trim();
+const formId = id ?? `${type}-inquiry`;
+const submitLabel = type === 'casting' ? 'Send casting inquiry' : 'Send lesson inquiry';
+---
+
+<form
+  id={formId}
+  class:list={['inquiry-form', className]}
+  data-inquiry-form
+  data-inquiry-type={type}
+  data-turnstile-sitekey={siteKey}
+  novalidate
+>
+  <input type="hidden" name="type" value={type} />
+
+  <div class="grid gap-4">
+    <label class="block">
+      <span class="text-sm text-muted">Name</span>
+      <input
+        class="mt-1 w-full rounded-sm border border-line bg-ink/40 px-3 py-2 text-spotlight focus:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+        type="text"
+        name="name"
+        autocomplete="name"
+        required
+        maxlength="200"
+        data-testid={`${type}-name`}
+      />
+    </label>
+
+    <label class="block">
+      <span class="text-sm text-muted">Email</span>
+      <input
+        class="mt-1 w-full rounded-sm border border-line bg-ink/40 px-3 py-2 text-spotlight focus:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+        type="email"
+        name="email"
+        autocomplete="email"
+        required
+        maxlength="320"
+        data-testid={`${type}-email`}
+      />
+    </label>
+
+    <label class="block">
+      <span class="text-sm text-muted">Phone <span class="opacity-70">(optional)</span></span>
+      <input
+        class="mt-1 w-full rounded-sm border border-line bg-ink/40 px-3 py-2 text-spotlight focus:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+        type="tel"
+        name="phone"
+        autocomplete="tel"
+        maxlength="40"
+        data-testid={`${type}-phone`}
+      />
+    </label>
+
+    {
+      type === 'casting' ? (
+        <label class="block">
+          <span class="text-sm text-muted">
+            Organization <span class="opacity-70">(optional)</span>
+          </span>
+          <input
+            class="mt-1 w-full rounded-sm border border-line bg-ink/40 px-3 py-2 text-spotlight focus:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            type="text"
+            name="organization"
+            autocomplete="organization"
+            maxlength="200"
+            data-testid="casting-organization"
+          />
+        </label>
+      ) : (
+        <fieldset>
+          <legend class="text-sm text-muted">Preferred format</legend>
+          <div class="mt-2 flex flex-wrap gap-4 text-sm text-spotlight">
+            <label class="inline-flex items-center gap-2">
+              <input type="radio" name="format" value="nyc" required data-testid="lesson-format-nyc" />
+              NYC in-person
+            </label>
+            <label class="inline-flex items-center gap-2">
+              <input type="radio" name="format" value="zoom" data-testid="lesson-format-zoom" />
+              Zoom
+            </label>
+          </div>
+        </fieldset>
+      )
+    }
+
+    <label class="block">
+      <span class="text-sm text-muted">
+        {type === 'casting' ? 'Project / message' : 'Goals & availability'}
+      </span>
+      <textarea
+        class="mt-1 min-h-28 w-full rounded-sm border border-line bg-ink/40 px-3 py-2 text-spotlight focus:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+        name="message"
+        required
+        maxlength="5000"
+        data-testid={`${type}-message`}
+      ></textarea>
+    </label>
+
+    {
+      siteKey ? (
+        <div data-turnstile-mount class="min-h-[65px]"></div>
+      ) : (
+        <p class="text-sm text-muted" data-testid="turnstile-missing">
+          Form verification isn’t configured for this build.
+        </p>
+      )
+    }
+
+    <p class="inquiry-status hidden text-sm" data-inquiry-status role="status" aria-live="polite"></p>
+
+    <button
+      type="submit"
+      class="inline-flex items-center justify-center rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+      data-testid={`${type}-submit`}
+      disabled={!siteKey}
+    >
+      {submitLabel}
+    </button>
+  </div>
+</form>
+
+<script>
+  type TurnstileApi = {
+    render: (el: HTMLElement, opts: Record<string, unknown>) => string;
+    reset: (widgetId?: string) => void;
+    getResponse: (widgetId?: string) => string;
+  };
+
+  const TURNSTILE_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+  let turnstileLoader: Promise<void> | null = null;
+
+  function turnstileApi(): TurnstileApi | undefined {
+    return (window as unknown as { turnstile?: TurnstileApi }).turnstile;
+  }
+
+  function loadTurnstile(): Promise<void> {
+    if (turnstileApi()) return Promise.resolve();
+    if (turnstileLoader) return turnstileLoader;
+    turnstileLoader = new Promise((resolve, reject) => {
+      const existing = document.querySelector<HTMLScriptElement>(`script[src^="${TURNSTILE_SRC}"]`);
+      if (existing) {
+        existing.addEventListener('load', () => resolve(), { once: true });
+        existing.addEventListener('error', () => reject(new Error('Turnstile failed to load')), {
+          once: true,
+        });
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = TURNSTILE_SRC;
+      script.async = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Turnstile failed to load'));
+      document.head.appendChild(script);
+    });
+    return turnstileLoader;
+  }
+
+  function setStatus(el: HTMLElement | null, message: string, kind: 'ok' | 'err' | 'idle') {
+    if (!el) return;
+    el.textContent = message;
+    el.classList.toggle('hidden', !message);
+    el.classList.toggle('text-gel', kind === 'ok');
+    el.classList.toggle('text-gold', kind === 'err');
+    el.classList.toggle('text-muted', kind === 'idle');
+  }
+
+  async function setupForm(form: HTMLFormElement) {
+    if (form.dataset.bound === '1') return;
+    form.dataset.bound = '1';
+
+    const siteKey = form.dataset.turnstileSitekey || '';
+    const statusEl = form.querySelector<HTMLElement>('[data-inquiry-status]');
+    const submitBtn = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+    let widgetId: string | undefined;
+
+    if (siteKey) {
+      try {
+        await loadTurnstile();
+        const mount = form.querySelector<HTMLElement>('[data-turnstile-mount]');
+        const api = turnstileApi();
+        if (mount && api) {
+          widgetId = api.render(mount, {
+            sitekey: siteKey,
+            theme: 'dark',
+          });
+        }
+      } catch {
+        setStatus(statusEl, 'Verification widget failed to load. Refresh and try again.', 'err');
+        if (submitBtn) submitBtn.disabled = true;
+      }
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!siteKey || !submitBtn) return;
+
+      const api = turnstileApi();
+      const token =
+        (widgetId !== undefined && api ? api.getResponse(widgetId) : '') || '';
+      if (!token) {
+        setStatus(statusEl, 'Please complete the verification check.', 'err');
+        return;
+      }
+
+      const fd = new FormData(form);
+      const type = String(fd.get('type') || form.dataset.inquiryType || '');
+      const payload: Record<string, string> = {
+        type,
+        name: String(fd.get('name') || '').trim(),
+        email: String(fd.get('email') || '').trim(),
+        phone: String(fd.get('phone') || '').trim(),
+        message: String(fd.get('message') || '').trim(),
+        turnstileToken: token,
+      };
+      if (type === 'casting') {
+        payload.organization = String(fd.get('organization') || '').trim();
+      } else {
+        payload.format = String(fd.get('format') || '').trim();
+      }
+
+      submitBtn.disabled = true;
+      setStatus(statusEl, 'Sending…', 'idle');
+
+      try {
+        const res = await fetch('/api/contactInquiry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          correlationId?: string;
+          ok?: boolean;
+        };
+
+        if (!res.ok) {
+          const ref = data.correlationId ? ` Reference: ${data.correlationId}` : '';
+          setStatus(statusEl, `${data.error || 'Something went wrong.'}${ref}`, 'err');
+          if (widgetId !== undefined && api) api.reset(widgetId);
+          return;
+        }
+
+        form.reset();
+        if (widgetId !== undefined && api) api.reset(widgetId);
+        setStatus(
+          statusEl,
+          'Thanks — your message was sent. Elyse will follow up by email.',
+          'ok',
+        );
+      } catch {
+        setStatus(statusEl, 'Network error — please try again.', 'err');
+        if (widgetId !== undefined && api) api.reset(widgetId);
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  }
+
+  document.querySelectorAll<HTMLFormElement>('[data-inquiry-form]').forEach((form) => {
+    void setupForm(form);
+  });
+</script>

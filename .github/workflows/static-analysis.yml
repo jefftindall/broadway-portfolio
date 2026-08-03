@@ -70,6 +70,8 @@ jobs:
       SITE_CONTACT_EMAIL: check@example.com
       SITE_CONTACT_PHONE: "000-000-0000"
       SITE_DATE_OF_BIRTH: "2000-01-01"
+      # Cloudflare Turnstile always-passes test sitekey (public)
+      PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA"
     steps:
       - uses: actions/checkout@v7
 

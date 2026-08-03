@@ -146,6 +146,8 @@ After first login to `/studio`, check `/.auth/me` while signed in to copy the ex
 
 **Important:** SWA managed Functions do **not** resolve `@Microsoft.KeyVault(...)` app settings. After populating the vault (or whenever you change API secrets), sync resolved values into SWA with `./scripts/sync-swa-api-secrets.sh <staging|prod>`, the **Sync SWA API secrets** workflow, or `terraform apply` for that environment. `AAD_CLIENT_SECRET` stays a Key Vault reference (auth platform only). See [rotate-secrets.md](runbooks/rotate-secrets.md).
 
+Contact forms also need Cloudflare Turnstile keys (`TURNSTILE-SITE-KEY`, `TURNSTILE-SECRET-KEY`) and — for prod SMS — a toll-free number in `ACS-SMS-FROM`. ACS email resources are created by Terraform. Full steps: [rotate-secrets.md](runbooks/rotate-secrets.md#contact-forms-acs-email--sms--cloudflare-turnstile).
+
 ## 4. GitHub Actions OIDC (no deploy-token secret)
 
 ### App deploy identity (per environment)
