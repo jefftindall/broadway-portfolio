@@ -92,6 +92,12 @@ az keyvault secret set --vault-name kv-elyse-shared --name ACS-SMS-FROM --value 
 
 Portal: Communication Service **`acs-elyse-shared`** → purchase toll-free + [toll-free verification](https://learn.microsoft.com/azure/communication-services/quickstarts/sms/apply-for-toll-free-verification). Leave `ACS-SMS-FROM` as `REPLACE_ME` until verified — email still works.
 
+For the verification program brief, use the public SMS policy URL:
+
+`https://elysetindall.com/privacy#sms`
+
+(also linked from the site footer and inquiry forms). Opt-out: reply **STOP**; help: reply **HELP**.
+
 ## Rotate Gemini API key
 
 1. Create a new key in Google AI Studio
