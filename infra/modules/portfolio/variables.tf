@@ -92,6 +92,18 @@ variable "alert_email" {
   default     = ""
 }
 
+variable "shared_key_vault_name" {
+  type        = string
+  description = "Bootstrap foundational Key Vault for SITE-* and Turnstile secrets (shared by staging/prod builds)"
+  default     = "kv-elyse-shared"
+}
+
+variable "shared_key_vault_resource_group_name" {
+  type        = string
+  description = "Resource group of the shared foundational Key Vault"
+  default     = "rg-elyse-shared"
+}
+
 variable "tags" {
   type        = map(string)
   description = "Additional resource tags"

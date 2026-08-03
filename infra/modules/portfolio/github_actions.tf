@@ -57,7 +57,8 @@ resource "github_actions_environment_variable" "appinsights_connection_string" {
   value         = azurerm_application_insights.main.connection_string
 }
 
-# Deploy builds fetch SITE-* contact secrets from this vault.
+# Deploy jobs read env-scoped API secrets from this vault (Gemini, ACS, etc.).
+# SITE-* / Turnstile are in bootstrap kv-elyse-shared (AZURE_SHARED_KEY_VAULT_NAME).
 resource "github_actions_environment_variable" "azure_key_vault_name" {
   count         = var.manage_github_actions ? 1 : 0
   environment   = github_repository_environment.this[0].environment

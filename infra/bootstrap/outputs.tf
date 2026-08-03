@@ -51,3 +51,16 @@ output "terraform_oidc_subjects" {
     "repo:${local.github_oidc_repo}:pull_request",
   ]
 }
+
+output "shared_key_vault_name" {
+  description = "Foundational vault for site-build secrets shared by staging and prod"
+  value       = azurerm_key_vault.shared.name
+}
+
+output "shared_key_vault_resource_group_name" {
+  value = azurerm_resource_group.shared.name
+}
+
+output "shared_key_vault_uri" {
+  value = azurerm_key_vault.shared.vault_uri
+}

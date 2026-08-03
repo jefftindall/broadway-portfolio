@@ -95,7 +95,7 @@ Creates e.g. `rg-elyse-portfolio-prod`, `kv-elyse-prod`, `swa-elyse-portfolio-pr
 Production defaults to `elysetindall.com` and
 `jefftindall/broadway-portfolio`.
 
-Save outputs per environment: `static_web_app_default_hostname`, `github_actions_client_id`, and for prod `custom_domain_validation_token`. Key Vaults are always `kv-elyse-staging` and `kv-elyse-prod`.
+Save outputs per environment: `static_web_app_default_hostname`, `github_actions_client_id`, and for prod `custom_domain_validation_token`. Env vaults are `kv-elyse-staging` / `kv-elyse-prod`; shared build secrets are `kv-elyse-shared` (bootstrap).
 
 Before apply, authenticate the GitHub provider so Terraform can create Actions environments/variables:
 
@@ -146,7 +146,7 @@ After first login to `/studio`, check `/.auth/me` while signed in to copy the ex
 
 **Important:** SWA managed Functions do **not** resolve `@Microsoft.KeyVault(...)` app settings. After populating the vault (or whenever you change API secrets), sync resolved values into SWA with `./scripts/sync-swa-api-secrets.sh <staging|prod>`, the **Sync SWA API secrets** workflow, or `terraform apply` for that environment. `AAD_CLIENT_SECRET` stays a Key Vault reference (auth platform only). See [rotate-secrets.md](runbooks/rotate-secrets.md).
 
-Contact forms also need Cloudflare Turnstile keys (`TURNSTILE-SITE-KEY`, `TURNSTILE-SECRET-KEY`) and — for prod SMS — a toll-free number in `ACS-SMS-FROM`. ACS email resources are created by Terraform. Full steps: [rotate-secrets.md](runbooks/rotate-secrets.md#contact-forms-acs-email--sms--cloudflare-turnstile).
+Contact forms and the single CD build use **shared** Key Vault `kv-elyse-shared` (SITE-* + Turnstile). Env vaults keep ACS/Gemini/etc. Apply bootstrap first, populate shared secrets, then sync SWA — see [rotate-secrets.md](runbooks/rotate-secrets.md).
 
 ## 4. GitHub Actions OIDC (no deploy-token secret)
 

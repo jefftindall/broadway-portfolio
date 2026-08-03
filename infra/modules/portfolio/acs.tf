@@ -1,6 +1,7 @@
 # Azure Communication Services — Email (all envs) + SMS wiring (prod values manual).
 # Connection string and managed MailFrom are Terraform-managed into SWA app settings.
 # Toll-free SMS number is purchased in the portal (prod) and stored as ACS-SMS-FROM.
+# Turnstile + SITE-CONTACT-* live in bootstrap kv-elyse-shared (shared_kv.tf).
 
 locals {
   acs_name            = "acs-elyse-portfolio-${local.name_suffix}"
@@ -50,29 +51,6 @@ resource "azurerm_key_vault_secret" "acs_email_sender" {
   content_type = "text/plain"
 }
 
-# Cloudflare Turnstile — both keys start in Key Vault (filled from Cloudflare dashboard).
-resource "azurerm_key_vault_secret" "turnstile_site_key" {
-  name         = "TURNSTILE-SITE-KEY"
-  value        = "REPLACE_ME"
-  key_vault_id = azurerm_key_vault.main.id
-  depends_on   = [azurerm_role_assignment.kv_admin]
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "azurerm_key_vault_secret" "turnstile_secret_key" {
-  name         = "TURNSTILE-SECRET-KEY"
-  value        = "REPLACE_ME"
-  key_vault_id = azurerm_key_vault.main.id
-  depends_on   = [azurerm_role_assignment.kv_admin]
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 # Prod SMS from-number (E.164). Purchase + verification are manual; see rotate-secrets.md.
 resource "azurerm_key_vault_secret" "acs_sms_from" {
   name         = "ACS-SMS-FROM"
@@ -85,26 +63,8 @@ resource "azurerm_key_vault_secret" "acs_sms_from" {
   }
 }
 
-data "azurerm_key_vault_secret" "turnstile_secret_key" {
-  name         = azurerm_key_vault_secret.turnstile_secret_key.name
-  key_vault_id = azurerm_key_vault.main.id
-  depends_on   = [azurerm_key_vault_secret.turnstile_secret_key]
-}
-
 data "azurerm_key_vault_secret" "acs_sms_from" {
   name         = azurerm_key_vault_secret.acs_sms_from.name
   key_vault_id = azurerm_key_vault.main.id
   depends_on   = [azurerm_key_vault_secret.acs_sms_from]
-}
-
-data "azurerm_key_vault_secret" "site_contact_email" {
-  name         = azurerm_key_vault_secret.site_contact_email.name
-  key_vault_id = azurerm_key_vault.main.id
-  depends_on   = [azurerm_key_vault_secret.site_contact_email]
-}
-
-data "azurerm_key_vault_secret" "site_contact_phone" {
-  name         = azurerm_key_vault_secret.site_contact_phone.name
-  key_vault_id = azurerm_key_vault.main.id
-  depends_on   = [azurerm_key_vault_secret.site_contact_phone]
 }

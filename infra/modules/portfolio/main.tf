@@ -125,47 +125,12 @@ resource "azurerm_key_vault_secret" "allowlist" {
   }
 }
 
-# Site build-time contact facts (email/phone/DOB). GitHub Actions reads them at
-# build (Astro embeds public email only). Phone is also synced to the contact API
-# as CONTACT_NOTIFY_PHONE for prod SMS notifications.
-resource "azurerm_key_vault_secret" "site_contact_email" {
-  name         = "SITE-CONTACT-EMAIL"
-  value        = "REPLACE_ME"
-  key_vault_id = azurerm_key_vault.main.id
-  depends_on   = [azurerm_role_assignment.kv_admin]
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "azurerm_key_vault_secret" "site_contact_phone" {
-  name         = "SITE-CONTACT-PHONE"
-  value        = "REPLACE_ME"
-  key_vault_id = azurerm_key_vault.main.id
-  depends_on   = [azurerm_role_assignment.kv_admin]
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
-resource "azurerm_key_vault_secret" "site_date_of_birth" {
-  name         = "SITE-DATE-OF-BIRTH"
-  value        = "REPLACE_ME"
-  key_vault_id = azurerm_key_vault.main.id
-  depends_on   = [azurerm_role_assignment.kv_admin]
-
-  lifecycle {
-    ignore_changes = [value]
-  }
-}
-
 # Managed Functions do not resolve @Microsoft.KeyVault(...) app settings — they
 # receive the literal reference string. Read live vault values at plan/apply and
 # write them into SWA configuration. Key Vault remains the source of truth;
 # terraform apply (or scripts/sync-swa-api-secrets.sh) syncs into SWA.
 # AAD_CLIENT_SECRET stays a Key Vault reference — SWA auth platform resolves it.
+# SITE-CONTACT-* / Turnstile live in bootstrap kv-elyse-shared (see shared_kv.tf).
 data "azurerm_key_vault_secret" "gemini" {
   name         = azurerm_key_vault_secret.gemini.name
   key_vault_id = azurerm_key_vault.main.id

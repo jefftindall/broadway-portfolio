@@ -100,6 +100,27 @@ jobs:
       - name: Syntax check
         run: npm run lint:api
 
+  shared_secrets:
+    name: Shared vault secrets
+    runs-on: ubuntu-latest
+    # Warning-only gate: surfaces missing SITE-*/Turnstile before CD Build release.
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Azure login (Terraform OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_TF_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TF_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_TF_SUBSCRIPTION_ID }}
+
+      - name: Check shared Key Vault secrets
+        env:
+          AZURE_SHARED_KEY_VAULT_NAME: ${{ vars.AZURE_SHARED_KEY_VAULT_NAME }}
+        run: |
+          chmod +x scripts/check-shared-deploy-secrets.sh
+          ./scripts/check-shared-deploy-secrets.sh
+
   changes:
     name: Detect infra changes
     if: github.event_name == 'pull_request'
