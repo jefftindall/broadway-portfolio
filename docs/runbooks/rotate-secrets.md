@@ -57,7 +57,7 @@ az keyvault secret set --vault-name kv-elyse-shared --name TURNSTILE-SECRET-KEY 
 # az keyvault secret show --vault-name kv-elyse-staging --name SITE-CONTACT-EMAIL --query value -o tsv
 ```
 
-Repo Actions variable `AZURE_SHARED_KEY_VAULT_NAME` is set by bootstrap. Static analysis job **Shared vault secrets** emits warnings when any of these are missing / `REPLACE_ME` (does not fail the check).
+Repo Actions variable `AZURE_SHARED_KEY_VAULT_NAME` is set by bootstrap. Static analysis job **Shared vault secrets** (pull requests only) emits warnings when any of these are missing / `REPLACE_ME` (does not fail the check).
 
 Locally: copy `.env.example` → `.env` and fill `SITE_*` plus `PUBLIC_TURNSTILE_SITE_KEY`.
 
