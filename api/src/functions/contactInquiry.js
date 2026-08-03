@@ -10,7 +10,8 @@ const inquirySchema = z
   .object({
     type: z.enum(['casting', 'lesson']),
     name: z.string().trim().min(1).max(200),
-    preferredContact: z.enum(['email', 'phone']),
+    // Public forms default to email; phone preference remains accepted for older clients.
+    preferredContact: z.enum(['email', 'phone']).default('email'),
     email: z.string().trim().max(320).optional().default(''),
     phone: z.string().trim().max(40).optional().default(''),
     organization: z.string().trim().max(200).optional().default(''),

@@ -48,7 +48,7 @@ const crossLink =
             type="radio"
             name="preferredContact"
             value="email"
-            required
+            checked
             data-testid={`${type}-preferred-email`}
           />
           Email
@@ -220,7 +220,8 @@ const crossLink =
 
   function syncPreferredContact(form: HTMLFormElement) {
     const preferred =
-      form.querySelector<HTMLInputElement>('input[name="preferredContact"]:checked')?.value || '';
+      form.querySelector<HTMLInputElement>('input[name="preferredContact"]:checked')?.value ||
+      'email';
     const emailInput = form.querySelector<HTMLInputElement>('input[name="email"]');
     const phoneInput = form.querySelector<HTMLInputElement>('input[name="phone"]');
     const emailHint = form.querySelector<HTMLElement>('[data-field="email"] [data-optional-hint]');
@@ -282,7 +283,7 @@ const crossLink =
       }
 
       const fd = new FormData(form);
-      const preferredContact = String(fd.get('preferredContact') || '').trim();
+      const preferredContact = String(fd.get('preferredContact') || 'email').trim();
       const email = String(fd.get('email') || '').trim();
       const phone = String(fd.get('phone') || '').trim();
 
