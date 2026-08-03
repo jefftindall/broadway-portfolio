@@ -6,8 +6,8 @@ Secrets live in Azure Key Vault as the source of truth. Managed Functions on SWA
 
 | Scope | Key Vault | Resource group | Purpose |
 |---|---|---|---|
-| **Shared (build)** | `kv-elyse-shared` | `rg-elyse-shared` | SITE-* + Turnstile (identical across envs; single release build) |
-| Staging API | `kv-elyse-staging` | `rg-elyse-portfolio-staging` | Gemini, GitHub App, ACS, allowlist, SMS-from |
+| **Shared (build + ACS)** | `kv-elyse-shared` | `rg-elyse-shared` | SITE-*, Turnstile, ACS email/SMS (identical across envs) |
+| Staging API | `kv-elyse-staging` | `rg-elyse-portfolio-staging` | Gemini, GitHub App, allowlist, AAD |
 | Production API | `kv-elyse-prod` | `rg-elyse-portfolio-prod` | Same as staging |
 
 Subscription: `e601e59a-c7f4-41f0-8178-b59740fb1974`
@@ -37,10 +37,13 @@ Created by **bootstrap** Terraform (`infra/bootstrap/shared_kv.tf`). One Astro b
 | Secret name | Env var | Notes |
 |---|---|---|
 | `SITE-CONTACT-EMAIL` | `SITE_CONTACT_EMAIL` | Public contact email / ACS notify-to |
-| `SITE-CONTACT-PHONE` | `SITE_CONTACT_PHONE` | Resume PDF + prod SMS notify-to (not shown on site) |
+| `SITE-CONTACT-PHONE` | `SITE_CONTACT_PHONE` | Resume PDF + SMS notify-to (not shown on site) |
 | `SITE-DATE-OF-BIRTH` | `SITE_DATE_OF_BIRTH` | `YYYY-MM-DD`; age only |
 | `TURNSTILE-SITE-KEY` | `PUBLIC_TURNSTILE_SITE_KEY` | Cloudflare widget site key (public) |
 | `TURNSTILE-SECRET-KEY` | `TURNSTILE_SECRET_KEY` | Synced into Functions (both envs) |
+| `ACS-CONNECTION-STRING` | `ACS_CONNECTION_STRING` | Terraform-managed from `acs-elyse-shared` |
+| `ACS-EMAIL-SENDER` | `ACS_EMAIL_SENDER` | Terraform-managed Azure-managed MailFrom |
+| `ACS-SMS-FROM` | `ACS_SMS_FROM` | Manual E.164; leave `REPLACE_ME` until toll-free is verified |
 
 ```bash
 # Apply bootstrap once so kv-elyse-shared exists, then:
@@ -60,7 +63,7 @@ Locally: copy `.env.example` → `.env` and fill `SITE_*` plus `PUBLIC_TURNSTILE
 
 ## Contact forms (ACS email / SMS + Cloudflare Turnstile)
 
-Public forms POST to `/api/contactInquiry`. Email is sent via Azure Communication Services; production also SMS-notifies when a toll-free from-number is configured.
+Public forms POST to `/api/contactInquiry`. Email (and SMS when configured) go through the **shared** Communication Service `acs-elyse-shared` in `rg-elyse-shared`.
 
 ### Turnstile
 
@@ -71,22 +74,29 @@ Public forms POST to `/api/contactInquiry`. Email is sent via Azure Communicatio
 
 No AWS account and no Cloudflare DNS hosting required.
 
-### ACS email (Terraform-managed, per env)
+### ACS email (bootstrap Terraform)
 
-Terraform provisions ACS + Azure-managed sending domain into each env vault / SWA. Notify-to email/phone come from **shared** `SITE-CONTACT-*`.
+Bootstrap provisions ACS + Azure-managed sending domain and writes `ACS-CONNECTION-STRING` / `ACS-EMAIL-SENDER` into `kv-elyse-shared`. Staging and prod SWA both use those values. Notify-to email/phone come from shared `SITE-CONTACT-*`.
 
-After first apply, sync SWA secrets if app settings were not updated by apply alone.
+After bootstrap (or MailFrom change), sync both environments if apply did not already update app settings.
 
-### Prod SMS (manual toll-free)
+### Shared SMS (manual toll-free)
 
-Staging is email-only (`CONTACT_SMS_ENABLED=false`). Prod enables SMS when `ACS-SMS-FROM` is set **in the prod env vault**:
+Both staging and prod set `CONTACT_SMS_ENABLED=true`. The API sends SMS only when `ACS-SMS-FROM` is a real E.164 number (not `REPLACE_ME`).
 
 ```bash
-az keyvault secret set --vault-name kv-elyse-prod --name ACS-SMS-FROM --value "+1XXXXXXXXXX"
+az keyvault secret set --vault-name kv-elyse-shared --name ACS-SMS-FROM --value "+1XXXXXXXXXX"
+./scripts/sync-swa-api-secrets.sh staging
 ./scripts/sync-swa-api-secrets.sh prod
 ```
 
-Portal: Communication Service `acs-elyse-portfolio-prod` → toll-free SMS + verification. Leave `ACS-SMS-FROM` as `REPLACE_ME` until verified — the API skips SMS and still sends email.
+Portal: Communication Service **`acs-elyse-shared`** → purchase toll-free + [toll-free verification](https://learn.microsoft.com/azure/communication-services/quickstarts/sms/apply-for-toll-free-verification). Leave `ACS-SMS-FROM` as `REPLACE_ME` until verified — email still works.
+
+For the verification program brief, use the public SMS policy URL:
+
+`https://elysetindall.com/privacy#sms`
+
+(also linked from the site footer and inquiry forms). Opt-out: reply **STOP**; help: reply **HELP**.
 
 ## Rotate Gemini API key
 

@@ -31,6 +31,7 @@ provider "azurerm" {
     "Microsoft.KeyVault",
     "Microsoft.Web",
     "Microsoft.Authorization",
+    "Microsoft.Communication",
   ]
   features {}
 }

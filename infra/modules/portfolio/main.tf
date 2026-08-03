@@ -182,9 +182,9 @@ resource "azurerm_static_web_app" "main" {
     GITHUB_REPO                           = var.github_repo
     GITHUB_BRANCH                         = var.github_branch
     APPLICATIONINSIGHTS_CONNECTION_STRING = azurerm_application_insights.main.connection_string
-    # Contact inquiry API (ACS email; SMS when CONTACT_SMS_ENABLED + ACS_SMS_FROM set)
-    ACS_CONNECTION_STRING = azurerm_communication_service.main.primary_connection_string
-    ACS_EMAIL_SENDER      = "DoNotReply@${azurerm_email_communication_service_domain.azure_managed.mail_from_sender_domain}"
+    # Contact inquiry API (shared ACS; SMS when ACS_SMS_FROM is a real E.164 number)
+    ACS_CONNECTION_STRING = data.azurerm_key_vault_secret.acs_connection_string.value
+    ACS_EMAIL_SENDER      = data.azurerm_key_vault_secret.acs_email_sender.value
     CONTACT_NOTIFY_EMAIL  = data.azurerm_key_vault_secret.site_contact_email.value
     CONTACT_NOTIFY_PHONE  = data.azurerm_key_vault_secret.site_contact_phone.value
     CONTACT_SMS_ENABLED   = local.contact_sms_enabled
@@ -194,7 +194,6 @@ resource "azurerm_static_web_app" "main" {
 
   depends_on = [
     azurerm_key_vault_secret.aad_client_secret,
-    azurerm_communication_service_email_domain_association.main,
   ]
 
   lifecycle {

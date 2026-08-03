@@ -1,0 +1,116 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { site } from '../lib/site';
+
+const description =
+  'Privacy policy for elysetindall.com, including how contact forms and SMS inquiry alerts work and how to opt out of text messages.';
+---
+
+<BaseLayout title="Privacy" description={description} hideFooterCta>
+  <section class="mx-auto max-w-3xl px-6 py-16 md:py-24">
+    <p class="text-sm uppercase tracking-[0.2em] text-gel">Legal</p>
+    <h1 class="mt-3 font-display text-5xl text-spotlight md:text-6xl">Privacy</h1>
+    <p class="mt-4 text-muted">
+      How {site.name} ({site.url.replace(/^https:\/\//, '')}) collects and uses information on this
+      site — including SMS program details carriers may request.
+    </p>
+
+    <div class="prose-site mt-12">
+      <h2 id="overview">Overview</h2>
+      <p>
+        This site is a professional portfolio and voice-lesson inquiry site for {site.name}. We
+        collect only what we need to respond to casting and lesson inquiries, run the site securely,
+        and (in production) send short text alerts about those inquiries to the studio’s designated
+        phone number.
+      </p>
+
+      <h2 id="information-we-collect">Information we collect</h2>
+      <ul>
+        <li>
+          <strong>Inquiry forms.</strong> Name, email, optional phone number, optional organization,
+          lesson format preference when applicable, and your message. Forms are protected with
+          Cloudflare Turnstile.
+        </li>
+        <li>
+          <strong>Technical data.</strong> Standard web logs and Azure Application Insights may
+          record coarse request metadata (for example timestamps, status codes, and correlation IDs)
+          to operate and troubleshoot the site. We do not sell personal information.
+        </li>
+        <li>
+          <strong>Email.</strong> If you write to{' '}
+          <a href={`mailto:${site.email}`}>{site.email}</a>, we use that correspondence to respond.
+        </li>
+      </ul>
+
+      <h2 id="how-we-use-information">How we use information</h2>
+      <p>
+        Contact details and messages from inquiry forms are used to reply about casting materials or
+        private voice lessons. Optional phone numbers you provide are for follow-up on that inquiry —
+        not for unrelated marketing lists. We do not send promotional SMS campaigns to visitors.
+      </p>
+
+      <h2 id="sharing">Sharing</h2>
+      <p>
+        Inquiry content is processed by our hosting and messaging providers (including Azure Static
+        Web Apps / Functions and Azure Communication Services for email and SMS). We do not sell or
+        rent your information. We may disclose information if required by law.
+      </p>
+
+      <h2 id="sms">SMS notifications</h2>
+      <p>
+        <strong>Program:</strong> When someone submits a casting or lesson inquiry on this website,
+        the site may send a short transactional text message to the studio’s designated mobile
+        number so {site.name} can respond promptly. These are business inquiry alerts, not
+        consumer marketing blasts.
+      </p>
+      <p>
+        <strong>Message frequency:</strong> Varies with how often forms are submitted (typically
+        low volume). Message and data rates may apply.
+      </p>
+      <p>
+        <strong>Consent:</strong> By operating and configuring this SMS alert number for the
+        studio, the message recipient consents to receive these transactional inquiry texts.
+        Visitors who submit a form consent to being contacted about that inquiry by email (and by
+        phone if they provide a number), as described above. Submitting a form does not enroll you
+        in marketing texts.
+      </p>
+      <p>
+        <strong>Opt out:</strong> Reply <strong>STOP</strong> to any SMS from our messaging number
+        to cancel further texts to that phone. After you opt out, you will receive a confirmation
+        and we will stop sending SMS alerts to that number. Reply <strong>HELP</strong> for help,
+        or email{' '}
+        <a href={`mailto:${site.email}`}>{site.email}</a>.
+      </p>
+      <p>
+        Carriers are not liable for delayed or undelivered messages. Supported carriers in the
+        United States typically include major nationwide providers; availability may vary.
+      </p>
+      <p class="text-sm text-muted">
+        Public link for this section (for carrier / toll-free verification forms):{' '}
+        <a href={`${site.url}/privacy#sms`}>{site.url}/privacy#sms</a>
+      </p>
+
+      <h2 id="retention">Retention</h2>
+      <p>
+        Inquiry messages and related operational logs are kept only as long as needed to respond and
+        run the site securely, unless a longer period is required by law.
+      </p>
+
+      <h2 id="contact">Contact</h2>
+      <p>
+        Privacy questions:{' '}
+        <a href={`mailto:${site.email}`}>{site.email}</a>
+        {' · '}
+        <a href="/contact">Contact forms</a>
+        {' · '}
+        <a href="/terms">Terms</a>
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  :global(.prose-site h2) {
+    scroll-margin-top: 5rem;
+  }
+</style>
