@@ -5,7 +5,7 @@ import { waitForOk } from '../helpers/propagation';
 const latestNews = newestNewsPost();
 
 test.describe('visitor journeys', () => {
-  test('VISIT-01 news list to article', async ({ page }) => {
+  test('VISIT-01 news list to article', { tag: '@content' }, async ({ page }) => {
     await waitForOk(page, '/news');
     await expect(page.getByRole('heading', { name: 'News', level: 1 })).toBeVisible();
 
@@ -18,7 +18,7 @@ test.describe('visitor journeys', () => {
     await expect(page.getByRole('link', { name: /All news/i })).toBeVisible();
   });
 
-  test('VISIT-02 gallery images load', async ({ page }) => {
+  test('VISIT-02 gallery images load', { tag: '@content' }, async ({ page }) => {
     await waitForOk(page, '/gallery');
     const image = page.locator('[data-gallery] img').first();
     await expect(image).toBeVisible();
@@ -27,7 +27,7 @@ test.describe('visitor journeys', () => {
       .toBeGreaterThan(0);
   });
 
-  test('VISIT-03 primary navigation from home', async ({ page }) => {
+  test('VISIT-03 primary navigation from home', { tag: '@content' }, async ({ page }) => {
     await waitForOk(page, '/');
 
     for (const item of primaryNav) {
@@ -41,7 +41,7 @@ test.describe('visitor journeys', () => {
     }
   });
 
-  test('VISIT-04 mobile menu to shows @mobile', async ({ page }) => {
+  test('VISIT-04 mobile menu to shows', { tag: ['@content', '@mobile'] }, async ({ page }) => {
     await waitForOk(page, '/');
     await page.getByText('Menu', { exact: true }).click();
     await page.getByRole('link', { name: 'Shows' }).click();

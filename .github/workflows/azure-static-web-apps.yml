@@ -5,6 +5,7 @@ name: Azure Static Web Apps CI/CD
 # Manual dispatch from other branches runs staging only; prod stages are skipped.
 # Manual staging-only test: Actions → Staging branch (workflow_dispatch).
 # After Deploy Staging: Smoke Staging (Playwright desktop + mobile) must pass before prod.
+# Build once per release; staging and prod deploy the same artifact that was verified.
 on:
   push:
     branches:
@@ -24,6 +25,7 @@ jobs:
       infra: ${{ steps.outputs.outputs.infra }}
       release: ${{ steps.outputs.outputs.release }}
       prod: ${{ steps.outputs.outputs.prod }}
+      test_profile: ${{ steps.outputs.outputs.test_profile }}
     steps:
       - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
@@ -47,6 +49,18 @@ jobs:
               - 'scripts/generate-resume-pdf.mjs'
               - 'scripts/fetch-site-contact-secrets.sh'
               - '.azure/**'
+            content:
+              - 'src/content/**'
+              - 'public/**'
+              - '!public/staticwebapp.config.json'
+            site_code:
+              - 'src/**'
+              - '!src/content/**'
+            api:
+              - 'api/**'
+            lessons_content:
+              - 'src/content/pages/lessons.md'
+              - 'src/content/pages/lessons-book.md'
       - id: outputs
         run: |
           ON_MAIN=false
@@ -54,9 +68,17 @@ jobs:
             ON_MAIN=true
           fi
 
+          INFRA="${{ steps.filter.outputs.infra }}"
+          APP="${{ steps.filter.outputs.app }}"
+          CONTENT="${{ steps.filter.outputs.content }}"
+          SITE_CODE="${{ steps.filter.outputs.site_code }}"
+          API="${{ steps.filter.outputs.api }}"
+          LESSONS="${{ steps.filter.outputs.lessons_content }}"
+
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "infra=true" >> "$GITHUB_OUTPUT"
             echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "test_profile=full" >> "$GITHUB_OUTPUT"
             if [ "$ON_MAIN" = "true" ]; then
               echo "prod=true" >> "$GITHUB_OUTPUT"
               echo "Manual dispatch on main — running full CD pipeline."
@@ -67,8 +89,6 @@ jobs:
             exit 0
           fi
 
-          INFRA="${{ steps.filter.outputs.infra }}"
-          APP="${{ steps.filter.outputs.app }}"
           if [ "$INFRA" = "true" ] || [ "$APP" = "true" ]; then
             echo "release=true" >> "$GITHUB_OUTPUT"
             echo "prod=true" >> "$GITHUB_OUTPUT"
@@ -78,6 +98,19 @@ jobs:
             echo "No app or infra changes — skipping CD jobs."
           fi
           echo "infra=$INFRA" >> "$GITHUB_OUTPUT"
+
+          # Test profile: smoke (API-only), content (markdown/assets), or full (UI/infra/lessons).
+          if [ "$INFRA" = "true" ] || [ "$SITE_CODE" = "true" ] || [ "$LESSONS" = "true" ]; then
+            TEST_PROFILE=full
+          elif [ "$API" = "true" ] && [ "$CONTENT" != "true" ] && [ "$SITE_CODE" != "true" ]; then
+            TEST_PROFILE=smoke
+          elif [ "$CONTENT" = "true" ] && [ "$SITE_CODE" != "true" ] && [ "$API" != "true" ] && [ "$INFRA" != "true" ]; then
+            TEST_PROFILE=content
+          else
+            TEST_PROFILE=full
+          fi
+          echo "test_profile=$TEST_PROFILE" >> "$GITHUB_OUTPUT"
+          echo "Verification profile: $TEST_PROFILE"
 
   terraform_staging:
     name: Terraform Apply Staging
@@ -130,19 +163,15 @@ jobs:
           GH_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
         run: terraform apply -input=false tfplan
 
-  deploy_staging:
-    name: Deploy Staging
-    needs: [changes, terraform_staging]
-    if: |
-      always() &&
-      needs.changes.result == 'success' &&
-      needs.changes.outputs.release == 'true' &&
-      (needs.terraform_staging.result == 'success' || needs.terraform_staging.result == 'skipped')
+  build_release:
+    name: Build release
+    needs: changes
+    if: needs.changes.outputs.release == 'true'
     runs-on: ubuntu-latest
-    environment: staging
+    environment: prod
     env:
       PUBLIC_APPINSIGHTS_CONNECTION_STRING: ${{ vars.APPINSIGHTS_CONNECTION_STRING }}
-      PUBLIC_APPINSIGHTS_SAMPLE_PERCENT: "25"
+      PUBLIC_APPINSIGHTS_SAMPLE_PERCENT: "10"
     steps:
       - uses: actions/checkout@v7
         with:
@@ -177,6 +206,45 @@ jobs:
       - name: Install API dependencies
         run: npm ci --prefix api
 
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ github.sha }}
+          path: |
+            dist
+            api
+          retention-days: 1
+          if-no-files-found: error
+
+  deploy_staging:
+    name: Deploy Staging
+    needs: [changes, terraform_staging, build_release]
+    if: |
+      always() &&
+      needs.changes.result == 'success' &&
+      needs.changes.outputs.release == 'true' &&
+      needs.build_release.result == 'success' &&
+      (needs.terraform_staging.result == 'success' || needs.terraform_staging.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+          lfs: false
+
+      - name: Download release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-${{ github.sha }}
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
       - name: Resolve Static Web Apps deploy token
         id: swa
         run: |
@@ -193,7 +261,6 @@ jobs:
           azure_static_web_apps_api_token: ${{ steps.swa.outputs.api_key }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: upload
-          # With skip_app_build, app_location must be the prebuilt output folder.
           app_location: "dist"
           api_location: "api"
           skip_app_build: true
@@ -237,7 +304,7 @@ jobs:
 
   smoke_staging:
     name: Smoke Staging
-    needs: [deploy_staging]
+    needs: [changes, deploy_staging]
     if: needs.deploy_staging.result == 'success'
     runs-on: ubuntu-latest
     environment: staging
@@ -283,11 +350,19 @@ jobs:
           CI: true
         run: npm run test:smoke
 
-      - name: Run staging journeys (desktop + mobile subset)
+      - name: Run full staging journeys
+        if: needs.changes.outputs.test_profile == 'full'
         env:
           BASE_URL: https://${{ steps.host.outputs.hostname }}
           CI: true
         run: npm run test:journey
+
+      - name: Run content staging journeys
+        if: needs.changes.outputs.test_profile == 'content'
+        env:
+          BASE_URL: https://${{ steps.host.outputs.hostname }}
+          CI: true
+        run: npm run test:journey:content
 
   terraform_prod:
     name: Terraform Apply Production
@@ -347,29 +422,26 @@ jobs:
 
   deploy_prod:
     name: Deploy Production
-    needs: [changes, deploy_staging, smoke_staging, terraform_prod]
+    needs: [changes, deploy_staging, smoke_staging, terraform_prod, build_release]
     if: |
       always() &&
       needs.changes.outputs.prod == 'true' &&
       needs.deploy_staging.result == 'success' &&
       needs.smoke_staging.result == 'success' &&
+      needs.build_release.result == 'success' &&
       (needs.terraform_prod.result == 'success' || needs.terraform_prod.result == 'skipped')
     runs-on: ubuntu-latest
     environment: prod
-    env:
-      PUBLIC_APPINSIGHTS_CONNECTION_STRING: ${{ vars.APPINSIGHTS_CONNECTION_STRING }}
-      PUBLIC_APPINSIGHTS_SAMPLE_PERCENT: "10"
     steps:
       - uses: actions/checkout@v7
         with:
           submodules: true
           lfs: false
 
-      - name: Setup Node
-        uses: actions/setup-node@v7
+      - name: Download release artifact
+        uses: actions/download-artifact@v4
         with:
-          node-version: "22"
-          cache: npm
+          name: release-${{ github.sha }}
 
       - name: Azure login (OIDC)
         uses: azure/login@v3
@@ -377,21 +449,6 @@ jobs:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-
-      - name: Fetch site contact secrets from Key Vault
-        env:
-          AZURE_KEY_VAULT_NAME: ${{ vars.AZURE_KEY_VAULT_NAME }}
-        run: |
-          chmod +x scripts/fetch-site-contact-secrets.sh
-          ./scripts/fetch-site-contact-secrets.sh
-
-      - name: Install and build
-        run: |
-          npm ci
-          npm run build
-
-      - name: Install API dependencies
-        run: npm ci --prefix api
 
       - name: Resolve Static Web Apps deploy token
         id: swa

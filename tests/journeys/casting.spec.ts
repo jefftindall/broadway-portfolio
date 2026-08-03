@@ -13,7 +13,7 @@ const musicalTitle = musicalShowTitle();
 const filmTitle = filmShowTitle();
 
 test.describe('casting journeys', () => {
-  test('CAST-01 materials EPK flow', async ({ page, request }) => {
+  test('CAST-01 materials EPK flow', { tag: '@content' }, async ({ page, request }) => {
     await waitForOk(page, '/');
     await page.getByRole('link', { name: /Request materials/i }).click();
     await expect(page).toHaveURL(/\/materials\/?$/);
@@ -36,7 +36,7 @@ test.describe('casting journeys', () => {
     expectMailto(await castingEmail.getAttribute('href'), 'Casting Inquiry');
   });
 
-  test('CAST-02 shows filter by musical', async ({ page }) => {
+  test('CAST-02 shows filter by musical', { tag: '@content' }, async ({ page }) => {
     await waitForOk(page, '/shows');
     await expect(page.getByRole('heading', { name: 'Shows', level: 1 })).toBeVisible();
 
@@ -54,7 +54,7 @@ test.describe('casting journeys', () => {
     await expect(filmCredit).toBeHidden();
   });
 
-  test('CAST-03 casting landing CTA and contact', async ({ page }) => {
+  test('CAST-03 casting landing CTA and contact', { tag: '@content' }, async ({ page }) => {
     await waitForOk(page, `/for/${castingSlug}`);
     await expect(page.getByRole('heading', { level: 1 })).toContainText(
       castingTitle.replace(/\s*\|\s*Elyse Tindall$/i, ''),
@@ -69,7 +69,7 @@ test.describe('casting journeys', () => {
     await expect(page.getByRole('heading', { name: 'Contact', level: 1 })).toBeVisible();
   });
 
-  test('CAST-04 mobile materials in two taps @mobile', async ({ page }) => {
+  test('CAST-04 mobile materials in two taps', { tag: ['@content', '@mobile'] }, async ({ page }) => {
     await waitForOk(page, '/');
     await page.getByRole('link', { name: /Request materials/i }).click();
     await expect(page).toHaveURL(/\/materials\/?$/);

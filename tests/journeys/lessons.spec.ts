@@ -30,7 +30,7 @@ test.describe('lessons journeys', () => {
     await expect(page.getByRole('heading', { name: /Rates & scheduling/i })).toBeVisible();
   });
 
-  test('LESSON-01 mobile book flow @mobile', async ({ page }) => {
+  test('LESSON-01 mobile book flow', { tag: '@mobile' }, async ({ page }) => {
     await waitForOk(page, '/lessons');
     await page.getByRole('link', { name: 'Book a lesson' }).first().click();
     await expect(page).toHaveURL(/\/lessons\/book\/?$/);

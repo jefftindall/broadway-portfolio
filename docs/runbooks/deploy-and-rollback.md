@@ -5,11 +5,12 @@
 1. Open a PR targeting `main`. Actions run **Static analysis** only (no deploys). If the PR touches `infra/`, **Plan staging** / **Plan prod** run after lint/checks and comment the plan on the PR.
 2. Review the plan (when present) and merge when ready.
 3. On merge to `main`, **Azure Static Web Apps CI/CD** runs when app or infra paths changed (not on docs-only updates):
-   - If `infra/` changed: **Terraform apply staging**, then **Deploy Staging**, then **Smoke Staging**, then **Terraform apply prod**, then **Deploy Production**
-   - If only app paths changed: **Deploy Staging**, then **Smoke Staging**, then **Deploy Production** (Terraform apply jobs are skipped)
+   - **Build release** once (in parallel with staging Terraform when infra changed)
+   - If `infra/` changed: **Terraform apply staging**, then **Deploy Staging** (from artifact), then **Smoke Staging**, then **Terraform apply prod**, then **Deploy Production** (same artifact)
+   - If only app paths changed: **Deploy Staging** → **Smoke Staging** → **Deploy Production** (Terraform apply jobs skipped)
    - If neither changed (e.g. `docs/` only): CD jobs are skipped; **Static analysis** still runs on the push
 
-**Smoke Staging** runs Playwright against the live staging hostname (desktop + mobile viewports): route availability, SEO shell (`robots.txt`, sitemap), downloads, anonymous `/studio` redirect, and extended routes (`/news`, `/lessons/book`, `/for/*`). **Journey tests** in the same job exercise casting, lessons, news, gallery, and navigation flows (desktop full suite + mobile subset). See [testing-strategy.md](testing-strategy.md). Production never deploys unless staging deploy **and** verification both succeed for that run.
+**Smoke Staging** runs Playwright against the live staging hostname. Journey scope depends on what changed: full suite for UI/infra changes, `@content` journeys for markdown-only updates, smoke-only for API-only changes. See [testing-strategy.md](testing-strategy.md). Production deploys the **same build artifact** that passed staging verification.
 
 Optional: add required reviewers on the GitHub Environment **prod** for a manual approval gate after smoke.
 

@@ -21,11 +21,24 @@ This document defines how we validate user experience before production deploys.
 |-------|------|---------------|-------------------|
 | Static analysis | Every PR + `main` | `npm run lint` | Terraform, Astro check, API syntax |
 | Terraform plan | PRs touching `infra/` | CI **Plan staging/prod** | Infra diff review |
+| **Build release** | Once per CD run (parallel with staging Terraform) | Job **Build release** | Single `npm run build` + API install; artifact promoted to staging and prod |
 | **Smoke** | After staging deploy | `npm run test:smoke` — job **Smoke Staging** | Route availability, SEO shell, downloads, anonymous `/studio` redirect (desktop + mobile) |
-| **Journeys** | After smoke in same job | `npm run test:journey` | Persona flows: casting, lessons, news, gallery, navigation (desktop full + mobile subset) |
+| **Journeys** | After smoke (profile-dependent) | `npm run test:journey` or `test:journey:content` | Persona flows; scope depends on what changed (see below) |
 | Prod availability | Continuous | App Insights synthetic (prod) | Homepage ping every 10 minutes |
 
-Production deploy (`deploy_prod`) requires **Smoke Staging** success (smoke + journeys).
+Production deploy (`deploy_prod`) reuses the **same build artifact** verified on staging — no second site build.
+
+### Verification profiles (change-aware)
+
+The CD workflow sets a `test_profile` from path filters:
+
+| Profile | When | Journeys |
+|---------|------|----------|
+| **full** | UI/layout (`src/` outside `content/`), `infra/`, lessons markdown, mixed changes, manual dispatch | All journey specs (desktop + mobile subset) |
+| **content** | Only `src/content/**` and `public/**` (non-config) | `@content`-tagged journeys (`casting`, `visitor`) via `npm run test:journey:content` |
+| **smoke** | Only `api/**` | Smoke only (studio redirect covered there) |
+
+Smoke always runs after staging deploy regardless of profile.
 
 ---
 
@@ -109,7 +122,8 @@ export BASE_URL=https://<staging-hostname>.azurestaticapps.net
 npm ci
 npx playwright install chromium
 npm run test:smoke
-npm run test:journey
+npm run test:journey          # full profile
+npm run test:journey:content  # content-only profile
 ```
 
 `BASE_URL` is required; both configs throw if it is missing.
@@ -122,11 +136,12 @@ For local preview, propagation polling is usually instant; `waitForOk` still wor
 
 **Azure Static Web Apps CI/CD** and **Staging branch** workflows:
 
-1. Deploy staging
-2. Resolve staging hostname via Azure CLI
-3. `npm run test:smoke`
-4. `npm run test:journey`
-5. Prod deploy only if both pass
+1. **Build release** once (`npm run build` + API install); artifact uploaded for reuse
+2. Deploy staging from that artifact
+3. Resolve staging hostname via Azure CLI
+4. `npm run test:smoke`
+5. Journeys per `test_profile` (`full`, `content`, or skip for API-only)
+6. Prod deploy downloads the **same artifact** — no second site build
 
 On failure: Playwright retains **trace on first retry** (`trace: 'on-first-retry'`). Re-run the workflow or download artifacts from the Actions run.
 
