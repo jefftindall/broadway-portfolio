@@ -146,7 +146,7 @@ After first login to `/studio`, check `/.auth/me` while signed in to copy the ex
 
 **Important:** SWA managed Functions do **not** resolve `@Microsoft.KeyVault(...)` app settings. After populating the vault (or whenever you change API secrets), sync resolved values into SWA with `./scripts/sync-swa-api-secrets.sh <staging|prod>`, the **Sync SWA API secrets** workflow, or `terraform apply` for that environment. `AAD_CLIENT_SECRET` stays a Key Vault reference (auth platform only). See [rotate-secrets.md](runbooks/rotate-secrets.md).
 
-Contact forms and the single CD build use **shared** Key Vault `kv-elyse-shared` (SITE-* + Turnstile). Env vaults keep ACS/Gemini/etc. Apply bootstrap first, populate shared secrets, then sync SWA — see [rotate-secrets.md](runbooks/rotate-secrets.md).
+Contact forms and the single CD build use **shared** Key Vault `kv-elyse-shared` (SITE-*, Turnstile, ACS). Env vaults keep Gemini / GitHub App / allowlist / AAD. Apply bootstrap first (shared ACS in `rg-elyse-shared`), populate shared secrets, then sync SWA — see [rotate-secrets.md](runbooks/rotate-secrets.md).
 
 ## 4. GitHub Actions OIDC (no deploy-token secret)
 

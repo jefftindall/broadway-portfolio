@@ -1,5 +1,5 @@
-# Shared foundation vault (bootstrap) — site-build + Turnstile secrets identical
-# across staging and prod so a single release artifact embeds one source of truth.
+# Shared foundation vault (bootstrap) — site-build, Turnstile, and ACS secrets identical
+# across staging and prod so a single release artifact / one SMS number is shared.
 # Deploy OIDC principals get Key Vault Secrets User on this vault from bootstrap
 # (not here) so Build release (prod identity) is not blocked on prod Terraform apply.
 

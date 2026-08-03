@@ -1,11 +1,11 @@
-# Shared foundation Key Vault — site-build + cross-env identical secrets.
-# Staging/prod env vaults keep environment-specific API secrets (ACS, Gemini, etc.).
+# Shared foundation Key Vault — site-build, Turnstile, and ACS (email/SMS) secrets
+# identical across staging and prod. Env vaults keep Gemini / GitHub App / allowlist / AAD.
 
 locals {
   shared_kv_name = "kv-elyse-shared"
   shared_rg_name = "rg-elyse-shared"
   shared_tags = merge(var.tags, {
-    purpose = "shared-site-secrets"
+    purpose = "shared-foundation"
   })
 }
 

@@ -6,8 +6,8 @@
 # then copy resolved values into SWA configuration (AAD_CLIENT_SECRET stays a
 # Key Vault reference; the SWA auth platform resolves that one).
 #
-# Shared (bootstrap kv-elyse-shared): SITE-CONTACT-*, TURNSTILE-SECRET-KEY
-# Per-env vault: Gemini, GitHub App, ACS, allowlist, ACS-SMS-FROM
+# Shared (bootstrap kv-elyse-shared): SITE-CONTACT-*, TURNSTILE-SECRET-KEY, ACS-*
+# Per-env vault: Gemini, GitHub App, allowlist, AAD
 #
 # Usage:
 #   ./scripts/sync-swa-api-secrets.sh staging
@@ -26,19 +26,20 @@ case "$ENV" in
     VAULT="kv-elyse-staging"
     SWA="swa-elyse-portfolio-staging"
     RG="rg-elyse-portfolio-staging"
-    CONTACT_SMS_ENABLED="false"
     ;;
   prod)
     VAULT="kv-elyse-prod"
     SWA="swa-elyse-portfolio-prod"
     RG="rg-elyse-portfolio-prod"
-    CONTACT_SMS_ENABLED="true"
     ;;
   *)
     echo "Usage: $0 staging|prod" >&2
     exit 1
     ;;
 esac
+
+# Shared ACS; SMS sends only when ACS-SMS-FROM is a real E.164 number (not REPLACE_ME).
+CONTACT_SMS_ENABLED="true"
 
 az account set --subscription "$SUBSCRIPTION_ID"
 
@@ -52,9 +53,9 @@ GH_APP_ID="$(kv_value "$VAULT" GITHUB-APP-ID)"
 GH_INSTALL="$(kv_value "$VAULT" GITHUB-APP-INSTALLATION-ID)"
 GH_KEY="$(kv_value "$VAULT" GITHUB-APP-PRIVATE-KEY)"
 ALLOWLIST="$(kv_value "$VAULT" ALLOWED-USER-IDS)"
-ACS_CS="$(kv_value "$VAULT" ACS-CONNECTION-STRING)"
-ACS_SENDER="$(kv_value "$VAULT" ACS-EMAIL-SENDER)"
-ACS_SMS_FROM="$(kv_value "$VAULT" ACS-SMS-FROM)"
+ACS_CS="$(kv_value "$SHARED_VAULT" ACS-CONNECTION-STRING)"
+ACS_SENDER="$(kv_value "$SHARED_VAULT" ACS-EMAIL-SENDER)"
+ACS_SMS_FROM="$(kv_value "$SHARED_VAULT" ACS-SMS-FROM)"
 NOTIFY_EMAIL="$(kv_value "$SHARED_VAULT" SITE-CONTACT-EMAIL)"
 NOTIFY_PHONE="$(kv_value "$SHARED_VAULT" SITE-CONTACT-PHONE)"
 TURNSTILE_SECRET="$(kv_value "$SHARED_VAULT" TURNSTILE-SECRET-KEY)"

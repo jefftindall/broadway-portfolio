@@ -64,3 +64,12 @@ output "shared_key_vault_resource_group_name" {
 output "shared_key_vault_uri" {
   value = azurerm_key_vault.shared.vault_uri
 }
+
+output "shared_acs_name" {
+  description = "Shared Communication Service (email + SMS) used by staging and prod"
+  value       = azurerm_communication_service.shared.name
+}
+
+output "shared_acs_email_name" {
+  value = azurerm_email_communication_service.shared.name
+}

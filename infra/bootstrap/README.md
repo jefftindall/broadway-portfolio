@@ -10,7 +10,8 @@
 #   Resource group:    rg-elyse-tfstate
 #   Storage account:   stelysetfstateeu2
 #   Container:         tfstate
-#   Shared RG/vault:   rg-elyse-shared / kv-elyse-shared (SITE-* + Turnstile)
+#   Shared RG/vault:   rg-elyse-shared / kv-elyse-shared (SITE-*, Turnstile, ACS)
+#   Shared ACS:        acs-elyse-shared + email-elyse-shared (one MailFrom / SMS number)
 #   Region:            eastus2
 #   Subscription:      e601e59a-c7f4-41f0-8178-b59740fb1974
 #   Entra app:         elyse-portfolio-gha-terraform (OIDC for plan/apply)

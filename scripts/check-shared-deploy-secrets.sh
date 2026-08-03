@@ -42,9 +42,20 @@ check SITE-DATE-OF-BIRTH
 check TURNSTILE-SITE-KEY
 check TURNSTILE-SECRET-KEY
 
+# SMS from is optional for Build release (email-only until set); warn separately.
+sms_from=""
+if ! sms_from=$(az keyvault secret show --vault-name "$vault" --name ACS-SMS-FROM --query value -o tsv 2>/dev/null); then
+  warn "Secret ACS-SMS-FROM is missing in ${vault} (bootstrap shared_acs.tf)."
+elif [[ -z "$sms_from" || "$sms_from" == "REPLACE_ME" ]]; then
+  echo "::warning title=Shared Key Vault::ACS-SMS-FROM is still REPLACE_ME — email works; SMS is skipped until a toll-free number is set (see rotate-secrets.md)."
+  # Do not count toward "CD Build will fail" missing tally for SITE/Turnstile.
+else
+  echo "OK ACS-SMS-FROM"
+fi
+
 if [[ "$missing" -eq 0 ]]; then
   echo "All shared deploy secrets look populated."
 else
-  echo "Shared secret check finished with warnings (CD will fail until these are set)."
+  echo "Shared secret check finished with warnings (CD will fail until SITE/Turnstile are set)."
 fi
 exit 0
