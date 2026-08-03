@@ -44,7 +44,7 @@ Also pull indexed URLs from Google Search Console (Pages) or a `site:elysetindal
 
 ### Frozen map (2026-08-02 EasyWP inventory)
 
-Destinations are slashless to match Astro canonicals. SWA rules cover both `/path` and `/path/` where needed.
+Destinations are slashless to match Astro canonicals. Azure SWA treats `/path` and `/path/` as the **same** route key — list each legacy path only once (slashless preferred). Do not add both forms or deploy validation fails with a duplicate-route error.
 
 | Legacy WordPress path | Astro target |
 |-----------------------|--------------|
@@ -77,6 +77,7 @@ Requirements:
 
 - Status `301`
 - One hop only (never A → B → C)
+- One rule per path: SWA rejects `/path` + `/path/` as duplicates (both match the same request)
 - Redirect routes listed **before** `/studio` and `/api/*` auth routes
 
 After editing, merge to `main` and wait for Deploy Staging → Smoke Staging → Deploy Production before flipping DNS.
