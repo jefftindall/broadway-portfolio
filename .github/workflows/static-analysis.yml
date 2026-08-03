@@ -102,6 +102,9 @@ jobs:
 
   shared_secrets:
     name: Shared vault secrets
+    # PRs only: TF OIDC trusts pull_request (+ env subjects). Main pushes use
+    # ref:refs/heads/main, which has no bootstrap federated credential — login fails.
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     # Warning-only gate: surfaces missing SITE-*/Turnstile before CD Build release.
     steps:
