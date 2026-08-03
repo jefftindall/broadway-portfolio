@@ -4,6 +4,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { site } from '../../lib/site';
 import GlassPanel from '../../components/GlassPanel.astro';
 import CtaLink from '../../components/CtaLink.astro';
+import InquiryForm from '../../components/InquiryForm.astro';
 
 const entry = await getEntry('pages', 'lessons-book');
 if (!entry) throw new Error('Missing lessons book page content');
@@ -13,7 +14,6 @@ if (!rates.length) throw new Error('Lessons book page requires rates');
 
 const { Content } = await render(entry);
 
-const inquireHref = `mailto:${site.email}?subject=${encodeURIComponent('Lesson Inquiry')}`;
 const bookUrl = `${site.url}/lessons/book`;
 
 const jsonLd = [
@@ -73,10 +73,10 @@ const jsonLd = [
         Rates &amp; scheduling
       </h1>
       <p class="mt-5 max-w-xl text-lg text-muted">
-        Ready to study voice? Review session options below, then email to inquire about availability.
+        Ready to study voice? Review session options below, then send a lesson inquiry.
       </p>
       <div class="mt-10 flex flex-wrap gap-4">
-        <CtaLink href={inquireHref}>Email to inquire</CtaLink>
+        <CtaLink href="#lesson-inquiry">Send lesson inquiry</CtaLink>
         <CtaLink href="/lessons" variant="secondary">About lessons</CtaLink>
       </div>
     </div>
@@ -107,7 +107,7 @@ const jsonLd = [
               <p class="mt-4 text-sm text-muted">{entry.data.scheduling}</p>
             )
           }
-          <CtaLink class="mt-8" href={inquireHref}>Email to inquire</CtaLink>
+          <CtaLink class="mt-8" href="#lesson-inquiry">Send lesson inquiry</CtaLink>
         </GlassPanel>
       </div>
       <div>
@@ -117,6 +117,18 @@ const jsonLd = [
           <Content />
         </div>
       </div>
+    </div>
+  </section>
+
+  <section class="border-t border-line" aria-labelledby="lesson-form-heading">
+    <div class="mx-auto max-w-2xl px-6 py-16 md:py-20">
+      <h2 id="lesson-form-heading" class="font-display text-3xl text-spotlight md:text-4xl">
+        Lesson inquiry
+      </h2>
+      <p class="mt-2 text-sm text-muted">Share your goals and availability — Elyse will reply by email.</p>
+      <GlassPanel strong class="mt-8 p-6 md:p-8">
+        <InquiryForm type="lesson" id="lesson-inquiry" />
+      </GlassPanel>
     </div>
   </section>
 </BaseLayout>

@@ -125,8 +125,9 @@ resource "azurerm_key_vault_secret" "allowlist" {
   }
 }
 
-# Site build-time contact facts (email/phone/DOB). Not synced to SWA API —
-# GitHub Actions reads them at build and Astro embeds public fields only.
+# Site build-time contact facts (email/phone/DOB). GitHub Actions reads them at
+# build (Astro embeds public email only). Phone is also synced to the contact API
+# as CONTACT_NOTIFY_PHONE for prod SMS notifications.
 resource "azurerm_key_vault_secret" "site_contact_email" {
   name         = "SITE-CONTACT-EMAIL"
   value        = "REPLACE_ME"
@@ -216,10 +217,19 @@ resource "azurerm_static_web_app" "main" {
     GITHUB_REPO                           = var.github_repo
     GITHUB_BRANCH                         = var.github_branch
     APPLICATIONINSIGHTS_CONNECTION_STRING = azurerm_application_insights.main.connection_string
+    # Contact inquiry API (ACS email; SMS when CONTACT_SMS_ENABLED + ACS_SMS_FROM set)
+    ACS_CONNECTION_STRING = azurerm_communication_service.main.primary_connection_string
+    ACS_EMAIL_SENDER      = "DoNotReply@${azurerm_email_communication_service_domain.azure_managed.mail_from_sender_domain}"
+    CONTACT_NOTIFY_EMAIL  = data.azurerm_key_vault_secret.site_contact_email.value
+    CONTACT_NOTIFY_PHONE  = data.azurerm_key_vault_secret.site_contact_phone.value
+    CONTACT_SMS_ENABLED   = local.contact_sms_enabled
+    ACS_SMS_FROM          = data.azurerm_key_vault_secret.acs_sms_from.value
+    TURNSTILE_SECRET_KEY  = data.azurerm_key_vault_secret.turnstile_secret_key.value
   }
 
   depends_on = [
     azurerm_key_vault_secret.aad_client_secret,
+    azurerm_communication_service_email_domain_association.main,
   ]
 
   lifecycle {

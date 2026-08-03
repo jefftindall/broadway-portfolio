@@ -5,7 +5,7 @@ import {
   musicalShowTitle,
   sampleCastingSlug,
 } from '../helpers/content';
-import { expectMailto, waitForOk, waitForRequestOk } from '../helpers/propagation';
+import { waitForOk, waitForRequestOk } from '../helpers/propagation';
 
 const castingSlug = sampleCastingSlug();
 const { title: castingTitle, cta: castingCta } = castingPageExpectations(castingSlug);
@@ -31,9 +31,9 @@ test.describe('casting journeys', () => {
     );
     expect(headshot.status()).toBe(200);
 
-    const castingEmail = page.getByRole('link', { name: /Email casting inquiry/i }).first();
-    await expect(castingEmail).toBeVisible();
-    expectMailto(await castingEmail.getAttribute('href'), 'Casting Inquiry');
+    await page.getByRole('link', { name: /Casting inquiry/i }).first().click();
+    await expect(page.locator('#casting-inquiry')).toBeVisible();
+    await expect(page.getByTestId('casting-submit')).toBeVisible();
   });
 
   test('CAST-02 shows filter by musical', { tag: '@content' }, async ({ page }) => {
@@ -62,11 +62,12 @@ test.describe('casting journeys', () => {
 
     const cta = page.getByRole('link', { name: castingCta });
     await expect(cta).toBeVisible();
-    expectMailto(await cta.getAttribute('href'), castingCta);
+    await expect(cta).toHaveAttribute('href', /\/contact#casting-inquiry/);
 
-    await page.locator('article').getByRole('link', { name: 'Contact' }).click();
-    await expect(page).toHaveURL(/\/contact\/?$/);
+    await cta.click();
+    await expect(page).toHaveURL(/\/contact\/?#casting-inquiry/);
     await expect(page.getByRole('heading', { name: 'Contact', level: 1 })).toBeVisible();
+    await expect(page.locator('#casting-inquiry')).toBeVisible();
   });
 
   test('CAST-04 mobile materials in two taps', { tag: ['@content', '@mobile'] }, async ({ page }) => {

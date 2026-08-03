@@ -1,14 +1,16 @@
 ---
-import { site } from '../lib/site';
 import GlassPanel from './GlassPanel.astro';
 import CtaLink from './CtaLink.astro';
 import SectionHeader from './SectionHeader.astro';
+import InquiryForm from './InquiryForm.astro';
 
 interface Props {
   showHeader?: boolean;
+  /** When true, embed casting + lesson forms (contact page). Otherwise link out. */
+  embedForms?: boolean;
 }
 
-const { showHeader = true } = Astro.props;
+const { showHeader = true, embedForms = false } = Astro.props;
 ---
 
 <section class="section-y" aria-labelledby="contact-lanes-heading">
@@ -19,7 +21,11 @@ const { showHeader = true } = Astro.props;
           <SectionHeader
             eyebrow="Get in touch"
             title="Casting & lessons"
-            support="One inbox — use the subject lines below so casting and student emails stay organized."
+            support={
+              embedForms
+                ? 'Send a casting or lesson request — details go straight to Elyse’s inbox.'
+                : 'Casting directors, agents, and students — choose a lane to reach Elyse.'
+            }
           />
         ) : (
           <h2 class="sr-only">Contact options</h2>
@@ -30,29 +36,34 @@ const { showHeader = true } = Astro.props;
     <div class:list={['grid gap-6 md:grid-cols-2', showHeader && 'mt-10']}>
       <GlassPanel strong class="flex flex-col p-6 md:p-8" as="article">
         <h3 class="font-display text-3xl text-spotlight">Casting &amp; agents</h3>
-        <p class="mt-3 flex-1 text-sm text-muted">
+        <p class="mt-3 text-sm text-muted">
           Headshot, resume, reel, and availability for casting directors and representation.
         </p>
-        <CtaLink
-          class="mt-8 self-start"
-          href={`mailto:${site.email}?subject=${encodeURIComponent('Casting Inquiry')}`}
-        >
-          Email for casting
-        </CtaLink>
+        {
+          embedForms ? (
+            <InquiryForm class="mt-8" type="casting" id="casting-inquiry" />
+          ) : (
+            <CtaLink class="mt-8 self-start" href="/contact#casting-inquiry">
+              Casting inquiry
+            </CtaLink>
+          )
+        }
       </GlassPanel>
 
       <GlassPanel strong class="flex flex-col p-6 md:p-8" as="article">
         <h3 class="font-display text-3xl text-spotlight">Voice lesson inquiries</h3>
-        <p class="mt-3 flex-1 text-sm text-muted">
+        <p class="mt-3 text-sm text-muted">
           Private vocal coaching for singers and parents — pedagogy, vocal health, and CCM. NYC or Zoom.
         </p>
-        <CtaLink
-          class="mt-8 self-start"
-          variant="secondary"
-          href="/lessons/book"
-        >
-          Book a lesson
-        </CtaLink>
+        {
+          embedForms ? (
+            <InquiryForm class="mt-8" type="lesson" id="lesson-inquiry" />
+          ) : (
+            <CtaLink class="mt-8 self-start" variant="secondary" href="/lessons/book">
+              Book a lesson
+            </CtaLink>
+          )
+        }
       </GlassPanel>
     </div>
   </div>

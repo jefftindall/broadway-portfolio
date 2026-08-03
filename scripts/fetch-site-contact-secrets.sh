@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fetch SITE-* contact secrets from Key Vault into GITHUB_ENV for Astro builds.
+# Fetch SITE-* + Turnstile site key from Key Vault into GITHUB_ENV for Astro builds.
 # Requires: az login, AZURE_KEY_VAULT_NAME, and Key Vault Secrets User on the vault.
 set -euo pipefail
 
@@ -25,5 +25,7 @@ fetch() {
 fetch SITE-CONTACT-EMAIL SITE_CONTACT_EMAIL
 fetch SITE-CONTACT-PHONE SITE_CONTACT_PHONE
 fetch SITE-DATE-OF-BIRTH SITE_DATE_OF_BIRTH
+# Public widget key (still stored in KV so all Turnstile values live in one place).
+fetch TURNSTILE-SITE-KEY PUBLIC_TURNSTILE_SITE_KEY
 
-echo "Loaded SITE_* contact secrets from ${vault}."
+echo "Loaded SITE_* and PUBLIC_TURNSTILE_SITE_KEY from ${vault}."

@@ -67,12 +67,13 @@ Prioritized by business impact and current automation gap.
 | ID | Journey | Why it matters | Key assertions |
 |----|---------|----------------|----------------|
 | **J-NAV-01** | Mobile: open Menu → Lessons (and one other nav item) | Primary discovery on phones | `<details>` Menu opens; destination `h1` |
-| **J-CAST-01** | Home → Request materials → Resume PDF + casting mailto | Casting funnel | `/materials` (or `/materials/`); PDF 200 + PDF content-type; mailto subject includes `Casting Inquiry`; headshot download 200 |
+| **J-CAST-01** | Home → Request materials → Resume PDF + casting form | Casting funnel | `/materials` (or `/materials/`); PDF 200 + PDF content-type; `#casting-inquiry` form + submit; headshot download 200 |
 | **J-SHOW-01** | Shows → filter by category → restore All | Only non-trivial public client JS | Click `Film`/`Cabaret` tab; non-matching `.credit-item` `hidden`; All restores |
 | **J-GAL-01** | Gallery → filter by tag → restore all | Same class of JS risk | e.g. `headshot`; non-matching `.gallery-item` hidden |
-| **J-LESS-01** | Lessons → Book a lesson → Email to inquire | Student funnel | `/lessons/book`; mailto subject `Lesson Inquiry`; brand: voice/vocal/CCM, not acting lessons |
+| **J-LESS-01** | Lessons → Book a lesson → Send lesson inquiry | Student funnel | `/lessons/book`; `#lesson-inquiry` form; brand: voice/vocal/CCM, not acting lessons |
 | **J-NEWS-01** | Home news teaser → post → All news → second post | Content loop currently untested | Detail `h1`; back link; second slug 200 |
-| **J-FOR-01** | One casting landing `/for/{slug}` → View all shows / Contact CTA | SEO landings omitted from smoke today | `h1`; mailto subject includes keyword/CTA; `/shows` or `/contact` |
+| **J-FOR-01** | One casting landing `/for/{slug}` → Contact form CTA | SEO landings omitted from smoke today | `h1`; CTA href `/contact#casting-inquiry`; form visible |
+| **J-CONTACT-01** | Contact lanes: casting + lesson inquiry forms + Instagram `_blank` | form `data-testid` contracts |
 | **J-ASSET-01** | Materials assets | Casting packet | Resume + theatrical headshot GET 200, non-trivial size |
 
 Keep a thin **route health** check (current H1 smokes) only as a fast canary for About/Contact/Home brand — fold into journey files rather than a separate shallow suite.
@@ -82,7 +83,7 @@ Keep a thin **route health** check (current H1 smokes) only as a fast canary for
 | ID | Journey | Notes |
 |----|---------|-------|
 | **J-REEL-01** | Home Watch reel → `#reel` iframe present; Shows reel present | Assert iframe `title` / visibility, not YouTube playback |
-| **J-CONTACT-01** | Contact lanes: casting mailto + Book a lesson + Instagram `_blank` | `href` contracts |
+| **J-CONTACT-01** | Contact lanes: casting + lesson inquiry forms + Instagram `_blank` | Form `data-testid` contracts |
 | **J-FOOT-01** | Footer CTAs on a page that shows the band (e.g. `/shows`) | Materials / Contact / Lessons + mailto |
 | **J-ABOUT-01** | About → Lessons / Book CTAs | Teaching cross-links |
 | **J-A11Y-01** | Skip link focuses `#main`; primary `nav` landmark; filter tablists | Smoke-level a11y, not full axe suite initially |

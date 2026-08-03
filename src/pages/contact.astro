@@ -15,18 +15,18 @@ import { site } from '../lib/site';
     <p class="text-sm uppercase tracking-[0.2em] text-gel">Get in touch</p>
     <h1 class="mt-3 font-display text-5xl text-spotlight md:text-6xl">Contact</h1>
     <p class="mt-4 max-w-2xl text-muted">
-      One inbox — please use the subject lines below so casting and lesson emails stay organized.
+      Send a casting or lesson request below — it goes straight to Elyse’s inbox.
     </p>
     <p class="mt-3 text-sm text-muted">
       Age <Age /> · Based in {site.location}
     </p>
   </section>
 
-  <ContactLanes showHeader={false} />
+  <ContactLanes showHeader={false} embedForms />
 
   <section class="mx-auto max-w-6xl px-6 pb-20">
     <p class="text-sm text-muted">
-      Direct email:{' '}
+      Prefer email directly?{' '}
       <a class="text-gel underline underline-offset-4" href={`mailto:${site.email}`}>
         {site.email}
       </a>

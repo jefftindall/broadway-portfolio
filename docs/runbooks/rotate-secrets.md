@@ -36,7 +36,7 @@ Email, phone, and date of birth for builds are **not** in git. They live in Key 
 | Secret name | Env var | Notes |
 |---|---|---|
 | `SITE-CONTACT-EMAIL` | `SITE_CONTACT_EMAIL` | Appears on Contact, Footer, JSON-LD after build |
-| `SITE-CONTACT-PHONE` | `SITE_CONTACT_PHONE` | Resume PDF only — not shown on the public site (falls back to `src/content/resume-meta.json` if unset) |
+| `SITE-CONTACT-PHONE` | `SITE_CONTACT_PHONE` | Resume PDF + contact API SMS destination (prod) — not shown on the public site (falls back to `src/content/resume-meta.json` if unset for PDF) |
 | `SITE-DATE-OF-BIRTH` | `SITE_DATE_OF_BIRTH` | `YYYY-MM-DD`; used only to compute chronological age — never rendered |
 
 Publish the **same** values to **both** vaults:
@@ -53,9 +53,51 @@ az keyvault secret set --vault-name kv-elyse-prod --name SITE-CONTACT-PHONE --va
 az keyvault secret set --vault-name kv-elyse-prod --name SITE-DATE-OF-BIRTH --value "YYYY-MM-DD"
 ```
 
-Terraform creates the secret shells (`REPLACE_ME`) and grants the GitHub Actions deploy principal Key Vault Secrets User. After updating values, the next staging/prod deploy picks them up — no SWA API secret sync needed.
+Terraform creates the secret shells (`REPLACE_ME`) and grants the GitHub Actions deploy principal Key Vault Secrets User. After updating values, the next staging/prod deploy picks them up — no SWA API secret sync needed for site builds. Contact **email/phone** are also synced into Functions app settings for inquiry notifications (see Contact forms below).
 
-Locally: copy `.env.example` → `.env` and fill the three `SITE_*` vars (gitignored).
+Locally: copy `.env.example` → `.env` and fill the three `SITE_*` vars plus `PUBLIC_TURNSTILE_SITE_KEY` (gitignored).
+
+## Contact forms (ACS email / SMS + Cloudflare Turnstile)
+
+Public forms POST to `/api/contactInquiry`. Email is sent via Azure Communication Services; production also SMS-notifies when a toll-free from-number is configured.
+
+### Turnstile (both keys in Key Vault)
+
+1. Create a free Cloudflare account → **Turnstile → Add widget**.
+2. Hostnames: `elysetindall.com`, `www.elysetindall.com`, staging SWA host, `localhost`.
+3. Set both vaults (same widget is fine):
+
+```bash
+az keyvault secret set --vault-name kv-elyse-staging --name TURNSTILE-SITE-KEY --value "<site-key>"
+az keyvault secret set --vault-name kv-elyse-staging --name TURNSTILE-SECRET-KEY --value "<secret-key>"
+az keyvault secret set --vault-name kv-elyse-prod --name TURNSTILE-SITE-KEY --value "<site-key>"
+az keyvault secret set --vault-name kv-elyse-prod --name TURNSTILE-SECRET-KEY --value "<secret-key>"
+```
+
+4. Sync SWA API secrets (secret key → Functions). Redeploy site so CI fetch picks up the site key (`PUBLIC_TURNSTILE_SITE_KEY`).
+
+No AWS account and no Cloudflare DNS hosting required.
+
+### ACS email (Terraform-managed)
+
+Terraform provisions ACS + Azure-managed sending domain and writes `ACS-CONNECTION-STRING` / `ACS-EMAIL-SENDER` to Key Vault and SWA. Notify-to email comes from `SITE-CONTACT-EMAIL`.
+
+After first apply, sync SWA secrets if app settings were not updated by apply alone.
+
+### Prod SMS (manual toll-free)
+
+Staging is email-only (`CONTACT_SMS_ENABLED=false`). Prod enables SMS when `ACS-SMS-FROM` is set:
+
+1. Azure Portal → Communication Service (`acs-elyse-portfolio-prod`) → **Telephony and SMS → Phone numbers → Get** → US toll-free with SMS.
+2. Complete US/CA toll-free SMS verification (Regulatory Documents).
+3. Store the E.164 number:
+
+```bash
+az keyvault secret set --vault-name kv-elyse-prod --name ACS-SMS-FROM --value "+1XXXXXXXXXX"
+./scripts/sync-swa-api-secrets.sh prod
+```
+
+Notify-to phone is `SITE-CONTACT-PHONE` (same as resume PDF). Leave `ACS-SMS-FROM` as `REPLACE_ME` until the number is verified — the API then skips SMS and still sends email.
 
 ## Rotate Gemini API key
 
