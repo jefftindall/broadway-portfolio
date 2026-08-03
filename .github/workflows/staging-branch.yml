@@ -91,7 +91,7 @@ jobs:
 
       - name: Fetch site contact secrets from Key Vault
         env:
-          AZURE_KEY_VAULT_NAME: ${{ vars.AZURE_KEY_VAULT_NAME }}
+          AZURE_SHARED_KEY_VAULT_NAME: ${{ vars.AZURE_SHARED_KEY_VAULT_NAME }}
         run: |
           chmod +x scripts/fetch-site-contact-secrets.sh
           ./scripts/fetch-site-contact-secrets.sh

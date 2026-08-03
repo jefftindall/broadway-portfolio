@@ -4,14 +4,15 @@ Secrets live in Azure Key Vault as the source of truth. Managed Functions on SWA
 
 `AAD_CLIENT_SECRET` is the exception: SWA’s auth platform **does** resolve Key Vault references, so that setting stays a reference.
 
-| Environment | Key Vault | Resource group | Static Web App |
+| Scope | Key Vault | Resource group | Purpose |
 |---|---|---|---|
-| Staging | `kv-elyse-staging` | `rg-elyse-portfolio-staging` | `swa-elyse-portfolio-staging` |
-| Production | `kv-elyse-prod` | `rg-elyse-portfolio-prod` | `swa-elyse-portfolio-prod` |
+| **Shared (build)** | `kv-elyse-shared` | `rg-elyse-shared` | SITE-* + Turnstile (identical across envs; single release build) |
+| Staging API | `kv-elyse-staging` | `rg-elyse-portfolio-staging` | Gemini, GitHub App, ACS, allowlist, SMS-from |
+| Production API | `kv-elyse-prod` | `rg-elyse-portfolio-prod` | Same as staging |
 
 Subscription: `e601e59a-c7f4-41f0-8178-b59740fb1974`
 
-After updating a vault secret used by the Studio API, sync into SWA (commands below, **Actions → Sync SWA API secrets → Run workflow** and choose `staging` or `prod` — default `staging`, or `terraform apply` for that environment). Values appear in Terraform state and SWA app settings (encrypted at rest by Azure).
+After updating a vault secret used by the Studio / contact **API**, sync into SWA (commands below, **Actions → Sync SWA API secrets → Run workflow**, or `terraform apply`). Site-build secrets are read from **`kv-elyse-shared`** during the single Build release job.
 
 ## Sync SWA API secrets (no redeploy)
 
@@ -27,77 +28,65 @@ After updating a vault secret used by the Studio API, sync into SWA (commands be
 ./scripts/sync-swa-api-secrets.sh prod
 ```
 
-Requires Azure CLI login with permission to read the vault and update the Static Web App.
+Requires Azure CLI login with permission to read both the env vault and `kv-elyse-shared`, and update the Static Web App.
 
-## Site contact secrets (build-time)
+## Shared site-build secrets (`kv-elyse-shared`)
 
-Email, phone, and date of birth for builds are **not** in git. They live in Key Vault and are injected when Astro / the resume PDF build (CI via [`scripts/fetch-site-contact-secrets.sh`](../../scripts/fetch-site-contact-secrets.sh); locally via `.env`).
+Created by **bootstrap** Terraform (`infra/bootstrap/shared_kv.tf`). One Astro build embeds these for both staging and prod deploys — they must stay identical.
 
 | Secret name | Env var | Notes |
 |---|---|---|
-| `SITE-CONTACT-EMAIL` | `SITE_CONTACT_EMAIL` | Appears on Contact, Footer, JSON-LD after build |
-| `SITE-CONTACT-PHONE` | `SITE_CONTACT_PHONE` | Resume PDF + contact API SMS destination (prod) — not shown on the public site (falls back to `src/content/resume-meta.json` if unset for PDF) |
-| `SITE-DATE-OF-BIRTH` | `SITE_DATE_OF_BIRTH` | `YYYY-MM-DD`; used only to compute chronological age — never rendered |
-
-Publish the **same** values to **both** vaults:
+| `SITE-CONTACT-EMAIL` | `SITE_CONTACT_EMAIL` | Public contact email / ACS notify-to |
+| `SITE-CONTACT-PHONE` | `SITE_CONTACT_PHONE` | Resume PDF + prod SMS notify-to (not shown on site) |
+| `SITE-DATE-OF-BIRTH` | `SITE_DATE_OF_BIRTH` | `YYYY-MM-DD`; age only |
+| `TURNSTILE-SITE-KEY` | `PUBLIC_TURNSTILE_SITE_KEY` | Cloudflare widget site key (public) |
+| `TURNSTILE-SECRET-KEY` | `TURNSTILE_SECRET_KEY` | Synced into Functions (both envs) |
 
 ```bash
-# Staging
-az keyvault secret set --vault-name kv-elyse-staging --name SITE-CONTACT-EMAIL --value "<email>"
-az keyvault secret set --vault-name kv-elyse-staging --name SITE-CONTACT-PHONE --value "<phone>"
-az keyvault secret set --vault-name kv-elyse-staging --name SITE-DATE-OF-BIRTH --value "YYYY-MM-DD"
+# Apply bootstrap once so kv-elyse-shared exists, then:
+az keyvault secret set --vault-name kv-elyse-shared --name SITE-CONTACT-EMAIL --value "<email>"
+az keyvault secret set --vault-name kv-elyse-shared --name SITE-CONTACT-PHONE --value "<phone>"
+az keyvault secret set --vault-name kv-elyse-shared --name SITE-DATE-OF-BIRTH --value "YYYY-MM-DD"
+az keyvault secret set --vault-name kv-elyse-shared --name TURNSTILE-SITE-KEY --value "<site-key>"
+az keyvault secret set --vault-name kv-elyse-shared --name TURNSTILE-SECRET-KEY --value "<secret-key>"
 
-# Production (required — prod builds read kv-elyse-prod)
-az keyvault secret set --vault-name kv-elyse-prod --name SITE-CONTACT-EMAIL --value "<email>"
-az keyvault secret set --vault-name kv-elyse-prod --name SITE-CONTACT-PHONE --value "<phone>"
-az keyvault secret set --vault-name kv-elyse-prod --name SITE-DATE-OF-BIRTH --value "YYYY-MM-DD"
+# If values already lived in env vaults, copy once then stop writing there:
+# az keyvault secret show --vault-name kv-elyse-staging --name SITE-CONTACT-EMAIL --query value -o tsv
 ```
 
-Terraform creates the secret shells (`REPLACE_ME`) and grants the GitHub Actions deploy principal Key Vault Secrets User. After updating values, the next staging/prod deploy picks them up — no SWA API secret sync needed for site builds. Contact **email/phone** are also synced into Functions app settings for inquiry notifications (see Contact forms below).
+Repo Actions variable `AZURE_SHARED_KEY_VAULT_NAME` is set by bootstrap. Static analysis job **Shared vault secrets** emits warnings when any of these are missing / `REPLACE_ME` (does not fail the check).
 
-Locally: copy `.env.example` → `.env` and fill the three `SITE_*` vars plus `PUBLIC_TURNSTILE_SITE_KEY` (gitignored).
+Locally: copy `.env.example` → `.env` and fill `SITE_*` plus `PUBLIC_TURNSTILE_SITE_KEY`.
 
 ## Contact forms (ACS email / SMS + Cloudflare Turnstile)
 
 Public forms POST to `/api/contactInquiry`. Email is sent via Azure Communication Services; production also SMS-notifies when a toll-free from-number is configured.
 
-### Turnstile (both keys in Key Vault)
+### Turnstile
 
 1. Create a free Cloudflare account → **Turnstile → Add widget**.
 2. Hostnames: `elysetindall.com`, `www.elysetindall.com`, staging SWA host, `localhost`.
-3. Set both vaults (same widget is fine):
-
-```bash
-az keyvault secret set --vault-name kv-elyse-staging --name TURNSTILE-SITE-KEY --value "<site-key>"
-az keyvault secret set --vault-name kv-elyse-staging --name TURNSTILE-SECRET-KEY --value "<secret-key>"
-az keyvault secret set --vault-name kv-elyse-prod --name TURNSTILE-SITE-KEY --value "<site-key>"
-az keyvault secret set --vault-name kv-elyse-prod --name TURNSTILE-SECRET-KEY --value "<secret-key>"
-```
-
-4. Sync SWA API secrets (secret key → Functions). Redeploy site so CI fetch picks up the site key (`PUBLIC_TURNSTILE_SITE_KEY`).
+3. Set **shared** vault only (commands above).
+4. Sync SWA API secrets (secret key → Functions). Redeploy so Build release picks up the site key.
 
 No AWS account and no Cloudflare DNS hosting required.
 
-### ACS email (Terraform-managed)
+### ACS email (Terraform-managed, per env)
 
-Terraform provisions ACS + Azure-managed sending domain and writes `ACS-CONNECTION-STRING` / `ACS-EMAIL-SENDER` to Key Vault and SWA. Notify-to email comes from `SITE-CONTACT-EMAIL`.
+Terraform provisions ACS + Azure-managed sending domain into each env vault / SWA. Notify-to email/phone come from **shared** `SITE-CONTACT-*`.
 
 After first apply, sync SWA secrets if app settings were not updated by apply alone.
 
 ### Prod SMS (manual toll-free)
 
-Staging is email-only (`CONTACT_SMS_ENABLED=false`). Prod enables SMS when `ACS-SMS-FROM` is set:
-
-1. Azure Portal → Communication Service (`acs-elyse-portfolio-prod`) → **Telephony and SMS → Phone numbers → Get** → US toll-free with SMS.
-2. Complete US/CA toll-free SMS verification (Regulatory Documents).
-3. Store the E.164 number:
+Staging is email-only (`CONTACT_SMS_ENABLED=false`). Prod enables SMS when `ACS-SMS-FROM` is set **in the prod env vault**:
 
 ```bash
 az keyvault secret set --vault-name kv-elyse-prod --name ACS-SMS-FROM --value "+1XXXXXXXXXX"
 ./scripts/sync-swa-api-secrets.sh prod
 ```
 
-Notify-to phone is `SITE-CONTACT-PHONE` (same as resume PDF). Leave `ACS-SMS-FROM` as `REPLACE_ME` until the number is verified — the API then skips SMS and still sends email.
+Portal: Communication Service `acs-elyse-portfolio-prod` → toll-free SMS + verification. Leave `ACS-SMS-FROM` as `REPLACE_ME` until verified — the API skips SMS and still sends email.
 
 ## Rotate Gemini API key
 

@@ -6,16 +6,20 @@
 # then copy resolved values into SWA configuration (AAD_CLIENT_SECRET stays a
 # Key Vault reference; the SWA auth platform resolves that one).
 #
+# Shared (bootstrap kv-elyse-shared): SITE-CONTACT-*, TURNSTILE-SECRET-KEY
+# Per-env vault: Gemini, GitHub App, ACS, allowlist, ACS-SMS-FROM
+#
 # Usage:
 #   ./scripts/sync-swa-api-secrets.sh staging
 #   ./scripts/sync-swa-api-secrets.sh prod
 #
-# Requires: az CLI logged in, jq, Key Vault Secrets Officer (or get) on the vault.
+# Requires: az CLI logged in, jq, Key Vault Secrets Officer (or get) on both vaults.
 
 set -euo pipefail
 
 ENV="${1:-}"
 SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID:-e601e59a-c7f4-41f0-8178-b59740fb1974}"
+SHARED_VAULT="${AZURE_SHARED_KEY_VAULT_NAME:-kv-elyse-shared}"
 
 case "$ENV" in
   staging)
@@ -39,21 +43,21 @@ esac
 az account set --subscription "$SUBSCRIPTION_ID"
 
 kv_value() {
-  az keyvault secret show --vault-name "$VAULT" --name "$1" --query value -o tsv
+  az keyvault secret show --vault-name "$1" --name "$2" --query value -o tsv
 }
 
-echo "Reading secrets from $VAULT..."
-GEMINI="$(kv_value GEMINI-API-KEY)"
-GH_APP_ID="$(kv_value GITHUB-APP-ID)"
-GH_INSTALL="$(kv_value GITHUB-APP-INSTALLATION-ID)"
-GH_KEY="$(kv_value GITHUB-APP-PRIVATE-KEY)"
-ALLOWLIST="$(kv_value ALLOWED-USER-IDS)"
-ACS_CS="$(kv_value ACS-CONNECTION-STRING)"
-ACS_SENDER="$(kv_value ACS-EMAIL-SENDER)"
-NOTIFY_EMAIL="$(kv_value SITE-CONTACT-EMAIL)"
-NOTIFY_PHONE="$(kv_value SITE-CONTACT-PHONE)"
-ACS_SMS_FROM="$(kv_value ACS-SMS-FROM)"
-TURNSTILE_SECRET="$(kv_value TURNSTILE-SECRET-KEY)"
+echo "Reading env secrets from $VAULT and shared secrets from $SHARED_VAULT..."
+GEMINI="$(kv_value "$VAULT" GEMINI-API-KEY)"
+GH_APP_ID="$(kv_value "$VAULT" GITHUB-APP-ID)"
+GH_INSTALL="$(kv_value "$VAULT" GITHUB-APP-INSTALLATION-ID)"
+GH_KEY="$(kv_value "$VAULT" GITHUB-APP-PRIVATE-KEY)"
+ALLOWLIST="$(kv_value "$VAULT" ALLOWED-USER-IDS)"
+ACS_CS="$(kv_value "$VAULT" ACS-CONNECTION-STRING)"
+ACS_SENDER="$(kv_value "$VAULT" ACS-EMAIL-SENDER)"
+ACS_SMS_FROM="$(kv_value "$VAULT" ACS-SMS-FROM)"
+NOTIFY_EMAIL="$(kv_value "$SHARED_VAULT" SITE-CONTACT-EMAIL)"
+NOTIFY_PHONE="$(kv_value "$SHARED_VAULT" SITE-CONTACT-PHONE)"
+TURNSTILE_SECRET="$(kv_value "$SHARED_VAULT" TURNSTILE-SECRET-KEY)"
 AAD_REF="@Microsoft.KeyVault(SecretUri=https://${VAULT}.vault.azure.net/secrets/AAD-CLIENT-SECRET/)"
 
 CONFIG_URL="/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RG}/providers/Microsoft.Web/staticSites/${SWA}/config/appsettings?api-version=2023-01-01"
@@ -103,4 +107,4 @@ BODY="$(
 )"
 
 az rest --method put --url "$CONFIG_URL" --body "$BODY" --output none
-echo "Synced API secrets from $VAULT → $SWA (AAD_CLIENT_SECRET left as Key Vault reference)."
+echo "Synced API secrets ($VAULT + $SHARED_VAULT) → $SWA (AAD_CLIENT_SECRET left as Key Vault reference)."

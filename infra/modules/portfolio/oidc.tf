@@ -70,7 +70,8 @@ resource "azurerm_role_assignment" "github_actions_swa_contributor" {
   principal_id         = azuread_service_principal.github_actions.object_id
 }
 
-# Deploy jobs read SITE-* secrets from Key Vault at build time.
+# Deploy jobs read env-scoped API secrets from Key Vault (sync-swa / apply).
+# Site-build secrets are in the bootstrap shared vault — see shared_kv.tf.
 resource "azurerm_role_assignment" "github_actions_kv_secrets_user" {
   scope                = azurerm_key_vault.main.id
   role_definition_name = "Key Vault Secrets User"
