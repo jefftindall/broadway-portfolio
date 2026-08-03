@@ -102,12 +102,10 @@ export function castingPageExpectations(slug: string): { title: string; cta: str
 }
 
 export const primaryNav = [
-  { href: '/', label: 'Home' },
   { href: '/shows', label: 'Shows' },
   { href: '/materials', label: 'Materials' },
-  { href: '/about', label: 'About' },
   { href: '/lessons', label: 'Lessons' },
+  { href: '/about', label: 'About' },
   { href: '/news', label: 'News' },
-  { href: '/gallery', label: 'Gallery' },
   { href: '/contact', label: 'Contact' },
 ] as const;

@@ -575,7 +575,7 @@ export async function buildProductionSiteContext() {
   const siteUrl = productionSiteUrl();
   const lines = [
     `Production site (canonical reference): ${siteUrl}`,
-    'Site map: / (home), /shows, /about, /lessons, /lessons/book, /news, /gallery, /contact, /for/[slug] (casting).',
+    'Site map: / (home), /shows, /materials, /about, /lessons, /lessons/book, /news, /gallery, /contact, /for/[slug] (casting). Primary nav: Shows, Materials, Lessons, About, News, Contact (Gallery via About/footer; no public phone).',
     'Teaching brand: private VOICE lessons only (vocal pedagogy, vocal health, CCM) — not acting lessons.',
     'Existing content on the production branch (reuse slugs when updating; match voice and facts):',
   ];

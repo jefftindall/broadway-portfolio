@@ -1,9 +1,6 @@
 import { ageInYears } from './age';
 
-function requiredSiteEnv(
-  name: 'SITE_CONTACT_EMAIL' | 'SITE_CONTACT_PHONE',
-  fromMeta: string | undefined,
-): string {
+function requiredSiteEnv(name: 'SITE_CONTACT_EMAIL', fromMeta: string | undefined): string {
   const value = String(process.env[name] ?? fromMeta ?? '').trim();
   if (!value) {
     throw new Error(
@@ -13,24 +10,12 @@ function requiredSiteEnv(
   return value;
 }
 
-function telHrefFromPhone(phone: string): string {
-  const digits = phone.replace(/\D/g, '');
-  if (digits.length === 10) return `tel:+1${digits}`;
-  if (digits.length === 11 && digits.startsWith('1')) return `tel:+${digits}`;
-  return `tel:+${digits}`;
-}
-
-const phone = requiredSiteEnv('SITE_CONTACT_PHONE', import.meta.env.SITE_CONTACT_PHONE);
-
 export const site = {
   name: 'Elyse Tindall',
   tagline: 'Musical Theatre Actress & Vocal Coach · Atlanta to New York',
   jobTitle: 'Musical Theatre Actress & Vocal Coach',
   url: 'https://elysetindall.com',
   email: requiredSiteEnv('SITE_CONTACT_EMAIL', import.meta.env.SITE_CONTACT_EMAIL),
-  /** Display form from SITE_CONTACT_PHONE; `telHref` for links. */
-  phone,
-  telHref: telHrefFromPhone(phone),
   instagram: 'https://www.instagram.com/elyse.tindall/',
   reelUrl: 'https://youtu.be/41jdPTkN_Sw',
   heroImage: '/images/photos/elyse-portrait.jpg',
@@ -55,14 +40,13 @@ export const site = {
   ],
 };
 
+/** Primary nav — logo is Home; Gallery lives under About + footer. */
 export const nav = [
-  { href: '/', label: 'Home' },
   { href: '/shows', label: 'Shows' },
   { href: '/materials', label: 'Materials' },
-  { href: '/about', label: 'About' },
   { href: '/lessons', label: 'Lessons' },
+  { href: '/about', label: 'About' },
   { href: '/news', label: 'News' },
-  { href: '/gallery', label: 'Gallery' },
   { href: '/contact', label: 'Contact' },
 ] as const;
 

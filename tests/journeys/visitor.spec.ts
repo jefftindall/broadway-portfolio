@@ -34,9 +34,7 @@ test.describe('visitor journeys', () => {
       await page.goto('/');
       const nav = page.getByRole('navigation', { name: 'Primary' });
       await nav.getByRole('link', { name: item.label, exact: true }).click();
-      const pathPattern =
-        item.href === '/' ? /\/$/ : new RegExp(`${item.href.replace('/', '\\/')}\\/?$`);
-      await expect(page).toHaveURL(pathPattern);
+      await expect(page).toHaveURL(new RegExp(`${item.href.replace('/', '\\/')}\\/?$`));
       await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
     }
   });
