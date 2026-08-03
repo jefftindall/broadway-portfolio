@@ -305,7 +305,13 @@ jobs:
   smoke_staging:
     name: Smoke Staging
     needs: [changes, deploy_staging]
-    if: needs.deploy_staging.result == 'success'
+    # always(): deploy_staging can succeed while terraform_staging is skipped; without
+    # always(), GitHub skips this job (and prod) for the whole dependency chain.
+    if: |
+      always() &&
+      !cancelled() &&
+      needs.changes.result == 'success' &&
+      needs.deploy_staging.result == 'success'
     runs-on: ubuntu-latest
     environment: staging
     steps:
@@ -368,6 +374,8 @@ jobs:
     name: Terraform Apply Production
     needs: [changes, deploy_staging, smoke_staging]
     if: |
+      always() &&
+      !cancelled() &&
       needs.changes.outputs.prod == 'true' &&
       needs.changes.outputs.release == 'true' &&
       needs.changes.outputs.infra == 'true' &&
@@ -425,6 +433,7 @@ jobs:
     needs: [changes, deploy_staging, smoke_staging, terraform_prod, build_release]
     if: |
       always() &&
+      !cancelled() &&
       needs.changes.outputs.prod == 'true' &&
       needs.deploy_staging.result == 'success' &&
       needs.smoke_staging.result == 'success' &&
