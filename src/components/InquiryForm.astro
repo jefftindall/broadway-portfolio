@@ -10,6 +10,10 @@ const { type, id, class: className } = Astro.props;
 const siteKey = String(import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '').trim();
 const formId = id ?? `${type}-inquiry`;
 const submitLabel = type === 'casting' ? 'Send casting inquiry' : 'Send lesson inquiry';
+const crossLink =
+  type === 'casting'
+    ? { href: '/lessons/book', label: 'Looking for lessons?' }
+    : { href: '/contact', label: 'Casting or representation?' };
 ---
 
 <form
@@ -36,21 +40,49 @@ const submitLabel = type === 'casting' ? 'Send casting inquiry' : 'Send lesson i
       />
     </label>
 
-    <label class="block">
-      <span class="text-sm text-muted">Email</span>
+    <fieldset data-preferred-contact>
+      <legend class="text-sm text-muted">Preferred contact method</legend>
+      <div class="mt-2 flex flex-wrap gap-4 text-sm text-spotlight">
+        <label class="inline-flex items-center gap-2">
+          <input
+            type="radio"
+            name="preferredContact"
+            value="email"
+            required
+            data-testid={`${type}-preferred-email`}
+          />
+          Email
+        </label>
+        <label class="inline-flex items-center gap-2">
+          <input
+            type="radio"
+            name="preferredContact"
+            value="phone"
+            data-testid={`${type}-preferred-phone`}
+          />
+          Phone
+        </label>
+      </div>
+    </fieldset>
+
+    <label class="block" data-field="email">
+      <span class="text-sm text-muted">
+        Email <span class="opacity-70" data-optional-hint hidden>(optional)</span>
+      </span>
       <input
         class="mt-1 w-full rounded-sm border border-line bg-ink/40 px-3 py-2 text-spotlight focus:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
         type="email"
         name="email"
         autocomplete="email"
-        required
         maxlength="320"
         data-testid={`${type}-email`}
       />
     </label>
 
-    <label class="block">
-      <span class="text-sm text-muted">Phone <span class="opacity-70">(optional)</span></span>
+    <label class="block" data-field="phone">
+      <span class="text-sm text-muted">
+        Phone <span class="opacity-70" data-optional-hint>(optional)</span>
+      </span>
       <input
         class="mt-1 w-full rounded-sm border border-line bg-ink/40 px-3 py-2 text-spotlight focus:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
         type="tel"
@@ -119,10 +151,10 @@ const submitLabel = type === 'casting' ? 'Send casting inquiry' : 'Send lesson i
     <p class="inquiry-status hidden text-sm" data-inquiry-status role="status" aria-live="polite"></p>
 
     <p class="text-xs leading-relaxed text-muted">
-      By submitting, you agree we may contact you about this inquiry by email or phone and agree to
-      our <a class="text-gel underline underline-offset-2" href="/terms">Terms</a>. We do not send
-      marketing SMS to visitors. Studio inquiry text alerts and opt-out (STOP / HELP) are described
-      in our{' '}
+      By submitting, you agree we may contact you about this inquiry via your preferred method and
+      agree to our <a class="text-gel underline underline-offset-2" href="/terms">Terms</a>. We do
+      not send marketing SMS to visitors. Studio inquiry text alerts and opt-out (STOP / HELP) are
+      described in our{' '}
       <a class="text-gel underline underline-offset-2" href="/privacy#sms">SMS privacy notice</a>.
     </p>
 
@@ -134,6 +166,10 @@ const submitLabel = type === 'casting' ? 'Send casting inquiry' : 'Send lesson i
     >
       {submitLabel}
     </button>
+
+    <p class="text-sm text-muted">
+      <a class="text-gel underline underline-offset-4" href={crossLink.href}>{crossLink.label}</a>
+    </p>
   </div>
 </form>
 
@@ -182,6 +218,26 @@ const submitLabel = type === 'casting' ? 'Send casting inquiry' : 'Send lesson i
     el.classList.toggle('text-muted', kind === 'idle');
   }
 
+  function syncPreferredContact(form: HTMLFormElement) {
+    const preferred =
+      form.querySelector<HTMLInputElement>('input[name="preferredContact"]:checked')?.value || '';
+    const emailInput = form.querySelector<HTMLInputElement>('input[name="email"]');
+    const phoneInput = form.querySelector<HTMLInputElement>('input[name="phone"]');
+    const emailHint = form.querySelector<HTMLElement>('[data-field="email"] [data-optional-hint]');
+    const phoneHint = form.querySelector<HTMLElement>('[data-field="phone"] [data-optional-hint]');
+
+    if (!emailInput || !phoneInput) return;
+
+    const preferEmail = preferred === 'email';
+    const preferPhone = preferred === 'phone';
+
+    emailInput.required = preferEmail;
+    phoneInput.required = preferPhone;
+
+    if (emailHint) emailHint.hidden = preferEmail;
+    if (phoneHint) phoneHint.hidden = preferPhone;
+  }
+
   async function setupForm(form: HTMLFormElement) {
     if (form.dataset.bound === '1') return;
     form.dataset.bound = '1';
@@ -190,6 +246,11 @@ const submitLabel = type === 'casting' ? 'Send casting inquiry' : 'Send lesson i
     const statusEl = form.querySelector<HTMLElement>('[data-inquiry-status]');
     const submitBtn = form.querySelector<HTMLButtonElement>('button[type="submit"]');
     let widgetId: string | undefined;
+
+    form.querySelectorAll<HTMLInputElement>('input[name="preferredContact"]').forEach((input) => {
+      input.addEventListener('change', () => syncPreferredContact(form));
+    });
+    syncPreferredContact(form);
 
     if (siteKey) {
       try {
@@ -221,12 +282,30 @@ const submitLabel = type === 'casting' ? 'Send casting inquiry' : 'Send lesson i
       }
 
       const fd = new FormData(form);
+      const preferredContact = String(fd.get('preferredContact') || '').trim();
+      const email = String(fd.get('email') || '').trim();
+      const phone = String(fd.get('phone') || '').trim();
+
+      if (preferredContact !== 'email' && preferredContact !== 'phone') {
+        setStatus(statusEl, 'Please choose a preferred contact method.', 'err');
+        return;
+      }
+      if (preferredContact === 'email' && !email) {
+        setStatus(statusEl, 'Please enter an email address.', 'err');
+        return;
+      }
+      if (preferredContact === 'phone' && !phone) {
+        setStatus(statusEl, 'Please enter a phone number.', 'err');
+        return;
+      }
+
       const type = String(fd.get('type') || form.dataset.inquiryType || '');
       const payload: Record<string, string> = {
         type,
         name: String(fd.get('name') || '').trim(),
-        email: String(fd.get('email') || '').trim(),
-        phone: String(fd.get('phone') || '').trim(),
+        preferredContact,
+        email,
+        phone,
         message: String(fd.get('message') || '').trim(),
         turnstileToken: token,
       };
@@ -259,10 +338,11 @@ const submitLabel = type === 'casting' ? 'Send casting inquiry' : 'Send lesson i
         }
 
         form.reset();
+        syncPreferredContact(form);
         if (widgetId !== undefined && api) api.reset(widgetId);
         setStatus(
           statusEl,
-          'Thanks — your message was sent. Elyse will follow up by email.',
+          'Thanks — your message was sent. Elyse will follow up using your preferred contact method.',
           'ok',
         );
       } catch {

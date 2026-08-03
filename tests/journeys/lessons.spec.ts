@@ -23,11 +23,19 @@ test.describe('lessons journeys', () => {
     await expect(page.getByText(/voice lessons|vocal pedagogy|CCM/i).first()).toBeVisible();
   });
 
-  test('LESSON-02 contact lesson form', async ({ page }) => {
-    await waitForOk(page, '/contact');
+  test('LESSON-02 lesson inquiry form', async ({ page }) => {
+    await waitForOk(page, '/lessons/book');
     await expect(page.locator('#lesson-inquiry')).toBeVisible();
     await expect(page.getByTestId('lesson-submit')).toBeVisible();
     await expect(page.getByTestId('lesson-format-nyc')).toBeVisible();
+    await expect(page.getByRole('link', { name: /Casting or representation/i })).toBeVisible();
+  });
+
+  test('LESSON-02b contact page points to lessons', async ({ page }) => {
+    await waitForOk(page, '/contact');
+    await expect(page.locator('#casting-inquiry')).toBeVisible();
+    await expect(page.locator('#lesson-inquiry')).toHaveCount(0);
+    await expect(page.getByRole('link', { name: /Looking for lessons/i })).toBeVisible();
   });
 
   test('LESSON-01 mobile book flow', { tag: '@mobile' }, async ({ page }) => {

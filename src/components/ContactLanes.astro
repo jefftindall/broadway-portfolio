@@ -2,15 +2,12 @@
 import GlassPanel from './GlassPanel.astro';
 import CtaLink from './CtaLink.astro';
 import SectionHeader from './SectionHeader.astro';
-import InquiryForm from './InquiryForm.astro';
 
 interface Props {
   showHeader?: boolean;
-  /** When true, embed casting + lesson forms (contact page). Otherwise link out. */
-  embedForms?: boolean;
 }
 
-const { showHeader = true, embedForms = false } = Astro.props;
+const { showHeader = true } = Astro.props;
 ---
 
 <section class="section-y" aria-labelledby="contact-lanes-heading">
@@ -21,11 +18,7 @@ const { showHeader = true, embedForms = false } = Astro.props;
           <SectionHeader
             eyebrow="Get in touch"
             title="Casting & lessons"
-            support={
-              embedForms
-                ? 'Send a casting or lesson request — details go straight to Elyse’s inbox.'
-                : 'Casting directors, agents, and students — choose a lane to reach Elyse.'
-            }
+            support="Casting directors, agents, and students — choose a lane to reach Elyse."
           />
         ) : (
           <h2 class="sr-only">Contact options</h2>
@@ -39,15 +32,9 @@ const { showHeader = true, embedForms = false } = Astro.props;
         <p class="mt-3 text-sm text-muted">
           Headshot, resume, reel, and availability for casting directors and representation.
         </p>
-        {
-          embedForms ? (
-            <InquiryForm class="mt-8" type="casting" id="casting-inquiry" />
-          ) : (
-            <CtaLink class="mt-8 self-start" href="/contact#casting-inquiry">
-              Casting inquiry
-            </CtaLink>
-          )
-        }
+        <CtaLink class="mt-8 self-start" href="/contact#casting-inquiry">
+          Casting inquiry
+        </CtaLink>
       </GlassPanel>
 
       <GlassPanel strong class="flex flex-col p-6 md:p-8" as="article">
@@ -55,15 +42,9 @@ const { showHeader = true, embedForms = false } = Astro.props;
         <p class="mt-3 text-sm text-muted">
           Private vocal coaching for singers and parents — pedagogy, vocal health, and CCM. NYC or Zoom.
         </p>
-        {
-          embedForms ? (
-            <InquiryForm class="mt-8" type="lesson" id="lesson-inquiry" />
-          ) : (
-            <CtaLink class="mt-8 self-start" variant="secondary" href="/lessons/book">
-              Book a lesson
-            </CtaLink>
-          )
-        }
+        <CtaLink class="mt-8 self-start" variant="secondary" href="/lessons/book#lesson-inquiry">
+          Lesson inquiry
+        </CtaLink>
       </GlassPanel>
     </div>
   </div>
