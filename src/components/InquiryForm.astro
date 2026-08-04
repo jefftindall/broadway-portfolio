@@ -14,11 +14,14 @@ const crossLink =
   type === 'casting'
     ? { href: '/lessons/book', label: 'Looking for lessons?' }
     : { href: '/contact', label: 'Casting or representation?' };
+/** Keep fields inside the panel: native inputs have an intrinsic min-width that can overflow grid. */
+const fieldClass =
+  'mt-1 box-border w-full max-w-full min-w-0 rounded-sm border border-line bg-ink/40 px-3 py-2 text-spotlight focus:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold';
 ---
 
 <form
   id={formId}
-  class:list={['inquiry-form', className]}
+  class:list={['inquiry-form w-full min-w-0', className]}
   data-inquiry-form
   data-inquiry-type={type}
   data-turnstile-sitekey={siteKey}
@@ -26,11 +29,11 @@ const crossLink =
 >
   <input type="hidden" name="type" value={type} />
 
-  <div class="grid gap-4">
-    <label class="block">
+  <div class="grid min-w-0 gap-4">
+    <label class="block min-w-0">
       <span class="text-sm text-muted">Name</span>
       <input
-        class="mt-1 w-full rounded-sm border border-line bg-ink/40 px-3 py-2 text-spotlight focus:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+        class={fieldClass}
         type="text"
         name="name"
         autocomplete="name"
@@ -40,7 +43,7 @@ const crossLink =
       />
     </label>
 
-    <fieldset data-preferred-contact>
+    <fieldset class="min-w-0" data-preferred-contact>
       <legend class="text-sm text-muted">Preferred contact method</legend>
       <div class="mt-2 flex flex-wrap gap-4 text-sm text-spotlight">
         <label class="inline-flex items-center gap-2">
@@ -65,12 +68,12 @@ const crossLink =
       </div>
     </fieldset>
 
-    <label class="block" data-field="email">
+    <label class="block min-w-0" data-field="email">
       <span class="text-sm text-muted">
         Email <span class="opacity-70" data-optional-hint hidden>(optional)</span>
       </span>
       <input
-        class="mt-1 w-full rounded-sm border border-line bg-ink/40 px-3 py-2 text-spotlight focus:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+        class={fieldClass}
         type="email"
         name="email"
         autocomplete="email"
@@ -79,12 +82,12 @@ const crossLink =
       />
     </label>
 
-    <label class="block" data-field="phone">
+    <label class="block min-w-0" data-field="phone">
       <span class="text-sm text-muted">
         Phone <span class="opacity-70" data-optional-hint>(optional)</span>
       </span>
       <input
-        class="mt-1 w-full rounded-sm border border-line bg-ink/40 px-3 py-2 text-spotlight focus:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+        class={fieldClass}
         type="tel"
         name="phone"
         autocomplete="tel"
@@ -95,12 +98,12 @@ const crossLink =
 
     {
       type === 'casting' ? (
-        <label class="block">
+        <label class="block min-w-0">
           <span class="text-sm text-muted">
             Organization <span class="opacity-70">(optional)</span>
           </span>
           <input
-            class="mt-1 w-full rounded-sm border border-line bg-ink/40 px-3 py-2 text-spotlight focus:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            class={fieldClass}
             type="text"
             name="organization"
             autocomplete="organization"
@@ -109,7 +112,7 @@ const crossLink =
           />
         </label>
       ) : (
-        <fieldset>
+        <fieldset class="min-w-0">
           <legend class="text-sm text-muted">Preferred format</legend>
           <div class="mt-2 flex flex-wrap gap-4 text-sm text-spotlight">
             <label class="inline-flex items-center gap-2">
@@ -125,12 +128,12 @@ const crossLink =
       )
     }
 
-    <label class="block">
+    <label class="block min-w-0">
       <span class="text-sm text-muted">
         {type === 'casting' ? 'Project / message' : 'Goals & availability'}
       </span>
       <textarea
-        class="mt-1 min-h-28 w-full rounded-sm border border-line bg-ink/40 px-3 py-2 text-spotlight focus:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+        class:list={[fieldClass, 'min-h-28']}
         name="message"
         required
         maxlength="5000"
