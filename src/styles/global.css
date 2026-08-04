@@ -71,6 +71,26 @@ h3,
   -webkit-backdrop-filter: blur(18px);
 }
 
+/* Native text controls keep an intrinsic min-width; allow inquiry fields to shrink with the panel. */
+.inquiry-form {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.inquiry-form :is(
+  input:not([type='checkbox']):not([type='radio']):not([type='hidden']):not([type='file']),
+  textarea,
+  select
+) {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.inquiry-form fieldset {
+  min-inline-size: 0;
+}
+
 .section-y {
   padding-block: 4rem;
 }
