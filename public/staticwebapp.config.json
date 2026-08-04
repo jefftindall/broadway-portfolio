@@ -105,6 +105,10 @@
       "allowedRoles": ["authenticated"]
     },
     {
+      "route": "/studio/*",
+      "allowedRoles": ["authenticated"]
+    },
+    {
       "route": "/api/contactInquiry",
       "allowedRoles": ["anonymous", "authenticated"]
     },

@@ -1,0 +1,217 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { studioCapabilities, studioVoiceNotes } from '../../lib/studioHelp';
+---
+
+<BaseLayout
+  title="Studio help"
+  description="Private guide to Studio voice updates and discrete prompts."
+  hideFooterCta={true}
+  noIndex={true}
+>
+  <article class="mx-auto max-w-2xl px-4 py-8 md:py-12">
+    <p class="text-sm uppercase tracking-[0.2em] text-gel">Private</p>
+    <h1 class="mt-2 font-display text-4xl text-spotlight">Studio help</h1>
+    <p class="mt-3 text-sm text-muted">
+      How to update the site with your voice or a short typed prompt. Reference device for
+      screenshots and mic steps: <span class="text-spotlight">{studioVoiceNotes.referenceDevice}</span>.
+    </p>
+
+    <p class="mt-6 text-sm">
+      <a
+        href="/studio"
+        class="text-gel underline-offset-2 hover:text-gold hover:underline"
+      >
+        ← Back to Studio
+      </a>
+    </p>
+
+    <nav
+      class="mt-8 flex flex-wrap gap-x-4 gap-y-2 border-b border-line pb-4 text-sm text-muted"
+      aria-label="Help sections"
+    >
+      <a href="#getting-started" class="hover:text-gold">Getting started</a>
+      <a href="#voice" class="hover:text-gold">Voice</a>
+      <a href="#prompts" class="hover:text-gold">What you can say</a>
+      <a href="#preview-publish" class="hover:text-gold">Preview &amp; publish</a>
+      <a href="#access" class="hover:text-gold">Access</a>
+    </nav>
+
+    <section id="getting-started" class="mt-10 space-y-4">
+      <h2 class="font-display text-3xl text-spotlight">Getting started</h2>
+      <ol class="list-decimal space-y-2 pl-5 text-sm text-muted">
+        <li>Open <a href="/studio" class="text-gel hover:text-gold">Studio</a> and sign in.</li>
+        <li>
+          Describe the change in the Message box — type it, or hold <span class="text-spotlight"
+            >Hold to speak</span
+          >.
+        </li>
+        <li>Optionally attach a photo (JPEG, PNG, or WebP).</li>
+        <li>Tap <span class="text-spotlight">Preview update</span>, review the draft, then publish.</li>
+        <li>Wait a few minutes for the site rebuild; Studio shows progress when publishing is allowed.</li>
+      </ol>
+      <p class="text-sm text-muted">
+        You can read this help guide whenever you are signed in — even before publisher access is
+        turned on.
+      </p>
+    </section>
+
+    <section id="voice" class="mt-12 space-y-6">
+      <h2 class="font-display text-3xl text-spotlight">Voice on iPhone</h2>
+      <p class="text-sm text-muted">
+        Voice is dictation into the Message box — not a separate command list. Speak the same kind of
+        request you would type. Steps below are for {studioVoiceNotes.referenceDevice}.
+      </p>
+
+      <figure class="space-y-3">
+        <img
+          src="/images/studio-help/studio-help-hold-to-speak.jpg"
+          alt="iPhone 17 Safari showing Studio with a finger holding the Hold to speak button while a booking message appears in the Message field."
+          class="w-full max-w-sm mx-auto rounded-sm border border-line"
+          width="1080"
+          height="1920"
+          loading="lazy"
+        />
+        <figcaption class="text-xs text-muted text-center">
+          Hold <span class="text-spotlight">Hold to speak</span>, say your update, then release.
+        </figcaption>
+      </figure>
+
+      <div class="space-y-3 text-sm text-muted">
+        <h3 class="font-display text-xl text-spotlight">Hold to speak</h3>
+        <ol class="list-decimal space-y-2 pl-5">
+          <li>Open Studio in Safari on your iPhone.</li>
+          <li>Press and hold <span class="text-spotlight">Hold to speak</span> (do not just tap).</li>
+          <li>Keep holding while you talk. The button shows Listening…</li>
+          <li>Lift your finger when you finish. Your words fill the Message box.</li>
+          <li>Edit by typing if needed, then tap <span class="text-spotlight">Preview update</span>.</li>
+        </ol>
+        <p>{studioVoiceNotes.replacesNotAppends}</p>
+        <p>{studioVoiceNotes.fallback}</p>
+      </div>
+
+      <div class="space-y-3 text-sm text-muted">
+        <h3 class="font-display text-xl text-spotlight">Allow the microphone (first time)</h3>
+        <figure class="space-y-3">
+          <img
+            src="/images/studio-help/studio-help-safari-mic.jpg"
+            alt="iPhone 17 Safari system alert: elysetindall.com would like to access the microphone, with Don’t Allow and Allow."
+            class="w-full max-w-sm mx-auto rounded-sm border border-line"
+            width="1080"
+            height="1920"
+            loading="lazy"
+          />
+          <figcaption class="text-xs text-muted text-center">
+            Tap <span class="text-spotlight">Allow</span> when Safari asks for the microphone.
+          </figcaption>
+        </figure>
+        <ol class="list-decimal space-y-2 pl-5">
+          <li>The first time you hold <span class="text-spotlight">Hold to speak</span>, Safari asks for microphone access.</li>
+          <li>Tap <span class="text-spotlight">Allow</span>.</li>
+          <li>
+            If you chose Don’t Allow, open the iPhone <span class="text-spotlight">Settings</span> app
+            → <span class="text-spotlight">Apps</span> → <span class="text-spotlight">Safari</span> →
+            <span class="text-spotlight">Microphone</span> (or Settings → Safari → scroll to
+            elysetindall.com under Website Settings) and turn microphone access on, then reload Studio.
+          </li>
+          <li>
+            Also check the Control Center mic privacy indicator and that Silent Mode / Focus is not
+            blocking Safari prompts.
+          </li>
+        </ol>
+        <p>
+          If the button reads <span class="text-spotlight">Voice not supported</span> or
+          <span class="text-spotlight">Mic unavailable — type instead</span>, use the keyboard — publishing
+          still works the same way.
+        </p>
+      </div>
+    </section>
+
+    <section id="prompts" class="mt-12 space-y-6">
+      <h2 class="font-display text-3xl text-spotlight">What you can say</h2>
+      <p class="text-sm text-muted">
+        Speak or type a clear request. Studio maps it to one of these updates. Include names, dates,
+        venues, and prices when they matter — it will not invent credits for you.
+      </p>
+
+      <ul class="space-y-8">
+        {
+          studioCapabilities.map((cap) => (
+            <li class="border-b border-line pb-8 last:border-0">
+              <h3 class="font-display text-2xl text-spotlight">{cap.title}</h3>
+              <p class="mt-2 text-sm text-muted">{cap.summary}</p>
+              <p class="mt-1 text-xs uppercase tracking-[0.15em] text-gel">
+                Lives at {cap.livePath}
+              </p>
+              <p class="mt-4 text-xs uppercase tracking-[0.15em] text-muted">Try saying</p>
+              <ul class="mt-2 space-y-2">
+                {cap.examplePrompts.map((prompt) => (
+                  <li class="rounded-sm border border-line bg-panel/40 px-3 py-2 text-sm text-spotlight">
+                    “{prompt}”
+                  </li>
+                ))}
+              </ul>
+            </li>
+          ))
+        }
+      </ul>
+
+      <div class="rounded-sm border border-line bg-panel/40 p-4 text-sm text-muted space-y-2">
+        <p class="font-semibold text-spotlight">Teaching brand reminder</p>
+        <p>
+          Private lessons are <span class="text-spotlight">voice lessons</span> only — vocal pedagogy,
+          vocal health, and CCM. Do not ask Studio to advertise acting lessons, monologue coaching, or
+          scene study.
+        </p>
+      </div>
+    </section>
+
+    <section id="preview-publish" class="mt-12 space-y-4">
+      <h2 class="font-display text-3xl text-spotlight">Preview &amp; publish</h2>
+      <ol class="list-decimal space-y-2 pl-5 text-sm text-muted">
+        <li>
+          <span class="text-spotlight">Preview update</span> drafts the change without going live. Read
+          the reply and edit the proposed text if needed.
+        </li>
+        <li>
+          <span class="text-spotlight">Publish to site</span> commits the change. The live site updates
+          after the rebuild finishes (usually a few minutes). Studio shows pipeline status and links to
+          affected pages.
+        </li>
+        <li>
+          Prefer evergreen wording. Avoid “today” or “this week” unless you truly want time-sensitive
+          copy.
+        </li>
+      </ol>
+    </section>
+
+    <section id="access" class="mt-12 space-y-4">
+      <h2 class="font-display text-3xl text-spotlight">Who can use what</h2>
+      <dl class="space-y-4 text-sm text-muted">
+        <div>
+          <dt class="text-spotlight">Signed in</dt>
+          <dd class="mt-1">
+            Open Studio and this help guide. Sign-in alone does not turn on publishing.
+          </dd>
+        </div>
+        <div>
+          <dt class="text-spotlight">Publisher access</dt>
+          <dd class="mt-1">
+            Preview and publish require your account on the publisher list. If you see that you can’t
+            publish yet, share the on-screen reference code with an admin — you can still use this help
+            page to practice wording requests.
+          </dd>
+        </div>
+      </dl>
+    </section>
+
+    <p class="mt-12 border-t border-line pt-6 text-sm">
+      <a
+        href="/studio"
+        class="inline-flex rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110"
+      >
+        Open Studio
+      </a>
+    </p>
+  </article>
+</BaseLayout>

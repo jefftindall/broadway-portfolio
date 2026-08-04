@@ -6,7 +6,7 @@ Only Elyse should be able to publish.
 
 1. **Entra app registration** (Terraform) — single-tenant, and the enterprise app requires explicit user assignment
 2. **SWA Authentication** — only her identity provider account can sign in
-3. **Route rules** — `/studio` and `/api/*` require `authenticated`
+3. **Route rules** — `/studio`, `/studio/*` (including help), and `/api/*` require `authenticated`
 4. **Allowlist** — `ALLOWED-USER-IDS` in Key Vault must match her principal
 
 | Environment | Key Vault | Enterprise app |
@@ -14,7 +14,7 @@ Only Elyse should be able to publish.
 | Staging | `kv-elyse-staging` | `elyse-portfolio-staging` |
 | Production | `kv-elyse-prod` | `elyse-portfolio-prod` |
 
-**Sign-in ≠ publish.** A user assigned in Entra can open `/studio` and see their identity, but publishing still requires the allowlist. Studio checks access before showing the editor; signed-in non-publishers see a friendly denial with a **correlation ID**. Look up that ID in App Insights (`StudioAccessDenied` / `StudioPublishDenied`) for `userId` / `userDetails` to add to `ALLOWED-USER-IDS` (see [observability.md](./observability.md)).
+**Sign-in ≠ publish.** A user assigned in Entra can open `/studio`, see their identity, and open **`/studio/help`** (voice guide and example prompts), but publishing still requires the allowlist. Studio checks access before showing the editor; signed-in non-publishers see a friendly denial with a **correlation ID**, plus a link to help. Look up that ID in App Insights (`StudioAccessDenied` / `StudioPublishDenied`) for `userId` / `userDetails` to add to `ALLOWED-USER-IDS` (see [observability.md](./observability.md)).
 
 If a publisher shares a **reference** from a failed publish (not an access denial), look it up under `StudioPublishFailed` / exceptions in [observability.md](./observability.md) — that path is for diagnostics, not allowlist changes.
 
