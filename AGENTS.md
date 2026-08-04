@@ -28,6 +28,12 @@ Requirements for Terraform lint: Terraform >= 1.5 and [TFLint](https://github.co
 - Do **not** advertise acting lessons, monologue coaching, or scene study. Studio Gemini prompts in [`api/src/lib/gemini.js`](api/src/lib/gemini.js) encode the same rules — keep them aligned when editing copy or prompts.
 - See [`docs/style-guide.md`](docs/style-guide.md) and [`docs/runbooks/refine-studio-gemini.md`](docs/runbooks/refine-studio-gemini.md).
 
+### Studio help (authenticated)
+- User guide: [`/studio/help`](src/pages/studio/help.astro) — linked only from `/studio`, SWA `authenticated` on `/studio` and `/studio/*`, `noIndex`, excluded from sitemap via the existing `/studio` filter.
+- Capability catalog + example prompts: [`src/lib/studioHelp.ts`](src/lib/studioHelp.ts). **When changing Gemini tools or Studio voice UX, update this catalog and the help page in the same PR** (see [`.cursor/rules/studio-help.mdc`](.cursor/rules/studio-help.mdc) and the refine-studio-gemini checklist).
+- Signed-in users may open help even if they are not on `ALLOWED_USER_IDS` yet.
+- Device reference for mic/screenshots: **iPhone 17 · Safari**.
+
 ### Public site (primary service)
 - Dev server: `npm run dev` (Astro, serves on port 4321). Build: `npm run build` (runs `resume:pdf` then Astro → `dist/`).
 - Verification: `npm run lint` plus `npm run build` and manual checks. Post-staging CD runs `npm run test:smoke` and profile-based journeys (`test:journey` or `test:journey:content`); prod reuses the same build artifact — see [`docs/runbooks/testing-strategy.md`](docs/runbooks/testing-strategy.md).

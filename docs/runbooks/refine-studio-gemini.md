@@ -92,5 +92,10 @@ Failed drafts/publishes emit `StudioDraftFailed` / `StudioPublishFailed` with `c
 
 - [ ] Draft mode returns the expected tool and usable markdown
 - [ ] No secrets, HTTP rules, or support IDs in `systemInstruction`
+- [ ] **Studio help stays accurate** — update [`src/lib/studioHelp.ts`](../../src/lib/studioHelp.ts) (and `/studio/help` copy/screenshots if UX changed) so discrete prompts and capabilities match the tools you just edited
 - [ ] Staging Studio Preview + Publish smoke test
 - [ ] `npm run lint` before commit
+
+## User-facing Studio help
+
+Publishers (and signed-in users who cannot publish yet) read **`/studio/help`**, fed by `studioHelp.ts`. That catalog is the checklist for “what can she say?” — keep it aligned whenever `functionDeclarations` or routing rules change. Device-specific mic steps and screenshots use **iPhone 17 · Safari** as the reference. See [`.cursor/rules/studio-help.mdc`](../../.cursor/rules/studio-help.mdc).

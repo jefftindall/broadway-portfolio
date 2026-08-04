@@ -1,0 +1,28 @@
+---
+description: Keep Studio help docs aligned with Gemini tools and Studio UX
+globs:
+  - api/src/lib/gemini.js
+  - src/pages/studio.astro
+  - src/pages/studio/**
+  - src/lib/studioHelp.ts
+---
+
+# Studio help documentation
+
+Authenticated help lives at **`/studio/help`** (`src/pages/studio/help.astro`). It is linked only from `/studio` (not public nav). SWA requires `authenticated` for `/studio` and `/studio/*`. Signed-in users may open help **even when they cannot publish**.
+
+## Keep docs in sync with capabilities
+
+When you change Studio capabilities, update the help catalog in the same change:
+
+| Change | Update |
+|--------|--------|
+| Add / rename / remove a Gemini tool in `api/src/lib/gemini.js` | Matching entry in `src/lib/studioHelp.ts` (`tool`, summary, `livePath`, `examplePrompts`) |
+| Change voice UX (hold-to-speak, mic copy, browser support) | Voice section in `src/pages/studio/help.astro` + `studioVoiceNotes` in `studioHelp.ts` |
+| Change compose / preview / publish flow | Getting started + Preview & publish sections on the help page |
+| Change sign-in vs publish gates | Access section on the help page + publisher-gate copy on `studio.astro` |
+| Replace help screenshots | `public/images/studio-help/` — reference device is **iPhone 17 · Safari** |
+
+Do not invent Studio features in help that Gemini cannot perform. Example prompts must match real tools and brand rules (voice lessons only — no acting-lesson marketing).
+
+After prompt/tool edits, follow `docs/runbooks/refine-studio-gemini.md` (includes the help-sync checklist).

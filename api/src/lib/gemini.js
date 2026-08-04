@@ -20,6 +20,8 @@ const lessonRateSchema = {
 
 const tools = [
   {
+    // Keep src/lib/studioHelp.ts (+ /studio/help) in sync when adding/changing tools.
+    // See docs/runbooks/refine-studio-gemini.md and .cursor/rules/studio-help.mdc.
     functionDeclarations: [
       {
         name: 'upsert_show',
