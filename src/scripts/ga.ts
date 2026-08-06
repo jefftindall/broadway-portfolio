@@ -19,7 +19,6 @@ export function initGa() {
   window.dataLayer = window.dataLayer || [];
   // gtag expects the Arguments object on the dataLayer (not a rest-args array).
   window.gtag = function gtag(..._args: unknown[]) {
-    // eslint-disable-next-line prefer-rest-params -- GA dataLayer contract
     window.dataLayer?.push(arguments);
   };
   window.gtag('js', new Date());
