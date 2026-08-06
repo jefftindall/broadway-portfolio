@@ -72,6 +72,7 @@ module "portfolio" {
   github_repo_id            = var.github_repo_id
   github_branch             = var.github_branch
   manage_github_actions     = var.manage_github_actions
+  ga_measurement_id         = var.ga_measurement_id
   alert_email               = var.alert_email
 }
 

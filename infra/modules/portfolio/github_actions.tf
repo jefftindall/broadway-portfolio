@@ -57,6 +57,15 @@ resource "github_actions_environment_variable" "appinsights_connection_string" {
   value         = azurerm_application_insights.main.connection_string
 }
 
+# Public-by-design: GA4 Measurement ID → PUBLIC_GA_MEASUREMENT_ID in Astro builds.
+resource "github_actions_environment_variable" "ga_measurement_id" {
+  count         = var.manage_github_actions ? 1 : 0
+  environment   = github_repository_environment.this[0].environment
+  repository    = var.github_repo
+  variable_name = "GA_MEASUREMENT_ID"
+  value         = var.ga_measurement_id
+}
+
 # Deploy jobs read env-scoped API secrets from this vault (Gemini, ACS, etc.).
 # SITE-* / Turnstile are in bootstrap kv-elyse-shared (AZURE_SHARED_KEY_VAULT_NAME).
 resource "github_actions_environment_variable" "azure_key_vault_name" {

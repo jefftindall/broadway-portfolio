@@ -72,6 +72,8 @@ jobs:
       SITE_DATE_OF_BIRTH: "2000-01-01"
       # Cloudflare Turnstile always-passes test sitekey (public)
       PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA"
+      # GA4 Measurement ID (public; matches Terraform default)
+      PUBLIC_GA_MEASUREMENT_ID: "G-XEE29C0RRE"
     steps:
       - uses: actions/checkout@v7
 

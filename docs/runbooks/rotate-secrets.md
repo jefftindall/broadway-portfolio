@@ -59,7 +59,18 @@ az keyvault secret set --vault-name kv-elyse-shared --name TURNSTILE-SECRET-KEY 
 
 Repo Actions variable `AZURE_SHARED_KEY_VAULT_NAME` is set by bootstrap. Static analysis job **Shared vault secrets** (pull requests only) emits warnings when any of these are missing / `REPLACE_ME` (does not fail the check).
 
-Locally: copy `.env.example` → `.env` and fill `SITE_*` plus `PUBLIC_TURNSTILE_SITE_KEY`.
+Locally: copy `.env.example` → `.env` and fill `SITE_*` plus `PUBLIC_TURNSTILE_SITE_KEY`. Optional: `PUBLIC_GA_MEASUREMENT_ID` (defaults to `G-XEE29C0RRE` in code and Terraform when unset).
+
+## Google Analytics 4 (public Measurement ID)
+
+Not a Key Vault secret — the ID is public-by-design and embedded in the client bundle.
+
+| Source | Name | Notes |
+|---|---|---|
+| Terraform `ga_measurement_id` | GitHub Environment `GA_MEASUREMENT_ID` | Default `G-XEE29C0RRE`; applied per staging/prod |
+| Astro build | `PUBLIC_GA_MEASUREMENT_ID` | Workflows map from `vars.GA_MEASUREMENT_ID`; code falls back to the same default |
+
+To rotate the Measurement ID: `terraform apply -var='ga_measurement_id=G-…'` in each environment, then redeploy so the Astro bundle picks up the new value.
 
 ## Contact forms (ACS email / SMS + Cloudflare Turnstile)
 
