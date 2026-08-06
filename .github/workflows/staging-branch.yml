@@ -70,6 +70,7 @@ jobs:
     env:
       PUBLIC_APPINSIGHTS_CONNECTION_STRING: ${{ vars.APPINSIGHTS_CONNECTION_STRING }}
       PUBLIC_APPINSIGHTS_SAMPLE_PERCENT: "25"
+      PUBLIC_GA_MEASUREMENT_ID: ${{ vars.GA_MEASUREMENT_ID }}
     steps:
       - uses: actions/checkout@v7
         with:

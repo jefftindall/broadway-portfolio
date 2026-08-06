@@ -57,6 +57,12 @@ variable "manage_github_actions" {
   default     = true
 }
 
+variable "ga_measurement_id" {
+  type        = string
+  description = "GA4 Measurement ID for Astro builds (GitHub env var GA_MEASUREMENT_ID)"
+  default     = "G-XEE29C0RRE"
+}
+
 variable "alert_email" {
   type        = string
   description = "Email for App Insights / availability alerts (empty skips metric alert action group)"

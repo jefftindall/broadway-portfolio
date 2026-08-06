@@ -56,6 +56,17 @@ variable "gemini_model" {
   default     = "gemini-3.6-flash"
 }
 
+variable "ga_measurement_id" {
+  type        = string
+  description = "Google Analytics 4 Measurement ID embedded in the Astro client bundle (public-by-design). Published as GitHub Environment variable GA_MEASUREMENT_ID → PUBLIC_GA_MEASUREMENT_ID at build time."
+  default     = "G-XEE29C0RRE"
+
+  validation {
+    condition     = can(regex("^G-[A-Z0-9]+$", var.ga_measurement_id))
+    error_message = "ga_measurement_id must look like a GA4 Measurement ID (e.g. G-XEE29C0RRE)."
+  }
+}
+
 variable "additional_auth_hostnames" {
   type        = list(string)
   description = "Extra hostnames allowed to complete Entra sign-in (e.g. www.elysetindall.com)"
