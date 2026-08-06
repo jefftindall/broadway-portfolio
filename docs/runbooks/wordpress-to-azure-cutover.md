@@ -162,14 +162,15 @@ Also check:
 
 ## 6. Search consoles (`DISC-P0-002`)
 
-After apex serves Astro:
+Apex serves Astro; GSC and GA4 properties for `elysetindall.com` are registered (`DISC-P0-002` done). Residual checklist:
 
-- [ ] Google Search Console property for `elysetindall.com` verified
-- [ ] Submit `https://elysetindall.com/sitemap-index.xml`
-- [ ] Request indexing for `/`, `/materials`, `/shows`, and key `/for/...` pages
-- [ ] Bing Webmaster Tools: submit the same sitemap (recommended)
-- [ ] Monitor index coverage for `/for/*` for ~2 weeks; fix any surprise 404s with new 301s
-- [ ] Link GA4 ↔ GSC and continue phased work per [search-and-analytics.md](../plans/search-and-analytics.md) (`SEARCH-P0-*`)
+- [x] Google Search Console property for `elysetindall.com` verified
+- [x] GA4 property for `elysetindall.com` collecting traffic
+- [ ] Confirm sitemap `https://elysetindall.com/sitemap-index.xml` is submitted/accepted in GSC (if not already)
+- [ ] Request indexing for `/`, `/materials`, `/shows`, and key `/for/...` pages (`SEARCH-P0-004`)
+- [ ] Bing Webmaster Tools: submit the same sitemap (optional)
+- [ ] Monitor index coverage for `/for/*`; fix any surprise 404s with new 301s
+- [ ] Continue phased GSC/GA work per [search-and-analytics.md](../plans/search-and-analytics.md)
 
 ---
 

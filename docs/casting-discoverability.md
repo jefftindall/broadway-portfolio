@@ -112,8 +112,8 @@ Snapshot **2026-08-02**. Re-score after `DISC-P0-001` (cutover) and after each t
 
 | ID | Title | Status | Depends on | Primary files / runbooks |
 |----|-------|--------|------------|--------------------------|
-| `DISC-P0-001` | Cut over apex DNS to Astro SWA | `planned` | — | [wordpress-to-azure-cutover.md](runbooks/wordpress-to-azure-cutover.md), [dns-and-domain.md](runbooks/dns-and-domain.md), [deploy-and-rollback.md](runbooks/deploy-and-rollback.md) |
-| `DISC-P0-002` | Submit sitemap to Google Search Console & Bing Webmaster Tools | `planned` | `DISC-P0-001` | [wordpress-to-azure-cutover.md](runbooks/wordpress-to-azure-cutover.md) §6, `public/robots.txt`, generated `sitemap-index.xml`; measurement/console track: [search-and-analytics.md](plans/search-and-analytics.md) (`SEARCH-P0-002`) |
+| `DISC-P0-001` | Cut over apex DNS to Astro SWA | `done` | — | [wordpress-to-azure-cutover.md](runbooks/wordpress-to-azure-cutover.md), [dns-and-domain.md](runbooks/dns-and-domain.md), [deploy-and-rollback.md](runbooks/deploy-and-rollback.md) |
+| `DISC-P0-002` | Submit sitemap to Google Search Console & Bing Webmaster Tools | `done` | `DISC-P0-001` | GSC property registered for `elysetindall.com`; residual indexing requests in [search-and-analytics.md](plans/search-and-analytics.md) (`SEARCH-P0-004`) |
 | `DISC-P0-003` | Configure 301 redirects from legacy WordPress URLs | `done` | — | [wordpress-to-azure-cutover.md](runbooks/wordpress-to-azure-cutover.md) §2–3, `public/staticwebapp.config.json` |
 
 <details>

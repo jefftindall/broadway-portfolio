@@ -1,7 +1,7 @@
 # Plan: Google Search Console & Analytics
 
 **Artifact ID:** `ELYSE-SEARCH-001`  
-**Version:** 1.0  
+**Version:** 1.1  
 **Last updated:** 2026-08-06  
 **Audience:** Agents, implementers, operators  
 **Scope:** Google Search Console (GSC), Google Analytics 4 (GA4), and related technical SEO that makes those tools useful — not casting content strategy itself.
@@ -22,7 +22,7 @@ Example PR title: `SEARCH-P1-003: Add GA4 generate_lead on inquiry success`
 | [Current baseline](#current-baseline) | What the repo already has |
 | [Phased backlog](#phased-backlog) | Implementable work with IDs and acceptance criteria |
 | [Dependencies](#dependency-graph) | What blocks what |
-| [Monthly operating loop](#monthly-operating-loop-search-ops) | How to use GSC + GA after cutover |
+| [Monthly operating loop](#monthly-operating-loop-search-ops) | How to use GSC + GA on an ongoing basis |
 | [Out of scope](#out-of-scope) | Explicit non-goals |
 
 Implement **one phase (or one `SEARCH-*` item) per PR** when practical. Prefer linking this doc from the PR body over pasting the full plan into the description.
@@ -62,69 +62,35 @@ GA must load only on **public** pages (never `/studio`). App Insights remains th
 | Skip GA on Studio / `noindex` | Path + robots meta checks; `/studio` sets `noIndex` | `SEARCH-P1-002`, `SEARCH-P2-001` |
 | Privacy disclosure for GA | `src/pages/privacy.astro` | `SEARCH-P1-004` |
 
-### Still operational / blocked on apex
+### Live ops (already done)
+
+| Capability | Notes | Former IDs |
+|------------|-------|------------|
+| Apex serves Astro SWA | `https://elysetindall.com/` + `sitemap-index.xml` live | `SEARCH-P0-001`, `DISC-P0-001` |
+| GSC property for `elysetindall.com` | Registered / verified | `SEARCH-P0-002`, `DISC-P0-002` |
+| GA4 property `elysetindall.com` | Collecting traffic; Measurement ID `G-XEE29C0RRE` | `SEARCH-P0-003` |
+| Preferred host | Apex is the public host; `www` is not serving duplicate content today | `SEARCH-P0-005` |
+
+### Still open under this plan
 
 | Gap | Notes |
 |-----|--------|
-| Apex still WordPress until `DISC-P0-001` | GSC/GA on the real hostname wait on cutover |
-| GSC verify + sitemap submit | `DISC-P0-002` / `SEARCH-P0-002` |
-| GSC ↔ GA4 product link | `SEARCH-P0-003` |
+| Embed Measurement ID via Astro build (IaC → client) | Phase 1a in this PR — replaces any legacy/tag-manager-only injection |
 | Conversion events, SEO polish, monthly loop | Phases 1b–3 below |
+| Request indexing for key Astro URLs | Remaining Phase 0 item (`SEARCH-P0-004`) |
+| Optional Bing Webmaster sitemap | Nice-to-have; not blocking |
 
 ---
 
 ## Phased backlog
 
-### Phase 0 — Ops unlock (blockers)
+### Phase 0 — Ops residual
 
-Do first after (or as part of) apex cutover. Mostly operator work; little/no app code.
+Apex cutover, GSC registration, and GA4 property setup are **done** (see [Live ops](#live-ops-already-done)). Only residual console hygiene remains.
 
 | ID | Title | Status | Depends on | Primary refs |
 |----|-------|--------|------------|--------------|
-| `SEARCH-P0-001` | Serve Astro on apex (`elysetindall.com`) | `planned` | — | Same as `DISC-P0-001`; [wordpress-to-azure-cutover.md](../runbooks/wordpress-to-azure-cutover.md), [dns-and-domain.md](../runbooks/dns-and-domain.md) |
-| `SEARCH-P0-002` | Verify GSC Domain property + submit sitemap (+ Bing) | `planned` | `SEARCH-P0-001` | Same as `DISC-P0-002`; cutover §6 |
-| `SEARCH-P0-003` | Create/confirm GA4 web stream + link GSC ↔ GA4 | `planned` | `SEARCH-P0-001`, `SEARCH-P1-001` | GA Admin + GSC Associations; Measurement ID `G-XEE29C0RRE` |
-| `SEARCH-P0-004` | Request indexing for money pages | `planned` | `SEARCH-P0-002` | `/`, `/materials`, `/shows`, key `/for/*` |
-| `SEARCH-P0-005` | Ensure www → apex (or single preferred host) | `planned` | `SEARCH-P0-001` | [dns-and-domain.md](../runbooks/dns-and-domain.md); avoid split GSC signals |
-
-<details>
-<summary><code>SEARCH-P0-001</code> — Apex serves Astro</summary>
-
-**Acceptance criteria** — mirror `DISC-P0-001`:
-
-- [ ] `https://elysetindall.com/` serves the Astro build
-- [ ] `https://elysetindall.com/sitemap-index.xml` returns 200
-- [ ] HTTPS valid on apex
-
-Keep a single source of cutover steps in the WordPress cutover runbook; mark both IDs done when cutover completes.
-
-</details>
-
-<details>
-<summary><code>SEARCH-P0-002</code> — GSC (+ Bing) sitemap</summary>
-
-**Acceptance criteria**
-
-- [ ] GSC **Domain** property verified for `elysetindall.com`
-- [ ] Sitemap `https://elysetindall.com/sitemap-index.xml` submitted and accepted
-- [ ] Bing Webmaster Tools sitemap submitted (recommended)
-- [ ] Index coverage for `/for/*` monitored for ~2 weeks post-cutover
-
-</details>
-
-<details>
-<summary><code>SEARCH-P0-003</code> — GA4 property + GSC link</summary>
-
-**Acceptance criteria**
-
-- [ ] GA4 property / web data stream exists for `elysetindall.com`
-- [ ] Measurement ID matches provisioned value (`G-XEE29C0RRE` unless rotated)
-- [ ] GSC ↔ GA4 association enabled (reports visible in both products)
-- [ ] Realtime (or DebugView) shows a hit from a public production URL
-
-**Note:** Do not put GA secrets in Key Vault — the Measurement ID is public-by-design. Rotation: [rotate-secrets.md](../runbooks/rotate-secrets.md) § Google Analytics 4.
-
-</details>
+| `SEARCH-P0-004` | Request indexing for money pages after Astro URLs stabilize | `planned` | — | GSC URL Inspection; `/`, `/materials`, `/shows`, key `/for/*` |
 
 <details>
 <summary><code>SEARCH-P0-004</code> — Request indexing</summary>
@@ -134,17 +100,9 @@ Keep a single source of cutover steps in the WordPress cutover runbook; mark bot
 - [ ] URL Inspection + “Request indexing” for `/`, `/materials`, `/shows`
 - [ ] Same for top `/for/*` landers (at least the homepage-linked / highest-intent ones)
 - [ ] No soft-404 / redirect-error surprises; fix with one-hop 301s if needed
+- [ ] (Optional) Bing Webmaster Tools sitemap submitted
 
-</details>
-
-<details>
-<summary><code>SEARCH-P0-005</code> — Preferred host</summary>
-
-**Acceptance criteria**
-
-- [ ] One canonical hostname in practice (prefer apex)
-- [ ] Other hostname 301s to preferred (or is not publicly serving duplicate content)
-- [ ] GSC Domain property covers both
+If `www.elysetindall.com` is bound later, add a one-hop www → apex redirect so GSC signals stay on the preferred host ([dns-and-domain.md](../runbooks/dns-and-domain.md)).
 
 </details>
 
@@ -158,7 +116,7 @@ Keep a single source of cutover steps in the WordPress cutover runbook; mark bot
 | `SEARCH-P1-002` | Load gtag on public pages; skip Studio / noindex | `done` | `SEARCH-P1-001` | `src/lib/analytics.ts`, `src/scripts/ga.ts`, `src/layouts/BaseLayout.astro` |
 | `SEARCH-P1-003` | Define conversion / engagement events | `planned` | `SEARCH-P1-002` | Inquiry forms, materials downloads, reel CTA |
 | `SEARCH-P1-004` | Privacy disclosure for Analytics | `done` | `SEARCH-P1-002` | `src/pages/privacy.astro` |
-| `SEARCH-P1-005` | Keep GA measurement-only (no ads/signals unless chosen) | `planned` | `SEARCH-P0-003` | GA Admin property settings |
+| `SEARCH-P1-005` | Keep GA measurement-only (no ads/signals unless chosen) | `planned` | — | GA Admin property settings |
 | `SEARCH-P1-006` | Optional Consent Mode v2 + minimal consent UI | `planned` | `SEARCH-P1-002` | Only if product/legal wants consent gate |
 
 <details>
@@ -298,9 +256,9 @@ Cross-link content enrichment: `DISC-P1-004` (alumniOf, YouTube `sameAs`, perfor
 
 | ID | Title | Status | Depends on | Primary refs |
 |----|-------|--------|------------|--------------|
-| `SEARCH-P3-001` | Monthly GSC + GA joint review | `planned` | `SEARCH-P0-002`, `SEARCH-P0-003`, `SEARCH-P1-003` | Extends `DISC-P3-006` |
+| `SEARCH-P3-001` | Monthly GSC + GA joint review | `planned` | `SEARCH-P1-003` (events make the loop more useful) | Extends `DISC-P3-006` |
 | `SEARCH-P3-002` | Feed review outcomes into casting/content backlog | `planned` | `SEARCH-P3-001` | [casting-discoverability.md](../casting-discoverability.md) Tier 2–3 |
-| `SEARCH-P3-003` | Re-check CWV / Experience in GSC after major visual changes | `planned` | `SEARCH-P0-002` | Hero/reel pages especially |
+| `SEARCH-P3-003` | Re-check CWV / Experience in GSC after major visual changes | `planned` | — | Hero/reel pages especially |
 
 Content that moves rankings (Person facts, `/for/*` landers, materials downloads, news cadence) remains owned by **`DISC-*`**. This phase is the **measurement feedback loop** into that backlog.
 
@@ -309,30 +267,27 @@ Content that moves rankings (Person facts, `/for/*` landers, materials downloads
 ## Dependency graph
 
 ```text
-SEARCH-P0-001 (apex / DISC-P0-001)
-    ├── SEARCH-P0-002 (GSC sitemap / DISC-P0-002)
-    │       ├── SEARCH-P0-004 (request indexing)
-    │       └── SEARCH-P3-001 (monthly review) ─┬─ needs SEARCH-P0-003
-    │                                            └─ needs SEARCH-P1-003 (events)
-    ├── SEARCH-P0-005 (preferred host)
-    └── SEARCH-P0-003 (GA4 link)
-            └── SEARCH-P1-005 (measurement-only admin)
+Phase 0 done: apex + GSC property + GA4 property (+ preferred host = apex)
 
-SEARCH-P1-001 (Measurement ID IaC) ── done
+SEARCH-P0-004 (request indexing) ── residual ops
+
+SEARCH-P1-001 (Measurement ID IaC) ── done (pending merge/apply/deploy)
     └── SEARCH-P1-002 (gtag) ── done
             ├── SEARCH-P1-003 (events)
             ├── SEARCH-P1-004 (privacy) ── done
+            ├── SEARCH-P1-005 (measurement-only admin)
             └── SEARCH-P1-006 (consent, optional)
 
-SEARCH-P2-* (SEO polish) — parallel after/with Phase 1; not blocked on apex
-SEARCH-P3-002 — consumes SEARCH-P3-001 → DISC content items
+SEARCH-P2-* (SEO polish) — parallel with Phase 1b
+SEARCH-P3-001 (monthly review) ← more useful after SEARCH-P1-003
+    └── SEARCH-P3-002 → DISC content items
 ```
 
 ---
 
 ## Monthly operating loop (`SEARCH-OPS`)
 
-Run after Phase 0 is green (roughly aligns with `DISC-P3-006`):
+GSC and GA4 properties are live; run this on a cadence (roughly aligns with `DISC-P3-006`):
 
 | Source | Look at | Action |
 |--------|---------|--------|
@@ -360,10 +315,10 @@ Run after Phase 0 is green (roughly aligns with `DISC-P3-006`):
 
 ## Suggested implementation order
 
-1. **Phase 0** — Apex + GSC verify/sitemap + GA4 link + indexing requests (`SEARCH-P0-*`, overlapping `DISC-P0-001`/`002`)
-2. **Phase 1a** — Measurement ID + loader + privacy — **done** (`SEARCH-P1-001`, `002`, `004`)
+1. **Phase 0** — Apex / GSC / GA4 registration — **done**; residual: request indexing (`SEARCH-P0-004`)
+2. **Phase 1a** — Measurement ID + loader + privacy — **done in repo** (`SEARCH-P1-001`, `002`, `004`); merge, Terraform-apply env var, redeploy
 3. **Phase 1b** — Conversion events + GA Admin measurement-only (`SEARCH-P1-003`, `005`)
-4. **Phase 2** — SEO polish PRs (`SEARCH-P2-*`), can parallelize with 1b / post-cutover
+4. **Phase 2** — SEO polish PRs (`SEARCH-P2-*`), can parallelize with 1b
 5. **Phase 3** — Monthly loop → feed `DISC-*` content backlog
 
 ---
@@ -372,8 +327,8 @@ Run after Phase 0 is green (roughly aligns with `DISC-P3-006`):
 
 | Doc | Relationship |
 |-----|----------------|
-| [casting-discoverability.md](../casting-discoverability.md) | Casting SEO backlog (`DISC-*`); shares P0 cutover/console items |
-| [wordpress-to-azure-cutover.md](../runbooks/wordpress-to-azure-cutover.md) §6 | Operator checklist for search consoles |
+| [casting-discoverability.md](../casting-discoverability.md) | Casting SEO backlog (`DISC-*`); cutover/console P0 items marked done there too |
+| [wordpress-to-azure-cutover.md](../runbooks/wordpress-to-azure-cutover.md) §6 | Historical cutover checklist; residual indexing in `SEARCH-P0-004` |
 | [dns-and-domain.md](../runbooks/dns-and-domain.md) | Apex / www |
 | [observability.md](../runbooks/observability.md) | App Insights vs GA4 |
 | [rotate-secrets.md](../runbooks/rotate-secrets.md) | GA Measurement ID rotation (public env, not KV) |
