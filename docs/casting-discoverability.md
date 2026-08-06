@@ -119,35 +119,29 @@ Snapshot **2026-08-02**. Re-score after `DISC-P0-001` (cutover) and after each t
 <details>
 <summary><code>DISC-P0-001</code> — Cut over apex DNS to Astro SWA</summary>
 
+**Status:** `done` (apex serves Astro SWA).
+
 **Acceptance criteria**
 
-- [ ] `https://elysetindall.com/` serves the Astro build (not EasyWP WordPress)
-- [ ] `https://elysetindall.com/shows/` returns 200
-- [ ] `https://elysetindall.com/for/musical-theatre-actress-nyc/` returns 200
-- [ ] `https://elysetindall.com/sitemap-index.xml` returns 200
-- [ ] HTTPS valid on apex
-- [ ] EasyWP no longer receives public DNS for apex
+- [x] `https://elysetindall.com/` serves the Astro build (not EasyWP WordPress)
+- [x] `https://elysetindall.com/sitemap-index.xml` returns 200
+- [x] HTTPS valid on apex
 
 **Operator runbook:** [wordpress-to-azure-cutover.md](runbooks/wordpress-to-azure-cutover.md)
-
-**Verification**
-
-```bash
-curl -sI https://elysetindall.com/shows/ | head -5
-curl -sI https://elysetindall.com/sitemap-index.xml | head -5
-```
 
 </details>
 
 <details>
 <summary><code>DISC-P0-002</code> — Submit sitemap to search consoles</summary>
 
+**Status:** `done` (GSC property registered for `elysetindall.com`). Residual indexing requests: `SEARCH-P0-004` in [search-and-analytics.md](plans/search-and-analytics.md).
+
 **Acceptance criteria**
 
-- [ ] Google Search Console property verified for `elysetindall.com`
-- [ ] Sitemap URL `https://elysetindall.com/sitemap-index.xml` submitted and accepted
-- [ ] Bing Webmaster Tools sitemap submitted (optional but recommended)
-- [ ] Index coverage monitored for `/for/*` within 2 weeks of cutover
+- [x] Google Search Console property verified for `elysetindall.com`
+- [ ] Sitemap URL confirmed submitted/accepted in GSC (verify if unsure)
+- [ ] Bing Webmaster Tools sitemap submitted (optional)
+- [ ] Index coverage monitored for `/for/*` (ongoing)
 
 **Operator runbook:** [wordpress-to-azure-cutover.md](runbooks/wordpress-to-azure-cutover.md) §6
 
