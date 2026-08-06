@@ -169,6 +169,7 @@ After apex serves Astro:
 - [ ] Request indexing for `/`, `/materials`, `/shows`, and key `/for/...` pages
 - [ ] Bing Webmaster Tools: submit the same sitemap (recommended)
 - [ ] Monitor index coverage for `/for/*` for ~2 weeks; fix any surprise 404s with new 301s
+- [ ] Link GA4 ↔ GSC and continue phased work per [search-and-analytics.md](../plans/search-and-analytics.md) (`SEARCH-P0-*`)
 
 ---
 

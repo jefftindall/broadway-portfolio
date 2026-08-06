@@ -6,6 +6,8 @@
 **Audience:** Agents, implementers, Elyse (content owner)  
 **Scope:** Public site discoverability for casting directors, representation, and answer engines — not voice-lesson marketing.
 
+For Google Search Console, GA4 measurement, and technical SEO that feeds those tools, see the phased plan [search-and-analytics.md](plans/search-and-analytics.md) (`SEARCH-*`). Overlapping cutover/console items keep their `DISC-P0-*` IDs here and are cross-linked.
+
 Use the **Action ID** column (`DISC-*`) to reference items in PRs, issues, Studio prompts, and commits.
 
 Example PR title: `DISC-P1-003: Add performer facts block to About`
@@ -111,7 +113,7 @@ Snapshot **2026-08-02**. Re-score after `DISC-P0-001` (cutover) and after each t
 | ID | Title | Status | Depends on | Primary files / runbooks |
 |----|-------|--------|------------|--------------------------|
 | `DISC-P0-001` | Cut over apex DNS to Astro SWA | `planned` | — | [wordpress-to-azure-cutover.md](runbooks/wordpress-to-azure-cutover.md), [dns-and-domain.md](runbooks/dns-and-domain.md), [deploy-and-rollback.md](runbooks/deploy-and-rollback.md) |
-| `DISC-P0-002` | Submit sitemap to Google Search Console & Bing Webmaster Tools | `planned` | `DISC-P0-001` | [wordpress-to-azure-cutover.md](runbooks/wordpress-to-azure-cutover.md) §6, `public/robots.txt`, generated `sitemap-index.xml` |
+| `DISC-P0-002` | Submit sitemap to Google Search Console & Bing Webmaster Tools | `planned` | `DISC-P0-001` | [wordpress-to-azure-cutover.md](runbooks/wordpress-to-azure-cutover.md) §6, `public/robots.txt`, generated `sitemap-index.xml`; measurement/console track: [search-and-analytics.md](plans/search-and-analytics.md) (`SEARCH-P0-002`) |
 | `DISC-P0-003` | Configure 301 redirects from legacy WordPress URLs | `done` | — | [wordpress-to-azure-cutover.md](runbooks/wordpress-to-azure-cutover.md) §2–3, `public/staticwebapp.config.json` |
 
 <details>
@@ -373,7 +375,7 @@ curl -sI https://elysetindall.com/sitemap-index.xml | head -5
 | `DISC-P3-003` | Gallery refresh: headshot tags + alt text | `planned` | Quarterly | `src/content/gallery/`, `src/pages/gallery.astro` |
 | `DISC-P3-004` | Maintain `public/llms.txt` with structured facts | `planned` | On credit/fact change | `public/llms.txt` |
 | `DISC-P3-005` | External profile consistency (IMDb, Backstage, etc.) | `planned` | Ongoing | Off-site profiles |
-| `DISC-P3-006` | Monthly Search Console query review → new/refined `/for/*` | `planned` | Monthly | Search Console, casting content |
+| `DISC-P3-006` | Monthly Search Console query review → new/refined `/for/*` | `planned` | Monthly | Search Console, casting content; joint GSC+GA loop in [search-and-analytics.md](plans/search-and-analytics.md) (`SEARCH-P3-001`) |
 | `DISC-P3-007` | Re-run rubric scoring (`DISC-SCORE`) | `planned` | Quarterly or post-tier | This document |
 
 <details>
