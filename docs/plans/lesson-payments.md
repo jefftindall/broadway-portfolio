@@ -4,6 +4,8 @@
 
 Private **voice** lessons are currently inquire-then-schedule: rates live on [`/lessons/book`](../../src/content/pages/lessons-book.md) ($60 / 30 min, $100 / 60 min; NYC in-person or Zoom), and payment is off-site / informal. The public site is Astro on Azure Static Web Apps; Studio publish already uses Azure Functions.
 
+**Studio north star:** `/studio` is the login-protected, personalized workspace for **running the teaching business** (not only content publish). Over time it should surface schedule, who is paid, communications, and financial reports. Those ops surfaces are **out of scope for the first payments rollout** but vendor and data choices below should not paint us into a corner—see [`studio-teaching-business.md`](./studio-teaching-business.md).
+
 **Goals for payments:**
 
 1. Accept many methods students already use (cards, Apple Pay, Google Pay, PayPal, Cash App, Venmo where possible).
@@ -12,8 +14,9 @@ Private **voice** lessons are currently inquire-then-schedule: rates live on [`/
 4. Support **full and partial refunds**.
 5. Produce a **monthly ledger** of gross, fees, net, and refunds for taxes and bookkeeping.
 6. Choose a vendor stack scored on complexity, cost, setup effort, and annual maintenance.
+7. Prefer a processor whose APIs/webhooks can later feed **Studio** (paid status, month rollups) without abandoning Phase 1 Payment Links.
 
-This plan compares options and recommends a phased path. It does **not** implement checkout yet.
+This plan compares options and recommends a phased path. It does **not** implement checkout or Studio finance UI yet.
 
 ---
 
@@ -27,6 +30,7 @@ This plan compares options and recommends a phased path. It does **not** impleme
 | Monthly ledger | One export (CSV/PDF) with date, student/memo, method, gross, fee, net, refunds |
 | Multi-method | Prefer **one merchant account** that surfaces many wallets vs. juggling apps |
 | Fit this site | Prefer no-code or thin Azure Function glue; keep `/lessons` voice-only brand; preserve inquiry flow until scheduling is deliberate |
+| Fit Studio later | Auth-only, personalized ops (schedule / paid / comms / reports); Stripe stays money system of record |
 
 **Assumption for cost math below:** ~8 paid hours/week ≈ 32 × $100 sessions/month ≈ **$3,200/month** gross (~$38k/year). Scale the fee columns linearly if volume differs.
 
@@ -288,6 +292,22 @@ Venmo Business–heavy mix lowers processing % but **increases** reconciliation 
 
 ---
 
+## Studio (later): payment ops inside teaching business
+
+When Studio grows beyond publish (see [`studio-teaching-business.md`](./studio-teaching-business.md)), payment-related UI should live there as **ops**, with Stripe remaining the **money** system of record:
+
+| In Studio (personalized, auth-only) | Stay in Stripe |
+|-------------------------------------|----------------|
+| Upcoming lessons + paid / unpaid | Disputes, payouts, tax forms |
+| Copy / share Payment Links; one-off amount links | Payment method toggles, Tap to Pay hardware |
+| Rate sync with live Stripe prices | Full Balance CSV / accounting sync |
+| Month summary (gross / fees / net / refunds) | Deep ledger and exports |
+| Optional offline Venmo/cash log tied to a lesson | — |
+
+Do not charge cards from unconfirmed voice prompts. Keep `/studio` and `/studio/*` authenticated and user-scoped.
+
+---
+
 ## Implementation backlog (when approved)
 
 1. Stripe account + test-mode Payment Links for both rates.
@@ -295,6 +315,7 @@ Venmo Business–heavy mix lowers processing % but **increases** reconciliation 
 3. `/lessons/book` (and optional home lessons module) Pay CTAs → live links.
 4. Operator runbook: day-of charge, refund, monthly CSV (new doc under `docs/runbooks/`).
 5. Journey test: pay CTA present; no acting-lesson copy regression (`LESSON-01`).
-6. Later: Checkout Session Function; later still: scheduler evaluation.
+6. Later: Checkout Session Function; webhook → paid status for Studio.
+7. Later: Studio schedule / paid / comms / reports per [`studio-teaching-business.md`](./studio-teaching-business.md).
 
 No infra/Terraform required for Phase 1 Payment Links (external SaaS). Phase 2 needs Function env secrets (`STRIPE_SECRET_KEY`, webhook signing secret) and Key Vault patterns consistent with existing Studio secrets.

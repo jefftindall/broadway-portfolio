@@ -1,6 +1,6 @@
 # Elyse Tindall Portfolio
 
-Astro portfolio for [elysetindall.com](https://elysetindall.com) with a Gemini-powered Studio for voice/text content updates, Azure Static Web Apps hosting, Terraform infrastructure, and Key Vault–backed secrets.
+Astro portfolio for [elysetindall.com](https://elysetindall.com) with an authenticated Studio (voice/text content publish today; teaching-business ops over time), Azure Static Web Apps hosting, Terraform infrastructure, and Key Vault–backed secrets.
 
 ## Features
 
@@ -42,6 +42,9 @@ func start
 - [Initial setup](docs/setup.md) — Terraform, secrets, GitHub App, OIDC, DNS cutover
 - [Casting discoverability backlog](docs/casting-discoverability.md) — assessment rubric, scores, and `DISC-*` action IDs for SEO/casting work
 - [Brand & UI style guide](docs/style-guide.md) — tokens, type, components (visual: `/style-guide`)
+- Plans:
+  - [Lesson payments](docs/plans/lesson-payments.md) — vendor comparison and phased checkout
+  - [Studio as teaching business](docs/plans/studio-teaching-business.md) — auth-only ops north star (schedule, paid, comms, reports)
 - Runbooks:
   - [GitHub App (Studio)](docs/runbooks/github-app.md)
   - [Rotate secrets](docs/runbooks/rotate-secrets.md)
