@@ -54,8 +54,23 @@ const {
         Atlanta to New York
       </p>
       <div class="fade-up-delay-2 mt-10 flex flex-wrap gap-4">
-        <CtaLink href="/materials/">Request materials</CtaLink>
-        <CtaLink href="#reel" variant="secondary">Watch reel</CtaLink>
+        <CtaLink
+          href="/materials/"
+          data-ga-event="select_content"
+          data-ga-content-type="materials"
+          data-ga-content-id="request-materials"
+        >
+          Request materials
+        </CtaLink>
+        <CtaLink
+          href="#reel"
+          variant="secondary"
+          data-ga-event="select_content"
+          data-ga-content-type="reel"
+          data-ga-content-id="watch-reel"
+        >
+          Watch reel
+        </CtaLink>
       </div>
     </div>
   </div>
