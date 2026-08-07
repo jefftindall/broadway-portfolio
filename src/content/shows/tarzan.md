@@ -2,7 +2,7 @@
 title: Tarzan
 year: 2022
 role: Featured Dancer
-venue: The Grand Theater, GA
+venue: The Grand Theater - Cartersville, GA
 synopsis: Featured dancer in Tarzan at The Grand Theater.
 featured: false
 order: 19

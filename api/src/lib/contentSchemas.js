@@ -12,6 +12,7 @@ export const showFrontmatterSchema = z.object({
   title: z.string().min(1),
   year: z.number(),
   role: z.string().optional(),
+  /** Resume/site location line: "[Theater Name] - [City], [ST]". Extra room/program detail belongs in body. */
   venue: z.string().optional(),
   synopsis: z.string().min(1),
   image: z.string().optional(),

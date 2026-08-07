@@ -23,12 +23,12 @@ export const studioCapabilities: StudioCapability[] = [
     tool: 'upsert_show',
     title: 'Show & credit updates',
     summary:
-      'Add or update a performance credit (role, venue, year, synopsis). Mark headline credits as featured so they can appear on the homepage.',
+      'Add or update a performance credit (role, venue, year, synopsis). Venue should be “[Theater] - [City], [ST]”; put room/program detail in the description. Mark headline credits as featured so they can appear on the homepage.',
     livePath: '/shows',
     examplePrompts: [
-      'I just booked Lily in Anastasia at the Strand, July 2025.',
-      'Update my Singin’ in the Rain credit — I was Ensemble at the Rialto in 2024.',
-      'Add a cabaret credit: Don’t Tell Mama, spring cabaret, featured true.',
+      'I just booked Lily in Anastasia at the Strand Theater in Marietta, July 2025.',
+      'Update Listen so the venue is Alliance Theatre - Atlanta, GA, and mention the Farideh & Al Azadi Gallery in the description.',
+      'Add a cabaret credit at Don’t Tell Mama in New York — spring cabaret, featured true.',
     ],
   },
   {

@@ -33,9 +33,17 @@ const tools = [
             title: { type: 'STRING' },
             year: { type: 'NUMBER' },
             role: { type: 'STRING' },
-            venue: { type: 'STRING' },
+            venue: {
+              type: 'STRING',
+              description:
+                'Theater/company and city only, formatted exactly as "[Theater Name] - [City], [ST]" (e.g. "Strand Theater - Marietta, GA" or "Don\'t Tell Mama - New York, NY"). Do not put room names, galleries, program tags, co-producers, or other detail here — put those in synopsis/body.',
+            },
             synopsis: { type: 'STRING' },
-            body: { type: 'STRING', description: 'Longer markdown body' },
+            body: {
+              type: 'STRING',
+              description:
+                'Longer markdown body. Use this for room/gallery names, program context (e.g. Camp Broadway, TYA/USA), co-producers, and other venue detail that does not belong in the short venue line.',
+            },
             featured: {
               type: 'BOOLEAN',
               description:
@@ -646,6 +654,7 @@ Brand facts (always honor these):
 
 Rules:
 - Prefer upsert_show for new bookings/credits; when updating an existing show, reuse its slug from the catalog. Set featured true only for headline credits — the homepage auto-shows the three most recent featured shows by year, then order (lower order = newer within a year).
+- For show venue, always use "[Theater Name] - [City], [ST]" (examples: "Alliance Theatre - Atlanta, GA", "Georgia State University - Atlanta, GA"). Highlight only the theater/company and city/state. Put room names, galleries, festival/program tags, co-producers, and similar context in synopsis or body — never cram them into venue.
 - Prefer create_news_post for press and announcements.
 - Prefer create_or_update_casting_page for SEO/casting keyword pages (write real helpful copy, not thin spam); reuse existing casting slugs when she means an existing page.
 - Prefer update_about when she asks to change her biography or performer background at ${siteUrl}/about.

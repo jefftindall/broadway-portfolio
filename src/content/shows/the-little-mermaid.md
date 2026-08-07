@@ -2,7 +2,7 @@
 title: "The Little Mermaid"
 year: 2026
 role: Ursula
-venue: Woodland High School, GA
+venue: Woodland High School - Cartersville, GA
 synopsis: Bold, pop-forward Ursula in Woodland High School’s Shuler Award-evaluated production.
 featured: true
 order: 4

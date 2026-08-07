@@ -2,7 +2,7 @@
 title: Annie
 year: 2015
 role: Molly
-venue: The Grand Theater, GA
+venue: The Grand Theater - Cartersville, GA
 synopsis: Molly in Annie at The Grand Theater — featured orphanage girl.
 featured: false
 order: 50

@@ -2,7 +2,7 @@
 title: Almost, Maine
 year: 2023
 role: Hope
-venue: Cartersville HS, GA
+venue: Cartersville High School - Cartersville, GA
 synopsis: Hope in Almost, Maine at Cartersville High School — whimsical romantic comedy.
 featured: false
 order: 22

@@ -11,10 +11,14 @@ const OUT_PATH = join(ROOT, 'public', 'downloads', 'elyse-tindall-resume.pdf');
 
 const showCategory = z.enum(['musical', 'play', 'cabaret', 'film']).default('musical');
 
+/** Expected venue shape on the resume: "[Theater Name] - [City], [ST]" */
+const VENUE_FORMAT = /^.+ - .+, [A-Z]{2}$/;
+
 const showFrontmatterSchema = z.object({
   title: z.string().min(1),
   year: z.number(),
   role: z.string().optional(),
+  /** Displayed as-is on the right column; keep "[Theater] - [City], [ST]". */
   venue: z.string().optional(),
   synopsis: z.string().min(1),
   category: showCategory,
@@ -93,6 +97,13 @@ function fitText(text, font, size, maxWidth) {
 
 const meta = resumeMetaSchema.parse(JSON.parse(readFileSync(META_PATH, 'utf8')));
 const shows = loadShows();
+for (const s of shows) {
+  if (s.venue && !VENUE_FORMAT.test(s.venue)) {
+    console.warn(
+      `Resume venue should be "[Theater] - [City], [ST]"; got "${s.venue}" (${s.title})`,
+    );
+  }
+}
 const theater = shows
   .filter((s) => s.category !== 'film')
   .sort(sortCredits);
