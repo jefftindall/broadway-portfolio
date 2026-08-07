@@ -57,7 +57,7 @@ test.describe('casting journeys', () => {
   test('CAST-03 casting landing CTA and contact', { tag: '@content' }, async ({ page }) => {
     await waitForOk(page, `/for/${castingSlug}`);
     await expect(page.getByRole('heading', { level: 1 })).toContainText(
-      castingTitle.replace(/\s*\|\s*Elyse Tindall$/i, ''),
+      castingTitle.replace(/\s*[|·]\s*Elyse Tindall$/i, '').trim(),
     );
 
     const cta = page.getByRole('link', { name: castingCta });

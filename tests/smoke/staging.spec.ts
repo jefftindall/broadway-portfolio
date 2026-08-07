@@ -79,7 +79,9 @@ test.describe('public staging smoke', () => {
 
   test('robots.txt and sitemap are served', async ({ request }) => {
     const robots = await waitForRequestOk(request, '/robots.txt');
-    expect(await robots.text()).toMatch(/Sitemap:/i);
+    const robotsText = await robots.text();
+    expect(robotsText).toMatch(/Sitemap:/i);
+    expect(robotsText).toMatch(/Disallow:\s*\/studio/i);
 
     const sitemap = await waitForRequestOk(request, '/sitemap-index.xml');
     expect(sitemap.headers()['content-type'] ?? '').toMatch(/xml/i);

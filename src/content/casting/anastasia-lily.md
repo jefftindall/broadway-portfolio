@@ -1,6 +1,6 @@
 ---
 keyword: Anastasia Lily
-title: Anastasia — Lily | Elyse Tindall
+title: Anastasia — Lily
 description: Elyse Tindall portrayed Lily in Anastasia at the Strand Theater (Marietta, July 2025).
 relatedSkills:
   - Musical comedy

@@ -1,6 +1,6 @@
 ---
 keyword: teenage musical theatre actress
-title: Young Musical Theatre Actress | Elyse Tindall
+title: Young Musical Theatre Actress
 description: Young musical theatre actress Elyse Tindall — feature credits, NYC training, and casting-ready professionalism.
 relatedSkills:
   - Musical theatre
