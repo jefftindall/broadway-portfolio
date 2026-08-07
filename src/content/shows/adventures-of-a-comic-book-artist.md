@@ -2,7 +2,7 @@
 title: Adventures of a Comic Book Artist
 year: 2019
 role: Wombat Woman
-venue: The Grand Theater, GA
+venue: The Grand Theater - Cartersville, GA
 synopsis: Wombat Woman in Adventures of a Comic Book Artist at The Grand Theater.
 featured: false
 order: 42

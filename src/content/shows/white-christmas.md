@@ -2,7 +2,7 @@
 title: White Christmas
 year: 2023
 role: Featured Ensemble
-venue: Act I Academy, GA
+venue: Act I Academy - Cartersville, GA
 synopsis: Featured ensemble in Irving Berlin’s White Christmas at Act I Academy.
 featured: false
 order: 16

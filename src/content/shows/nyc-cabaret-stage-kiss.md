@@ -2,7 +2,7 @@
 title: NYC Cabaret — Stage Kiss
 year: 2024
 role: Soloist
-venue: Ripley-Grier Studios, New York City
+venue: Ripley-Grier Studios - New York, NY
 synopsis: NYC cabaret debut with a Stage Kiss monologue at Ripley-Grier Studios.
 featured: false
 order: 0

@@ -78,6 +78,10 @@ When drafts omit `date`, invent slugs poorly, or leave empty `body`:
 2. Add a short `description` on the property (e.g. `ISO date YYYY-MM-DD`).
 3. Optionally mention defaults in the system instruction (e.g. news date defaults to today — the builder already fills today when omitted).
 
+### Show venue format
+
+`upsert_show.venue` (and resume PDF right column) should be **`[Theater Name] - [City], [ST]`** only — e.g. `Alliance Theatre - Atlanta, GA`. Room names, galleries, program tags, and co-producers belong in synopsis/body. Keep that rule in the tool property description and in `systemInstruction`.
+
 Builders in `buildContentChange()` still apply deterministic defaults (slugs, today’s date, photo path). Lessons and book-page tools **merge** into existing files via `gray-matter` so rates updates do not wipe philosophy copy (and vice versa). Before draft or publish, `validateContentFile()` checks frontmatter against the shared Zod schemas in [`api/src/lib/contentSchemas.js`](../../api/src/lib/contentSchemas.js) (same rules as `astro check`). Schemas must live under `api/` so SWA deploy includes them. Invalid drafts return a friendly 400 with `correlationId` — not a raw Zod dump. Prefer fixing Gemini output when the *copy* is wrong; prefer builder defaults when the value is mechanical.
 
 ## Model changes

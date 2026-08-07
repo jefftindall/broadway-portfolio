@@ -2,7 +2,7 @@
 title: Site 19
 year: 2026
 role: Background Actress / Music Collaborator
-venue: Atlanta Workshop Players & Juice Factory Media
+venue: Atlanta Workshop Players - Atlanta, GA
 synopsis: Background actress and music collaborator on Site 19, directed by Don Stallings.
 featured: true
 order: 1

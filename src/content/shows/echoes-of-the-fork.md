@@ -2,7 +2,7 @@
 title: Echoes of the Fork
 year: 2026
 role: Cast / Music Collaborator
-venue: Atlanta Workshop Players & Juice Factory Media
+venue: Atlanta Workshop Players - Atlanta, GA
 synopsis: Cast member and music collaborator on Echoes of the Fork, directed by Canedy Knowles — film festival circuit.
 featured: false
 order: 2

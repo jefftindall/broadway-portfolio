@@ -2,7 +2,7 @@
 title: Frozen JR
 year: 2022
 role: Elsa
-venue: The Grand Theater, GA
+venue: The Grand Theater - Cartersville, GA
 synopsis: Elsa in Frozen JR at The Grand Theater — vocal and emotional lead.
 featured: false
 order: 18
