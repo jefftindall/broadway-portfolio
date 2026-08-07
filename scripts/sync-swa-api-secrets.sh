@@ -100,7 +100,7 @@ BODY="$(
               CONTACT_NOTIFY_PHONE: $notify_phone,
               ACS_SMS_FROM: $acs_sms_from,
               CONTACT_SMS_ENABLED: $contact_sms_enabled,
-              TURNSTILE_SECRET_KEY: $turnstile_secret
+              TURNSTILE_SECRET: $turnstile_secret
             }
         )
       }

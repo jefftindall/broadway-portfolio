@@ -143,7 +143,12 @@ const fieldClass =
 
     {
       siteKey ? (
-        <div data-turnstile-mount class="min-h-[65px]"></div>
+        <div
+          class="cf-turnstile min-h-[65px]"
+          data-turnstile-mount
+          data-sitekey={siteKey}
+          data-action="turnstile-spin-v2"
+        ></div>
       ) : (
         <p class="text-sm text-muted" data-testid="turnstile-missing">
           Form verification isn’t configured for this build.
@@ -267,6 +272,7 @@ const fieldClass =
           widgetId = api.render(mount, {
             sitekey: siteKey,
             theme: 'dark',
+            action: 'turnstile-spin-v2',
           });
         }
       } catch {
