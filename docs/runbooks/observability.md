@@ -11,6 +11,30 @@ Terraform wires `APPLICATIONINSIGHTS_CONNECTION_STRING` into the Static Web App 
 
 Terraform also publishes GitHub Environment variable `GA_MEASUREMENT_ID` (default `G-XEE29C0RRE`) for Google Analytics 4. Deploy workflows map it to `PUBLIC_GA_MEASUREMENT_ID` at Astro build time. The browser SDK lives in `src/scripts/ga.ts` and is skipped for `noIndex` pages and `/studio`. Override with `-var='ga_measurement_id=G-…'` on apply, or set `PUBLIC_GA_MEASUREMENT_ID` locally (see `.env.example`). App Insights remains the source of truth for Studio/ops telemetry; GA4 is for public traffic and Search Console association. Phased GSC + GA work (including events and the monthly review loop) lives in [search-and-analytics.md](../plans/search-and-analytics.md).
 
+### GA4 public events (`SEARCH-P1-003`)
+
+Fired only when gtag is loaded (public pages). Studio never sends these.
+
+| Event | Trigger | Parameters |
+|-------|---------|------------|
+| `generate_lead` | Casting / lesson inquiry HTTP success | `form_type` = `casting` \| `lesson` |
+| `file_download` | Click on materials download link | `file_name`, `file_extension`, `link_url`, `link_text` |
+| `select_content` | Primary reel / materials CTA click | `content_type` = `reel` \| `materials`; `content_id` (stable id, e.g. `watch-reel`) |
+
+Helper: `trackGaEvent` in `src/lib/analytics.ts`. Declarative clicks use `data-ga-event` (+ related `data-ga-*` attrs) with a capture-phase listener in `src/scripts/ga.ts`.
+
+Verify after deploy: GA4 **Admin → DebugView** (or Realtime) while submitting an inquiry / clicking downloads on staging or prod with a debug cookie / browser extension as needed.
+
+### GA4 property settings (`SEARCH-P1-005`)
+
+Measurement-only checklist for the `elysetindall.com` property (`G-XEE29C0RRE`):
+
+1. Leave **Google signals** / ads personalization **off**.
+2. Set **data retention** (prefer 14 months) and **reporting time zone** to `America/New_York`.
+3. Do not enable advertising / remarketing features unless product explicitly flips this decision.
+
+Consent Mode / cookie banner: **not shipped** (`SEARCH-P1-006` = `wont_fix`). Privacy policy covers GA use without a consent gate.
+
 Optional: set `alert_email` when applying Terraform to create an action group + failed-request / availability metric alerts.
 
 ## Cost controls

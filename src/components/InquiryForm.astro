@@ -177,6 +177,8 @@ const fieldClass =
 </form>
 
 <script>
+  import { trackGaEvent } from '../lib/analytics';
+
   type TurnstileApi = {
     render: (el: HTMLElement, opts: Record<string, unknown>) => string;
     reset: (widgetId?: string) => void;
@@ -349,6 +351,10 @@ const fieldClass =
           'Thanks — your message was sent. Elyse will follow up using your preferred contact method.',
           'ok',
         );
+
+        trackGaEvent('generate_lead', {
+          form_type: type === 'lesson' ? 'lesson' : 'casting',
+        });
       } catch {
         setStatus(statusEl, 'Network error — please try again.', 'err');
         if (widgetId !== undefined && api) api.reset(widgetId);

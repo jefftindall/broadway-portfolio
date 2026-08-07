@@ -4,9 +4,25 @@ interface Props {
   variant?: 'primary' | 'secondary' | 'gel';
   class?: string;
   external?: boolean;
+  /** GA4 event name for click tracking (`select_content` / `file_download`). */
+  'data-ga-event'?: string;
+  'data-ga-content-type'?: string;
+  'data-ga-content-id'?: string;
+  'data-ga-file-name'?: string;
+  'data-ga-file-extension'?: string;
 }
 
-const { href, variant = 'primary', class: className = '', external = false } = Astro.props;
+const {
+  href,
+  variant = 'primary',
+  class: className = '',
+  external = false,
+  'data-ga-event': dataGaEvent,
+  'data-ga-content-type': dataGaContentType,
+  'data-ga-content-id': dataGaContentId,
+  'data-ga-file-name': dataGaFileName,
+  'data-ga-file-extension': dataGaFileExtension,
+} = Astro.props;
 
 const variants = {
   primary:
@@ -26,6 +42,11 @@ const variants = {
   ]}
   target={external ? '_blank' : undefined}
   rel={external ? 'noopener noreferrer' : undefined}
+  data-ga-event={dataGaEvent}
+  data-ga-content-type={dataGaContentType}
+  data-ga-content-id={dataGaContentId}
+  data-ga-file-name={dataGaFileName}
+  data-ga-file-extension={dataGaFileExtension}
 >
   <slot />
 </a>

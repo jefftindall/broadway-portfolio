@@ -1,7 +1,7 @@
 # Plan: Google Search Console & Analytics
 
 **Artifact ID:** `ELYSE-SEARCH-001`  
-**Version:** 1.1  
+**Version:** 1.2  
 **Last updated:** 2026-08-06  
 **Audience:** Agents, implementers, operators  
 **Scope:** Google Search Console (GSC), Google Analytics 4 (GA4), and related technical SEO that makes those tools useful — not casting content strategy itself.
@@ -53,14 +53,16 @@ GA must load only on **public** pages (never `/studio`). App Insights remains th
 | Legacy WordPress 301s | `public/staticwebapp.config.json` (+ root mirror) — `DISC-P0-003` done |
 | Studio help `noIndex` | `src/pages/studio/help.astro` |
 
-### Shipped under this plan (Phase 1 partial)
+### Shipped under this plan (Phase 1)
 
 | Capability | Where | Action ID |
 |------------|--------|-----------|
 | GA4 Measurement ID as code (default `G-XEE29C0RRE`) | Terraform `ga_measurement_id` → GitHub `GA_MEASUREMENT_ID` → `PUBLIC_GA_MEASUREMENT_ID` | `SEARCH-P1-001` |
 | Client gtag loader | `src/scripts/ga.ts`, `src/lib/analytics.ts`, `BaseLayout` | `SEARCH-P1-002` |
 | Skip GA on Studio / `noindex` | Path + robots meta checks; `/studio` sets `noIndex` | `SEARCH-P1-002`, `SEARCH-P2-001` |
+| Conversion / engagement events | `trackGaEvent` + inquiry / downloads / CTAs | `SEARCH-P1-003` |
 | Privacy disclosure for GA | `src/pages/privacy.astro` | `SEARCH-P1-004` |
+| Consent Mode banner | Skipped — measurement-only, no consent UI | `SEARCH-P1-006` (`wont_fix`) |
 
 ### Live ops (already done)
 
@@ -75,8 +77,9 @@ GA must load only on **public** pages (never `/studio`). App Insights remains th
 
 | Gap | Notes |
 |-----|--------|
-| Embed Measurement ID via Astro build (IaC → client) | Phase 1a in this PR — replaces any legacy/tag-manager-only injection |
-| Conversion events, SEO polish, monthly loop | Phases 1b–3 below |
+| GA Admin measurement-only settings | Operator checklist (`SEARCH-P1-005`) — not code |
+| Conversion/event DebugView verification | Confirm once in GA4 after deploy (`SEARCH-P1-003` acceptance) |
+| SEO polish, monthly loop | Phases 2–3 below |
 | Request indexing for key Astro URLs | Remaining Phase 0 item (`SEARCH-P0-004`) |
 | Optional Bing Webmaster sitemap | Nice-to-have; not blocking |
 
@@ -114,10 +117,10 @@ If `www.elysetindall.com` is bound later, add a one-hop www → apex redirect so
 |----|-------|--------|------------|---------------|
 | `SEARCH-P1-001` | Provision Measurement ID as Terraform → GitHub env → Astro build | `done` | — | `infra/modules/portfolio/{variables,github_actions}.tf`, env stacks, workflows, `.env.example` |
 | `SEARCH-P1-002` | Load gtag on public pages; skip Studio / noindex | `done` | `SEARCH-P1-001` | `src/lib/analytics.ts`, `src/scripts/ga.ts`, `src/layouts/BaseLayout.astro` |
-| `SEARCH-P1-003` | Define conversion / engagement events | `planned` | `SEARCH-P1-002` | Inquiry forms, materials downloads, reel CTA |
+| `SEARCH-P1-003` | Define conversion / engagement events | `done` | `SEARCH-P1-002` | Inquiry forms, materials downloads, reel/materials CTAs |
 | `SEARCH-P1-004` | Privacy disclosure for Analytics | `done` | `SEARCH-P1-002` | `src/pages/privacy.astro` |
-| `SEARCH-P1-005` | Keep GA measurement-only (no ads/signals unless chosen) | `planned` | — | GA Admin property settings |
-| `SEARCH-P1-006` | Optional Consent Mode v2 + minimal consent UI | `planned` | `SEARCH-P1-002` | Only if product/legal wants consent gate |
+| `SEARCH-P1-005` | Keep GA measurement-only (no ads/signals unless chosen) | `planned` | — | GA Admin property settings (ops checklist below) |
+| `SEARCH-P1-006` | Optional Consent Mode v2 + minimal consent UI | `wont_fix` | `SEARCH-P1-002` | Staying measurement-only without a consent banner |
 
 <details>
 <summary><code>SEARCH-P1-001</code> — Measurement ID as code</summary>
@@ -153,16 +156,22 @@ If `www.elysetindall.com` is bound later, add a one-hop www → apex redirect so
 
 Keep the event set small and stable:
 
-| Event | When |
-|-------|------|
-| `generate_lead` | Casting / lesson inquiry submit **success** |
-| `file_download` | Resume PDF (and later headshot) download |
-| `select_content` | Primary reel play / materials CTA (as applicable) |
+| Event | When | Parameters |
+|-------|------|------------|
+| `generate_lead` | Casting / lesson inquiry submit **success** | `form_type`: `casting` \| `lesson` |
+| `file_download` | Resume PDF / headshot download click | `file_name`, `file_extension`, `link_url`, `link_text` |
+| `select_content` | Primary reel / materials CTA click | `content_type`: `reel` \| `materials`; `content_id` (e.g. `watch-reel`, `request-materials`) |
 
-- [ ] Events fire once per user action (no double-count on remount)
-- [ ] Documented parameter names (e.g. `form_type`, `file_name`) in this plan or observability
-- [ ] Verified in GA4 DebugView
-- [ ] Still **no** Studio events in GA
+- [x] Events fire once per user action (form bind guard; click = one event)
+- [x] Documented parameter names in this plan and [observability.md](../runbooks/observability.md)
+- [ ] Verified in GA4 DebugView (post-deploy operator check)
+- [x] Still **no** Studio events in GA (`shouldLoadGa` / noindex skip unchanged)
+
+**Implementation**
+
+- `trackGaEvent` in `src/lib/analytics.ts`
+- Inquiry success → `generate_lead` from `InquiryForm.astro`
+- Downloads / CTAs → `data-ga-event` attributes + delegated click handler in `src/scripts/ga.ts`
 
 </details>
 
@@ -184,21 +193,29 @@ Keep the event set small and stable:
 
 - [ ] Google signals / ads personalization features left off unless explicitly enabled later
 - [ ] Data retention and timezone set appropriately for the property
-- [ ] Noted in ops checklist when `SEARCH-P0-003` is completed
+- [x] Noted in ops checklist ([observability.md](../runbooks/observability.md) § GA4 property settings)
+
+**Operator checklist** (GA4 Admin for `elysetindall.com` / `G-XEE29C0RRE`)
+
+1. **Data collection** → Google signals: leave **off** (no ads personalization).
+2. **Data retention**: event data retention at least **14 months** (or team preference); reset on new activity as desired.
+3. **Property settings** → Reporting time zone: **America/New_York** (business locale).
+4. **Data streams** → Web stream → Enhanced measurement: keep useful defaults; do not enable ads features.
+5. Mark this item `done` in the Phase 1 table when verified.
 
 </details>
 
 <details>
 <summary><code>SEARCH-P1-006</code> — Consent Mode (optional)</summary>
 
-**Acceptance criteria** (only if we choose to ship consent UI)
+**Status:** `wont_fix` — staying measurement-only without a consent banner. Privacy copy already states Analytics use and no ad personalization intent. Reopen only if product/legal requires a consent gate.
+
+**Acceptance criteria** (only if we choose to ship consent UI later)
 
 - [ ] Default `analytics_storage` denied until accept (Consent Mode v2)
 - [ ] Accept enables GA; reject keeps it denied
 - [ ] Privacy page updated for the consent mechanism
 - [ ] No consent banner on `/studio`
-
-If we stay measurement-only without a banner, mark this `wont_fix` and keep Privacy accurate.
 
 </details>
 
@@ -271,14 +288,14 @@ Phase 0 done: apex + GSC property + GA4 property (+ preferred host = apex)
 
 SEARCH-P0-004 (request indexing) ── residual ops
 
-SEARCH-P1-001 (Measurement ID IaC) ── done (pending merge/apply/deploy)
+SEARCH-P1-001 (Measurement ID IaC) ── done (pending apply/deploy if env var missing)
     └── SEARCH-P1-002 (gtag) ── done
-            ├── SEARCH-P1-003 (events)
+            ├── SEARCH-P1-003 (events) ── done (DebugView verify post-deploy)
             ├── SEARCH-P1-004 (privacy) ── done
-            ├── SEARCH-P1-005 (measurement-only admin)
-            └── SEARCH-P1-006 (consent, optional)
+            ├── SEARCH-P1-005 (measurement-only admin) ── planned (ops)
+            └── SEARCH-P1-006 (consent) ── wont_fix
 
-SEARCH-P2-* (SEO polish) — parallel with Phase 1b
+SEARCH-P2-* (SEO polish) — parallel with remaining Phase 1 ops
 SEARCH-P3-001 (monthly review) ← more useful after SEARCH-P1-003
     └── SEARCH-P3-002 → DISC content items
 ```
@@ -316,9 +333,9 @@ GSC and GA4 properties are live; run this on a cadence (roughly aligns with `DIS
 ## Suggested implementation order
 
 1. **Phase 0** — Apex / GSC / GA4 registration — **done**; residual: request indexing (`SEARCH-P0-004`)
-2. **Phase 1a** — Measurement ID + loader + privacy — **done in repo** (`SEARCH-P1-001`, `002`, `004`); merge, Terraform-apply env var, redeploy
-3. **Phase 1b** — Conversion events + GA Admin measurement-only (`SEARCH-P1-003`, `005`)
-4. **Phase 2** — SEO polish PRs (`SEARCH-P2-*`), can parallelize with 1b
+2. **Phase 1a** — Measurement ID + loader + privacy — **done** (`SEARCH-P1-001`, `002`, `004`)
+3. **Phase 1b** — Conversion events — **done in repo** (`SEARCH-P1-003`); Consent Mode — **wont_fix** (`SEARCH-P1-006`); residual ops: measurement-only GA Admin (`SEARCH-P1-005`) + DebugView verify
+4. **Phase 2** — SEO polish PRs (`SEARCH-P2-*`)
 5. **Phase 3** — Monthly loop → feed `DISC-*` content backlog
 
 ---
