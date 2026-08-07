@@ -40,7 +40,7 @@ Created by **bootstrap** Terraform (`infra/bootstrap/shared_kv.tf`). One Astro b
 | `SITE-CONTACT-PHONE` | `SITE_CONTACT_PHONE` | Resume PDF + SMS notify-to (not shown on site) |
 | `SITE-DATE-OF-BIRTH` | `SITE_DATE_OF_BIRTH` | `YYYY-MM-DD`; age only |
 | `TURNSTILE-SITE-KEY` | `PUBLIC_TURNSTILE_SITE_KEY` | Cloudflare widget site key (public) |
-| `TURNSTILE-SECRET-KEY` | `TURNSTILE_SECRET_KEY` | Synced into Functions (both envs) |
+| `TURNSTILE-SECRET-KEY` | `TURNSTILE_SECRET` | Synced into Functions (both envs) |
 | `ACS-CONNECTION-STRING` | `ACS_CONNECTION_STRING` | Terraform-managed from `acs-elyse-shared` |
 | `ACS-EMAIL-SENDER` | `ACS_EMAIL_SENDER` | Terraform-managed Azure-managed MailFrom |
 | `ACS-SMS-FROM` | `ACS_SMS_FROM` | Manual E.164; leave `REPLACE_ME` until toll-free is verified |

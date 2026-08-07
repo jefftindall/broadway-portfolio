@@ -189,7 +189,7 @@ resource "azurerm_static_web_app" "main" {
     CONTACT_NOTIFY_PHONE  = data.azurerm_key_vault_secret.site_contact_phone.value
     CONTACT_SMS_ENABLED   = local.contact_sms_enabled
     ACS_SMS_FROM          = data.azurerm_key_vault_secret.acs_sms_from.value
-    TURNSTILE_SECRET_KEY  = data.azurerm_key_vault_secret.turnstile_secret_key.value
+    TURNSTILE_SECRET      = data.azurerm_key_vault_secret.turnstile_secret_key.value
   }
 
   depends_on = [
