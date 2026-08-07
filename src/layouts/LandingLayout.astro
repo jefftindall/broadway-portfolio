@@ -22,6 +22,9 @@ const {
   canonicalPath,
 } = Astro.props;
 
+/** BaseLayout appends ` · ${site.name}`; strip legacy `| Name` from frontmatter. */
+const displayTitle = title.replace(new RegExp(`\\s*\\|\\s*${site.name}$`), '').trim();
+
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Person',
@@ -34,11 +37,11 @@ const jsonLd = {
 };
 ---
 
-<BaseLayout title={title} description={description} canonicalPath={canonicalPath} jsonLd={jsonLd}>
+<BaseLayout title={displayTitle} description={description} canonicalPath={canonicalPath} jsonLd={jsonLd}>
   <article class="mx-auto max-w-3xl px-6 py-16 md:py-24">
     <p class="fade-up text-sm uppercase tracking-[0.2em] text-gel">{keyword}</p>
     <h1 class="fade-up-delay mt-4 font-display text-4xl leading-tight text-spotlight md:text-5xl">
-      {title.replace(` | ${site.name}`, '')}
+      {displayTitle}
     </h1>
     <div class="fade-up-delay-2 prose-site mt-8">
       <slot />

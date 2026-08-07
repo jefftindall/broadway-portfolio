@@ -103,7 +103,7 @@ Use sparingly for presence:
 - Hero: `site.heroImage` (portrait, object-top / upper crop)
 - Reel poster + `site.reelUrl` for performance embeds
 - Lessons atmosphere: `/images/lessons/lessons-banner.jpg`
-- OG default: `/images/og-default.jpg`
+- OG default: `/images/og-default.jpg` (1200×630 JPEG; width/height/alt emitted when used as the default path)
 - Always set meaningful `alt` (decorative images: empty `alt` + `aria-hidden` when appropriate)
 
 ## Accessibility
@@ -116,10 +116,14 @@ Use sparingly for presence:
 
 ## SEO / schema notes
 
-- Default `Person` in `Seo.astro` (jobTitle, knowsAbout, sameAs Instagram)
-- Home: `Person` + `WebSite` (+ `VideoObject` for reel)
-- Lessons: `EducationalOrganization` + `Offer`s
-- Shows: `VideoObject` for cabaret reel
+- **Titles:** Pass bare page titles; `BaseLayout` appends ` · Elyse Tindall` (do not embed `| Elyse Tindall` in casting frontmatter)
+- Default `Person` in `Seo.astro` (jobTitle, knowsAbout, sameAs Instagram) — prepended when custom `jsonLd` has no top-level / `@graph` Person
+- Home: `Person` + `WebSite` (+ `VideoObject` for reel) via `@graph` (already includes Person — no duplicate default)
+- Lessons: `EducationalOrganization` + `Offer`s (+ default Person prepended)
+- Shows: `VideoObject` for cabaret reel (+ default Person prepended)
+- Prefer slashless URLs in canonicals and JSON-LD (`/materials`, not `/materials/`)
+- Studio: `noIndex`, sitemap filter, `Disallow: /studio` in robots.txt
+- See [search-and-analytics.md](plans/search-and-analytics.md) (`SEARCH-*`) for the measurement + technical SEO backlog
 
 ## Do / don’t
 

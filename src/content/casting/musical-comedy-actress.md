@@ -1,6 +1,6 @@
 ---
 keyword: musical comedy actress
-title: Musical Comedy Actress | Elyse Tindall
+title: Musical Comedy Actress
 description: Musical comedy actress Elyse Tindall — comic timing, vocal storytelling, and feature credits including Anastasia.
 relatedSkills:
   - Musical comedy

@@ -1,6 +1,6 @@
 ---
 keyword: Broadway Artists Alliance actress
-title: Broadway Artists Alliance Alumna | Elyse Tindall
+title: Broadway Artists Alliance Alumna
 description: Broadway Artists Alliance alumna Elyse Tindall — NYC intensive training and professional musical theatre credits.
 relatedSkills:
   - Musical theatre training

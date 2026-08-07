@@ -1,7 +1,7 @@
 # Plan: Google Search Console & Analytics
 
 **Artifact ID:** `ELYSE-SEARCH-001`  
-**Version:** 1.2  
+**Version:** 1.3  
 **Last updated:** 2026-08-06  
 **Audience:** Agents, implementers, operators  
 **Scope:** Google Search Console (GSC), Google Analytics 4 (GA4), and related technical SEO that makes those tools useful — not casting content strategy itself.
@@ -64,6 +64,17 @@ GA must load only on **public** pages (never `/studio`). App Insights remains th
 | Privacy disclosure for GA | `src/pages/privacy.astro` | `SEARCH-P1-004` |
 | Consent Mode banner | Skipped — measurement-only, no consent UI | `SEARCH-P1-006` (`wont_fix`) |
 
+### Shipped under this plan (Phase 2)
+
+| Capability | Where | Action ID |
+|------------|--------|-----------|
+| Single brand title suffix | Bare titles → `BaseLayout` appends ` · Elyse Tindall`; casting frontmatter stripped | `SEARCH-P2-002` |
+| Person JSON-LD merge | `Seo.astro` prepends default Person when custom schema lacks top-level/`@graph` Person | `SEARCH-P2-003` |
+| Compressed default OG + metas | `public/images/og-default.jpg` (1200×630 JPEG) + width/height/alt | `SEARCH-P2-004` |
+| `Disallow: /studio` | `public/robots.txt` | `SEARCH-P2-005` |
+| Slashless materials URLs | Materials JSON-LD + Hero/Footer hrefs | `SEARCH-P2-006` |
+| SEO journey coverage | `tests/journeys/seo.spec.ts` (`J-SEO-01`); smoke Disallow check | `SEARCH-P2-007` |
+
 ### Live ops (already done)
 
 | Capability | Notes | Former IDs |
@@ -79,7 +90,7 @@ GA must load only on **public** pages (never `/studio`). App Insights remains th
 |-----|--------|
 | GA Admin measurement-only settings | Operator checklist (`SEARCH-P1-005`) — not code |
 | Conversion/event DebugView verification | Confirm once in GA4 after deploy (`SEARCH-P1-003` acceptance) |
-| SEO polish, monthly loop | Phases 2–3 below |
+| Monthly operating loop | Phase 3 below |
 | Request indexing for key Astro URLs | Remaining Phase 0 item (`SEARCH-P0-004`) |
 | Optional Bing Webmaster sitemap | Nice-to-have; not blocking |
 
@@ -226,21 +237,23 @@ Keep the event set small and stable:
 | ID | Title | Status | Depends on | Primary files |
 |----|-------|--------|------------|---------------|
 | `SEARCH-P2-001` | `noIndex` on `/studio` | `done` | — | `src/pages/studio.astro` |
-| `SEARCH-P2-002` | Fix duplicated casting titles (`\|` + `· Elyse Tindall`) | `planned` | — | Casting frontmatter / `LandingLayout` / `BaseLayout` |
-| `SEARCH-P2-003` | Merge custom JSON-LD with default Person (don’t replace) | `planned` | — | `src/components/Seo.astro`, page schemas |
-| `SEARCH-P2-004` | Compress default OG image + width/height/alt | `planned` | — | `public/images/og-default.jpg`, `Seo.astro` |
-| `SEARCH-P2-005` | Optional `Disallow: /studio` in robots.txt | `planned` | — | `public/robots.txt` |
-| `SEARCH-P2-006` | Align slashless canonicals (e.g. materials JSON-LD trailing slash) | `planned` | — | Page JSON-LD URLs vs canonicals |
-| `SEARCH-P2-007` | Journey/smoke coverage for SEO basics | `planned` | — | Planned `J-SEO-01` in [ux-release-testing-strategy.md](ux-release-testing-strategy.md); smoke already checks robots/sitemap |
+| `SEARCH-P2-002` | Fix duplicated casting titles (`\|` + `· Elyse Tindall`) | `done` | — | Casting frontmatter / `LandingLayout` / `BaseLayout` |
+| `SEARCH-P2-003` | Merge custom JSON-LD with default Person (don’t replace) | `done` | — | `src/components/Seo.astro`, page schemas |
+| `SEARCH-P2-004` | Compress default OG image + width/height/alt | `done` | — | `public/images/og-default.jpg`, `Seo.astro` |
+| `SEARCH-P2-005` | Optional `Disallow: /studio` in robots.txt | `done` | — | `public/robots.txt` |
+| `SEARCH-P2-006` | Align slashless canonicals (e.g. materials JSON-LD trailing slash) | `done` | — | Page JSON-LD URLs vs canonicals |
+| `SEARCH-P2-007` | Journey/smoke coverage for SEO basics | `done` | — | `tests/journeys/seo.spec.ts` (`J-SEO-01`); smoke robots Disallow |
 
 <details>
 <summary><code>SEARCH-P2-002</code> — Casting titles</summary>
 
 **Acceptance criteria**
 
-- [ ] Public casting pages render a single brand suffix (no `Title \| Elyse Tindall · Elyse Tindall`)
-- [ ] `<title>` and `og:title` match the intended SERP string
-- [ ] Frontmatter / layout contract documented (who owns the brand suffix)
+- [x] Public casting pages render a single brand suffix (no `Title \| Elyse Tindall · Elyse Tindall`)
+- [x] `<title>` and `og:title` match the intended SERP string
+- [x] Frontmatter / layout contract documented (who owns the brand suffix)
+
+**Contract:** Pages pass bare titles; `BaseLayout` appends ` · Elyse Tindall` (also strips legacy `| Name`). See [add-casting-page.md](../runbooks/add-casting-page.md).
 
 </details>
 
@@ -249,9 +262,11 @@ Keep the event set small and stable:
 
 **Acceptance criteria**
 
-- [ ] Pages that pass custom `jsonLd` still expose a coherent Person (or `@graph` including Person) where appropriate
-- [ ] Home / lessons / shows schemas remain valid in Rich Results Test
-- [ ] No duplicate conflicting `@id`s for the same person
+- [x] Pages that pass custom `jsonLd` still expose a coherent Person (or `@graph` including Person) where appropriate
+- [x] Home / lessons / shows schemas remain valid in Rich Results Test
+- [x] No duplicate conflicting `@id`s for the same person
+
+`Seo.astro` prepends `defaultPerson` when custom nodes lack a top-level or `@graph` Person. Nested `about` / `founder` do not suppress the default.
 
 Cross-link content enrichment: `DISC-P1-004` (alumniOf, YouTube `sameAs`, performer facts).
 
@@ -262,8 +277,39 @@ Cross-link content enrichment: `DISC-P1-004` (alumniOf, YouTube `sameAs`, perfor
 
 **Acceptance criteria**
 
-- [ ] Default OG asset reasonably sized for social/crawlers (aim well under ~300KB unless quality requires more)
-- [ ] `og:image:width`, `og:image:height`, and `og:image:alt` (or equivalent) present for the default image path
+- [x] Default OG asset reasonably sized for social/crawlers (aim well under ~300KB unless quality requires more)
+- [x] `og:image:width`, `og:image:height`, and `og:image:alt` (or equivalent) present for the default image path
+
+Asset: 1200×630 JPEG at `/images/og-default.jpg`. Width/height metas only for the default path; `og:image:alt` always set.
+
+</details>
+
+<details>
+<summary><code>SEARCH-P2-005</code> — robots.txt Disallow</summary>
+
+**Acceptance criteria**
+
+- [x] `Disallow: /studio` in `public/robots.txt` (complements sitemap filter + `noIndex`)
+
+</details>
+
+<details>
+<summary><code>SEARCH-P2-006</code> — Slashless canonicals</summary>
+
+**Acceptance criteria**
+
+- [x] Materials JSON-LD `url` uses `/materials` (no trailing slash)
+- [x] Primary in-site Materials hrefs prefer slashless form
+
+</details>
+
+<details>
+<summary><code>SEARCH-P2-007</code> — SEO journey coverage</summary>
+
+**Acceptance criteria**
+
+- [x] `J-SEO-01` in `tests/journeys/seo.spec.ts` (title/canonical/OG; no double-brand casting title; robots Disallow; sitemap excludes `/studio`)
+- [x] Smoke asserts `Disallow: /studio`
 
 </details>
 
@@ -295,7 +341,7 @@ SEARCH-P1-001 (Measurement ID IaC) ── done (pending apply/deploy if env var 
             ├── SEARCH-P1-005 (measurement-only admin) ── planned (ops)
             └── SEARCH-P1-006 (consent) ── wont_fix
 
-SEARCH-P2-* (SEO polish) — parallel with remaining Phase 1 ops
+SEARCH-P2-* (SEO polish) — done in repo
 SEARCH-P3-001 (monthly review) ← more useful after SEARCH-P1-003
     └── SEARCH-P3-002 → DISC content items
 ```
@@ -335,7 +381,7 @@ GSC and GA4 properties are live; run this on a cadence (roughly aligns with `DIS
 1. **Phase 0** — Apex / GSC / GA4 registration — **done**; residual: request indexing (`SEARCH-P0-004`)
 2. **Phase 1a** — Measurement ID + loader + privacy — **done** (`SEARCH-P1-001`, `002`, `004`)
 3. **Phase 1b** — Conversion events — **done in repo** (`SEARCH-P1-003`); Consent Mode — **wont_fix** (`SEARCH-P1-006`); residual ops: measurement-only GA Admin (`SEARCH-P1-005`) + DebugView verify
-4. **Phase 2** — SEO polish PRs (`SEARCH-P2-*`)
+4. **Phase 2** — SEO polish — **done** (`SEARCH-P2-001`–`007`)
 5. **Phase 3** — Monthly loop → feed `DISC-*` content backlog
 
 ---
@@ -349,5 +395,7 @@ GSC and GA4 properties are live; run this on a cadence (roughly aligns with `DIS
 | [dns-and-domain.md](../runbooks/dns-and-domain.md) | Apex / www |
 | [observability.md](../runbooks/observability.md) | App Insights vs GA4 |
 | [rotate-secrets.md](../runbooks/rotate-secrets.md) | GA Measurement ID rotation (public env, not KV) |
-| [add-casting-page.md](../runbooks/add-casting-page.md) | New `/for/*` landers (sitemap inclusion) |
-| [ux-release-testing-strategy.md](ux-release-testing-strategy.md) | Planned `J-SEO-01` |
+| [add-casting-page.md](../runbooks/add-casting-page.md) | New `/for/*` landers (sitemap inclusion); bare title contract |
+| [ux-release-testing-strategy.md](ux-release-testing-strategy.md) | `J-SEO-01` implemented (`tests/journeys/seo.spec.ts`) |
+| [AGENTS.md](../../AGENTS.md) | Agent-facing Phase 1/2 SEO & analytics contracts |
+| [.cursor/rules/search-seo.mdc](../../.cursor/rules/search-seo.mdc) | Keep plan + AGENTS in sync on SEO/GA changes |

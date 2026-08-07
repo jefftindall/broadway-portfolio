@@ -87,7 +87,7 @@ Keep a thin **route health** check (current H1 smokes) only as a fast canary for
 | **J-FOOT-01** | Footer CTAs on a page that shows the band (e.g. `/shows`) | Materials / Contact / Lessons + mailto |
 | **J-ABOUT-01** | About → Lessons / Book CTAs | Teaching cross-links |
 | **J-A11Y-01** | Skip link focuses `#main`; primary `nav` landmark; filter tablists | Smoke-level a11y, not full axe suite initially |
-| **J-SEO-01** | Sample pages have title/canonical/OG; sitemap excludes `/studio` | Lightweight `request` + DOM checks |
+| **J-SEO-01** | Sample pages have title/canonical/OG; sitemap excludes `/studio` | **Implemented** in `tests/journeys/seo.spec.ts` (lightweight DOM + `request`); smoke also asserts `Disallow: /studio` |
 
 ### P2 — Studio / authenticated (L4)
 

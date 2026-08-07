@@ -1,0 +1,50 @@
+---
+description: Keep Search/GA Phase 1–2 contracts current when SEO or analytics change
+globs:
+  - src/components/Seo.astro
+  - src/layouts/BaseLayout.astro
+  - src/layouts/LandingLayout.astro
+  - src/lib/analytics.ts
+  - src/scripts/ga.ts
+  - public/robots.txt
+  - public/images/og-default.jpg
+  - tests/journeys/seo.spec.ts
+  - tests/smoke/staging.spec.ts
+  - docs/plans/search-and-analytics.md
+  - src/content/casting/**
+---
+
+# Search Console & Analytics (Phase 1 + Phase 2)
+
+Phased work and action IDs live in [docs/plans/search-and-analytics.md](docs/plans/search-and-analytics.md) (`SEARCH-*`). Casting content strategy stays in `DISC-*` / [casting-discoverability.md](docs/casting-discoverability.md).
+
+## Phase 1 — GA4 (measurement)
+
+- Load GA only on **public** pages. Skip `/studio` and any page with `noIndex` (`shouldLoadGa` in `src/lib/analytics.ts`).
+- App Insights remains Studio/ops telemetry — do not send Studio diagnostics to GA.
+- Keep the event set small: `generate_lead`, `file_download`, `select_content` via `trackGaEvent` / `data-ga-*`.
+- Consent Mode banner is `SEARCH-P1-006` `wont_fix` unless product/legal reopens it.
+- Ops residuals (not code): `SEARCH-P1-005` measurement-only Admin checklist; DebugView verify for events.
+
+## Phase 2 — Technical SEO
+
+- **Titles:** Pages pass bare titles. `BaseLayout` appends ` · Elyse Tindall` (and strips legacy `| Elyse Tindall`). Do not embed the brand in casting frontmatter — see [add-casting-page.md](docs/runbooks/add-casting-page.md).
+- **JSON-LD:** `Seo.astro` prepends default `Person` when custom `jsonLd` has no top-level / `@graph` Person. Nested `about` / `founder` do not count. Do not emit duplicate conflicting Person `@id`s.
+- **Canonicals / schema URLs:** Prefer slashless paths (e.g. `/materials`, not `/materials/`).
+- **Studio:** `noIndex` on `/studio`; sitemap filters `/studio`; `Disallow: /studio` in `public/robots.txt`.
+- **OG default:** `public/images/og-default.jpg` is 1200×630 JPEG; default path emits `og:image:width` / `height` / `alt`.
+- **Tests:** `J-SEO-01` in `tests/journeys/seo.spec.ts`; smoke asserts robots Disallow.
+
+## Keep docs in sync
+
+When you change the surfaces in this rule’s globs (or GA events / SEO contracts), update in the **same PR**:
+
+| Change | Update |
+|--------|--------|
+| GA loader, skip rules, or events | `search-and-analytics.md` Phase 1 ACs + [observability.md](docs/runbooks/observability.md) |
+| Title suffix / casting title contract | Plan Phase 2 + `AGENTS.md` SEO section + `add-casting-page.md` |
+| Person JSON-LD merge or page schemas | Plan Phase 2 + `docs/style-guide.md` SEO notes |
+| robots.txt / OG default / slashless URLs | Plan Phase 2 statuses/ACs |
+| SEO journey/smoke coverage | Plan `SEARCH-P2-007` + `ux-release-testing-strategy.md` (`J-SEO-01`) |
+
+Prefer linking the plan from PR bodies over pasting the full backlog.

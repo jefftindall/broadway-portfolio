@@ -25,7 +25,19 @@ const {
   noIndex = false,
 } = Astro.props;
 
-const pageTitle = title ? `${title} · ${site.name}` : `${site.name} · ${site.tagline}`;
+/** Pages pass bare titles; BaseLayout owns the brand suffix (` · Elyse Tindall`). */
+function barePageTitle(raw: string): string {
+  const pipe = ` | ${site.name}`;
+  const dot = ` · ${site.name}`;
+  let cleaned = raw.trim();
+  if (cleaned.endsWith(pipe)) cleaned = cleaned.slice(0, -pipe.length).trimEnd();
+  if (cleaned.endsWith(dot)) cleaned = cleaned.slice(0, -dot.length).trimEnd();
+  return cleaned;
+}
+
+const pageTitle = title
+  ? `${barePageTitle(title)} · ${site.name}`
+  : `${site.name} · ${site.tagline}`;
 ---
 
 <!doctype html>

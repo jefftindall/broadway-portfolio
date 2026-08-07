@@ -1,6 +1,6 @@
 ---
 keyword: ingénue actress musical theatre
-title: Ingénue Musical Theatre Actress | Elyse Tindall
+title: Ingénue Musical Theatre Actress
 description: Ingénue musical theatre actress Elyse Tindall — warm presence, vocal craft, and feature stage credits.
 relatedSkills:
   - Ingénue

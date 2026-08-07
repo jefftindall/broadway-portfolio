@@ -1,6 +1,6 @@
 ---
 keyword: comedic actress
-title: Comedic Actress | Elyse Tindall
+title: Comedic Actress
 description: Comedic actress Elyse Tindall — sharp timing, warm presence, and musical theatre versatility for stage casting.
 relatedSkills:
   - Comedy

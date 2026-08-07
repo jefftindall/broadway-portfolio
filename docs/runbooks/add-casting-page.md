@@ -15,7 +15,7 @@ Gemini will call `create_or_update_casting_page` and commit `src/content/casting
 ```yaml
 ---
 keyword: my search phrase
-title: Human Title | Elyse Tindall
+title: Human Title
 description: One-sentence SEO description.
 relatedSkills:
   - Musical theatre
@@ -26,6 +26,8 @@ cta: Request materials
 
 Write 2–4 useful paragraphs. Link naturally to shows and contact.
 ```
+
+**Title contract:** Pass a bare `title` (no `| Elyse Tindall` and no ` · Elyse Tindall`). `BaseLayout` appends the brand suffix, so the document title becomes `Human Title · Elyse Tindall`. Do not embed the brand in frontmatter.
 
 2. Commit and push to `main`
 3. Verify `/for/my-keyword` and that it appears in `sitemap-index.xml`

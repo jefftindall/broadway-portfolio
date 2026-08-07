@@ -1,6 +1,6 @@
 ---
 keyword: Georgia actress musical theatre
-title: Georgia Musical Theatre Actress | Elyse Tindall
+title: Georgia Musical Theatre Actress
 description: Georgia musical theatre actress Elyse Tindall — Strand Theater Anastasia, regional credits, and NYC training.
 relatedSkills:
   - Musical theatre

@@ -1,6 +1,6 @@
 ---
 keyword: actress available for casting NYC
-title: Available for Casting — NYC | Elyse Tindall
+title: Available for Casting — NYC
 description: Elyse Tindall is available for casting in New York — musical theatre, plays, cabaret, and industry projects.
 relatedSkills:
   - Musical theatre

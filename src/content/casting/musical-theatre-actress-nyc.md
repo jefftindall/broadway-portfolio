@@ -1,6 +1,6 @@
 ---
 keyword: musical theatre actress NYC
-title: Musical Theatre Actress in NYC | Elyse Tindall
+title: Musical Theatre Actress in NYC
 description: Elyse Tindall is a musical theatre actress training and performing in New York City — credits include Anastasia, Miss You Like Hell, and NYC cabaret.
 relatedSkills:
   - Musical theatre
