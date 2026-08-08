@@ -190,5 +190,5 @@ On failure: Playwright retains **trace on first retry** (`trace: 'on-first-retry
 
 - [deploy-and-rollback.md](deploy-and-rollback.md) — promotion path and manual staging workflow
 - [setup.md](../setup.md) — CI workflow table
-- [casting-discoverability.md](../casting-discoverability.md) — mobile materials UX (`DISC-RUB-06`)
+- [casting-discoverability.md](../plans/casting-discoverability.md) — mobile materials UX (`DISC-RUB-06`)
 - [observability.md](observability.md) — prod synthetics and Studio events

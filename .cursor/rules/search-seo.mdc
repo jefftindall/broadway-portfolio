@@ -16,7 +16,7 @@ globs:
 
 # Search Console & Analytics (Phase 1 + Phase 2)
 
-Phased work and action IDs live in [docs/plans/search-and-analytics.md](docs/plans/search-and-analytics.md) (`SEARCH-*`). Casting content strategy stays in `DISC-*` / [casting-discoverability.md](docs/casting-discoverability.md).
+Phased work and action IDs live in [docs/plans/search-and-analytics.md](docs/plans/search-and-analytics.md) (`SEARCH-*`). Casting content strategy stays in `DISC-*` / [casting-discoverability.md](docs/plans/casting-discoverability.md).
 
 ## Phase 1 — GA4 (measurement)
 

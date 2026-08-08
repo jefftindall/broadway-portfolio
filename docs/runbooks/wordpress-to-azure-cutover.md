@@ -2,7 +2,7 @@
 
 Move `elysetindall.com` from Namecheap **EasyWP** to the Astro site on Azure Static Web Apps (SWA) without leaving dead links for users or crawlers.
 
-Related: [DNS and domain](dns-and-domain.md), [Deploy and rollback](deploy-and-rollback.md), [Casting discoverability](../casting-discoverability.md) (`DISC-P0-001`–`003`).
+Related: [DNS and domain](dns-and-domain.md), [Deploy and rollback](deploy-and-rollback.md), [Casting discoverability](../plans/casting-discoverability.md) (`DISC-P0-001`–`003`).
 
 ## Current stack (source)
 
