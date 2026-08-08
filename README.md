@@ -53,6 +53,7 @@ func start
   - [DNS and domain](docs/runbooks/dns-and-domain.md)
   - [WordPress (EasyWP) → Azure cutover](docs/runbooks/wordpress-to-azure-cutover.md)
   - [Cost and quotas](docs/runbooks/cost-and-quotas.md)
+  - [Monthly site check-in email](docs/runbooks/monthly-site-check-in.md) — how to read the monthly digest (for Elyse)
   - [Observability](docs/runbooks/observability.md)
   - [Refine Studio Gemini instructions](docs/runbooks/refine-studio-gemini.md)
 

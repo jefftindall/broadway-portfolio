@@ -29,7 +29,7 @@ Region: **eastus2** (all environments). Rates: Azure Retail Prices API (`prices.
 | Actual alerts | **80%** and **100%** → Key Vault `ALERT-EMAIL` only (Owners fallback if `REPLACE_ME`) |
 | 80% of budget | ≈ **$24.80** (≈ expected retail total) |
 
-The monthly OPS scorecard digest also reports last-month spend and MoM trend to both `ALERT-EMAIL` and `SITE-CONTACT-EMAIL` (ACS email; recipients never in git).
+The monthly OPS scorecard digest also reports last-month spend and MoM trend to both `ALERT-EMAIL` and `SITE-CONTACT-EMAIL` (ACS email; recipients never in git). **How to read it (Elyse):** [monthly-site-check-in.md](monthly-site-check-in.md).
 
 ### Non-Azure (not in subscription budget)
 
@@ -48,7 +48,7 @@ The monthly OPS scorecard digest also reports last-month spend and MoM trend to 
 ## Alerts
 
 - Azure **subscription** budget `$31/mo` → `ALERT-EMAIL` at **80%** / **100%** Actual (bootstrap TF)
-- Monthly OPS scorecard ACS digest (spend + MoM + scores) → `ALERT-EMAIL` + `SITE-CONTACT-EMAIL`
+- Monthly OPS scorecard ACS digest (spend + MoM + scores) → `ALERT-EMAIL` + `SITE-CONTACT-EMAIL` ([how to read it](monthly-site-check-in.md))
 - Gemini/Google billing alert (console; not in this repo)
 - GitHub Actions email on failed workflow
 - Application Insights: 1 GB/day cap, 30-day retention, failed-request + prod availability (homepage + materials) + FCP watch alerts (see [observability.md](observability.md))

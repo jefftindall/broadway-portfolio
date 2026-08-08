@@ -18,6 +18,7 @@
     "lint:terraform": "node scripts/lint-terraform.mjs",
     "resume:pdf": "node scripts/generate-resume-pdf.mjs",
     "ops:scorecard-email": "node scripts/ops-scorecard-email.mjs",
+    "ops:scorecard-email:preview": "node scripts/ops-scorecard-email.mjs --preview-file=tmp-scorecard-digest-preview.html",
     "test:smoke": "playwright test --config=playwright.smoke.config.ts",
     "test:journey": "playwright test --config=playwright.journey.config.ts",
     "test:journey:content": "playwright test --config=playwright.journey.config.ts --grep @content",

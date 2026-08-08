@@ -267,6 +267,7 @@ OPS-P3-002 (PagerDuty) — after OPS-P1-002 [done]; still planned
 | [deploy-and-rollback.md](../runbooks/deploy-and-rollback.md) | Change-safety evidence; Deploy Production Sev1 |
 | [incident-response.md](../runbooks/incident-response.md) | Severity stub (`OPS-P3-005`) |
 | [cost-and-quotas.md](../runbooks/cost-and-quotas.md) | Retail expected breakdown + budget ceil(expected×1.25) (`OPS-P4-001`); Gemini console residual |
+| [monthly-site-check-in.md](../runbooks/monthly-site-check-in.md) | How Elyse reads the monthly ACS digest; annotated email; what is actionable (`OPS-P4-002`) |
 | [github-app.md](../runbooks/github-app.md) | Studio App Contents:write + Protect main bypass (scorecard monthly push) |
 | [search-and-analytics.md](search-and-analytics.md) | GA4/GSC — not ops paging |
 | `docs/ops/operational-excellence-scorecard.md` | Living scorecard (`OPS-P0-003` done; refreshed by `OPS-P0-004`; digest `OPS-P4-002`) |
