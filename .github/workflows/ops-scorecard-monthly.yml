@@ -26,8 +26,12 @@ jobs:
     # Required for TF OIDC (bootstrap trusts environment:prod|staging|pull_request only).
     environment: prod
     steps:
-      # Mint the App token before checkout so git never uses GITHUB_TOKEN
-      # (persist-credentials would otherwise push as github-actions[bot] and 403).
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          # Never persist GITHUB_TOKEN into git — that pushes as github-actions[bot].
+          persist-credentials: false
+
       - name: Azure login (SLI probe + GitHub App secrets)
         uses: azure/login@v3
         with:
@@ -38,101 +42,45 @@ jobs:
       - name: Mint Studio GitHub App installation token
         id: app-token
         env:
-          VAULT: ${{ vars.AZURE_KEY_VAULT_NAME }}
+          AZURE_KEY_VAULT_NAME: ${{ vars.AZURE_KEY_VAULT_NAME }}
         run: |
           set -euo pipefail
+          set +x
+          chmod +x scripts/mint-github-app-token.sh
+          ./scripts/mint-github-app-token.sh
 
-          mask_multiline() {
-            local value="$1"
-            # Full value + each line (Actions redacts exact matches only).
-            echo "::add-mask::$value"
-            while IFS= read -r line || [ -n "${line:-}" ]; do
-              if [ -n "$line" ]; then
-                echo "::add-mask::$line"
-              fi
-            done <<< "$value"
-          }
-
-          if [ -z "${VAULT:-}" ]; then
-            echo "::error::AZURE_KEY_VAULT_NAME is not set on the prod environment."
-            exit 1
-          fi
-
-          APP_ID="$(az keyvault secret show --vault-name "$VAULT" --name GITHUB-APP-ID --query value -o tsv)"
-          INSTALLATION_ID="$(az keyvault secret show --vault-name "$VAULT" --name GITHUB-APP-INSTALLATION-ID --query value -o tsv)"
-          # PEM may be stored with literal \n; normalize. Never echo the PEM.
-          PRIVATE_KEY="$(az keyvault secret show --vault-name "$VAULT" --name GITHUB-APP-PRIVATE-KEY --query value -o tsv | sed 's/\\n/\n/g')"
-
-          if [ -z "$APP_ID" ] || [ "$APP_ID" = "REPLACE_ME" ]; then
-            echo "::error::GITHUB-APP-ID missing or still REPLACE_ME in $VAULT."
-            exit 1
-          fi
-          if [ -z "$INSTALLATION_ID" ] || [ "$INSTALLATION_ID" = "REPLACE_ME" ]; then
-            echo "::error::GITHUB-APP-INSTALLATION-ID missing or still REPLACE_ME in $VAULT."
-            exit 1
-          fi
-          if [ -z "$PRIVATE_KEY" ] || [ "$PRIVATE_KEY" = "REPLACE_ME" ]; then
-            echo "::error::GITHUB-APP-PRIVATE-KEY missing or still REPLACE_ME in $VAULT."
-            exit 1
-          fi
-
-          mask_multiline "$PRIVATE_KEY"
-
-          KEY_FILE="$(mktemp)"
-          trap 'rm -f "$KEY_FILE"' EXIT
-          printf '%s\n' "$PRIVATE_KEY" > "$KEY_FILE"
-          unset PRIVATE_KEY
-
-          # Mint installation token in-shell so the PEM never appears in an
-          # action `with:` block (those inputs are echoed to the job log).
-          now="$(date +%s)"
-          iat=$((now - 60))
-          exp=$((now + 540))
-          b64url() { openssl base64 -e -A | tr '+/' '-_' | tr -d '='; }
-          header="$(printf '%s' '{"alg":"RS256","typ":"JWT"}' | b64url)"
-          payload="$(printf '%s' "{\"iat\":${iat},\"exp\":${exp},\"iss\":\"${APP_ID}\"}" | b64url)"
-          signature="$(printf '%s' "${header}.${payload}" | openssl dgst -sha256 -sign "$KEY_FILE" -binary | b64url)"
-          jwt="${header}.${payload}.${signature}"
-          mask_multiline "$jwt"
-
-          token_json="$(curl -sS -X POST \
-            -H "Authorization: Bearer ${jwt}" \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/app/installations/${INSTALLATION_ID}/access_tokens")"
-          TOKEN="$(printf '%s' "$token_json" | jq -r '.token // empty')"
-          if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
-            echo "::error::Failed to mint GitHub App installation token (check App ID, installation ID, and private key)."
-            # Do not dump token_json — it may include sensitive fields.
-            exit 1
-          fi
-          mask_multiline "$TOKEN"
-
-          {
-            echo "token=$TOKEN"
-            echo "app_id=$APP_ID"
-            echo "installation_id=$INSTALLATION_ID"
-          } >> "$GITHUB_OUTPUT"
-
-          echo "Minted installation token for App ${APP_ID} / installation ${INSTALLATION_ID}."
-
-      - name: Verify App token (not github-actions[bot])
+      - name: Verify App installation token
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
-          # Installation tokens cannot call /user; probe repo permissions instead.
-          perms="$(gh api "repos/${GITHUB_REPOSITORY}" --jq '.permissions')"
-          echo "App installation permissions: ${perms}"
-          echo "$perms" | jq -e '.push == true' >/dev/null
-          echo "Confirmed installation token has push on ${GITHUB_REPOSITORY} (App ${{ steps.app-token.outputs.app_id }}, installation ${{ steps.app-token.outputs.installation_id }})."
+          set +x
+          # Do NOT use GET /repos permissions.push — installation tokens often
+          # report all-false there even when Contents:write is granted.
+          if [[ "${{ steps.app-token.outputs.contents_permission }}" != "write" ]]; then
+            echo "::error::Expected contents=write on installation token."
+            exit 1
+          fi
+          repos="$(gh api /installation/repositories --jq '.repositories[].full_name')"
+          echo "Installation can access:"
+          printf '%s\n' "$repos"
+          printf '%s\n' "$repos" | grep -qx "${GITHUB_REPOSITORY}"
+          echo "Confirmed App installation ${{ steps.app-token.outputs.installation_id }} (app ${{ steps.app-token.outputs.app_id }}) has Contents:write on ${GITHUB_REPOSITORY}."
 
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          # Force git credentials to the Studio App — never the job GITHUB_TOKEN.
-          token: ${{ steps.app-token.outputs.token }}
-          persist-credentials: true
+      - name: Configure git for Studio App push
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          set +x
+          app_id="${{ steps.app-token.outputs.app_id }}"
+          git config user.name "elyse-portfolio-studio[bot]"
+          git config user.email "${app_id}+elyse-portfolio-studio[bot]@users.noreply.github.com"
+          git remote set-url origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git config --local --unset-all http.https://github.com/.extraheader || true
+          basic="$(printf 'x-access-token:%s' "${GH_TOKEN}" | base64 -w0)"
+          echo "::add-mask::${basic}"
+          git config --local http.https://github.com/.extraheader "AUTHORIZATION: basic ${basic}"
 
       - name: Setup Node
         uses: actions/setup-node@v7
@@ -143,10 +91,9 @@ jobs:
         run: node scripts/ops-scorecard-refresh.mjs --monthly --azure
 
       - name: Commit scorecard to main
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
+          set +x
 
           if git diff --quiet -- docs/ops/operational-excellence-scorecard.md docs/ops/scorecard-evaluation.json; then
             echo "No scorecard changes; skipping commit."
@@ -154,16 +101,8 @@ jobs:
           fi
 
           stamp="$(date -u +%Y-%m)"
-          app_id="${{ steps.app-token.outputs.app_id }}"
-
-          git config user.name "elyse-portfolio-studio[bot]"
-          git config user.email "${app_id}+elyse-portfolio-studio[bot]@users.noreply.github.com"
-
           git add docs/ops/operational-excellence-scorecard.md docs/ops/scorecard-evaluation.json
           git commit -m "OPS: monthly operational excellence scorecard (${stamp})"
-
-          # Checkout already authenticated as the App; push without rewriting
-          # the remote to a URL that could fall back to GITHUB_TOKEN.
           git push origin HEAD:main
 
           echo "Pushed scorecard refresh to main as elyse-portfolio-studio[bot] (${stamp})."

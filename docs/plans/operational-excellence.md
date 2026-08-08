@@ -109,11 +109,11 @@ Initial SRE review — **not yet** the monthly persisted artifact (see [Scorecar
 **Monthly workflow** (`.github/workflows/ops-scorecard-monthly.yml`):
 
 1. **Trigger:** GitHub Actions `schedule` (`0 14 1 * *` — 1st of month 14:00 UTC) + `workflow_dispatch`.
-2. **Job:** `environment: prod` (TF OIDC subject). Azure login is required: mint a Studio GitHub App installation token in-shell from `kv-elyse-prod` (`GITHUB-APP-*`, PEM masked and never passed via action `with:`), `actions/checkout` with that token (not `GITHUB_TOKEN`), then `node scripts/ops-scorecard-refresh.mjs --monthly --azure`. Updates evaluation JSON + scorecard markdown (scores, evidence, gaps, `Last reviewed`, overall). Read-only App Insights SLI probes when queries succeed.
-3. **Privacy:** Workflow must **never** write alert emails, phones, App PEMs, or secrets into the scorecard or logs.
-4. **Output:** Commit and push scorecard files directly to `main` as `elyse-portfolio-studio[bot]` after verifying the installation token has `permissions.push` (App is a **Protect main** bypass actor — same as Studio publishes). Do **not** open a PR (Actions cannot create PRs on this repo). Do **not** push with the job `GITHUB_TOKEN` (that authenticates as `github-actions[bot]` and is denied).
+2. **Job:** `environment: prod` (TF OIDC subject). Azure login is required. Mint a Studio GitHub App installation token via [`scripts/mint-github-app-token.sh`](../../scripts/mint-github-app-token.sh) (PEM line-masked; never via action `with:`), verify Contents:write + `/installation/repositories`, configure git with the installation token (`persist-credentials: false` on checkout), then `node scripts/ops-scorecard-refresh.mjs --monthly --azure`.
+3. **Privacy:** Workflow must **never** write alert emails, phones, App PEMs, or secrets into the scorecard or logs. CI enforces this with `npm run lint:actions-secrets` / **Actions secret-safety**.
+4. **Output:** Commit and push scorecard files directly to `main` as `elyse-portfolio-studio[bot]` (App is a **Protect main** bypass actor — same as Studio publishes). Do **not** open a PR. Do **not** push with the job `GITHUB_TOKEN` (`github-actions[bot]`). Do **not** trust `GET /repos` `.permissions.push` for installation tokens (often all-false).
 5. **CD:** Scorecard-only pushes are excluded from [`azure-static-web-apps.yml`](../../.github/workflows/azure-static-web-apps.yml) via `paths-ignore` on the two scorecard artifacts.
-6. **Failure:** If Azure SLI queries fail after login, still refresh qualitative dimensions and mark SLI-backed rows `stale` with a note. If Azure login or App token minting fails, the job fails (no silent `GITHUB_TOKEN` PR fallback).
+6. **Failure:** If Azure SLI queries fail after login, still refresh qualitative dimensions and mark SLI-backed rows `stale` with a note. If Azure login or App token minting fails, the job fails (no silent `GITHUB_TOKEN` fallback).
 
 ---
 

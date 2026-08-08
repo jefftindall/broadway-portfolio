@@ -13,6 +13,7 @@
     "check": "astro check",
     "lint": "node scripts/lint.mjs",
     "lint:api": "node scripts/lint-api.mjs",
+    "lint:actions-secrets": "node scripts/check-actions-secret-safety.mjs",
     "lint:terraform": "node scripts/lint-terraform.mjs",
     "resume:pdf": "node scripts/generate-resume-pdf.mjs",
     "test:smoke": "playwright test --config=playwright.smoke.config.ts",

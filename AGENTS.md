@@ -19,13 +19,18 @@ This mirrors the PR gate workflow [`.github/workflows/static-analysis.yml`](.git
 | Terraform fmt + TFLint + validate | `npm run lint:terraform` | Terraform lint |
 | Astro / TypeScript | `npm run check` | Site check |
 | API JS syntax | `npm run lint:api` | API syntax |
+| Actions secret-safety | `npm run lint:actions-secrets` | Actions secret-safety |
 | Terraform plan (CI only, after the checks above) | — | Plan staging / Plan prod (PRs touching `infra/`) |
 
 Requirements for Terraform lint: Terraform >= 1.5 and [TFLint](https://github.com/terraform-linters/tflint) on `PATH` (`tflint --init` uses [`infra/.tflint.hcl`](infra/.tflint.hcl)). On Cursor Cloud these come from the environment snapshot; if they are missing, install them before committing rather than skipping the gate. Do not commit if lint fails; do not skip these checks.
 
+### Never echo secrets (pipelines + scripts)
+
+**Never** print secret values (`echo` / `printf` / `console.log` / traces / action `with:` dumps) in workflows or scripts. Mask line-by-line; prefer temp files; on errors log names only. Full rules: [`.cursor/rules/never-echo-secrets.mdc`](.cursor/rules/never-echo-secrets.mdc). GitHub App minting: [`scripts/mint-github-app-token.sh`](scripts/mint-github-app-token.sh). If leaked, rotate immediately ([rotate-secrets.md](docs/runbooks/rotate-secrets.md)).
+
 ### GitHub Actions (Node runtime + secrets)
 
-When editing `.github/workflows/**` or composite actions: **before commit**, scan `uses:` for actions still on **Node.js 20** and upgrade to a **Node 24+** release (or replace the action) so runners do not warn. See [`.cursor/rules/github-actions-node.mdc`](.cursor/rules/github-actions-node.mdc). Never pass App PEMs / private keys through action `with:` inputs unmasked — those blocks are echoed to job logs; if a key leaks, rotate it immediately ([rotate-secrets.md](docs/runbooks/rotate-secrets.md)).
+When editing `.github/workflows/**` or composite actions: **before commit**, scan `uses:` for actions still on **Node.js 20** and upgrade to a **Node 24+** release (or replace the action) so runners do not warn. Run `npm run lint:actions-secrets` (part of `npm run lint`) — it fails on PEM `with:` inputs, inline `GITHUB-APP-PRIVATE-KEY` fetches, and unsafe multiline `::add-mask::`. See [`.cursor/rules/github-actions-node.mdc`](.cursor/rules/github-actions-node.mdc) and [`.cursor/rules/never-echo-secrets.mdc`](.cursor/rules/never-echo-secrets.mdc).
 
 ### Brand (teaching)
 - Elyse is a musical theatre **actress** and **vocal coach**. Private lessons are **voice lessons only** (vocal pedagogy, vocal health, CCM).

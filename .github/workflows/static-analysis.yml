@@ -102,6 +102,20 @@ jobs:
       - name: Syntax check
         run: npm run lint:api
 
+  actions_secrets:
+    name: Actions secret-safety
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Check workflows for secret-leak anti-patterns
+        run: npm run lint:actions-secrets
+
   shared_secrets:
     name: Shared vault secrets
     # PRs only: TF OIDC trusts pull_request (+ env subjects). Main pushes use
