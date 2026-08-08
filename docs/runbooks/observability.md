@@ -37,7 +37,7 @@ Consent Mode / cookie banner: **not shipped** (`SEARCH-P1-006` = `wont_fix`). Pr
 
 Optional: set `alert_email` when applying Terraform to create an action group + failed-request / availability metric alerts.
 
-**Planned (do not implement ad hoc):** Operational excellence — scorecard, committed SLOs, Sev1 SMS/voice, Key Vault–backed `ALERT-*` contacts, and monthly scorecard refresh — is tracked in [operational-excellence.md](../plans/operational-excellence.md) (`OPS-*`). Private alert emails/phones must not be committed — store in Key Vault and read at apply time. Today’s `alert_email` Terraform variable is superseded by that plan when `OPS-P1-*` is executed.
+**Operational excellence:** Living scorecard at [operational-excellence-scorecard.md](../ops/operational-excellence-scorecard.md). Backlog / SLOs / Sev1 SMS-voice plan: [operational-excellence.md](../plans/operational-excellence.md) (`OPS-*`). `ALERT-*` Key Vault names (placeholders only) are documented in [rotate-secrets.md](./rotate-secrets.md). Today’s `alert_email` Terraform variable is superseded when `OPS-P1-*` is executed — do not implement Action Group SMS/voice until those items are explicitly picked up. Private alert emails/phones must not be committed.
 
 ## Cost controls
 

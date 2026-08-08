@@ -17,12 +17,12 @@ alwaysApply: true
 
 # Operational excellence (scorecard, SLOs, alerting)
 
-Phased work and action IDs live in [docs/plans/operational-excellence.md](docs/plans/operational-excellence.md) (`OPS-*`). Treat that document as the backlog — **do not implement** Action Group SMS/voice, materials synthetics, FCP wiring, scorecard persistence, or the monthly scorecard workflow unless the user explicitly asks to execute a specific `OPS-*` item.
+Phased work and action IDs live in [docs/plans/operational-excellence.md](docs/plans/operational-excellence.md) (`OPS-*`). Treat that document as the backlog — **do not implement** Action Group SMS/voice, materials synthetics, FCP wiring, or later `OPS-P1+` items unless the user explicitly asks. Phase 0 (ALERT-* naming, living scorecard, monthly workflow) is done.
 
 ## Scorecard
 
-- Rubric and baseline live in the plan. When `OPS-P0-003` is done, the **living** scorecard is `docs/ops/operational-excellence-scorecard.md`.
-- Monthly refresh (`OPS-P0-004`): scheduled workflow re-evaluates dimensions and opens a PR — do not invent a different path or auto-merge to `main` without an explicit decision.
+- Rubric lives in the plan. Living scores: `docs/ops/operational-excellence-scorecard.md` (from `docs/ops/scorecard-evaluation.json` via `scripts/ops-scorecard-refresh.mjs`).
+- Monthly refresh (`OPS-P0-004`): `.github/workflows/ops-scorecard-monthly.yml` re-evaluates and opens a PR — do not invent a different path or auto-merge to `main` without an explicit decision.
 - Scorecard content is scores, evidence, and gaps only — **never** alert emails, phones, or secrets.
 
 ## Private details never in git
