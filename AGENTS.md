@@ -23,6 +23,10 @@ This mirrors the PR gate workflow [`.github/workflows/static-analysis.yml`](.git
 
 Requirements for Terraform lint: Terraform >= 1.5 and [TFLint](https://github.com/terraform-linters/tflint) on `PATH` (`tflint --init` uses [`infra/.tflint.hcl`](infra/.tflint.hcl)). On Cursor Cloud these come from the environment snapshot; if they are missing, install them before committing rather than skipping the gate. Do not commit if lint fails; do not skip these checks.
 
+### GitHub Actions (Node runtime + secrets)
+
+When editing `.github/workflows/**` or composite actions: **before commit**, scan `uses:` for actions still on **Node.js 20** and upgrade to a **Node 24+** release (or replace the action) so runners do not warn. See [`.cursor/rules/github-actions-node.mdc`](.cursor/rules/github-actions-node.mdc). Never pass App PEMs / private keys through action `with:` inputs unmasked — those blocks are echoed to job logs; if a key leaks, rotate it immediately ([rotate-secrets.md](docs/runbooks/rotate-secrets.md)).
+
 ### Brand (teaching)
 - Elyse is a musical theatre **actress** and **vocal coach**. Private lessons are **voice lessons only** (vocal pedagogy, vocal health, CCM).
 - Do **not** advertise acting lessons, monologue coaching, or scene study. Studio Gemini prompts in [`api/src/lib/gemini.js`](api/src/lib/gemini.js) encode the same rules — keep them aligned when editing copy or prompts.
