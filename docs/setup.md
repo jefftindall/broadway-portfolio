@@ -230,7 +230,7 @@ Prod example:
 |---|---|
 | Azure default | `https://<name>.azurestaticapps.net/.auth/login/aad/callback` |
 | Custom apex | `https://elysetindall.com/.auth/login/aad/callback` |
-| Custom www | `https://www.elysetindall.com/.auth/login/aad/callback` |
+| Custom www | `https://www.elysetindall.com/.auth/login/aad/callback` (included automatically when `custom_domain` is set) |
 
 Add more via `additional_auth_hostnames` in `terraform.tfvars`.
 
@@ -266,7 +266,7 @@ Summary:
 1. Prod Terraform already sets `custom_domain = "elysetindall.com"`
 2. Create the TXT validation record from `custom_domain_validation_token` (see [dns-and-domain runbook](runbooks/dns-and-domain.md))
 3. Deploy legacy WordPress 301s via `public/staticwebapp.config.json` (staging → smoke → prod) before flipping DNS
-4. In Namecheap Advanced DNS, replace EasyWP apex/`www` records with Azure SWA ALIAS/A + CNAME
+4. In Namecheap Advanced DNS, replace EasyWP apex/`www` records with Azure SWA ALIAS/A + CNAME; apply Terraform so www is bound, then set apex as the default custom domain in Portal (www → apex 301)
 5. Verify HTTPS, redirects, and that EasyWP no longer serves apex traffic
 6. Smoke-test: home, shows, lessons, a `/for/...` page, and authenticated Studio publish
 

@@ -82,7 +82,7 @@ GA must load only on **public** pages (never `/studio`). App Insights remains th
 | Apex serves Astro SWA | `https://elysetindall.com/` + `sitemap-index.xml` live | `SEARCH-P0-001`, `DISC-P0-001` |
 | GSC property for `elysetindall.com` | Registered / verified | `SEARCH-P0-002`, `DISC-P0-002` |
 | GA4 property `elysetindall.com` | Collecting traffic; Measurement ID `G-XEE29C0RRE` | `SEARCH-P0-003` |
-| Preferred host | Apex is the public host; `www` is not serving duplicate content today | `SEARCH-P0-005` |
+| Preferred host | Apex is canonical; Terraform binds `www` + Portal “Set as default” for www → apex 301 | `SEARCH-P0-005` |
 
 ### Still open under this plan
 
@@ -116,7 +116,7 @@ Apex cutover, GSC registration, and GA4 property setup are **done** (see [Live o
 - [ ] No soft-404 / redirect-error surprises; fix with one-hop 301s if needed
 - [ ] (Optional) Bing Webmaster Tools sitemap submitted
 
-If `www.elysetindall.com` is bound later, add a one-hop www → apex redirect so GSC signals stay on the preferred host ([dns-and-domain.md](../runbooks/dns-and-domain.md)).
+Confirm `www.elysetindall.com` still 301s to the apex after any domain change ([dns-and-domain.md](../runbooks/dns-and-domain.md)).
 
 </details>
 
