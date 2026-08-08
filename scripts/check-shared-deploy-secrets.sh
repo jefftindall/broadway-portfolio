@@ -42,8 +42,9 @@ check SITE-DATE-OF-BIRTH
 check TURNSTILE-SITE-KEY
 check TURNSTILE-SECRET-KEY
 
-# Ops ALERT-* (bootstrap shared_kv.tf): must exist; REPLACE_ME is fine until OPS-P1.
-check_alert_placeholder() {
+# Ops ALERT-* (bootstrap shared_kv.tf): must exist. REPLACE_ME skips Action Group
+# receivers at terraform apply (OPS-P1); warn so operators know paging is off.
+check_alert() {
   local name="$1"
   local value
   if ! value=$(az keyvault secret show --vault-name "$vault" --name "$name" --query value -o tsv 2>/dev/null); then
@@ -51,15 +52,15 @@ check_alert_placeholder() {
     return
   fi
   if [[ -z "$value" || "$value" == "REPLACE_ME" ]]; then
-    echo "OK ${name} (placeholder — set before OPS-P1 Action Groups)"
+    echo "::warning title=Shared Key Vault::${name} is still REPLACE_ME — Action Group receivers for that channel are skipped (see docs/runbooks/rotate-secrets.md ops ALERT-*)."
   else
     echo "OK ${name}"
   fi
 }
 
-check_alert_placeholder ALERT-EMAIL
-check_alert_placeholder ALERT-SMS-PHONE
-check_alert_placeholder ALERT-VOICE-PHONE
+check_alert ALERT-EMAIL
+check_alert ALERT-SMS-PHONE
+check_alert ALERT-VOICE-PHONE
 
 # SMS from is optional for Build release (email-only until set); warn separately.
 sms_from=""

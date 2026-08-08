@@ -94,8 +94,8 @@ resource "azurerm_key_vault_secret" "turnstile_secret_key" {
   }
 }
 
-# Ops / Azure Monitor Action Group contacts (OPS-P0-002). Not used by SWA or Astro
-# build — env stacks read these at apply under OPS-P1-*. Keep separate from SITE-CONTACT-*.
+# Ops / Azure Monitor Action Group contacts (OPS-P0-002 / OPS-P1-*). Not used by SWA or Astro
+# build — env stacks read these at apply. Keep separate from SITE-CONTACT-*.
 resource "azurerm_key_vault_secret" "alert_email" {
   name         = "ALERT-EMAIL"
   value        = "REPLACE_ME"

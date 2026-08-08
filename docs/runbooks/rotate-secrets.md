@@ -113,13 +113,13 @@ For the verification program brief, use the public SMS policy URL:
 
 **Separate from contact-form notify.** `SITE-CONTACT-*` / ACS SMS deliver inquiry notifications. On-call / Sev1–Sev3 Azure Monitor Action Groups use dedicated **`ALERT-*`** secrets in **`kv-elyse-shared`** (same operator for staging + prod). Never commit real emails or phones — placeholders only in git.
 
-Created by **bootstrap** Terraform (`infra/bootstrap/shared_kv.tf`, `OPS-P0-002`). Action Group wiring lands in `OPS-P1-*`. Leave values as `REPLACE_ME` until you are ready to receive pages — Terraform will skip receivers while placeholders remain.
+Created by **bootstrap** Terraform (`infra/bootstrap/shared_kv.tf`, `OPS-P0-002`). Env stacks read them at apply (`OPS-P1-*` done): `ag-elyse-notify-*` (email ± SMS) and `ag-elyse-critical-*` (email + SMS + voice). Leave values as `REPLACE_ME` until you are ready to receive pages — Terraform skips that receiver (and skips the Action Group entirely if every contact is still a placeholder).
 
 | Secret name | Vault | Format | Used by |
 |---|---|---|---|
-| `ALERT-EMAIL` | `kv-elyse-shared` | Email address | Notify + critical Action Groups (`OPS-P1-001`) |
-| `ALERT-SMS-PHONE` | `kv-elyse-shared` | E.164 (`+1XXXXXXXXXX`) | SMS on notify + critical (`OPS-P1-002`) |
-| `ALERT-VOICE-PHONE` | `kv-elyse-shared` | E.164 (optional; may match SMS) | Voice on critical only (`OPS-P1-002`) |
+| `ALERT-EMAIL` | `kv-elyse-shared` | Email address | Notify + critical Action Groups |
+| `ALERT-SMS-PHONE` | `kv-elyse-shared` | E.164 (`+1XXXXXXXXXX`) | SMS on notify + critical |
+| `ALERT-VOICE-PHONE` | `kv-elyse-shared` | E.164 (optional; may match SMS) | Voice on critical only |
 
 ```bash
 # After bootstrap apply (secrets exist as REPLACE_ME):
@@ -128,7 +128,9 @@ az keyvault secret set --vault-name kv-elyse-shared --name ALERT-SMS-PHONE --val
 az keyvault secret set --vault-name kv-elyse-shared --name ALERT-VOICE-PHONE --value "+1XXXXXXXXXX"
 ```
 
-These secrets are **not** synced into SWA app settings and are **not** required for CD Build (unlike SITE-*/Turnstile). Monitor reads them at `terraform apply` via data sources under `OPS-P1-*`.
+These secrets are **not** synced into SWA app settings and are **not** required for CD Build (unlike SITE-*/Turnstile). Monitor reads them at `terraform apply` via data sources in `infra/modules/portfolio/shared_kv.tf`. After setting values, re-apply staging and/or prod so Action Groups pick them up.
+
+**Prove Sev1 (OPS-P1-003):** After prod apply with real `ALERT-*` values, in Azure Portal open `ag-elyse-critical-prod` → **Test action group** (email + SMS + voice). Optionally lower the homepage availability alert threshold briefly, confirm a page, then restore. Confirm receipt on-device; **do not** record the email/phone or screenshots with PII in git, PRs, or the scorecard — note only “receipt confirmed YYYY-MM-DD” in the plan/scorecard evidence.
 
 Do **not** reuse `SITE-CONTACT-EMAIL`, `SITE-CONTACT-PHONE`, or `ACS-SMS-FROM` for ops paging.
 

@@ -5,10 +5,10 @@ Living reliability posture for the Elyse Tindall portfolio. Rubric, SLOs, and ba
 | Field | Value |
 |-------|-------|
 | **Last reviewed** | 2026-08-08 |
-| **Review source** | baseline |
-| **Weighted overall** | **3.5 / 5** |
+| **Review source** | ops-p1 |
+| **Weighted overall** | **3.6 / 5** |
 | **Target overall** | ≥ 3.8 (after P1 alerting) |
-| **Verdict** | Strong change safety and docs; thin detect-and-respond. |
+| **Verdict** | Strong change safety and docs; P1 Action Groups landed — set ALERT-* and prove Sev1 receipt to harden detect-and-respond. |
 
 ## Dimensions
 
@@ -21,7 +21,7 @@ Living reliability posture for the Elyse Tindall portfolio. Rubric, SLOs, and ba
 | Observability | 1.2 | 3.8 | Solid | Per-env AI; Studio correlation + events; GA4 public | Thin contact events; no Workbooks as code | ok |
 | Test automation | 1.1 | 3.5 | Solid | Staging smoke + journeys; homepage synthetic | No unit tests; materials synth; Studio E2E OOS | ok |
 | Cost & capacity | 0.7 | 3.5 | Solid | cost-and-quotas; AI caps | Manual budget/Gemini console alerts | ok |
-| Alerting & on-call | 1.1 | 2.0 | Thin | TF alerts if alert_email set | Empty default; no SMS/voice (ALERT-* placeholders in shared KV; TF wiring is OPS-P1) | ok |
+| Alerting & on-call | 1.1 | 3.8 | Solid | KV ALERT-* → ag-elyse-notify (email±SMS) + ag-elyse-critical (email+SMS+voice); homepage Sev1→critical; failed-request→notify | Operator must set ALERT-* (not REPLACE_ME) and confirm Portal test receipt; materials/CD Sev1 still OPS-P2/P3 | ok |
 | Resilience & DR | 0.9 | 2.0 | Thin | Git rollback; env isolation; East US 2 only | Single region; shared ACS/Turnstile coupling | ok |
 | SLOs & error budget | 0.8 | 1.5 | Gap | Implicit homepage ping; committed SLOs in plan | Written SLOs not scored yet against weekly/monthly windows | stale: Homepage availability SLI not queried this review (baseline). Materials/FCP/Studio SLIs need OPS-P2/P3. |
 

@@ -97,15 +97,9 @@ variable "manage_github_actions" {
   default     = true
 }
 
-variable "alert_email" {
-  type        = string
-  description = "Email for App Insights failed-request and availability alerts (empty skips action group + metric alerts)"
-  default     = ""
-}
-
 variable "shared_key_vault_name" {
   type        = string
-  description = "Bootstrap foundational Key Vault for SITE-* and Turnstile secrets (shared by staging/prod builds)"
+  description = "Bootstrap foundational Key Vault for SITE-*, Turnstile, ACS, and ALERT-* ops contacts (shared by staging/prod)"
   default     = "kv-elyse-shared"
 }
 

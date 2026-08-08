@@ -1,10 +1,49 @@
 # Application Insights + Log Analytics (cost-capped) per environment.
+# Ops contacts come from shared kv-elyse-shared ALERT-* (OPS-P1-001 / OPS-P1-002).
+# Never pass emails/phones via Terraform variables.
 
 locals {
   law_name  = "law-elyse-${local.name_suffix}"
   appi_name = "appi-elyse-portfolio-${local.name_suffix}"
 
   availability_url = var.custom_domain != "" ? "https://${var.custom_domain}/" : "https://${azurerm_static_web_app.main.default_host_name}/"
+
+  # Longest-first dial codes Azure Monitor SMS/voice supports (see action-groups docs).
+  alert_e164_dial_pattern = "^(971|886|852|420|372|358|353|352|351|972|91|86|82|81|65|64|61|60|56|55|52|49|47|45|44|43|41|40|39|34|33|32|31|27|7|1)([0-9]+)$"
+
+  alert_email_raw = trimspace(data.azurerm_key_vault_secret.alert_email.value)
+  alert_sms_raw   = trimspace(data.azurerm_key_vault_secret.alert_sms_phone.value)
+  alert_voice_raw = trimspace(data.azurerm_key_vault_secret.alert_voice_phone.value)
+
+  alert_email_configured = local.alert_email_raw != "" && local.alert_email_raw != "REPLACE_ME"
+
+  alert_sms_digits = (
+    local.alert_sms_raw != "" && local.alert_sms_raw != "REPLACE_ME" && startswith(local.alert_sms_raw, "+")
+    ? substr(local.alert_sms_raw, 1, length(local.alert_sms_raw) - 1)
+    : ""
+  )
+  alert_sms_match = (
+    local.alert_sms_digits != "" && can(regex(local.alert_e164_dial_pattern, local.alert_sms_digits))
+    ? regex(local.alert_e164_dial_pattern, local.alert_sms_digits)
+    : null
+  )
+  alert_sms_configured = local.alert_sms_match != null
+
+  alert_voice_digits = (
+    local.alert_voice_raw != "" && local.alert_voice_raw != "REPLACE_ME" && startswith(local.alert_voice_raw, "+")
+    ? substr(local.alert_voice_raw, 1, length(local.alert_voice_raw) - 1)
+    : ""
+  )
+  alert_voice_match = (
+    local.alert_voice_digits != "" && can(regex(local.alert_e164_dial_pattern, local.alert_voice_digits))
+    ? regex(local.alert_e164_dial_pattern, local.alert_voice_digits)
+    : null
+  )
+  alert_voice_configured = local.alert_voice_match != null
+
+  # Notify: email ± SMS (Sev2). Critical: email + SMS + voice (Sev1).
+  alert_notify_enabled   = local.alert_email_configured || local.alert_sms_configured
+  alert_critical_enabled = local.alert_email_configured || local.alert_sms_configured || local.alert_voice_configured
 }
 
 resource "azurerm_log_analytics_workspace" "main" {
@@ -59,28 +98,78 @@ resource "azurerm_application_insights_standard_web_test" "homepage" {
   }
 }
 
-resource "azurerm_monitor_action_group" "alerts" {
-  count = var.alert_email != "" ? 1 : 0
+# Sev2 — email ± SMS (OPS-P1-001 / OPS-P1-002). Skipped while ALERT-* are REPLACE_ME.
+resource "azurerm_monitor_action_group" "notify" {
+  count = local.alert_notify_enabled ? 1 : 0
 
-  name                = "ag-elyse-portfolio-${local.name_suffix}"
+  name                = "ag-elyse-notify-${local.name_suffix}"
   resource_group_name = azurerm_resource_group.main.name
-  short_name          = "elyse${local.name_suffix}"
+  short_name          = "elyn${local.name_suffix}"
   tags                = local.tags
 
-  email_receiver {
-    name                    = "primary"
-    email_address           = var.alert_email
-    use_common_alert_schema = true
+  dynamic "email_receiver" {
+    for_each = local.alert_email_configured ? [1] : []
+    content {
+      name                    = "ops-email"
+      email_address           = local.alert_email_raw
+      use_common_alert_schema = true
+    }
+  }
+
+  dynamic "sms_receiver" {
+    for_each = local.alert_sms_configured ? [1] : []
+    content {
+      name         = "ops-sms"
+      country_code = local.alert_sms_match[0]
+      phone_number = local.alert_sms_match[1]
+    }
+  }
+}
+
+# Sev1 — email + SMS + voice (OPS-P1-002). Homepage availability uses this group.
+resource "azurerm_monitor_action_group" "critical" {
+  count = local.alert_critical_enabled ? 1 : 0
+
+  name                = "ag-elyse-critical-${local.name_suffix}"
+  resource_group_name = azurerm_resource_group.main.name
+  short_name          = "elyc${local.name_suffix}"
+  tags                = local.tags
+
+  dynamic "email_receiver" {
+    for_each = local.alert_email_configured ? [1] : []
+    content {
+      name                    = "ops-email"
+      email_address           = local.alert_email_raw
+      use_common_alert_schema = true
+    }
+  }
+
+  dynamic "sms_receiver" {
+    for_each = local.alert_sms_configured ? [1] : []
+    content {
+      name         = "ops-sms"
+      country_code = local.alert_sms_match[0]
+      phone_number = local.alert_sms_match[1]
+    }
+  }
+
+  dynamic "voice_receiver" {
+    for_each = local.alert_voice_configured ? [1] : []
+    content {
+      name         = "ops-voice"
+      country_code = local.alert_voice_match[0]
+      phone_number = local.alert_voice_match[1]
+    }
   }
 }
 
 resource "azurerm_monitor_metric_alert" "failed_requests" {
-  count = var.alert_email != "" ? 1 : 0
+  count = local.alert_notify_enabled ? 1 : 0
 
   name                = "alert-elyse-failed-requests-${local.name_suffix}"
   resource_group_name = azurerm_resource_group.main.name
   scopes              = [azurerm_application_insights.main.id]
-  description         = "Failed requests on ${local.appi_name}"
+  description         = "Failed requests on ${local.appi_name} (Sev2 → notify)"
   severity            = 2
   frequency           = "PT5M"
   window_size         = "PT15M"
@@ -95,17 +184,17 @@ resource "azurerm_monitor_metric_alert" "failed_requests" {
   }
 
   action {
-    action_group_id = azurerm_monitor_action_group.alerts[0].id
+    action_group_id = azurerm_monitor_action_group.notify[0].id
   }
 }
 
 resource "azurerm_monitor_metric_alert" "availability" {
-  count = var.alert_email != "" && var.environment == "prod" && var.custom_domain != "" ? 1 : 0
+  count = local.alert_critical_enabled && var.environment == "prod" && var.custom_domain != "" ? 1 : 0
 
   name                = "alert-elyse-availability-${local.name_suffix}"
   resource_group_name = azurerm_resource_group.main.name
   scopes              = [azurerm_application_insights.main.id]
-  description         = "Availability test failed for ${var.custom_domain}"
+  description         = "Availability test failed for ${var.custom_domain} (Sev1 → critical)"
   severity            = 1
   frequency           = "PT5M"
   window_size         = "PT15M"
@@ -120,6 +209,6 @@ resource "azurerm_monitor_metric_alert" "availability" {
   }
 
   action {
-    action_group_id = azurerm_monitor_action_group.alerts[0].id
+    action_group_id = azurerm_monitor_action_group.critical[0].id
   }
 }
