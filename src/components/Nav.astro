@@ -5,7 +5,18 @@ const pathname = Astro.url.pathname;
 
 <header class="sticky top-0 z-40 border-b border-line bg-ink/70 backdrop-blur-md">
   <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
-    <a href="/" class="font-display text-2xl tracking-tight text-spotlight md:text-3xl">
+    <a
+      href="/"
+      class="inline-flex items-center gap-1.5 font-display text-2xl tracking-tight text-spotlight md:gap-2 md:text-3xl"
+    >
+      <img
+        src="/favicon.svg"
+        alt=""
+        width="32"
+        height="32"
+        class="size-7 shrink-0 rounded-sm md:size-8"
+        decoding="async"
+      />
       {site.name}
     </a>
     <nav class="hidden items-center gap-6 md:flex" aria-label="Primary">
