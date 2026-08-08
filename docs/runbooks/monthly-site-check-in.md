@@ -17,6 +17,8 @@ It summarizes:
 3. Whether the homepage, resume/headshot links, page speed, and Studio behaved as expected  
 4. A short “worth a glance” list — only if something needs you  
 
+*(Planned — `OPS-P5-*`: a “Last month on the site” block with visit / inquiry / Studio-update counts and top pages. Until that ships, those numbers are not in the email; Jeff can still pull them from GA / App Insights if needed.)*
+
 It never includes passwords, secret keys, or private phone numbers.
 
 ## Annotated reference

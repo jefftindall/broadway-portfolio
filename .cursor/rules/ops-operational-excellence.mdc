@@ -17,7 +17,7 @@ alwaysApply: true
 
 # Operational excellence (scorecard, SLOs, alerting)
 
-Phased work and action IDs live in [docs/plans/operational-excellence.md](docs/plans/operational-excellence.md) (`OPS-*`). Treat that document as the backlog — **do not implement** PagerDuty escalate-if-unacked (`OPS-P3-002`) unless the user explicitly asks. Phase 0–4 (except `OPS-P3-002`) are done (`ALERT-*` Action Groups + living scorecard + monthly workflow + materials synthetics + field/lab FCP + Studio SLO cadence + CD Sev1 + inquiry SLI + IR stub + prod/shared KV purge protection + subscription budget at **125% of retail expected** + ACS monthly digest).
+Phased work and action IDs live in [docs/plans/operational-excellence.md](docs/plans/operational-excellence.md) (`OPS-*`). Treat that document as the backlog — **do not implement** PagerDuty escalate-if-unacked (`OPS-P3-002`) unless the user explicitly asks. Phase 0–4 (except `OPS-P3-002`) are done (`ALERT-*` Action Groups + living scorecard + monthly workflow + materials synthetics + field/lab FCP + Studio SLO cadence + CD Sev1 + inquiry SLI + IR stub + prod/shared KV purge protection + subscription budget at **125% of retail expected** + ACS monthly digest). **Phase 5** (`OPS-P5-*` site performance in the scorecard: GA4 visits/top pages + App Insights contacts/updates) is planned — do not implement until picked up; GA Data API needs extra KV secrets beyond the public Measurement ID.
 
 ## Azure cost estimate + subscription budget (required on infra change)
 
