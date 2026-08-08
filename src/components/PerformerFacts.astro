@@ -18,7 +18,7 @@ const { performer, location } = site;
 
 type Fact = { label: string; value: string | 'age' };
 
-/** Age and height stay last; remaining fields keep their relative order. */
+/** Age and height near the end; availability is always last. */
 const facts: Fact[] = [
   ...(performer.playingAge
     ? [{ label: 'Playing age', value: performer.playingAge }]
@@ -30,9 +30,9 @@ const facts: Fact[] = [
     : []),
   { label: 'Union', value: performer.union },
   { label: 'Based in', value: location },
-  { label: 'Availability', value: performer.availability },
   { label: 'Age', value: 'age' },
   ...(performer.height ? [{ label: 'Height', value: performer.height }] : []),
+  { label: 'Availability', value: performer.availability },
 ];
 ---
 
