@@ -11,9 +11,50 @@ const FORCE_SAMPLE_EVENTS = new Set([
   'StudioPublishUiFailed',
   'StudioPublishToProdCompleted',
 ]);
-const FORCE_SAMPLE_METRICS = new Set(['StudioPublishToProdDurationMs']);
+const FORCE_SAMPLE_METRICS = new Set([
+  'StudioPublishToProdDurationMs',
+  // OPS-P2-002 — field FCP for homepage SLO-6 (always ingest despite browser sampling).
+  'HomepageFcpMs',
+]);
 
 let initialized = false;
+
+function isHomepagePath(pathname: string): boolean {
+  const normalized = pathname.replace(/\/+$/, '') || '/';
+  return normalized === '/';
+}
+
+/** Report first-contentful-paint on `/` only (SLO-6 field SLI). */
+function trackHomepageFcp(appInsights: ApplicationInsights) {
+  if (typeof window === 'undefined' || typeof performance === 'undefined') return;
+  if (!isHomepagePath(window.location.pathname)) return;
+
+  const report = (ms: number) => {
+    if (!Number.isFinite(ms) || ms <= 0) return;
+    appInsights.trackMetric({ name: 'HomepageFcpMs', average: ms }, { path: '/' });
+  };
+
+  try {
+    const existing = performance.getEntriesByName('first-contentful-paint')[0];
+    if (existing && typeof existing.startTime === 'number') {
+      report(existing.startTime);
+      return;
+    }
+
+    const observer = new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        if (entry.name === 'first-contentful-paint') {
+          report(entry.startTime);
+          observer.disconnect();
+          break;
+        }
+      }
+    });
+    observer.observe({ type: 'paint', buffered: true });
+  } catch {
+    // Paint timing unsupported — skip field FCP for this session.
+  }
+}
 
 export function initAppInsights() {
   if (initialized || typeof window === 'undefined') return;
@@ -60,6 +101,7 @@ export function initAppInsights() {
     return true;
   });
   appInsights.trackPageView();
+  trackHomepageFcp(appInsights);
   window.__appInsights = appInsights;
   initialized = true;
 }

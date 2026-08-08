@@ -2,9 +2,10 @@
 /**
  * OPS-P0-004 — Refresh the operational excellence scorecard.
  *
- * Reads docs/ops/scorecard-evaluation.json, optionally probes prod homepage
- * availability via Azure CLI (when logged in), recomputes weighted overall,
- * and regenerates docs/ops/operational-excellence-scorecard.md.
+ * Reads docs/ops/scorecard-evaluation.json, optionally probes prod SLIs
+ * (homepage + materials availability, homepage FCP p75) via Azure CLI when
+ * logged in, recomputes weighted overall, and regenerates
+ * docs/ops/operational-excellence-scorecard.md.
  *
  * Never writes emails, phones, or secret values into the scorecard or stdout.
  *
@@ -26,6 +27,9 @@ const SCORECARD_PATH = join(ROOT, "docs/ops/operational-excellence-scorecard.md"
 const PROD_APPI = "appi-elyse-portfolio-prod";
 const PROD_RG = "rg-elyse-portfolio-prod";
 const HOMEPAGE_AVAIL_TARGET = 99.8;
+const MATERIALS_AVAIL_TARGET = 99.8;
+const FCP_P75_TARGET_MS = 1500;
+const FCP_MIN_SAMPLES = 10;
 
 const MATURITY = [
   { min: 4.0, label: "Strong" },
@@ -101,6 +105,13 @@ function assertNoSecrets(text, label) {
   }
 }
 
+function redact(msg) {
+  return String(msg).replace(
+    /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi,
+    "<redacted>",
+  );
+}
+
 function runAz(args) {
   return execFileSync("az", args, {
     encoding: "utf8",
@@ -109,14 +120,20 @@ function runAz(args) {
   });
 }
 
-/**
- * Optional read-only SLI: prod homepage availability % over the last 7 days.
- * On any failure, returns { ok: false, note } without throwing.
- */
-function probeHomepageAvailability() {
+function azureLoggedIn() {
   try {
     runAz(["account", "show", "-o", "none"]);
+    return true;
   } catch {
+    return false;
+  }
+}
+
+/**
+ * Optional read-only SLI: prod homepage availability % over the last 7 days.
+ */
+function probeHomepageAvailability() {
+  if (!azureLoggedIn()) {
     return {
       ok: false,
       note: "Azure CLI not logged in; homepage availability SLI left stale.",
@@ -126,6 +143,59 @@ function probeHomepageAvailability() {
   const end = new Date();
   const start = new Date(end.getTime() - 7 * 24 * 60 * 60 * 1000);
 
+  try {
+    const raw = runAz([
+      "monitor",
+      "app-insights",
+      "metrics",
+      "show",
+      "--app",
+      PROD_APPI,
+      "--resource-group",
+      PROD_RG,
+      "--metric",
+      "availabilityResults/availabilityPercentage",
+      "--aggregation",
+      "avg",
+      "--filter",
+      "availabilityResult/name eq 'webtest-elyse-homepage-prod'",
+      "--start-time",
+      start.toISOString(),
+      "--end-time",
+      end.toISOString(),
+      "--interval",
+      "P1D",
+      "-o",
+      "json",
+    ]);
+    const parsed = JSON.parse(raw);
+    const points =
+      parsed?.value?.[0]?.timeseries?.[0]?.data?.filter(
+        (p) => typeof p.avg === "number",
+      ) ?? [];
+    if (points.length === 0) {
+      // Fallback: unfiltered aggregate (legacy single-test era / filter miss).
+      return probeAvailabilityUnfiltered("Homepage", HOMEPAGE_AVAIL_TARGET, start, end);
+    }
+    const avg = points.reduce((sum, p) => sum + p.avg, 0) / points.length;
+    const pct = round1(avg);
+    const meets = pct >= HOMEPAGE_AVAIL_TARGET;
+    return {
+      ok: true,
+      pct,
+      meets,
+      note: `Homepage availability avg ${pct}% over ${points.length} day(s) (target ${HOMEPAGE_AVAIL_TARGET}% / 7d).`,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return {
+      ok: false,
+      note: `Homepage availability query failed; SLI left stale. (${redact(msg).slice(0, 200)})`,
+    };
+  }
+}
+
+function probeAvailabilityUnfiltered(label, target, start, end) {
   try {
     const raw = runAz([
       "monitor",
@@ -157,55 +227,218 @@ function probeHomepageAvailability() {
     if (points.length === 0) {
       return {
         ok: false,
-        note: "App Insights returned no availability datapoints for the last 7 days.",
+        note: `App Insights returned no availability datapoints for the last 7 days (${label}).`,
       };
     }
     const avg = points.reduce((sum, p) => sum + p.avg, 0) / points.length;
     const pct = round1(avg);
-    const meets = pct >= HOMEPAGE_AVAIL_TARGET;
     return {
       ok: true,
       pct,
-      meets,
-      note: `Homepage availability avg ${pct}% over ${points.length} day(s) (target ${HOMEPAGE_AVAIL_TARGET}% / 7d).`,
+      meets: pct >= target,
+      note: `${label} availability avg ${pct}% over ${points.length} day(s) (aggregate; target ${target}% / 7d).`,
     };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    const safe = msg.replace(
-      /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi,
-      "<redacted>",
-    );
     return {
       ok: false,
-      note: `Homepage availability query failed; SLI left stale. (${safe.slice(0, 200)})`,
+      note: `${label} availability query failed; SLI left stale. (${redact(msg).slice(0, 200)})`,
     };
   }
 }
 
-function applyAzureSli(evaluation, probe) {
-  const sloDim = evaluation.dimensions.find((d) => d.id === "slo");
-  const slo1 = evaluation.committedSlos.find((s) => s.id === "SLO-1");
+/**
+ * Materials (resume + headshot) availability via Kusto over 7d (OPS-P2-001 / SLO-4).
+ */
+function probeMaterialsAvailability() {
+  if (!azureLoggedIn()) {
+    return {
+      ok: false,
+      note: "Azure CLI not logged in; materials availability SLI left stale.",
+    };
+  }
 
-  if (!probe.ok) {
-    if (sloDim) {
-      sloDim.sliStatus = "stale";
-      sloDim.sliNote = probe.note;
+  const query = `
+availabilityResults
+| where timestamp > ago(7d)
+| where name has "resume" or name has "headshot"
+| summarize successRate = avg(todouble(success)) * 100, samples = count()
+`.trim();
+
+  try {
+    const raw = runAz([
+      "monitor",
+      "app-insights",
+      "query",
+      "--app",
+      PROD_APPI,
+      "--resource-group",
+      PROD_RG,
+      "--analytics-query",
+      query,
+      "-o",
+      "json",
+    ]);
+    const parsed = JSON.parse(raw);
+    const row = parsed?.tables?.[0]?.rows?.[0];
+    if (!row || row[1] === 0 || row[1] == null) {
+      return {
+        ok: false,
+        note: "No materials web-test results in the last 7 days (OPS-P2-001 apply may be pending).",
+      };
     }
-    if (slo1) {
-      slo1.status = "stale";
-      slo1.note = probe.note;
+    const pct = round1(Number(row[0]));
+    const samples = Number(row[1]);
+    if (!Number.isFinite(pct)) {
+      return {
+        ok: false,
+        note: "Materials availability query returned a non-numeric success rate.",
+      };
     }
-    return;
+    return {
+      ok: true,
+      pct,
+      meets: pct >= MATERIALS_AVAIL_TARGET,
+      note: `Materials availability avg ${pct}% over ${samples} probe(s) (target ${MATERIALS_AVAIL_TARGET}% / 7d).`,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return {
+      ok: false,
+      note: `Materials availability query failed; SLI left stale. (${redact(msg).slice(0, 200)})`,
+    };
+  }
+}
+
+/**
+ * Homepage field FCP p75 over 7d (OPS-P2-002 / SLO-6).
+ */
+function probeHomepageFcp() {
+  if (!azureLoggedIn()) {
+    return {
+      ok: false,
+      note: "Azure CLI not logged in; homepage FCP SLI left stale.",
+    };
+  }
+
+  const query = `
+customMetrics
+| where timestamp > ago(7d)
+| where name == "HomepageFcpMs"
+| summarize samples = count(), p75 = percentile(value, 75)
+`.trim();
+
+  try {
+    const raw = runAz([
+      "monitor",
+      "app-insights",
+      "query",
+      "--app",
+      PROD_APPI,
+      "--resource-group",
+      PROD_RG,
+      "--analytics-query",
+      query,
+      "-o",
+      "json",
+    ]);
+    const parsed = JSON.parse(raw);
+    const row = parsed?.tables?.[0]?.rows?.[0];
+    const samples = Number(row?.[0] ?? 0);
+    const p75 = Number(row?.[1]);
+    if (!samples || samples < FCP_MIN_SAMPLES || !Number.isFinite(p75)) {
+      return {
+        ok: false,
+        note: samples
+          ? `Homepage FCP has ${samples} sample(s) (<${FCP_MIN_SAMPLES}); left stale until field traffic accumulates.`
+          : "No HomepageFcpMs samples in the last 7 days (field pipeline pending deploy traffic).",
+      };
+    }
+    const ms = Math.round(p75);
+    return {
+      ok: true,
+      p75: ms,
+      meets: ms < FCP_P75_TARGET_MS,
+      note: `Homepage FCP p75 ${ms}ms over ${samples} sample(s) (target < ${FCP_P75_TARGET_MS}ms / 7d).`,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return {
+      ok: false,
+      note: `Homepage FCP query failed; SLI left stale. (${redact(msg).slice(0, 200)})`,
+    };
+  }
+}
+
+function setSlo(evaluation, id, patch) {
+  const slo = evaluation.committedSlos.find((s) => s.id === id);
+  if (!slo) return;
+  Object.assign(slo, patch);
+}
+
+function applyAzureSlis(evaluation, probes) {
+  const { homepage, materials, fcp } = probes;
+  const sloDim = evaluation.dimensions.find((d) => d.id === "slo");
+  const notes = [];
+
+  if (homepage.ok) {
+    setSlo(evaluation, "SLO-1", {
+      status: homepage.meets ? "met" : "missed",
+      note: homepage.note,
+    });
+    notes.push(homepage.note);
+  } else {
+    setSlo(evaluation, "SLO-1", { status: "stale", note: homepage.note });
+    notes.push(homepage.note);
+  }
+
+  if (materials.ok) {
+    setSlo(evaluation, "SLO-4", {
+      status: materials.meets ? "met" : "missed",
+      note: materials.note,
+    });
+    notes.push(materials.note);
+  } else {
+    setSlo(evaluation, "SLO-4", { status: "stale", note: materials.note });
+    notes.push(materials.note);
+  }
+
+  if (fcp.ok) {
+    setSlo(evaluation, "SLO-6", {
+      status: fcp.meets ? "met" : "missed",
+      note: fcp.note,
+    });
+    notes.push(fcp.note);
+  } else {
+    setSlo(evaluation, "SLO-6", { status: "stale", note: fcp.note });
+    notes.push(fcp.note);
   }
 
   if (sloDim) {
-    sloDim.sliStatus = "ok";
-    sloDim.sliNote = probe.note;
-    sloDim.evidence = `Homepage SLI measurable: ${probe.note}`;
+    const anyOk = homepage.ok || materials.ok || fcp.ok;
+    sloDim.sliStatus = anyOk ? "ok" : "stale";
+    sloDim.sliNote = notes.join(" ");
+    if (anyOk) {
+      const okNotes = [homepage, materials, fcp]
+        .filter((p) => p.ok)
+        .map((p) => p.note);
+      sloDim.evidence = `Field/synthetic SLIs: ${okNotes.join(" ")}`;
+    }
   }
-  if (slo1) {
-    slo1.status = probe.meets ? "met" : "missed";
-    slo1.note = probe.note;
+}
+
+function markSlisStaleSkipped(evaluation, reason) {
+  const sloDim = evaluation.dimensions.find((d) => d.id === "slo");
+  if (sloDim && sloDim.sliStatus !== "blocked") {
+    sloDim.sliStatus = "stale";
+    sloDim.sliNote = reason;
+  }
+  for (const id of ["SLO-1", "SLO-4", "SLO-6"]) {
+    const slo = evaluation.committedSlos.find((s) => s.id === id);
+    if (slo && slo.status !== "blocked") {
+      slo.status = "stale";
+      slo.note = reason;
+    }
   }
 }
 
@@ -269,7 +502,7 @@ function renderScorecard(evaluation) {
     "1. Edit [`scorecard-evaluation.json`](./scorecard-evaluation.json) (scores / evidence / gaps).",
   );
   lines.push(
-    "2. Run `node scripts/ops-scorecard-refresh.mjs` (add `--monthly --azure` when Azure CLI is logged in for homepage SLI).",
+    "2. Run `node scripts/ops-scorecard-refresh.mjs` (add `--monthly --azure` when Azure CLI is logged in for homepage/materials/FCP SLIs).",
   );
   lines.push(
     "3. Monthly GitHub Action (`.github/workflows/ops-scorecard-monthly.yml`) does the same on a schedule and opens a PR titled `OPS: monthly operational excellence scorecard`.",
@@ -300,29 +533,33 @@ function main() {
       : "monthly-workflow";
 
     if (args.azure) {
-      console.log("Probing prod homepage availability (read-only)…");
-      const probe = probeHomepageAvailability();
-      console.log(probe.note);
-      applyAzureSli(evaluation, probe);
+      console.log("Probing prod homepage / materials / FCP SLIs (read-only)…");
+      const probes = {
+        homepage: probeHomepageAvailability(),
+        materials: probeMaterialsAvailability(),
+        fcp: probeHomepageFcp(),
+      };
+      console.log(probes.homepage.note);
+      console.log(probes.materials.note);
+      console.log(probes.fcp.note);
+      applyAzureSlis(evaluation, probes);
     } else {
-      const sloDim = evaluation.dimensions.find((d) => d.id === "slo");
-      if (sloDim && sloDim.sliStatus !== "blocked") {
-        sloDim.sliStatus = "stale";
-        sloDim.sliNote =
-          "Azure SLI probe skipped this run; qualitative dimensions refreshed.";
-      }
-      const slo1 = evaluation.committedSlos.find((s) => s.id === "SLO-1");
-      if (slo1 && slo1.status !== "blocked") {
-        slo1.status = "stale";
-        slo1.note =
-          "Azure SLI probe skipped this run; see OPS-P0-004 workflow Azure login.";
-      }
+      markSlisStaleSkipped(
+        evaluation,
+        "Azure SLI probe skipped this run; qualitative dimensions refreshed.",
+      );
     }
   } else if (args.azure) {
-    console.log("Probing prod homepage availability (read-only)…");
-    const probe = probeHomepageAvailability();
-    console.log(probe.note);
-    applyAzureSli(evaluation, probe);
+    console.log("Probing prod homepage / materials / FCP SLIs (read-only)…");
+    const probes = {
+      homepage: probeHomepageAvailability(),
+      materials: probeMaterialsAvailability(),
+      fcp: probeHomepageFcp(),
+    };
+    console.log(probes.homepage.note);
+    console.log(probes.materials.note);
+    console.log(probes.fcp.note);
+    applyAzureSlis(evaluation, probes);
   }
 
   const overall = round1(weightedOverall(evaluation.dimensions));

@@ -17,7 +17,7 @@ alwaysApply: true
 
 # Operational excellence (scorecard, SLOs, alerting)
 
-Phased work and action IDs live in [docs/plans/operational-excellence.md](docs/plans/operational-excellence.md) (`OPS-*`). Treat that document as the backlog — **do not implement** materials synthetics, FCP wiring, PagerDuty, or later `OPS-P2+` / `OPS-P3-*` items unless the user explicitly asks. Phase 0–1 are done (`ALERT-*` Action Groups + living scorecard + monthly workflow).
+Phased work and action IDs live in [docs/plans/operational-excellence.md](docs/plans/operational-excellence.md) (`OPS-*`). Treat that document as the backlog — **do not implement** PagerDuty escalate-if-unacked, Studio SLO cadence, CD Sev1 wiring, or other `OPS-P3-*` items unless the user explicitly asks. Phase 0–2 are done (`ALERT-*` Action Groups + living scorecard + monthly workflow + materials synthetics + field/lab FCP).
 
 ## Scorecard
 

@@ -18,6 +18,7 @@
     "test:smoke": "playwright test --config=playwright.smoke.config.ts",
     "test:journey": "playwright test --config=playwright.journey.config.ts",
     "test:journey:content": "playwright test --config=playwright.journey.config.ts --grep @content",
+    "test:lab-fcp": "node scripts/lab-fcp.mjs",
     "ig:download": "node scripts/download-instagram-media.mjs"
   },
   "dependencies": {
