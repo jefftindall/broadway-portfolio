@@ -17,13 +17,15 @@ resource "azurerm_resource_group" "shared" {
 }
 
 resource "azurerm_key_vault" "shared" {
-  name                       = local.shared_kv_name
-  location                   = azurerm_resource_group.shared.location
-  resource_group_name        = azurerm_resource_group.shared.name
-  tenant_id                  = data.azurerm_client_config.current.tenant_id
-  sku_name                   = "standard"
+  name                = local.shared_kv_name
+  location            = azurerm_resource_group.shared.location
+  resource_group_name = azurerm_resource_group.shared.name
+  tenant_id           = data.azurerm_client_config.current.tenant_id
+  sku_name            = "standard"
+  # OPS-P3-006 — shared vault holds SITE-*/Turnstile/ACS/ALERT-*; purge protection is one-way.
+  # soft_delete_retention_days is immutable after create (stays 7); only enable purge protection.
   soft_delete_retention_days = 7
-  purge_protection_enabled   = false
+  purge_protection_enabled   = true
   rbac_authorization_enabled = true
   tags                       = local.shared_tags
 }

@@ -134,6 +134,19 @@ These secrets are **not** synced into SWA app settings and are **not** required 
 
 Do **not** reuse `SITE-CONTACT-EMAIL`, `SITE-CONTACT-PHONE`, or `ACS-SMS-FROM` for ops paging.
 
+## Key Vault purge protection (`OPS-P3-006`)
+
+**Decision (accepted):** Enable purge protection on shared + prod vaults. Soft-delete retention stays **7 days** (Azure does not allow changing `soft_delete_retention_days` after the vault is created).
+
+| Vault | Scope |
+|-------|--------|
+| `kv-elyse-shared` | Bootstrap (`infra/bootstrap/shared_kv.tf`) — SITE-*, Turnstile, ACS, `ALERT-*` |
+| `kv-elyse-prod` | Prod env module (`purge_protection_enabled = true`) |
+
+Staging env vault stays **without** purge protection so tear-down / experiment remains possible.
+
+Purge protection is **one-way** while soft-delete retention remains: you cannot purge a deleted vault/secret until the retention window elapses, and you cannot turn protection off without waiting out retention after disabling (Azure blocks disable while protection is on). Apply bootstrap then prod Terraform after merge; document only the decision here — never secret values.
+
 ## Rotate Gemini API key
 
 1. Create a new key in Google AI Studio

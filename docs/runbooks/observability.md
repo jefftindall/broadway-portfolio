@@ -37,14 +37,14 @@ Consent Mode / cookie banner: **not shipped** (`SEARCH-P1-006` = `wont_fix`). Pr
 
 Availability and failed-request metric alerts wire to Key Vault–backed Action Groups when shared `ALERT-*` secrets are set (not `REPLACE_ME`). See [rotate-secrets.md](./rotate-secrets.md) ops section and [operational-excellence.md](../plans/operational-excellence.md).
 
-**Operational excellence:** Living scorecard at [operational-excellence-scorecard.md](../ops/operational-excellence-scorecard.md). Backlog / SLOs / Sev1 SMS-voice plan: [operational-excellence.md](../plans/operational-excellence.md) (`OPS-*`). Private alert emails/phones must not be committed — only `ALERT-*` in `kv-elyse-shared`. Phase 0–2 are done (materials synthetics + field FCP + soft lab gate).
+**Operational excellence:** Living scorecard at [operational-excellence-scorecard.md](../ops/operational-excellence-scorecard.md). Backlog / SLOs / Sev1 SMS-voice plan: [operational-excellence.md](../plans/operational-excellence.md) (`OPS-*`). Private alert emails/phones must not be committed — only `ALERT-*` in `kv-elyse-shared`. Phase 0–2 done; Phase 3 (except optional PagerDuty `OPS-P3-002`) done — Studio SLO cadence, CD Sev1, inquiry SLI, IR stub, prod/shared KV purge protection.
 
-## Action Groups (OPS-P1 / OPS-P2)
+## Action Groups (OPS-P1 / OPS-P2 / OPS-P3)
 
 | Group | Name pattern | Channels | Wired alerts |
 |-------|--------------|----------|--------------|
 | Notify (Sev2) | `ag-elyse-notify-{env}` | Email ± SMS | Failed-request spike |
-| Critical (Sev1) | `ag-elyse-critical-{env}` | Email + SMS + voice | Prod homepage + materials availability |
+| Critical (Sev1) | `ag-elyse-critical-{env}` | Email + SMS + voice | Prod homepage + materials availability; **DeployFailed** (`OPS-P3-003`) |
 | Watch (Sev3) | `ag-elyse-watch-{env}` | Email only | Homepage field FCP p75 burn (`HomepageFcpMs`; 2d watch window; SLO-6 scored over 7d in scorecard) |
 
 Contacts: `ALERT-EMAIL`, `ALERT-SMS-PHONE`, `ALERT-VOICE-PHONE` in `kv-elyse-shared`. Invalid / `REPLACE_ME` values skip that receiver; if all contacts are placeholders, Action Groups and metric alerts are not created. Watch group requires a real `ALERT-EMAIL`.
@@ -89,7 +89,9 @@ User-facing messages stay short and non-technical. Full provider/SDK detail is o
 | `StudioPublishUiSuccess` / `StudioPublishUiFailed` | Studio UI (always sampled; `reason` + optional `correlationId` on failures) |
 | `StudioPublishToProdCompleted` | Studio Done-step when Deploy Production succeeds (`durationMs` from Publish click; always sampled) |
 | `StudioPublishToProdDurationMs` | Browser custom metric (same window as above; always sampled) |
-| `DeployCompleted` | GitHub Actions after SWA upload |
+| `DeployCompleted` | GitHub Actions after SWA upload (staging or prod) |
+| `DeployFailed` | GitHub Actions when **Deploy Production** job fails (`OPS-P3-003`; pages critical AG) |
+| `ContactInquiryReceived` / `ContactInquiryFailed` | Contact form API (`errorKind` on failures; see inquiry SLI below) |
 
 Gemini model-side traces stay in Google — not App Insights. Coarse `errorKind` values include `gemini_quota`, `gemini`, `github`, `config`, `unknown`.
 
@@ -158,7 +160,7 @@ Studio / publish events:
 
 ```kusto
 customEvents
-| where name in ("StudioAccessDenied", "StudioPublishDenied", "StudioDraftRequested", "StudioDraftFailed", "StudioPublishRequested", "StudioPublishFailed", "StudioToolExecuted", "GitHubCommitSucceeded", "GitHubCommitFailed", "StudioPublishUiSuccess", "StudioPublishUiFailed", "StudioPublishToProdCompleted", "DeployCompleted")
+| where name in ("StudioAccessDenied", "StudioPublishDenied", "StudioDraftRequested", "StudioDraftFailed", "StudioPublishRequested", "StudioPublishFailed", "StudioToolExecuted", "GitHubCommitSucceeded", "GitHubCommitFailed", "StudioPublishUiSuccess", "StudioPublishUiFailed", "StudioPublishToProdCompleted", "DeployCompleted", "DeployFailed", "ContactInquiryReceived", "ContactInquiryFailed")
 | order by timestamp desc
 | take 100
 ```
@@ -180,12 +182,67 @@ customMetrics
 | order by timestamp desc
 ```
 
+### Committed Studio SLOs (OPS-P3-001) — monthly cadence
+
+Run these in **prod** App Insights Logs (or let `node scripts/ops-scorecard-refresh.mjs --azure` probe them). Cite results in the monthly scorecard PR. Targets: **SLO-2** 95% / 28d (≥3 attempts); **SLO-3** p95 ≤ 20 minutes (1_200_000 ms) / 28d.
+
+**SLO-2 — Studio publish success** (exclude allowlist denials and draft-mode UI failures):
+
+```kusto
+customEvents
+| where timestamp > ago(28d)
+| where name in ("StudioPublishUiSuccess", "StudioPublishUiFailed")
+| extend operation = tostring(customDimensions.operation)
+| extend reason = tostring(customDimensions.reason)
+| where name == "StudioPublishUiSuccess"
+    or (name == "StudioPublishUiFailed" and operation == "publish" and reason != "unauthorized")
+| summarize
+    successes = countif(name == "StudioPublishUiSuccess"),
+    failures = countif(name == "StudioPublishUiFailed"),
+    attempts = count()
+| extend successPct = 100.0 * successes / attempts
+| project successPct, successes, failures, attempts
+```
+
+**SLO-3 — publish → live p95** (samples successful Deploy Production only):
+
+```kusto
+customMetrics
+| where timestamp > ago(28d)
+| where name == "StudioPublishToProdDurationMs"
+| summarize samples = count(), p50 = percentile(value, 50), p95 = percentile(value, 95)
+```
+
+Cadence: monthly scorecard workflow (`OPS-P0-004`) with `--azure`; ad-hoc after a busy Studio week. If `attempts < 3` for SLO-2 (or no latency samples for SLO-3), mark the row `stale` — do not invent a pass/fail.
+
+### Inquiry accept-rate SLI (OPS-P3-004) — not yet a committed SLO
+
+Intended target when promoted: **99% / 28d**. Exclude bots (`turnstile_rejected`) and client validation (`validation`). Treat infra/provider failures (`acs`, `acs_temporary`, `config`, `turnstile` siteverify outage, `unknown`) as failures.
+
+```kusto
+customEvents
+| where timestamp > ago(28d)
+| where name in ("ContactInquiryReceived", "ContactInquiryFailed")
+| extend errorKind = tostring(customDimensions.errorKind)
+| where name == "ContactInquiryReceived"
+    or (name == "ContactInquiryFailed"
+        and errorKind !in ("turnstile_rejected", "validation"))
+| summarize
+    accepted = countif(name == "ContactInquiryReceived"),
+    failed = countif(name == "ContactInquiryFailed"),
+    n = count()
+| extend acceptPct = 100.0 * accepted / n
+| project acceptPct, accepted, failed, n
+```
+
+Monthly `--azure` refresh probes this into `optionalSlos` (scorecard evidence only until product commits the SLO).
+
 Deploy timeline:
 
 ```kusto
 customEvents
-| where name == "DeployCompleted"
-| project timestamp, environment = tostring(customDimensions.environment), sha = tostring(customDimensions.sha), job = tostring(customDimensions.job)
+| where name in ("DeployCompleted", "DeployFailed")
+| project timestamp, name, environment = tostring(customDimensions.environment), sha = tostring(customDimensions.sha), job = tostring(customDimensions.job)
 | order by timestamp desc
 ```
 

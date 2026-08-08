@@ -530,3 +530,52 @@ jobs:
                 }
               }
             }]"
+
+  # OPS-P3-003 — Sev1 path when Deploy Production fails. Emits DeployFailed → App Insights;
+  # prod scheduled-query alert pages ag-elyse-critical-prod (email + SMS + voice).
+  notify_prod_deploy_failure:
+    name: Notify prod deploy failure
+    needs: [deploy_prod]
+    if: always() && !cancelled() && needs.deploy_prod.result == 'failure'
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - name: Emit DeployFailed to App Insights
+        continue-on-error: true
+        env:
+          APPINSIGHTS_CONNECTION_STRING: ${{ vars.APPINSIGHTS_CONNECTION_STRING }}
+          DEPLOY_ENVIRONMENT: prod
+          GIT_SHA: ${{ github.sha }}
+          JOB_NAME: Deploy Production
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$APPINSIGHTS_CONNECTION_STRING" ]; then
+            echo "No App Insights connection string; cannot emit DeployFailed."
+            exit 0
+          fi
+          IKEY=$(echo "$APPINSIGHTS_CONNECTION_STRING" | sed -n 's/.*InstrumentationKey=\([^;]*\).*/\1/p')
+          ENDPOINT=$(echo "$APPINSIGHTS_CONNECTION_STRING" | sed -n 's/.*IngestionEndpoint=\([^;]*\).*/\1/p')
+          ENDPOINT=${ENDPOINT:-https://dc.services.visualstudio.com}
+          ENDPOINT=${ENDPOINT%/}
+          TIME=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
+          curl -sS -X POST "${ENDPOINT}/v2/track" \
+            -H "Content-Type: application/json" \
+            -d "[{
+              \"name\": \"Microsoft.ApplicationInsights.Event\",
+              \"time\": \"${TIME}\",
+              \"iKey\": \"${IKEY}\",
+              \"data\": {
+                \"baseType\": \"EventData\",
+                \"baseData\": {
+                  \"ver\": 2,
+                  \"name\": \"DeployFailed\",
+                  \"properties\": {
+                    \"environment\": \"${DEPLOY_ENVIRONMENT}\",
+                    \"sha\": \"${GIT_SHA}\",
+                    \"job\": \"${JOB_NAME}\",
+                    \"runUrl\": \"${RUN_URL}\"
+                  }
+                }
+              }
+            }]"
+          echo "Emitted DeployFailed (Sev1 SLI). Critical Action Group alert evaluates within ~5m."
