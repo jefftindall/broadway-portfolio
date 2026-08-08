@@ -42,7 +42,7 @@ Reuse the same App for staging and prod (one installation covers the repo). Dele
 
 ## Allow direct commits to `main`
 
-Studio writes via the Contents API (not PRs). The monthly ops scorecard workflow (`.github/workflows/ops-scorecard-monthly.yml`) mints an installation token in-shell from the same Key Vault secrets, checks out with that token (not `GITHUB_TOKEN`), verifies `permissions.push`, then commits to `main` as `elyse-portfolio-studio[bot]`. The **Protect main** ruleset must list the App as a bypass actor, or publishes / scorecard commits fail with “Cannot update this protected ref.”
+Studio writes via the Contents API (not PRs). The monthly ops scorecard workflow checks out with `persist-credentials: false`, mints an installation token via [`scripts/mint-github-app-token.sh`](../../scripts/mint-github-app-token.sh) (PEM never logged), configures git `http.extraheader` with that token, and pushes to `main` as `elyse-portfolio-studio[bot]`. The **Protect main** ruleset must list the App as a bypass actor, or publishes / scorecard commits fail with “Cannot update this protected ref.”
 
 1. Repo → **Settings → Rules → Rulesets → Protect main**
 2. **Bypass list** → **Add bypass** → choose the Studio GitHub App (`elyse-portfolio-studio`) → bypass mode **Always**

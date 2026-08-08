@@ -180,7 +180,7 @@ az keyvault secret set --vault-name kv-elyse-prod --name GITHUB-APP-PRIVATE-KEY 
 
 App ID and installation ID rarely change; only update those Key Vault secrets if you recreate the App or reinstall it, then sync.
 
-Workflows that mint App tokens must **mask** the PEM (`::add-mask::` on the full value and each line) and must **not** pass it through an action `with:` input (those inputs are printed to the job log). Prefer in-shell JWT + installation-token minting (see `.github/workflows/ops-scorecard-monthly.yml`).
+Workflows that need a Studio App installation token must call [`scripts/mint-github-app-token.sh`](../../scripts/mint-github-app-token.sh) only. That script writes the PEM to a temp file, masks **each line** with `::add-mask::`, then discards the file — it never `echo`s a multiline PEM (that dumps the key body into the Actions log). `npm run lint:actions-secrets` (and CI job **Actions secret-safety**) fails the build if workflows reintroduce PEM `with:` inputs, inline `GITHUB-APP-PRIVATE-KEY` fetches, or unsafe multiline masks.
 
 ## Rotate the Entra client secret (Studio login)
 
