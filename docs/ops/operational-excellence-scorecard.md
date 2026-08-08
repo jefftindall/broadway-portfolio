@@ -6,7 +6,7 @@ Living reliability posture for the Elyse Tindall portfolio. Rubric, SLOs, and ba
 |-------|-------|
 | **Last reviewed** | 2026-08-08 |
 | **Review source** | monthly-workflow (+ Azure SLI attempt) |
-| **Weighted overall** | **4.0 / 5** |
+| **Weighted overall** | **4.1 / 5** |
 | **Target overall** | ≥ 3.8 (after P1 alerting) |
 | **Verdict** | Strong change safety and docs; P1–P3 alerting/SLIs landed (except optional vendor escalate-if-unacked). Score Studio + inquiry windows after traffic; CD DeployFailed pages critical AG after prod apply. |
 
@@ -20,7 +20,7 @@ Living reliability posture for the Elyse Tindall portfolio. Rubric, SLOs, and ba
 | Secrets & config | 0.9 | 4.0 | Strong | Env + shared KV; sync workflow; rotate-secrets | Functions need explicit secret sync | ok |
 | Observability | 1.2 | 4.2 | Strong | Per-env AI; Studio correlation + events; GA4 public; HomepageFcpMs; contact inquiry events + SLI docs | No Workbooks as code | ok |
 | Test automation | 1.1 | 4.0 | Strong | Staging smoke + journeys; homepage + materials synthetics; soft lab FCP | No unit tests; Studio E2E OOS | ok |
-| Cost & capacity | 0.7 | 3.5 | Solid | cost-and-quotas; AI caps | Manual budget/Gemini console alerts | ok |
+| Cost & capacity | 0.7 | 4.0 | Strong | Subscription budget $31/mo = ceil($24.54 expected × 1.25) (OPS-P4-001); Cost Management spend/MoM in monthly refresh (OPS-P4-002); cost-and-quotas retail breakdown; AI caps | Gemini/Google console budget alert still manual | stale: Re-run with --azure after bootstrap budget apply to populate costProbe. |
 | Alerting & on-call | 1.1 | 4.3 | Strong | KV ALERT-* → notify/critical/watch AGs; homepage+materials Sev1; DeployFailed Sev1 (OPS-P3-003); FCP Sev3 | Optional vendor escalate-if-unacked still OPS-P3-002; operator must keep ALERT-* real | ok |
 | Resilience & DR | 0.9 | 2.0 | Thin | Git rollback; env isolation; East US 2 only | Single region; shared ACS/Turnstile coupling | ok |
 | SLOs & error budget | 0.8 | 3.8 | Solid | Field/synthetic SLIs: Materials availability avg 100% over 12 probe(s) (target 99.8% / 7d). Homepage FCP p75 156ms over 32 sample(s) (target < 1500ms / 7d). | Windows need traffic before met/missed; inquiry not yet a committed SLO | ok: App Insights returned no availability datapoints for the last 7 days (Homepage). Materials availability avg 100% over 12 probe(s) (target 99.8% / 7d). Homepage FCP p75 156ms over 32 sample(s) (target < 1500ms / 7d). No Studio publish UI events in the last 28 days; SLO-2 left stale. No StudioPublishToProdDurationMs samples in the last 28 days; SLO-3 left stale. No inquiry events in the last 28 days (excluding bots/validation); left stale. |
@@ -44,8 +44,8 @@ Living reliability posture for the Elyse Tindall portfolio. Rubric, SLOs, and ba
 ## How this file is updated
 
 1. Edit [`scorecard-evaluation.json`](./scorecard-evaluation.json) (scores / evidence / gaps).
-2. Run `node scripts/ops-scorecard-refresh.mjs` (add `--monthly --azure` when Azure CLI is logged in for homepage/materials/FCP/Studio/inquiry SLIs).
-3. Monthly GitHub Action (`.github/workflows/ops-scorecard-monthly.yml`) does the same on a schedule and commits to `main` via the Studio GitHub App (CD ignores scorecard-only pushes).
+2. Run `node scripts/ops-scorecard-refresh.mjs` (add `--monthly --azure` when Azure CLI is logged in for homepage/materials/FCP/Studio/inquiry SLIs and subscription spend).
+3. Monthly GitHub Action (`.github/workflows/ops-scorecard-monthly.yml`) refreshes, commits to `main` via the Studio GitHub App, and emails an ACS digest to ALERT-EMAIL + SITE-CONTACT-EMAIL (recipients never written into this file).
 4. Spot-check the commit if scores move unexpectedly; optional SLIs stay `stale` until Azure probes have enough samples.
 
 History: optional prior snapshots may live under `docs/ops/scorecard-history/` later — not required for Phase 0.

@@ -1,15 +1,42 @@
 # Runbook: Cost and quotas
 
-## Expected monthly cost (approx.)
+## Expected monthly Azure cost (retail)
+
+Region: **eastus2** (all environments). Rates: Azure Retail Prices API (`prices.azure.com`), Consumption / pay-as-you-go USD. Recalculate whenever billable resources are added, removed, or resized — see [`.cursor/rules/ops-operational-excellence.mdc`](../../.cursor/rules/ops-operational-excellence.mdc).
+
+**Last calculated:** 2026-08-08 · **Expected total: $24.54 / month**
+
+| Item | Qty / assumption | Unit rate | USD/mo |
+|------|------------------|-----------|--------|
+| Static Web Apps Standard | staging + prod | $9.00 / app / mo | **18.00** |
+| App Insights standard web tests (prod) | 3 tests × 1 geo × every 10 min → 12,960 exec/30d | $0.0005 / execution | **6.48** |
+| Key Vault Standard | ×3 (shared + staging + prod), light ops | $0.03 / 10K ops | **0.03** |
+| tfstate storage (`stelysetfstateeu2`) | Standard LRS, &lt;1 GB | $0.024 / GB-mo | **0.03** |
+| Log Analytics / App Insights | &lt;5 GB Analytics Logs; 30-day retention | First 5 GB/mo free; retention ≤31d free | **0.00** |
+| ACS Email | ~50–100 inquiry + OPS digest msgs | $0.00025 / email + $0.00012 / MB | **0.03** |
+| SWA bandwidth | Within included 100 GB / subscription | Overage $0.20 / GB | **0.00** |
+| Monitor Action Group SMS / voice | Steady-state idle | $0.00645 / SMS · $0.013 / voice (US) | **0.00** |
+| ACS US toll-free number | Not leased (`ACS-SMS-FROM` = REPLACE_ME) | $2.00 / mo if enabled | **0.00** |
+| **Azure expected total** | | | **24.54** |
+
+### Subscription budget (OPS-P4-001)
+
+| Field | Value |
+|-------|--------|
+| Formula | `ceil(expected_monthly_usd × 1.25)` |
+| Expected | **$24.54** |
+| Budget amount | **$31 / month** (`budget-elyse-portfolio-monthly` in `infra/bootstrap/budget.tf`) |
+| Actual alerts | **80%** and **100%** → Key Vault `ALERT-EMAIL` only (Owners fallback if `REPLACE_ME`) |
+| 80% of budget | ≈ **$24.80** (≈ expected retail total) |
+
+The monthly OPS scorecard digest also reports last-month spend and MoM trend to both `ALERT-EMAIL` and `SITE-CONTACT-EMAIL` (ACS email; recipients never in git).
+
+### Non-Azure (not in subscription budget)
 
 | Item | Notes |
 |------|--------|
-| Azure Static Web Apps **Standard** × environments | Staging + prod each need Standard for MI / Key Vault / auth (~$9/mo each) |
-| Key Vault × environments | Negligible at this scale |
-| State storage (`stelysetfstateeu2`) | Negligible |
-| Gemini API | Typically pennies/month for light Studio usage — set a budget alert in Google Cloud/AI Studio |
+| Gemini API | Typically pennies/month for light Studio — set a budget alert in Google Cloud / AI Studio |
 | GitHub | Free for private/public depending on plan |
-| Bandwidth | SWA includes generous bandwidth; watch if video hosting is added later |
 
 ## Quotas / limits
 
@@ -20,7 +47,8 @@
 
 ## Alerts
 
-- Azure budget alert on the resource group
-- Gemini/Google billing alert
+- Azure **subscription** budget `$31/mo` → `ALERT-EMAIL` at **80%** / **100%** Actual (bootstrap TF)
+- Monthly OPS scorecard ACS digest (spend + MoM + scores) → `ALERT-EMAIL` + `SITE-CONTACT-EMAIL`
+- Gemini/Google billing alert (console; not in this repo)
 - GitHub Actions email on failed workflow
 - Application Insights: 1 GB/day cap, 30-day retention, failed-request + prod availability (homepage + materials) + FCP watch alerts (see [observability.md](observability.md))

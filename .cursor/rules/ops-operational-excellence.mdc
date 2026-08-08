@@ -1,5 +1,5 @@
 ---
-description: Operational excellence plan — scorecard, SLOs, alerting; no private contacts in git
+description: Operational excellence plan — scorecard, SLOs, alerting, Azure cost/budget sync; no private contacts in git
 globs:
   - docs/plans/operational-excellence.md
   - docs/ops/**
@@ -7,23 +7,37 @@ globs:
   - docs/runbooks/rotate-secrets.md
   - docs/runbooks/cost-and-quotas.md
   - docs/runbooks/deploy-and-rollback.md
-  - infra/modules/portfolio/monitoring.tf
-  - infra/modules/portfolio/variables.tf
+  - infra/modules/**/*
   - infra/environments/**/*
   - infra/bootstrap/**/*
   - .github/workflows/**/*
+  - scripts/ops-scorecard-refresh.mjs
 alwaysApply: true
 ---
 
 # Operational excellence (scorecard, SLOs, alerting)
 
-Phased work and action IDs live in [docs/plans/operational-excellence.md](docs/plans/operational-excellence.md) (`OPS-*`). Treat that document as the backlog — **do not implement** PagerDuty escalate-if-unacked (`OPS-P3-002`) unless the user explicitly asks. Phase 0–3 (except `OPS-P3-002`) are done (`ALERT-*` Action Groups + living scorecard + monthly workflow + materials synthetics + field/lab FCP + Studio SLO cadence + CD Sev1 + inquiry SLI + IR stub + prod/shared KV purge protection).
+Phased work and action IDs live in [docs/plans/operational-excellence.md](docs/plans/operational-excellence.md) (`OPS-*`). Treat that document as the backlog — **do not implement** PagerDuty escalate-if-unacked (`OPS-P3-002`) unless the user explicitly asks. Phase 0–4 (except `OPS-P3-002`) are done (`ALERT-*` Action Groups + living scorecard + monthly workflow + materials synthetics + field/lab FCP + Studio SLO cadence + CD Sev1 + inquiry SLI + IR stub + prod/shared KV purge protection + subscription budget at **125% of retail expected** + ACS monthly digest).
+
+## Azure cost estimate + subscription budget (required on infra change)
+
+Whenever you **add, remove, or change billable Azure resources** (Terraform in `infra/**`: SKUs/tiers, counts, regions, web-test frequency/locations, ACS phone numbers, App Insights caps, storage, etc.), in the **same change**:
+
+1. **Recalculate expected monthly cost** from **Azure retail** Consumption rates for the **region(s) actually deployed** (default **eastus2**). Prefer `https://prices.azure.com/api/retail/prices` (or Azure MCP `pricing`) over stale docs. Sum steady-state usage (fixed SKUs + metered drivers such as web-test executions); exclude one-off incident SMS/voice unless you are provisioning a always-on number/lease.
+2. **Update** [`docs/runbooks/cost-and-quotas.md`](docs/runbooks/cost-and-quotas.md) with the full **USD breakdown table**, **expected total**, **last-calculated date**, and unit rates used. Keep non-Azure lines (Gemini, GitHub) separate from the Azure total.
+3. **Set the subscription budget** to **125% of expected**, rounded **up** to a whole USD dollar:  
+   `subscription_budget_usd = ceil(expected_monthly_usd * 1.25)` in [`infra/bootstrap/budget.tf`](infra/bootstrap/budget.tf) (`budget-elyse-portfolio-monthly`).
+4. **Keep Actual cost alert thresholds at 80% and 100%** of that budget amount (emails → Key Vault `ALERT-EMAIL` only). Do not drop the 80% notification. (80% of a 125% budget ≈ expected retail spend.)
+5. **Sync** `SUBSCRIPTION_BUDGET_USD` in [`scripts/ops-scorecard-refresh.mjs`](scripts/ops-scorecard-refresh.mjs), plus budget mentions in `AGENTS.md`, [`docs/plans/operational-excellence.md`](docs/plans/operational-excellence.md), and `infra/bootstrap/README.md`.
+
+Do **not** invent rates or leave `cost-and-quotas.md` as vague “negligible” when a meter has a material fixed cost (e.g. SWA Standard, standard web tests).
 
 ## Scorecard
 
 - Rubric lives in the plan. Living scores: `docs/ops/operational-excellence-scorecard.md` (from `docs/ops/scorecard-evaluation.json` via `scripts/ops-scorecard-refresh.mjs`).
-- Monthly refresh (`OPS-P0-004`): `.github/workflows/ops-scorecard-monthly.yml` uses `scripts/mint-github-app-token.sh` (line-masked PEM), verifies Contents:write via mint response + `/installation/repositories`, and pushes with App git credentials (`persist-credentials: false`). CD ignores scorecard-only pushes. Never reintroduce `GITHUB_TOKEN` pushes, PEM `with:` inputs, or multiline `::add-mask::$PEM`.
-- Scorecard content is scores, evidence, and gaps only — **never** alert emails, phones, or secrets.
+- Monthly refresh (`OPS-P0-004` / `OPS-P4-002`): `.github/workflows/ops-scorecard-monthly.yml` uses `scripts/mint-github-app-token.sh` (line-masked PEM), verifies Contents:write via mint response + `/installation/repositories`, pushes with App git credentials (`persist-credentials: false`), probes Cost Management spend/MoM vs the **current** subscription budget (see `cost-and-quotas.md` / `budget.tf`), and emails an ACS digest to `ALERT-EMAIL` + `SITE-CONTACT-EMAIL` (recipients never written into git artifacts). CD ignores scorecard-only pushes. Never reintroduce `GITHUB_TOKEN` pushes, PEM `with:` inputs, or multiline `::add-mask::$PEM`.
+- Scorecard content is scores, evidence, gaps, and USD figures only — **never** alert emails, phones, or secrets.
+- Subscription budget (`OPS-P4-001`): bootstrap `budget-elyse-portfolio-monthly` = **ceil(expected × 1.25)**; Actual **80%** / **100%** → `ALERT-EMAIL` only. Expected breakdown SoT: `docs/runbooks/cost-and-quotas.md`.
 
 ## Private details never in git
 
@@ -32,10 +46,10 @@ When planning or implementing alerts, on-call, or support contacts:
 - **Never** commit real alert emails, SMS/voice numbers, PagerDuty/Better Stack routing keys, or similar private operator details in Terraform variables files, docs, examples, canvases, PR bodies, or source comments.
 - Store them in **Azure Key Vault** and read at deploy/apply time (data sources / sync scripts), same pattern as `SITE-CONTACT-*` and ACS secrets (`lifecycle { ignore_changes = [value] }`, set via `az keyvault secret set`).
 - Use placeholders only in the repo: `REPLACE_ME`, `<email>`, `+1XXXXXXXXXX`.
-- Prefer dedicated **`ALERT-*`** secrets in **`kv-elyse-shared`** (bootstrap placeholders), not reuse of `SITE-CONTACT-EMAIL` / `SITE-CONTACT-PHONE` (those are inquiry notify via ACS).
+- Prefer dedicated **`ALERT-*`** secrets in **`kv-elyse-shared`** (bootstrap placeholders), not reuse of `SITE-CONTACT-EMAIL` / `SITE-CONTACT-PHONE` (those are inquiry notify via ACS). Monthly digests may email **both** `ALERT-EMAIL` and `SITE-CONTACT-EMAIL` via ACS **email** — do **not** put `SITE-CONTACT-EMAIL` on Azure Budget threshold notifications.
 - Do **not** send ops/Sev1 alerts through ACS contact-form SMS.
 - Action Groups read `ALERT-EMAIL` / `ALERT-SMS-PHONE` / `ALERT-VOICE-PHONE` at apply — do **not** reintroduce plaintext `alert_email` (or phone) Terraform variables.
 
 ## Keep the plan in sync
 
-When you change scorecard dimensions/rubric, SLO targets, severity→channel mapping, alert secret names, or the monthly workflow contract, update `docs/plans/operational-excellence.md` in the same PR. Extend [rotate-secrets.md](docs/runbooks/rotate-secrets.md) when secret names change. After the living scorecard exists, update it (or let the monthly workflow commit do so) rather than only editing canvases.
+When you change scorecard dimensions/rubric, SLO targets, severity→channel mapping, alert secret names, budget amount / cost-estimate formula, or the monthly workflow contract, update `docs/plans/operational-excellence.md` in the same PR. Extend [rotate-secrets.md](docs/runbooks/rotate-secrets.md) when secret names change. After the living scorecard exists, update it (or let the monthly workflow commit do so) rather than only editing canvases.

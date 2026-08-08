@@ -63,10 +63,11 @@
       "id": "cost",
       "name": "Cost & capacity",
       "weight": 0.7,
-      "score": 3.5,
-      "evidence": "cost-and-quotas; AI caps",
-      "gap": "Manual budget/Gemini console alerts",
-      "sliStatus": "ok"
+      "score": 4,
+      "evidence": "Subscription budget $31/mo = ceil($24.54 expected × 1.25) (OPS-P4-001); Cost Management spend/MoM in monthly refresh (OPS-P4-002); cost-and-quotas retail breakdown; AI caps",
+      "gap": "Gemini/Google console budget alert still manual",
+      "sliStatus": "stale",
+      "sliNote": "Re-run with --azure after bootstrap budget apply to populate costProbe."
     },
     {
       "id": "alerting",

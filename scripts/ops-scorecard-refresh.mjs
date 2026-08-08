@@ -35,6 +35,8 @@ const STUDIO_PUBLISH_MIN_ATTEMPTS = 3;
 const STUDIO_LATENCY_P95_TARGET_MS = 1_200_000; // 20 minutes
 const INQUIRY_ACCEPT_TARGET = 99;
 const INQUIRY_MIN_SAMPLES = 3;
+/** Keep in sync with infra/bootstrap/budget.tf + docs/runbooks/cost-and-quotas.md (ceil(expected × 1.25)). */
+const SUBSCRIPTION_BUDGET_USD = 31;
 
 const MATURITY = [
   { min: 4.0, label: "Strong" },
@@ -131,6 +133,133 @@ function azureLoggedIn() {
     return true;
   } catch {
     return false;
+  }
+}
+
+function subscriptionId() {
+  return runAz(["account", "show", "--query", "id", "-o", "tsv"]).trim();
+}
+
+/** Calendar month range ending before `anchorYmd` (UTC). monthsAgo=1 → previous month. */
+function monthRangeUtc(anchorYmd, monthsAgo) {
+  const d = new Date(`${anchorYmd}T00:00:00.000Z`);
+  const y = d.getUTCFullYear();
+  const m = d.getUTCMonth();
+  const start = new Date(Date.UTC(y, m - monthsAgo, 1));
+  const end = new Date(Date.UTC(y, m - monthsAgo + 1, 1));
+  const label = `${start.getUTCFullYear()}-${String(start.getUTCMonth() + 1).padStart(2, "0")}`;
+  return {
+    from: start.toISOString().slice(0, 10),
+    to: end.toISOString().slice(0, 10),
+    label,
+  };
+}
+
+function querySubscriptionActualCost(fromYmd, toYmd) {
+  const sub = subscriptionId();
+  const body = {
+    type: "ActualCost",
+    timeframe: "Custom",
+    timePeriod: { from: fromYmd, to: toYmd },
+    dataset: {
+      granularity: "None",
+      aggregation: {
+        totalCost: { name: "Cost", function: "Sum" },
+      },
+    },
+  };
+  const raw = runAz([
+    "rest",
+    "--method",
+    "post",
+    "--url",
+    `https://management.azure.com/subscriptions/${sub}/providers/Microsoft.CostManagement/query?api-version=2023-11-01`,
+    "--body",
+    JSON.stringify(body),
+    "-o",
+    "json",
+  ]);
+  const parsed = JSON.parse(raw);
+  const rows = parsed?.properties?.rows ?? parsed?.rows ?? [];
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return null;
+  }
+  // Row is typically [cost] or [cost, currency] depending on columns.
+  const cost = Number(rows[0][0]);
+  if (!Number.isFinite(cost)) return null;
+  return cost;
+}
+
+/**
+ * OPS-P4-002 — last calendar month ActualCost + MoM vs prior month; vs subscription budget.
+ * Dollar amounts only — never emails or secrets.
+ */
+function probeSubscriptionSpend(anchorYmd) {
+  if (!azureLoggedIn()) {
+    return {
+      ok: false,
+      note: "Azure CLI not logged in; subscription spend probe left stale.",
+    };
+  }
+
+  const last = monthRangeUtc(anchorYmd, 1);
+  const prior = monthRangeUtc(anchorYmd, 2);
+
+  try {
+    const lastMonthUsd = querySubscriptionActualCost(last.from, last.to);
+    const priorMonthUsd = querySubscriptionActualCost(prior.from, prior.to);
+    if (lastMonthUsd == null) {
+      return {
+        ok: false,
+        note: `Cost Management returned no ActualCost rows for ${last.label}; spend left stale (data may lag).`,
+      };
+    }
+
+    const priorOk = priorMonthUsd != null;
+    const momDeltaUsd = priorOk ? round1(lastMonthUsd - priorMonthUsd) : null;
+    const momDeltaPct =
+      priorOk && priorMonthUsd !== 0
+        ? round1(((lastMonthUsd - priorMonthUsd) / Math.abs(priorMonthUsd)) * 100)
+        : priorOk && priorMonthUsd === 0 && lastMonthUsd === 0
+          ? 0
+          : priorOk && priorMonthUsd === 0
+            ? null
+            : null;
+    const budgetUsedPct = round1((lastMonthUsd / SUBSCRIPTION_BUDGET_USD) * 100);
+    const underBudget = lastMonthUsd <= SUBSCRIPTION_BUDGET_USD;
+
+    let trend = "flat";
+    if (momDeltaUsd != null) {
+      if (momDeltaUsd > 0.01) trend = "up";
+      else if (momDeltaUsd < -0.01) trend = "down";
+    }
+
+    const momNote =
+      momDeltaUsd == null
+        ? "MoM unavailable (no prior-month rows)."
+        : `MoM ${trend} ${momDeltaUsd >= 0 ? "+" : ""}$${momDeltaUsd.toFixed(2)}${
+            momDeltaPct == null ? "" : ` (${momDeltaPct >= 0 ? "+" : ""}${momDeltaPct}%)`
+          }.`;
+
+    return {
+      ok: true,
+      lastMonthLabel: last.label,
+      priorMonthLabel: prior.label,
+      lastMonthUsd: round1(lastMonthUsd),
+      priorMonthUsd: priorOk ? round1(priorMonthUsd) : null,
+      momDeltaUsd,
+      momDeltaPct,
+      trend,
+      budgetUsd: SUBSCRIPTION_BUDGET_USD,
+      budgetUsedPct,
+      underBudget,
+      note: `Subscription ActualCost ${last.label}: $${round1(lastMonthUsd).toFixed(2)} (${budgetUsedPct}% of $${SUBSCRIPTION_BUDGET_USD} budget). ${momNote}`,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      note: `Cost Management spend probe failed: ${redact(err.message || err)}.`,
+    };
   }
 }
 
@@ -593,9 +722,17 @@ function setOptionalSlo(evaluation, id, patch) {
 }
 
 function applyAzureSlis(evaluation, probes) {
-  const { homepage, materials, fcp, studioSuccess, studioLatency, inquiry } =
-    probes;
+  const {
+    homepage,
+    materials,
+    fcp,
+    studioSuccess,
+    studioLatency,
+    inquiry,
+    spend,
+  } = probes;
   const sloDim = evaluation.dimensions.find((d) => d.id === "slo");
+  const costDim = evaluation.dimensions.find((d) => d.id === "cost");
   const notes = [];
 
   if (homepage.ok) {
@@ -676,6 +813,46 @@ function applyAzureSlis(evaluation, probes) {
         note: inquiry.note,
       });
       notes.push(inquiry.note);
+    }
+  }
+
+  if (spend) {
+    if (spend.ok) {
+      evaluation.costProbe = {
+        lastMonthLabel: spend.lastMonthLabel,
+        priorMonthLabel: spend.priorMonthLabel,
+        lastMonthUsd: spend.lastMonthUsd,
+        priorMonthUsd: spend.priorMonthUsd,
+        momDeltaUsd: spend.momDeltaUsd,
+        momDeltaPct: spend.momDeltaPct,
+        trend: spend.trend,
+        budgetUsd: spend.budgetUsd,
+        budgetUsedPct: spend.budgetUsedPct,
+        underBudget: spend.underBudget,
+        status: "ok",
+        note: spend.note,
+      };
+      if (costDim) {
+        costDim.score = Math.max(costDim.score, 4.0);
+        costDim.evidence = `Subscription budget $${SUBSCRIPTION_BUDGET_USD}/mo (OPS-P4-001); ${spend.note}`;
+        costDim.gap = "Gemini/Google console budget alert still manual";
+        costDim.sliStatus = "ok";
+        costDim.sliNote = spend.note;
+      }
+    } else {
+      evaluation.costProbe = {
+        status: "stale",
+        budgetUsd: SUBSCRIPTION_BUDGET_USD,
+        note: spend.note,
+      };
+      if (costDim) {
+        costDim.sliStatus = "stale";
+        costDim.sliNote = spend.note;
+        costDim.evidence =
+          costDim.evidence ||
+          `Subscription budget $${SUBSCRIPTION_BUDGET_USD}/mo (OPS-P4-001); spend probe pending`;
+        costDim.gap = "Gemini/Google console budget alert still manual; spend probe stale";
+      }
     }
   }
 
@@ -792,6 +969,43 @@ function renderScorecard(evaluation) {
     }
   }
 
+  const cp = evaluation.costProbe;
+  if (cp) {
+    lines.push("");
+    lines.push("## Subscription cost (this review)");
+    lines.push("");
+    lines.push("| Field | Value |");
+    lines.push("|-------|-------|");
+    lines.push(`| **Budget** | $${cp.budgetUsd ?? SUBSCRIPTION_BUDGET_USD} / month |`);
+    if (cp.status === "ok") {
+      lines.push(
+        `| **Last month (${cp.lastMonthLabel})** | $${Number(cp.lastMonthUsd).toFixed(2)} (${cp.budgetUsedPct}% of budget) |`,
+      );
+      lines.push(
+        `| **Prior month (${cp.priorMonthLabel})** | ${
+          cp.priorMonthUsd == null
+            ? "n/a"
+            : `$${Number(cp.priorMonthUsd).toFixed(2)}`
+        } |`,
+      );
+      const mom =
+        cp.momDeltaUsd == null
+          ? "n/a"
+          : `${cp.trend} ${cp.momDeltaUsd >= 0 ? "+" : ""}$${Number(cp.momDeltaUsd).toFixed(2)}${
+              cp.momDeltaPct == null
+                ? ""
+                : ` (${cp.momDeltaPct >= 0 ? "+" : ""}${cp.momDeltaPct}%)`
+            }`;
+      lines.push(`| **MoM** | ${mom} |`);
+      lines.push(
+        `| **Under budget** | ${cp.underBudget ? "yes" : "no"} |`,
+      );
+    } else {
+      lines.push(`| **Status** | stale |`);
+      lines.push(`| **Note** | ${cp.note || "Spend probe unavailable"} |`);
+    }
+  }
+
   lines.push("");
   lines.push("## How this file is updated");
   lines.push("");
@@ -799,10 +1013,10 @@ function renderScorecard(evaluation) {
     "1. Edit [`scorecard-evaluation.json`](./scorecard-evaluation.json) (scores / evidence / gaps).",
   );
   lines.push(
-    "2. Run `node scripts/ops-scorecard-refresh.mjs` (add `--monthly --azure` when Azure CLI is logged in for homepage/materials/FCP/Studio/inquiry SLIs).",
+    "2. Run `node scripts/ops-scorecard-refresh.mjs` (add `--monthly --azure` when Azure CLI is logged in for homepage/materials/FCP/Studio/inquiry SLIs and subscription spend).",
   );
   lines.push(
-    "3. Monthly GitHub Action (`.github/workflows/ops-scorecard-monthly.yml`) does the same on a schedule and commits to `main` via the Studio GitHub App (CD ignores scorecard-only pushes).",
+    "3. Monthly GitHub Action (`.github/workflows/ops-scorecard-monthly.yml`) refreshes, commits to `main` via the Studio GitHub App, and emails an ACS digest to ALERT-EMAIL + SITE-CONTACT-EMAIL (recipients never written into this file).",
   );
   lines.push(
     "4. Spot-check the commit if scores move unexpectedly; optional SLIs stay `stale` until Azure probes have enough samples.",
@@ -816,7 +1030,7 @@ function renderScorecard(evaluation) {
   return lines.join("\n");
 }
 
-function collectAzureProbes() {
+function collectAzureProbes(anchorYmd) {
   return {
     homepage: probeHomepageAvailability(),
     materials: probeMaterialsAvailability(),
@@ -824,6 +1038,7 @@ function collectAzureProbes() {
     studioSuccess: probeStudioPublishSuccess(),
     studioLatency: probeStudioPublishLatency(),
     inquiry: probeInquiryAcceptRate(),
+    spend: probeSubscriptionSpend(anchorYmd || todayUtc()),
   };
 }
 
@@ -848,9 +1063,9 @@ function main() {
 
     if (args.azure) {
       console.log(
-        "Probing prod homepage / materials / FCP / Studio / inquiry SLIs (read-only)…",
+        "Probing prod homepage / materials / FCP / Studio / inquiry SLIs + subscription spend (read-only)…",
       );
-      const probes = collectAzureProbes();
+      const probes = collectAzureProbes(evaluation.lastReviewed);
       logProbes(probes);
       applyAzureSlis(evaluation, probes);
     } else {
@@ -861,9 +1076,9 @@ function main() {
     }
   } else if (args.azure) {
     console.log(
-      "Probing prod homepage / materials / FCP / Studio / inquiry SLIs (read-only)…",
+      "Probing prod homepage / materials / FCP / Studio / inquiry SLIs + subscription spend (read-only)…",
     );
-    const probes = collectAzureProbes();
+    const probes = collectAzureProbes(evaluation.lastReviewed || todayUtc());
     logProbes(probes);
     applyAzureSlis(evaluation, probes);
   }
