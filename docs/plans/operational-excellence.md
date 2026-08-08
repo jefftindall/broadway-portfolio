@@ -10,7 +10,7 @@ Use the **Action ID** column (`OPS-*`) to reference items in PRs, issues, and co
 
 **Status values:** `planned` · `in_progress` · `blocked` · `done` · `wont_fix`
 
-**Implementation stance:** This document is the backlog. Do **not** implement Terraform receivers, materials synthetics, FCP wiring, scorecard persistence, or the monthly workflow until an `OPS-*` item is explicitly picked up. Prefer **one phase (or one `OPS-*` item) per PR**.
+**Implementation stance:** This document is the backlog. Prefer **one phase (or one `OPS-*` item) per PR**. Phase 0 is complete. Do **not** implement Phase 1+ (Action Group SMS/voice, materials synthetics, FCP wiring) until an `OPS-P1+` item is explicitly picked up.
 
 ---
 
@@ -29,7 +29,7 @@ Private operator contacts must **never** live in the git repo:
 
 **Today’s gap:** `alert_email` is a plain Terraform variable. When implementing alerting, **replace** it with Key Vault–backed `ALERT-*` secrets — do not add plaintext phone variables.
 
-**Separate from contact-form notify:** `SITE-CONTACT-*` in `kv-elyse-shared` are for ACS inquiry delivery. Ops alert contacts use dedicated `ALERT-*` secrets in **env** vaults (`kv-elyse-staging` / `kv-elyse-prod`).
+**Separate from contact-form notify:** `SITE-CONTACT-*` in `kv-elyse-shared` are for ACS inquiry delivery. Ops alert contacts use dedicated `ALERT-*` secrets in the **same shared vault** (`kv-elyse-shared`, bootstrap) so staging and prod Action Groups share one on-call contact set.
 
 The **persisted scorecard** in `/docs` must also omit private emails/phones — scores, evidence, and gaps only.
 
@@ -95,27 +95,24 @@ Initial SRE review — **not yet** the monthly persisted artifact (see [Scorecar
 | Resilience & DR | 2.0 | Thin | Git rollback; env isolation; East US 2 only | Single region; shared ACS/Turnstile coupling |
 | SLOs & error budget | 1.5 | Gap | Implicit homepage ping | Written SLOs not scored yet |
 
-**Baseline weighted overall:** ~**3.4 / 5** (B+). Verdict: strong change safety and docs; thin detect-and-respond.
+**Baseline weighted overall:** ~**3.5 / 5** (B+). Verdict: strong change safety and docs; thin detect-and-respond. Living copy: [`docs/ops/operational-excellence-scorecard.md`](../ops/operational-excellence-scorecard.md).
 
 ### Scorecard persistence + monthly refresh
-
-When implemented (`OPS-P0-003`, `OPS-P0-004`):
 
 | Artifact | Path | Role |
 |----------|------|------|
 | **Persisted scorecard** | [`docs/ops/operational-excellence-scorecard.md`](../ops/operational-excellence-scorecard.md) | Living scores, evidence, gaps, overall, last reviewed date |
+| **Evaluation JSON** | [`docs/ops/scorecard-evaluation.json`](../ops/scorecard-evaluation.json) | Machine-editable scores; regenerated into the markdown by `scripts/ops-scorecard-refresh.mjs` |
 | **This plan** | `docs/plans/operational-excellence.md` | Rubric, SLO/alerting backlog, workflow contract — not the monthly scores |
 | **History (optional)** | `docs/ops/scorecard-history/` or appendix in the scorecard | Prior month snapshots if useful |
 
-**Monthly workflow (planned):**
+**Monthly workflow** (`.github/workflows/ops-scorecard-monthly.yml`):
 
-1. **Trigger:** GitHub Actions `schedule` (e.g. `0 14 1 * *` — 1st of month 14:00 UTC) + `workflow_dispatch`.
-2. **Job:** Re-evaluate each dimension using a checked-in rubric checklist / script (and optional read-only Azure/App Insights queries via OIDC). Update `docs/ops/operational-excellence-scorecard.md` (scores, evidence, gaps, `Last reviewed`, overall).
+1. **Trigger:** GitHub Actions `schedule` (`0 14 1 * *` — 1st of month 14:00 UTC) + `workflow_dispatch`.
+2. **Job:** `environment: prod` (TF OIDC subject). Run `node scripts/ops-scorecard-refresh.mjs --monthly` (add `--azure` when OIDC login succeeds). Updates evaluation JSON + scorecard markdown (scores, evidence, gaps, `Last reviewed`, overall). Optional read-only App Insights homepage availability probe.
 3. **Privacy:** Workflow must **never** write alert emails, phones, or secrets into the scorecard or logs.
-4. **Output:** Open a PR (preferred) titled `OPS: monthly operational excellence scorecard` for human review — do not push directly to `main` unless product later opts in.
-5. **Failure:** If Azure queries fail, still refresh qualitative dimensions and mark SLI-backed rows `blocked` / stale with a note.
-
-Until `OPS-P0-003` ships, the baseline table above is the only checked-in score snapshot (inside this plan).
+4. **Output:** Open a PR titled `OPS: monthly operational excellence scorecard` for human review — do not push directly to `main` unless product later opts in.
+5. **Failure:** If Azure queries fail, still refresh qualitative dimensions and mark SLI-backed rows `stale` with a note.
 
 ---
 
@@ -151,7 +148,7 @@ Until `OPS-P0-003` ships, the baseline table above is the only checked-in score 
 
 ### Phase 1 — Azure Monitor native
 
-1. Env Key Vault: `ALERT-EMAIL`, `ALERT-SMS-PHONE`, optional `ALERT-VOICE-PHONE` (placeholders in TF; real values via CLI only).
+1. Shared Key Vault (`kv-elyse-shared`): `ALERT-EMAIL`, `ALERT-SMS-PHONE`, optional `ALERT-VOICE-PHONE` (placeholders in bootstrap TF; real values via CLI only).
 2. Action Groups: `ag-elyse-notify` (email ± SMS), `ag-elyse-critical` (email + SMS + voice).
 3. Homepage availability → **critical**; failed-request → **notify**.
 4. Prove with Action Group test + controlled threshold exercise.
@@ -176,16 +173,16 @@ Do **not** send ops alerts through ACS contact-form SMS (`ACS-SMS-FROM` + `SITE-
 | Action ID | Work | Acceptance criteria | Status |
 |-----------|------|---------------------|--------|
 | `OPS-P0-001` | Operational excellence plan + agent rule; privacy (no contacts in git) | Plan + AGENTS + cursor rule; no real contacts in repo | `done` |
-| `OPS-P0-002` | Define `ALERT-*` secret names in rotate-secrets (placeholders only) | Runbook lists names, vault, set commands; no real values | `planned` |
-| `OPS-P0-003` | Persist initial scorecard under `docs/ops/operational-excellence-scorecard.md` | File exists; baseline scores copied from this plan; no private contacts | `planned` |
-| `OPS-P0-004` | Monthly GitHub Actions workflow to re-evaluate scorecard + open PR | `schedule` + `workflow_dispatch`; updates scorecard doc; PR for review | `planned` |
+| `OPS-P0-002` | Define `ALERT-*` secret names + bootstrap placeholders in `kv-elyse-shared` | Runbook lists names/set commands; TF creates `REPLACE_ME` secrets; no real values | `done` |
+| `OPS-P0-003` | Persist initial scorecard under `docs/ops/operational-excellence-scorecard.md` | File exists; baseline scores copied from this plan; no private contacts | `done` |
+| `OPS-P0-004` | Monthly GitHub Actions workflow to re-evaluate scorecard + open PR | `schedule` + `workflow_dispatch`; updates scorecard doc; PR for review | `done` |
 
 ### Phase 1 — Key Vault–backed email + SMS + voice
 
 | Action ID | Work | Acceptance criteria | Status |
 |-----------|------|---------------------|--------|
-| `OPS-P1-001` | Replace `alert_email` TF variable with data source from `ALERT-EMAIL` | No email in tfvars/examples; skip receivers when `REPLACE_ME` | `planned` |
-| `OPS-P1-002` | Add `ALERT-SMS-PHONE` (+ voice) on critical/notify groups | SMS/voice on Action Group test; numbers only in Key Vault | `planned` |
+| `OPS-P1-001` | Replace `alert_email` TF variable with data source from shared `ALERT-EMAIL` | No email in tfvars/examples; skip receivers when `REPLACE_ME` | `planned` |
+| `OPS-P1-002` | Add shared `ALERT-SMS-PHONE` (+ voice) on critical/notify groups | SMS/voice on Action Group test; numbers only in Key Vault | `planned` |
 | `OPS-P1-003` | Confirm prod homepage Sev1 → critical group | Controlled test documents receipt (without committing PII) | `planned` |
 
 ### Phase 2 — Materials + FCP SLIs
@@ -213,15 +210,15 @@ Do **not** send ops alerts through ACS contact-form SMS (`ACS-SMS-FROM` + `SITE-
 
 ```text
 OPS-P0-001 (this plan / AI guidance) [done]
-    ├── OPS-P0-002 (ALERT-* in rotate-secrets)
+    ├── OPS-P0-002 (ALERT-* in shared KV + rotate-secrets) [done]
     │       └── OPS-P1-001 (KV-backed email)
     │               ├── OPS-P1-002 (SMS/voice)
     │               │       └── OPS-P1-003 (homepage Sev1 prove-out)
     │               │               ├── OPS-P2-001 (materials → critical)
     │               │               └── OPS-P3-003 (CD failure → Sev1)
     │               └── OPS-P2-002 / OPS-P2-003 (FCP)
-    ├── OPS-P0-003 (persist scorecard under docs/ops/)
-    │       └── OPS-P0-004 (monthly re-evaluate workflow → PR)
+    ├── OPS-P0-003 (persist scorecard under docs/ops/) [done]
+    │       └── OPS-P0-004 (monthly re-evaluate workflow → PR) [done]
     └── OPS-P3-001 / OPS-P3-005 (Studio cadence + IR stub) — parallel
 OPS-P3-002 (PagerDuty) — after OPS-P1-002
 ```
@@ -244,9 +241,9 @@ OPS-P3-002 (PagerDuty) — after OPS-P1-002
 | Doc | Role |
 |-----|------|
 | [observability.md](../runbooks/observability.md) | App Insights, Kusto; optional `alert_email` (superseded by `OPS-P1-*`) |
-| [rotate-secrets.md](../runbooks/rotate-secrets.md) | Key Vault SoT; extend with `ALERT-*` (`OPS-P0-002`) |
+| [rotate-secrets.md](../runbooks/rotate-secrets.md) | Key Vault SoT; `ALERT-*` names (`OPS-P0-002` done) |
 | [testing-strategy.md](../runbooks/testing-strategy.md) | Staging gates; smoke covers materials URLs |
 | [deploy-and-rollback.md](../runbooks/deploy-and-rollback.md) | Change-safety evidence for scorecard |
 | [cost-and-quotas.md](../runbooks/cost-and-quotas.md) | Budget alerts (separate from Sev1) |
 | [search-and-analytics.md](search-and-analytics.md) | GA4/GSC — not ops paging |
-| `docs/ops/operational-excellence-scorecard.md` | Living scorecard (created by `OPS-P0-003`) |
+| `docs/ops/operational-excellence-scorecard.md` | Living scorecard (`OPS-P0-003` done; refreshed by `OPS-P0-004`) |

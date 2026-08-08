@@ -64,10 +64,10 @@ Phased GSC + GA4 work: [`docs/plans/search-and-analytics.md`](docs/plans/search-
 - Studio UI should show the friendly message and `Reference: {correlationId}` (same pattern as allowlist denials).
 - When changing Studio API error handling, keep this contract; do not put HTTP/correlation rules into the Gemini `systemInstruction`.
 
-### Operational excellence (planned)
+### Operational excellence
 
-Phased backlog: [`docs/plans/operational-excellence.md`](docs/plans/operational-excellence.md) (`OPS-*`) — reliability scorecard, SLOs, Sev1 SMS/voice, monthly scorecard refresh. Committed SLO targets include homepage/materials availability **99.8%/7d**, homepage FCP p75 **&lt;1.5s**, Studio publish **95%/28d**, publish→live p95 **≤20m**. **Do not implement** until an `OPS-*` item is explicitly requested.
+Phased backlog: [`docs/plans/operational-excellence.md`](docs/plans/operational-excellence.md) (`OPS-*`) — reliability scorecard, SLOs, Sev1 SMS/voice, monthly scorecard refresh. Committed SLO targets include homepage/materials availability **99.8%/7d**, homepage FCP p75 **&lt;1.5s**, Studio publish **95%/28d**, publish→live p95 **≤20m**. Phase 0 is done (living scorecard + monthly workflow). **Do not implement** Phase 1+ (`OPS-P1-*` and later) until an item is explicitly requested.
 
-When implemented: living scorecard at `docs/ops/operational-excellence-scorecard.md`; monthly Actions workflow re-evaluates and opens a PR (`OPS-P0-003` / `OPS-P0-004`).
+Living scorecard: [`docs/ops/operational-excellence-scorecard.md`](docs/ops/operational-excellence-scorecard.md). Monthly Actions workflow (`.github/workflows/ops-scorecard-monthly.yml`) re-evaluates and opens a PR (`OPS-P0-003` / `OPS-P0-004`). Refresh locally with `node scripts/ops-scorecard-refresh.mjs`.
 
-**Private ops contacts:** Never commit alert emails, support/SMS/voice numbers, or vendor routing keys. Store them in Key Vault and read at apply/deploy time (same SoT pattern as [`docs/runbooks/rotate-secrets.md`](docs/runbooks/rotate-secrets.md)). Use `ALERT-*` secrets (env vaults); do not reuse `SITE-CONTACT-*` / ACS inquiry SMS for on-call. See [`.cursor/rules/ops-operational-excellence.mdc`](.cursor/rules/ops-operational-excellence.mdc).
+**Private ops contacts:** Never commit alert emails, support/SMS/voice numbers, or vendor routing keys. Store them in Key Vault and read at apply/deploy time (same SoT pattern as [`docs/runbooks/rotate-secrets.md`](docs/runbooks/rotate-secrets.md)). Use `ALERT-*` secrets in **`kv-elyse-shared`** (bootstrap); do not reuse `SITE-CONTACT-*` / ACS inquiry SMS for on-call. See [`.cursor/rules/ops-operational-excellence.mdc`](.cursor/rules/ops-operational-excellence.mdc).

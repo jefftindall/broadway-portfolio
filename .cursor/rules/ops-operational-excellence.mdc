@@ -17,12 +17,12 @@ alwaysApply: true
 
 # Operational excellence (scorecard, SLOs, alerting)
 
-Phased work and action IDs live in [docs/plans/operational-excellence.md](docs/plans/operational-excellence.md) (`OPS-*`). Treat that document as the backlog — **do not implement** Action Group SMS/voice, materials synthetics, FCP wiring, scorecard persistence, or the monthly scorecard workflow unless the user explicitly asks to execute a specific `OPS-*` item.
+Phased work and action IDs live in [docs/plans/operational-excellence.md](docs/plans/operational-excellence.md) (`OPS-*`). Treat that document as the backlog — **do not implement** Action Group SMS/voice, materials synthetics, FCP wiring, or later `OPS-P1+` items unless the user explicitly asks. Phase 0 (ALERT-* naming, living scorecard, monthly workflow) is done.
 
 ## Scorecard
 
-- Rubric and baseline live in the plan. When `OPS-P0-003` is done, the **living** scorecard is `docs/ops/operational-excellence-scorecard.md`.
-- Monthly refresh (`OPS-P0-004`): scheduled workflow re-evaluates dimensions and opens a PR — do not invent a different path or auto-merge to `main` without an explicit decision.
+- Rubric lives in the plan. Living scores: `docs/ops/operational-excellence-scorecard.md` (from `docs/ops/scorecard-evaluation.json` via `scripts/ops-scorecard-refresh.mjs`).
+- Monthly refresh (`OPS-P0-004`): `.github/workflows/ops-scorecard-monthly.yml` re-evaluates and opens a PR — do not invent a different path or auto-merge to `main` without an explicit decision.
 - Scorecard content is scores, evidence, and gaps only — **never** alert emails, phones, or secrets.
 
 ## Private details never in git
@@ -32,7 +32,7 @@ When planning or implementing alerts, on-call, or support contacts:
 - **Never** commit real alert emails, SMS/voice numbers, PagerDuty/Better Stack routing keys, or similar private operator details in Terraform variables files, docs, examples, canvases, PR bodies, or source comments.
 - Store them in **Azure Key Vault** and read at deploy/apply time (data sources / sync scripts), same pattern as `SITE-CONTACT-*` and ACS secrets (`lifecycle { ignore_changes = [value] }`, set via `az keyvault secret set`).
 - Use placeholders only in the repo: `REPLACE_ME`, `<email>`, `+1XXXXXXXXXX`.
-- Prefer dedicated **`ALERT-*`** secrets in **env** vaults (`kv-elyse-staging` / `kv-elyse-prod`), not reuse of `SITE-CONTACT-EMAIL` / `SITE-CONTACT-PHONE` (those are inquiry notify via ACS).
+- Prefer dedicated **`ALERT-*`** secrets in **`kv-elyse-shared`** (bootstrap placeholders), not reuse of `SITE-CONTACT-EMAIL` / `SITE-CONTACT-PHONE` (those are inquiry notify via ACS).
 - Do **not** send ops/Sev1 alerts through ACS contact-form SMS.
 - When replacing today’s `alert_email` Terraform variable, move to Key Vault — do not add more plaintext contact variables.
 
