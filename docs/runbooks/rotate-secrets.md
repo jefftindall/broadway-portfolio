@@ -117,7 +117,7 @@ Created by **bootstrap** Terraform (`infra/bootstrap/shared_kv.tf`, `OPS-P0-002`
 
 | Secret name | Vault | Format | Used by |
 |---|---|---|---|
-| `ALERT-EMAIL` | `kv-elyse-shared` | Email address | Notify + critical Action Groups |
+| `ALERT-EMAIL` | `kv-elyse-shared` | Email address | Notify + critical + watch Action Groups |
 | `ALERT-SMS-PHONE` | `kv-elyse-shared` | E.164 (`+1XXXXXXXXXX`) | SMS on notify + critical |
 | `ALERT-VOICE-PHONE` | `kv-elyse-shared` | E.164 (optional; may match SMS) | Voice on critical only |
 
@@ -130,7 +130,7 @@ az keyvault secret set --vault-name kv-elyse-shared --name ALERT-VOICE-PHONE --v
 
 These secrets are **not** synced into SWA app settings and are **not** required for CD Build (unlike SITE-*/Turnstile). Monitor reads them at `terraform apply` via data sources in `infra/modules/portfolio/shared_kv.tf`. After setting values, re-apply staging and/or prod so Action Groups pick them up.
 
-**Prove Sev1 (OPS-P1-003):** After prod apply with real `ALERT-*` values, in Azure Portal open `ag-elyse-critical-prod` → **Test action group** (email + SMS + voice). Optionally lower the homepage availability alert threshold briefly, confirm a page, then restore. Confirm receipt on-device; **do not** record the email/phone or screenshots with PII in git, PRs, or the scorecard — note only “receipt confirmed YYYY-MM-DD” in the plan/scorecard evidence.
+**Prove Sev1 (OPS-P1-003):** After prod apply with real `ALERT-*` values, in Azure Portal open `ag-elyse-critical-prod` → **Test action group** (email + SMS + voice). Optionally lower the homepage/materials availability alert threshold briefly, confirm a page, then restore. Confirm receipt on-device; **do not** record the email/phone or screenshots with PII in git, PRs, or the scorecard — note only “receipt confirmed YYYY-MM-DD” in the plan/scorecard evidence. Sev3 FCP watch uses `ag-elyse-watch-prod` (email only).
 
 Do **not** reuse `SITE-CONTACT-EMAIL`, `SITE-CONTACT-PHONE`, or `ACS-SMS-FROM` for ops paging.
 

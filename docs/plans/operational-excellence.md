@@ -10,7 +10,7 @@ Use the **Action ID** column (`OPS-*`) to reference items in PRs, issues, and co
 
 **Status values:** `planned` · `in_progress` · `blocked` · `done` · `wont_fix`
 
-**Implementation stance:** This document is the backlog. Prefer **one phase (or one `OPS-*` item) per PR**. Phase 0 and Phase 1 are complete. Do **not** implement Phase 2+ (materials synthetics, FCP wiring, PagerDuty) until an `OPS-P2+` / `OPS-P3-*` item is explicitly picked up.
+**Implementation stance:** This document is the backlog. Prefer **one phase (or one `OPS-*` item) per PR**. Phase 0–2 are complete. Do **not** implement Phase 3+ (PagerDuty escalate-if-unacked, Studio SLO cadence, CD Sev1, etc.) until an `OPS-P3-*` item is explicitly picked up.
 
 ---
 
@@ -121,8 +121,8 @@ Initial SRE review — **not yet** the monthly persisted artifact (see [Scorecar
 | ID | SLO | Target | SLI (intended) | Instrumentation today |
 |----|-----|--------|----------------|------------------------|
 | **SLO-1** | Homepage availability | **99.8% over 7 days** | App Insights homepage web test success | Measurable (prod web test exists) |
-| **SLO-4** | Materials availability | **99.8% over 7 days** | Synthetic GET resume PDF + theatrical headshot → 200 | Needs prod web tests |
-| **SLO-6** | Homepage FCP | **Field p75 &lt; 1.5 s over 7 days** | CrUX or RUM FCP on `/` | Needs field pipeline |
+| **SLO-4** | Materials availability | **99.8% over 7 days** | Synthetic GET resume PDF + theatrical headshot → 200 | Measurable (prod web tests) |
+| **SLO-6** | Homepage FCP | **Field p75 &lt; 1.5 s over 7 days** | Browser `HomepageFcpMs` → App Insights | Measurable (force-sampled RUM) |
 | **SLO-2** | Studio publish success | **95% over 28 days** (≥3 attempts) | `StudioPublishUiSuccess` / (Success+Failed); exclude allowlist denials | Measurable |
 | **SLO-3** | Publish → live latency | **p95 ≤ 20 minutes over 28 days** | `StudioPublishToProdDurationMs` | Measurable |
 
@@ -138,9 +138,9 @@ Initial SRE review — **not yet** the monthly persisted artifact (see [Scorecar
 
 | Severity | Examples | Channels | Ack expectation |
 |----------|----------|----------|-----------------|
-| **Sev1 — critical** | Homepage or materials availability fail; Deploy Production failed leaving prod broken | Email + SMS immediately; voice if unacked in 5 min (Phase 2) or native voice (Phase 1) | Respond / silence within 15 min |
+| **Sev1 — critical** | Homepage or materials availability fail; Deploy Production failed leaving prod broken | Email + SMS immediately; voice if unacked in 5 min (Phase 3 / `OPS-P3-002`) or native voice (Phase 1) | Respond / silence within 15 min |
 | **Sev2 — urgent** | Failed-request spike; Studio publish failures ≥2 / 24h | Email + SMS (no voice) | Same day |
-| **Sev3 — watch** | FCP p75 burn; error-budget Watch state | Email only | Next working session |
+| **Sev3 — watch** | FCP p75 burn; error-budget Watch state | Email only (`ag-elyse-watch-*`) | Next working session |
 
 ---
 
@@ -153,7 +153,13 @@ Initial SRE review — **not yet** the monthly persisted artifact (see [Scorecar
 3. Homepage availability → **critical**; failed-request → **notify**.
 4. Prove-out: Portal **Test action group** on `ag-elyse-critical-prod` + optional threshold exercise — procedure in [rotate-secrets.md](../runbooks/rotate-secrets.md) (no PII in git).
 
-### Phase 2 — Escalate-if-unacked phone
+### Phase 2 — Materials + FCP SLIs (`done`)
+
+1. Prod web tests: resume PDF + theatrical headshot → same critical Action Group as homepage (`OPS-P2-001`).
+2. Field FCP: browser paint timing → `HomepageFcpMs` custom metric (force-sampled on `/`); Sev3 email via `ag-elyse-watch-*` when **2d** p75 &gt; 1.5s with ≥10 samples (Azure scheduled-query max lookback). Committed **SLO-6** remains **7d** and is scored by the monthly scorecard Kusto probe (`OPS-P2-002`).
+3. Soft lab FCP gate on staging: `npm run test:lab-fcp` (median &lt; 1.5s policy; `LAB_FCP_HARD=1` for hard fail) (`OPS-P2-003`).
+
+### Phase 3 — Escalate-if-unacked phone (planned)
 
 1. Webhook → PagerDuty / Better Stack / Opsgenie.
 2. SMS → voice if unacked in **5 minutes**.
@@ -189,9 +195,9 @@ Do **not** send ops alerts through ACS contact-form SMS (`ACS-SMS-FROM` + `SITE-
 
 | Action ID | Work | Acceptance criteria | Status |
 |-----------|------|---------------------|--------|
-| `OPS-P2-001` | Prod web tests for resume PDF + headshot | 99.8%/7d scoring; Sev1 → critical | `planned` |
-| `OPS-P2-002` | Field FCP p75 for `/` (CrUX or web-vitals → App Insights) | Weekly score vs 1.5s; Sev3 email only when burned | `planned` |
-| `OPS-P2-003` | Optional lab FCP gate on staging | Documents median FCP &lt; 1.5s policy (soft or hard) | `planned` |
+| `OPS-P2-001` | Prod web tests for resume PDF + headshot | 99.8%/7d scoring; Sev1 → critical | `done` |
+| `OPS-P2-002` | Field FCP p75 for `/` (web-vitals/paint → App Insights) | Weekly score vs 1.5s; Sev3 email only when burned | `done` |
+| `OPS-P2-003` | Optional lab FCP gate on staging | Documents median FCP &lt; 1.5s policy (soft default; hard via env) | `done` |
 
 ### Phase 3 — Studio scorecards, escalation product, hardening
 
@@ -214,9 +220,9 @@ OPS-P0-001 (this plan / AI guidance) [done]
     │       └── OPS-P1-001 (KV-backed email) [done]
     │               ├── OPS-P1-002 (SMS/voice) [done]
     │               │       └── OPS-P1-003 (homepage Sev1 prove-out) [done]
-    │               │               ├── OPS-P2-001 (materials → critical)
+    │               │               ├── OPS-P2-001 (materials → critical) [done]
     │               │               └── OPS-P3-003 (CD failure → Sev1)
-    │               └── OPS-P2-002 / OPS-P2-003 (FCP)
+    │               └── OPS-P2-002 / OPS-P2-003 (FCP) [done]
     ├── OPS-P0-003 (persist scorecard under docs/ops/) [done]
     │       └── OPS-P0-004 (monthly re-evaluate workflow → PR) [done]
     └── OPS-P3-001 / OPS-P3-005 (Studio cadence + IR stub) — parallel

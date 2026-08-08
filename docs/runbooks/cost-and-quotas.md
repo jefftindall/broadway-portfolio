@@ -23,4 +23,4 @@
 - Azure budget alert on the resource group
 - Gemini/Google billing alert
 - GitHub Actions email on failed workflow
-- Application Insights: 1 GB/day cap, 30-day retention, failed-request + prod availability alerts (see [observability.md](observability.md))
+- Application Insights: 1 GB/day cap, 30-day retention, failed-request + prod availability (homepage + materials) + FCP watch alerts (see [observability.md](observability.md))

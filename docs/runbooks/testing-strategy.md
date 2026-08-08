@@ -23,8 +23,9 @@ This document defines how we validate user experience before production deploys.
 | Terraform plan | PRs touching `infra/` | CI **Plan staging/prod** | Infra diff review |
 | **Build release** | Once per CD run (parallel with staging Terraform) | Job **Build release** | Single `npm run build` + API install; artifact promoted to staging and prod |
 | **Smoke** | After staging deploy | `npm run test:smoke` — job **Smoke Staging** | Route availability, SEO shell, downloads, anonymous `/studio` redirect (desktop + mobile) |
+| **Lab FCP** | After smoke (soft) | `npm run test:lab-fcp` | Homepage median FCP vs 1.5s policy (`OPS-P2-003`); warn-only unless `LAB_FCP_HARD=1` |
 | **Journeys** | After smoke (profile-dependent) | `npm run test:journey` or `test:journey:content` | Persona flows; scope depends on what changed (see below) |
-| Prod availability | Continuous | App Insights synthetic (prod) | Homepage ping every 10 minutes |
+| Prod availability | Continuous | App Insights synthetics (prod) | Homepage + resume PDF + theatrical headshot every 10 minutes |
 
 Production deploy (`deploy_prod`) reuses the **same build artifact** verified on staging — no second site build.
 
@@ -160,7 +161,14 @@ On failure: Playwright retains **trace on first retry** (`trace: 'on-first-retry
 
 - Anonymous API contract tests (`/api/publisherStatus`, etc.)
 - Post-deploy prod subset (home, materials, lessons/book, one `/for/` page) with retries
-- Expand Terraform availability tests beyond homepage
+- ~~Expand Terraform availability tests beyond homepage~~ — **done** (`OPS-P2-001`: resume PDF + headshot)
+
+### Lab FCP policy (`OPS-P2-003`)
+
+- **Target:** homepage median lab FCP **&lt; 1.5 s** (mobile viewport, cold loads).
+- **Soft (default):** `BASE_URL=… npm run test:lab-fcp` warns and exits 0 when over budget; CI runs this after staging smoke with `continue-on-error: true`.
+- **Hard (optional):** set `LAB_FCP_HARD=1` to fail the process. Prefer soft until the site has a stable lab baseline.
+- Field FCP (real users → App Insights `HomepageFcpMs`) is the committed SLO-6 signal; lab is a staging canary only.
 
 ### Phase 3 — Shift left on PRs
 

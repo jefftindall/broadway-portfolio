@@ -37,16 +37,17 @@ Consent Mode / cookie banner: **not shipped** (`SEARCH-P1-006` = `wont_fix`). Pr
 
 Availability and failed-request metric alerts wire to Key Vault–backed Action Groups when shared `ALERT-*` secrets are set (not `REPLACE_ME`). See [rotate-secrets.md](./rotate-secrets.md) ops section and [operational-excellence.md](../plans/operational-excellence.md).
 
-**Operational excellence:** Living scorecard at [operational-excellence-scorecard.md](../ops/operational-excellence-scorecard.md). Backlog / SLOs / Sev1 SMS-voice plan: [operational-excellence.md](../plans/operational-excellence.md) (`OPS-*`). Private alert emails/phones must not be committed — only `ALERT-*` in `kv-elyse-shared`.
+**Operational excellence:** Living scorecard at [operational-excellence-scorecard.md](../ops/operational-excellence-scorecard.md). Backlog / SLOs / Sev1 SMS-voice plan: [operational-excellence.md](../plans/operational-excellence.md) (`OPS-*`). Private alert emails/phones must not be committed — only `ALERT-*` in `kv-elyse-shared`. Phase 0–2 are done (materials synthetics + field FCP + soft lab gate).
 
-## Action Groups (OPS-P1)
+## Action Groups (OPS-P1 / OPS-P2)
 
 | Group | Name pattern | Channels | Wired alerts |
 |-------|--------------|----------|--------------|
 | Notify (Sev2) | `ag-elyse-notify-{env}` | Email ± SMS | Failed-request spike |
-| Critical (Sev1) | `ag-elyse-critical-{env}` | Email + SMS + voice | Prod homepage availability |
+| Critical (Sev1) | `ag-elyse-critical-{env}` | Email + SMS + voice | Prod homepage + materials availability |
+| Watch (Sev3) | `ag-elyse-watch-{env}` | Email only | Homepage field FCP p75 burn (`HomepageFcpMs`; 2d watch window; SLO-6 scored over 7d in scorecard) |
 
-Contacts: `ALERT-EMAIL`, `ALERT-SMS-PHONE`, `ALERT-VOICE-PHONE` in `kv-elyse-shared`. Invalid / `REPLACE_ME` values skip that receiver; if all contacts are placeholders, Action Groups and metric alerts are not created.
+Contacts: `ALERT-EMAIL`, `ALERT-SMS-PHONE`, `ALERT-VOICE-PHONE` in `kv-elyse-shared`. Invalid / `REPLACE_ME` values skip that receiver; if all contacts are placeholders, Action Groups and metric alerts are not created. Watch group requires a real `ALERT-EMAIL`.
 
 ## Cost controls
 
@@ -54,9 +55,10 @@ Contacts: `ALERT-EMAIL`, `ALERT-SMS-PHONE`, `ALERT-VOICE-PHONE` in `kv-elyse-sha
 - Daily ingestion cap: **1 GB** per App Insights component (cap notifications enabled)
 - Browser sampling: **25%** staging, **10%** prod (`PUBLIC_APPINSIGHTS_SAMPLE_PERCENT`) for pageviews / generic fetch
 - **Studio UI publish events are force-sampled at 100%** (`StudioPublishUiSuccess` / `StudioPublishUiFailed` / `StudioPublishToProdCompleted` and metric `StudioPublishToProdDurationMs`) and flushed after track
+- **Homepage field FCP is force-sampled at 100%** (`HomepageFcpMs` on `/` only — `OPS-P2-002`)
 - Server: adaptive sampling in `api/host.json` for Request/Dependency, with **`excludedTypes: Event;Exception`** so custom events and exceptions are never dropped
 - Custom Functions `TelemetryClient` uses `samplingPercentage = 100` and `flush()` on deny / 500 paths
-- Availability test: **prod only**, homepage every **10 minutes**, one geo (`us-va-ash-azr`)
+- Availability tests: **prod only**, every **10 minutes**, one geo (`us-va-ash-azr`) — homepage, resume PDF, theatrical headshot
 
 To temporarily raise browser sampling for non-Studio traffic, set `PUBLIC_APPINSIGHTS_SAMPLE_PERCENT` in the workflow (or rebuild with a higher env value) and redeploy.
 
@@ -187,12 +189,30 @@ customEvents
 | order by timestamp desc
 ```
 
-Availability (prod):
+Availability (prod — all synthetics):
 
 ```kusto
 availabilityResults
-| summarize avg(success), count() by bin(timestamp, 1h)
+| summarize avg(success), count() by name, bin(timestamp, 1h)
 | order by timestamp desc
+```
+
+Materials only (SLO-4):
+
+```kusto
+availabilityResults
+| where name has "resume" or name has "headshot"
+| where timestamp > ago(7d)
+| summarize availabilityPct = avg(todouble(success)) * 100, probes = count()
+```
+
+Homepage field FCP (SLO-6):
+
+```kusto
+customMetrics
+| where name == "HomepageFcpMs"
+| where timestamp > ago(7d)
+| summarize samples = count(), p50 = percentile(value, 50), p75 = percentile(value, 75)
 ```
 
 ## Apply / rotate

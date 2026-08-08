@@ -66,7 +66,7 @@ Phased GSC + GA4 work: [`docs/plans/search-and-analytics.md`](docs/plans/search-
 
 ### Operational excellence
 
-Phased backlog: [`docs/plans/operational-excellence.md`](docs/plans/operational-excellence.md) (`OPS-*`) — reliability scorecard, SLOs, Sev1 SMS/voice, monthly scorecard refresh. Committed SLO targets include homepage/materials availability **99.8%/7d**, homepage FCP p75 **&lt;1.5s**, Studio publish **95%/28d**, publish→live p95 **≤20m**. Phase 0–1 are done (living scorecard, monthly workflow, KV-backed notify/critical Action Groups). **Do not implement** Phase 2+ (`OPS-P2-*` / `OPS-P3-*`) until an item is explicitly requested.
+Phased backlog: [`docs/plans/operational-excellence.md`](docs/plans/operational-excellence.md) (`OPS-*`) — reliability scorecard, SLOs, Sev1 SMS/voice, monthly scorecard refresh. Committed SLO targets include homepage/materials availability **99.8%/7d**, homepage FCP p75 **&lt;1.5s**, Studio publish **95%/28d**, publish→live p95 **≤20m**. Phase 0–2 are done (living scorecard, monthly workflow, KV-backed Action Groups, materials synthetics, field FCP + soft lab gate). **Do not implement** Phase 3+ (`OPS-P3-*`) until an item is explicitly requested.
 
 Living scorecard: [`docs/ops/operational-excellence-scorecard.md`](docs/ops/operational-excellence-scorecard.md). Monthly Actions workflow (`.github/workflows/ops-scorecard-monthly.yml`) re-evaluates and opens a PR (`OPS-P0-003` / `OPS-P0-004`). Refresh locally with `node scripts/ops-scorecard-refresh.mjs`.
 

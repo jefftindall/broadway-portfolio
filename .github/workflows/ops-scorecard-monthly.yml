@@ -100,7 +100,7 @@ jobs:
             --body "## Summary
 
           - Monthly refresh of \`docs/ops/operational-excellence-scorecard.md\` (\`OPS-P0-004\`)
-          - Qualitative dimensions restamped; optional prod homepage availability SLI when Azure OIDC succeeds
+          - Qualitative dimensions restamped; optional prod homepage/materials/FCP SLIs when Azure OIDC succeeds
           - No alert emails, phones, or secrets in this PR
 
           ## Test plan

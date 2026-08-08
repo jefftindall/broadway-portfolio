@@ -364,6 +364,13 @@ jobs:
           CI: true
         run: npm run test:smoke
 
+      - name: Lab FCP soft gate (OPS-P2-003)
+        continue-on-error: true
+        env:
+          BASE_URL: https://${{ steps.host.outputs.hostname }}
+          LAB_FCP_RUNS: "3"
+        run: npm run test:lab-fcp
+
       - name: Run full staging journeys
         if: needs.changes.outputs.test_profile == 'full'
         env:
