@@ -42,7 +42,7 @@ Reuse the same App for staging and prod (one installation covers the repo). Dele
 
 ## Allow direct commits to `main`
 
-Studio writes via the Contents API (not PRs). The **Protect main** ruleset must list the App as a bypass actor, or publishes fail with “Cannot update this protected ref.”
+Studio writes via the Contents API (not PRs). The monthly ops scorecard workflow (`.github/workflows/ops-scorecard-monthly.yml`) also pushes to `main` with an installation token minted from the same Key Vault secrets. The **Protect main** ruleset must list the App as a bypass actor, or publishes / scorecard commits fail with “Cannot update this protected ref.”
 
 1. Repo → **Settings → Rules → Rulesets → Protect main**
 2. **Bypass list** → **Add bypass** → choose the Studio GitHub App (`elyse-portfolio-studio`) → bypass mode **Always**

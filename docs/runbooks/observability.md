@@ -184,7 +184,7 @@ customMetrics
 
 ### Committed Studio SLOs (OPS-P3-001) — monthly cadence
 
-Run these in **prod** App Insights Logs (or let `node scripts/ops-scorecard-refresh.mjs --azure` probe them). Cite results in the monthly scorecard PR. Targets: **SLO-2** 95% / 28d (≥3 attempts); **SLO-3** p95 ≤ 20 minutes (1_200_000 ms) / 28d.
+Run these in **prod** App Insights Logs (or let `node scripts/ops-scorecard-refresh.mjs --azure` probe them). Cite results in the monthly scorecard commit. Targets: **SLO-2** 95% / 28d (≥3 attempts); **SLO-3** p95 ≤ 20 minutes (1_200_000 ms) / 28d.
 
 **SLO-2 — Studio publish success** (exclude allowlist denials and draft-mode UI failures):
 

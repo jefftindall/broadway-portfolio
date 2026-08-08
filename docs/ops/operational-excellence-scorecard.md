@@ -45,7 +45,7 @@ Living reliability posture for the Elyse Tindall portfolio. Rubric, SLOs, and ba
 
 1. Edit [`scorecard-evaluation.json`](./scorecard-evaluation.json) (scores / evidence / gaps).
 2. Run `node scripts/ops-scorecard-refresh.mjs` (add `--monthly --azure` when Azure CLI is logged in for homepage/materials/FCP/Studio/inquiry SLIs).
-3. Monthly GitHub Action (`.github/workflows/ops-scorecard-monthly.yml`) does the same on a schedule and opens a PR titled `OPS: monthly operational excellence scorecard`.
-4. Do not auto-merge that PR; humans review score changes.
+3. Monthly GitHub Action (`.github/workflows/ops-scorecard-monthly.yml`) does the same on a schedule and commits to `main` via the Studio GitHub App (CD ignores scorecard-only pushes).
+4. Spot-check the commit if scores move unexpectedly; optional SLIs stay `stale` until Azure probes have enough samples.
 
 History: optional prior snapshots may live under `docs/ops/scorecard-history/` later — not required for Phase 0.

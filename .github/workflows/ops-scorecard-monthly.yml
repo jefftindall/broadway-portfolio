@@ -1,7 +1,9 @@
 name: OPS monthly scorecard
 
-# OPS-P0-004 — Re-evaluate docs/ops/operational-excellence-scorecard.md and open a PR.
-# Never writes alert emails, phones, or secrets into the scorecard or logs.
+# OPS-P0-004 — Re-evaluate docs/ops scorecard and commit directly to main
+# via the Studio GitHub App (Protect main bypass). Never writes alert emails,
+# phones, or secrets into the scorecard or logs.
+# Scorecard-only pushes are excluded from azure-static-web-apps.yml (paths-ignore).
 
 on:
   schedule:
@@ -10,8 +12,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
   id-token: write
 
 concurrency:
@@ -34,78 +35,75 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Azure login (optional SLI probe)
-        id: azure_login
-        continue-on-error: true
+      - name: Azure login (SLI probe + GitHub App secrets)
         uses: azure/login@v3
         with:
           client-id: ${{ vars.AZURE_TF_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TF_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_TF_SUBSCRIPTION_ID }}
 
-      - name: Refresh scorecard
+      - name: Fetch GitHub App credentials from Key Vault
+        id: ghapp
+        env:
+          VAULT: ${{ vars.AZURE_KEY_VAULT_NAME }}
         run: |
-          if [ "${{ steps.azure_login.outcome }}" = "success" ]; then
-            node scripts/ops-scorecard-refresh.mjs --monthly --azure
-          else
-            echo "Azure login skipped/failed — refreshing qualitative dimensions only."
-            node scripts/ops-scorecard-refresh.mjs --monthly
+          set -euo pipefail
+          if [ -z "${VAULT:-}" ]; then
+            echo "::error::AZURE_KEY_VAULT_NAME is not set on the prod environment."
+            exit 1
           fi
 
-      - name: Create pull request
+          APP_ID="$(az keyvault secret show --vault-name "$VAULT" --name GITHUB-APP-ID --query value -o tsv)"
+          # PEM may be stored with literal \n; normalize for the token action.
+          PRIVATE_KEY="$(az keyvault secret show --vault-name "$VAULT" --name GITHUB-APP-PRIVATE-KEY --query value -o tsv | sed 's/\\n/\n/g')"
+
+          if [ -z "$APP_ID" ] || [ "$APP_ID" = "REPLACE_ME" ]; then
+            echo "::error::GITHUB-APP-ID missing or still REPLACE_ME in $VAULT."
+            exit 1
+          fi
+          if [ -z "$PRIVATE_KEY" ] || [ "$PRIVATE_KEY" = "REPLACE_ME" ]; then
+            echo "::error::GITHUB-APP-PRIVATE-KEY missing or still REPLACE_ME in $VAULT."
+            exit 1
+          fi
+
+          {
+            echo "app_id=$APP_ID"
+            echo "private_key<<EOF"
+            printf '%s\n' "$PRIVATE_KEY"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ steps.ghapp.outputs.app_id }}
+          private-key: ${{ steps.ghapp.outputs.private_key }}
+
+      - name: Refresh scorecard
+        run: node scripts/ops-scorecard-refresh.mjs --monthly --azure
+
+      - name: Commit scorecard to main
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
 
           if git diff --quiet -- docs/ops/operational-excellence-scorecard.md docs/ops/scorecard-evaluation.json; then
-            echo "No scorecard changes; skipping PR."
+            echo "No scorecard changes; skipping commit."
             exit 0
           fi
 
           stamp="$(date -u +%Y-%m)"
-          branch="ops/scorecard-${stamp}"
+          app_id="${{ steps.ghapp.outputs.app_id }}"
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git stash push -u -m "ops-scorecard" -- docs/ops/operational-excellence-scorecard.md docs/ops/scorecard-evaluation.json
-
-          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
-            git fetch origin "$branch"
-            git checkout -B "$branch" "origin/$branch"
-          else
-            git checkout -B "$branch"
-          fi
-
-          git stash pop
+          git config user.name "elyse-portfolio-studio[bot]"
+          git config user.email "${app_id}+elyse-portfolio-studio[bot]@users.noreply.github.com"
 
           git add docs/ops/operational-excellence-scorecard.md docs/ops/scorecard-evaluation.json
-          if git diff --cached --quiet; then
-            echo "No staged scorecard changes after branch sync; skipping PR."
-            exit 0
-          fi
-
           git commit -m "OPS: monthly operational excellence scorecard (${stamp})"
-          git push -u origin HEAD
 
-          existing="$(gh pr list --head "$branch" --state open --json number --jq '.[0].number // empty')"
-          if [ -n "$existing" ]; then
-            echo "Updated existing PR #${existing}"
-            exit 0
-          fi
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin HEAD:main
 
-          gh pr create \
-            --title "OPS: monthly operational excellence scorecard" \
-            --body "## Summary
-
-          - Monthly refresh of \`docs/ops/operational-excellence-scorecard.md\` (\`OPS-P0-004\`)
-          - Qualitative dimensions restamped; optional prod homepage/materials/FCP/Studio/inquiry SLIs when Azure OIDC succeeds
-          - No alert emails, phones, or secrets in this PR
-
-          ## Test plan
-
-          - [ ] Confirm scorecard has **Last reviewed** updated and no private contacts
-          - [ ] Spot-check dimension scores / gaps against reality
-          - [ ] Merge only after human review (do not auto-merge)
-          "
+          echo "Pushed scorecard refresh to main (${stamp})."

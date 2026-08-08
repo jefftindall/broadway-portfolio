@@ -109,10 +109,11 @@ Initial SRE review — **not yet** the monthly persisted artifact (see [Scorecar
 **Monthly workflow** (`.github/workflows/ops-scorecard-monthly.yml`):
 
 1. **Trigger:** GitHub Actions `schedule` (`0 14 1 * *` — 1st of month 14:00 UTC) + `workflow_dispatch`.
-2. **Job:** `environment: prod` (TF OIDC subject). Run `node scripts/ops-scorecard-refresh.mjs --monthly` (add `--azure` when OIDC login succeeds). Updates evaluation JSON + scorecard markdown (scores, evidence, gaps, `Last reviewed`, overall). Optional read-only App Insights homepage availability probe.
+2. **Job:** `environment: prod` (TF OIDC subject). Azure login is required: mint a Studio GitHub App installation token from `kv-elyse-prod` (`GITHUB-APP-*`) and run `node scripts/ops-scorecard-refresh.mjs --monthly --azure`. Updates evaluation JSON + scorecard markdown (scores, evidence, gaps, `Last reviewed`, overall). Read-only App Insights SLI probes when queries succeed.
 3. **Privacy:** Workflow must **never** write alert emails, phones, or secrets into the scorecard or logs.
-4. **Output:** Open a PR titled `OPS: monthly operational excellence scorecard` for human review — do not push directly to `main` unless product later opts in.
-5. **Failure:** If Azure queries fail, still refresh qualitative dimensions and mark SLI-backed rows `stale` with a note.
+4. **Output:** Commit and push scorecard files directly to `main` as `elyse-portfolio-studio[bot]` (App is a **Protect main** bypass actor — same as Studio publishes). Do **not** open a PR (Actions cannot create PRs on this repo).
+5. **CD:** Scorecard-only pushes are excluded from [`azure-static-web-apps.yml`](../../.github/workflows/azure-static-web-apps.yml) via `paths-ignore` on the two scorecard artifacts.
+6. **Failure:** If Azure SLI queries fail after login, still refresh qualitative dimensions and mark SLI-backed rows `stale` with a note. If Azure login or App token minting fails, the job fails (no silent `GITHUB_TOKEN` PR fallback).
 
 ---
 
@@ -183,7 +184,7 @@ Do **not** send ops alerts through ACS contact-form SMS (`ACS-SMS-FROM` + `SITE-
 | `OPS-P0-001` | Operational excellence plan + agent rule; privacy (no contacts in git) | Plan + AGENTS + cursor rule; no real contacts in repo | `done` |
 | `OPS-P0-002` | Define `ALERT-*` secret names + bootstrap placeholders in `kv-elyse-shared` | Runbook lists names/set commands; TF creates `REPLACE_ME` secrets; no real values | `done` |
 | `OPS-P0-003` | Persist initial scorecard under `docs/ops/operational-excellence-scorecard.md` | File exists; baseline scores copied from this plan; no private contacts | `done` |
-| `OPS-P0-004` | Monthly GitHub Actions workflow to re-evaluate scorecard + open PR | `schedule` + `workflow_dispatch`; updates scorecard doc; PR for review | `done` |
+| `OPS-P0-004` | Monthly GitHub Actions workflow to re-evaluate scorecard + commit to `main` | `schedule` + `workflow_dispatch`; updates scorecard doc; Studio GitHub App push to `main`; CD `paths-ignore` for scorecard-only commits | `done` |
 
 ### Phase 1 — Key Vault–backed email + SMS + voice
 
@@ -226,7 +227,7 @@ OPS-P0-001 (this plan / AI guidance) [done]
     │               │               └── OPS-P3-003 (CD failure → Sev1) [done]
     │               └── OPS-P2-002 / OPS-P2-003 (FCP) [done]
     ├── OPS-P0-003 (persist scorecard under docs/ops/) [done]
-    │       └── OPS-P0-004 (monthly re-evaluate workflow → PR) [done]
+    │       └── OPS-P0-004 (monthly re-evaluate → App push to main) [done]
     ├── OPS-P3-001 / OPS-P3-005 (Studio cadence + IR stub) [done]
     ├── OPS-P3-004 (inquiry SLI) [done]
     └── OPS-P3-006 (prod/shared KV purge protection) [done]
@@ -240,7 +241,6 @@ OPS-P3-002 (PagerDuty) — after OPS-P1-002 [done]; still planned
 - Authenticated Studio E2E in CI
 - Using ACS inquiry SMS as the on-call channel
 - Committing real emails, phones, or vendor API keys
-- Auto-merging monthly scorecard PRs without review
 - Full enterprise incident-management / paging product as a day-one requirement
 
 ---
@@ -256,4 +256,5 @@ OPS-P3-002 (PagerDuty) — after OPS-P1-002 [done]; still planned
 | [incident-response.md](../runbooks/incident-response.md) | Severity stub (`OPS-P3-005`) |
 | [cost-and-quotas.md](../runbooks/cost-and-quotas.md) | Budget alerts (separate from Sev1) |
 | [search-and-analytics.md](search-and-analytics.md) | GA4/GSC — not ops paging |
+| [github-app.md](../runbooks/github-app.md) | Studio App Contents:write + Protect main bypass (scorecard monthly push) |
 | `docs/ops/operational-excellence-scorecard.md` | Living scorecard (`OPS-P0-003` done; refreshed by `OPS-P0-004`) |
