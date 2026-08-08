@@ -3,8 +3,14 @@ name: Staging branch
 # Manual async test: apply staging Terraform + deploy the staging app from any branch.
 # Runs Playwright smoke against staging afterward (does not promote to prod).
 # Automated deploys run only on merge to main (azure-static-web-apps.yml).
+# Shares concurrency group portfolio-cd with azure-static-web-apps.yml so manual
+# staging deploys cannot overlap main CD.
 on:
   workflow_dispatch:
+
+concurrency:
+  group: portfolio-cd
+  cancel-in-progress: false
 
 permissions:
   id-token: write
