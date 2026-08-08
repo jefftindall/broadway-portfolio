@@ -295,6 +295,7 @@ resource "azurerm_monitor_metric_alert" "availability" {
 # Sev3 — homepage field FCP p75 burn (OPS-P2-002). Email-only watch group.
 # Azure scheduled-query max lookback is P2D; committed SLO-6 (7d) is scored by the monthly
 # scorecard Kusto probe. Alert fires as an early watch when 2d p75 > 1.5s with ≥10 samples.
+# Auto-mitigate requires evaluation_frequency ≤ 12h; keep daily cadence without auto-mitigate.
 resource "azurerm_monitor_scheduled_query_rules_alert_v2" "homepage_fcp" {
   count = local.alert_watch_enabled && var.environment == "prod" ? 1 : 0
 
@@ -308,7 +309,7 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "homepage_fcp" {
   evaluation_frequency    = "P1D"
   window_duration         = "P2D"
   skip_query_validation   = true
-  auto_mitigation_enabled = true
+  auto_mitigation_enabled = false
   tags                    = local.tags
 
   criteria {
