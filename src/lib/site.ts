@@ -32,7 +32,7 @@ export const site = {
   heroImage: '/images/photos/elyse-portrait.jpg',
   description:
     'Elyse Tindall is a musical theatre actress and vocal coach from Atlanta, now based in New York City — stage credits, private voice lessons rooted in vocal pedagogy and CCM, and casting materials.',
-  location: 'New York, NY',
+  location: 'New York, NY and Atlanta, GA',
   /** Chronological age at build time (from SITE_DATE_OF_BIRTH). */
   get age() {
     return ageInYears();
@@ -42,7 +42,7 @@ export const site = {
     vocalType: 'Mezzo-Soprano with an extended range',
     vocalRange: 'D3-G6 (Belt: G5)',
     ethnicity:
-      'White / Middle Eastern (olive skin); presents as Hispanic, Latina, Latin, Italian, Greek, Mediterranean, ethnically ambiguous',
+      'White; olive skin presents as Middle Eastern, Hispanic, Latina, Latin, Italian, Greek, Mediterranean, ethnically ambiguous',
     height: '5\'3" (160 cm)',
     union: 'Non-union',
     availability: 'Available',
