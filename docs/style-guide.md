@@ -80,6 +80,7 @@ Contrast rule: primary CTAs use **gold on ink**. Muted text is secondary only.
 | `MediaCard` | `src/components/MediaCard.astro` | Gallery / media thumbnails |
 | `VideoEmbed` | `src/components/VideoEmbed.astro` | YouTube / Vimeo reel embeds |
 | `LessonCta` | `src/components/LessonCta.astro` | Compact “Study with Elyse” embed |
+| `PerformerFacts` | `src/components/PerformerFacts.astro` | Casting facts from `site.performer` — full labeled table on About and Materials |
 
 ### CTA variants (`CtaLink`)
 

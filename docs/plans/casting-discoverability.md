@@ -6,7 +6,7 @@
 **Audience:** Agents, implementers, Elyse (content owner)  
 **Scope:** Public site discoverability for casting directors, representation, and answer engines — not voice-lesson marketing.
 
-For Google Search Console, GA4 measurement, and technical SEO that feeds those tools, see the phased plan [search-and-analytics.md](plans/search-and-analytics.md) (`SEARCH-*`). Overlapping cutover/console items keep their `DISC-P0-*` IDs here and are cross-linked.
+For Google Search Console, GA4 measurement, and technical SEO that feeds those tools, see the phased plan [search-and-analytics.md](search-and-analytics.md) (`SEARCH-*`). Overlapping cutover/console items keep their `DISC-P0-*` IDs here and are cross-linked.
 
 Use the **Action ID** column (`DISC-*`) to reference items in PRs, issues, Studio prompts, and commits.
 
@@ -112,9 +112,9 @@ Snapshot **2026-08-02**. Re-score after `DISC-P0-001` (cutover) and after each t
 
 | ID | Title | Status | Depends on | Primary files / runbooks |
 |----|-------|--------|------------|--------------------------|
-| `DISC-P0-001` | Cut over apex DNS to Astro SWA | `done` | — | [wordpress-to-azure-cutover.md](runbooks/wordpress-to-azure-cutover.md), [dns-and-domain.md](runbooks/dns-and-domain.md), [deploy-and-rollback.md](runbooks/deploy-and-rollback.md) |
-| `DISC-P0-002` | Submit sitemap to Google Search Console & Bing Webmaster Tools | `done` | `DISC-P0-001` | GSC property registered for `elysetindall.com`; residual indexing requests in [search-and-analytics.md](plans/search-and-analytics.md) (`SEARCH-P0-004`) |
-| `DISC-P0-003` | Configure 301 redirects from legacy WordPress URLs | `done` | — | [wordpress-to-azure-cutover.md](runbooks/wordpress-to-azure-cutover.md) §2–3, `public/staticwebapp.config.json` |
+| `DISC-P0-001` | Cut over apex DNS to Astro SWA | `done` | — | [wordpress-to-azure-cutover.md](../runbooks/wordpress-to-azure-cutover.md), [dns-and-domain.md](../runbooks/dns-and-domain.md), [deploy-and-rollback.md](../runbooks/deploy-and-rollback.md) |
+| `DISC-P0-002` | Submit sitemap to Google Search Console & Bing Webmaster Tools | `done` | `DISC-P0-001` | GSC property registered for `elysetindall.com`; residual indexing requests in [search-and-analytics.md](search-and-analytics.md) (`SEARCH-P0-004`) |
+| `DISC-P0-003` | Configure 301 redirects from legacy WordPress URLs | `done` | — | [wordpress-to-azure-cutover.md](../runbooks/wordpress-to-azure-cutover.md) §2–3, `public/staticwebapp.config.json` |
 
 <details>
 <summary><code>DISC-P0-001</code> — Cut over apex DNS to Astro SWA</summary>
@@ -127,14 +127,14 @@ Snapshot **2026-08-02**. Re-score after `DISC-P0-001` (cutover) and after each t
 - [x] `https://elysetindall.com/sitemap-index.xml` returns 200
 - [x] HTTPS valid on apex
 
-**Operator runbook:** [wordpress-to-azure-cutover.md](runbooks/wordpress-to-azure-cutover.md)
+**Operator runbook:** [wordpress-to-azure-cutover.md](../runbooks/wordpress-to-azure-cutover.md)
 
 </details>
 
 <details>
 <summary><code>DISC-P0-002</code> — Submit sitemap to search consoles</summary>
 
-**Status:** `done` (GSC property registered for `elysetindall.com`). Residual indexing requests: `SEARCH-P0-004` in [search-and-analytics.md](plans/search-and-analytics.md).
+**Status:** `done` (GSC property registered for `elysetindall.com`). Residual indexing requests: `SEARCH-P0-004` in [search-and-analytics.md](search-and-analytics.md).
 
 **Acceptance criteria**
 
@@ -143,7 +143,7 @@ Snapshot **2026-08-02**. Re-score after `DISC-P0-001` (cutover) and after each t
 - [ ] Bing Webmaster Tools sitemap submitted (optional)
 - [ ] Index coverage monitored for `/for/*` (ongoing)
 
-**Operator runbook:** [wordpress-to-azure-cutover.md](runbooks/wordpress-to-azure-cutover.md) §6
+**Operator runbook:** [wordpress-to-azure-cutover.md](../runbooks/wordpress-to-azure-cutover.md) §6
 
 </details>
 
@@ -156,7 +156,7 @@ Snapshot **2026-08-02**. Re-score after `DISC-P0-001` (cutover) and after each t
 - [x] Each legacy URL 301s to the closest Astro equivalent (one hop) in `public/staticwebapp.config.json`
 - [ ] Spot-check 10 legacy URLs after DNS cutover
 
-**Operator runbook:** [wordpress-to-azure-cutover.md](runbooks/wordpress-to-azure-cutover.md) §2–3
+**Operator runbook:** [wordpress-to-azure-cutover.md](../runbooks/wordpress-to-azure-cutover.md) §2–3
 
 </details>
 
@@ -168,7 +168,7 @@ Snapshot **2026-08-02**. Re-score after `DISC-P0-001` (cutover) and after each t
 |----|-------|--------|------------|--------------------------|
 | `DISC-P1-001` | Reorder homepage for casting (hero CTAs + section order) | `done` | `DISC-P0-001` | `src/pages/index.astro`, `src/components/Hero.astro` |
 | `DISC-P1-002` | Add `/materials` page with reel, downloads, and casting CTA | `done` | `DISC-P0-001`, `DISC-GAP-001`, `DISC-GAP-002` | New `src/pages/materials.astro`, `public/downloads/` |
-| `DISC-P1-003` | Add performer facts block (range, type, union, availability) | `planned` | `DISC-GAP-003` | `src/lib/site.ts`, `src/components/PerformerFacts.astro`, `src/pages/about.astro`, `src/pages/contact.astro` |
+| `DISC-P1-003` | Add performer facts block (range, type, union, availability) | `done` | `DISC-GAP-003` | `src/lib/site.ts`, `src/components/PerformerFacts.astro`, `src/pages/about.astro`, `src/pages/materials.astro` |
 | `DISC-P1-004` | Enrich JSON-LD and `site.ts` for performer + AI discoverability | `planned` | `DISC-P1-003` | `src/lib/site.ts`, `src/components/Seo.astro`, `src/pages/index.astro` |
 | `DISC-P1-005` | Add nav/footer link to Materials | `done` | `DISC-P1-002` | `src/lib/site.ts` (`nav`), `src/components/Footer.astro` |
 | `DISC-P1-006` | Surface Tiffany King quote on site | `planned` | — | `src/pages/index.astro` or `src/pages/about.astro` |
@@ -214,17 +214,19 @@ Snapshot **2026-08-02**. Re-score after `DISC-P0-001` (cutover) and after each t
 
 **Acceptance criteria**
 
-- [ ] Visible block on About and Contact (and compact variant on homepage or Materials)
-- [ ] Fields rendered (when provided in `site.ts` or content):
+- [x] Visible block on About and Materials
+- [x] Fields rendered (when provided in `site.ts` or content):
   - Playing age
   - Vocal range (e.g. belt/mix notation)
   - Ethnicity / presenting (e.g. ethnically ambiguous)
   - Union status (AEA / EMC / non-union)
   - Based in (NYC)
   - Availability / seeking representation (if applicable)
-- [ ] Facts are plain HTML text (not image-only) for crawlers and AI
-- [ ] Copy reviewed and approved by Elyse before publish
+  - Chronological age and height (listed last)
+- [x] Facts are plain HTML text (not image-only) for crawlers and AI
+- [x] Copy reviewed and approved by Elyse before publish
 
+Shipped facts in `site.performer`: playing age 15–28; vocal type (Mezzo-Soprano with an extended range); range D3-G6 (Belt: G5); ethnicity/presenting (White / Middle Eastern olive skin; Hispanic, Latina, Latin, Italian, Greek, Mediterranean, ethnically ambiguous); height 5'3" (160 cm); non-union; available. Full facts table on About and Materials (not Contact).
 </details>
 
 <details>
@@ -299,7 +301,7 @@ Snapshot **2026-08-02**. Re-score after `DISC-P0-001` (cutover) and after each t
 - [ ] `keyword`, `title`, `description` match target search intent
 - [ ] `relatedShows` and `relatedSkills` populated
 - [ ] Live at `/for/<slug>/` and listed in sitemap
-- [ ] See [add-casting-page.md](runbooks/add-casting-page.md)
+- [ ] See [add-casting-page.md](../runbooks/add-casting-page.md)
 
 **Page-specific keywords**
 
@@ -365,11 +367,11 @@ Snapshot **2026-08-02**. Re-score after `DISC-P0-001` (cutover) and after each t
 | ID | Title | Status | Cadence | Primary files / runbooks |
 |----|-------|--------|---------|--------------------------|
 | `DISC-P3-001` | News post after every credit or milestone | `planned` | Within 48h of event | `src/content/news/`, Studio |
-| `DISC-P3-002` | New casting page when a credit opens a lane | `planned` | Per project | [add-casting-page.md](runbooks/add-casting-page.md) |
+| `DISC-P3-002` | New casting page when a credit opens a lane | `planned` | Per project | [add-casting-page.md](../runbooks/add-casting-page.md) |
 | `DISC-P3-003` | Gallery refresh: headshot tags + alt text | `planned` | Quarterly | `src/content/gallery/`, `src/pages/gallery.astro` |
 | `DISC-P3-004` | Maintain `public/llms.txt` with structured facts | `planned` | On credit/fact change | `public/llms.txt` |
 | `DISC-P3-005` | External profile consistency (IMDb, Backstage, etc.) | `planned` | Ongoing | Off-site profiles |
-| `DISC-P3-006` | Monthly Search Console query review → new/refined `/for/*` | `planned` | Monthly | Search Console, casting content; joint GSC+GA loop in [search-and-analytics.md](plans/search-and-analytics.md) (`SEARCH-P3-001`) |
+| `DISC-P3-006` | Monthly Search Console query review → new/refined `/for/*` | `planned` | Monthly | Search Console, casting content; joint GSC+GA loop in [search-and-analytics.md](search-and-analytics.md) (`SEARCH-P3-001`) |
 | `DISC-P3-007` | Re-run rubric scoring (`DISC-SCORE`) | `planned` | Quarterly or post-tier | This document |
 
 <details>
@@ -390,10 +392,12 @@ URL: https://elysetindall.com
 Materials: https://elysetindall.com/materials/
 Job: Musical theatre actress (also vocal coach — voice lessons only)
 Location: New York, NY
-Playing age: <TBD>
-Vocal range: <TBD>
-Ethnicity/presenting: <TBD>
-Union: <TBD>
+Playing age: 15–28
+Vocal range: D3-G6 (Belt: G5)
+Type: Mezzo-Soprano with an extended range
+Ethnicity/presenting: White / Middle Eastern (olive skin); Hispanic, Latina, Latin, Italian, Greek, Mediterranean, ethnically ambiguous
+Union: Non-union
+Availability: Available
 Credits: Anastasia (Lily), Miss You Like Hell, Almost Maine, Little Women, NYC Cabaret (Stage Kiss)
 Reel: https://youtu.be/41jdPTkN_Sw
 Contact: elyse.tindall@gmail.com
@@ -421,10 +425,10 @@ Items Elyse (or representation) must supply before related actions can ship.
 |----|--------------|--------|--------|
 | `DISC-GAP-001` | Resume PDF (current, casting-formatted) | `DISC-P1-002` | `done` |
 | `DISC-GAP-002` | Headshot files (theatrical; commercial if available) | `DISC-P1-002` | `partial` (theatrical only) |
-| `DISC-GAP-003` | Performer spec: playing age, vocal range, ethnicity/presenting, union, height, availability | `DISC-P1-003`, `DISC-P1-004`, `DISC-P2-001`–`003` | `needed` |
+| `DISC-GAP-003` | Performer spec: playing age, vocal range, ethnicity/presenting, union, height, availability | `DISC-P1-003`, `DISC-P1-004`, `DISC-P2-001`–`003` | `done` |
 | `DISC-GAP-004` | 2–3 vocal demo recordings (YouTube unlisted or public) | `DISC-P2-009` | `needed` |
 | `DISC-GAP-005` | Confirmation whether to publish “seeking representation” publicly | `DISC-P2-005` | `needed` |
-| `DISC-GAP-006` | Legacy WordPress URL inventory for redirects | `DISC-P0-003` | `done` (see [wordpress-to-azure-cutover.md](runbooks/wordpress-to-azure-cutover.md) §2) |
+| `DISC-GAP-006` | Legacy WordPress URL inventory for redirects | `DISC-P0-003` | `done` (see [wordpress-to-azure-cutover.md](../runbooks/wordpress-to-azure-cutover.md) §2) |
 | `DISC-GAP-007` | Verified external profile URLs (Backstage, Actors Access, YouTube, etc.) | `DISC-P1-004`, `DISC-P3-005` | `needed` |
 
 ---
@@ -466,7 +470,7 @@ flowchart TD
 | JSON-LD Person / VideoObject | `src/pages/index.astro`, `Seo.astro` | Extend via `DISC-P1-004` |
 | Reel | `site.reelUrl` | YouTube Stage Kiss |
 | Casting email lane | `ContactLanes.astro` | Keep subject-line convention |
-| Studio casting page tool | [add-casting-page.md](runbooks/add-casting-page.md) | Use for `DISC-P2-*` and `DISC-P3-002` |
+| Studio casting page tool | [add-casting-page.md](../runbooks/add-casting-page.md) | Use for `DISC-P2-*` and `DISC-P3-002` |
 
 ---
 
@@ -479,7 +483,7 @@ flowchart TD
 - [ ] `npm run lint` passes
 - [ ] `npm run build` passes
 - [ ] Acceptance criteria for each ID met
-- [ ] Elyse approved copy for performer facts (if touching DISC-P1-003)
+- [x] Elyse approved copy for performer facts (if touching DISC-P1-003)
 ```
 
 ---

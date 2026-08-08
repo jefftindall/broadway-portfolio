@@ -6,7 +6,7 @@
 **Audience:** Agents, implementers, operators  
 **Scope:** Google Search Console (GSC), Google Analytics 4 (GA4), and related technical SEO that makes those tools useful — not casting content strategy itself.
 
-Use the **Action ID** column (`SEARCH-*`) to reference items in PRs, issues, and commits. Casting-intent content work stays in [casting-discoverability.md](../casting-discoverability.md) (`DISC-*`); this plan owns the **measurement + console + technical SEO** track and links out to `DISC-*` where they overlap.
+Use the **Action ID** column (`SEARCH-*`) to reference items in PRs, issues, and commits. Casting-intent content work stays in [casting-discoverability.md](casting-discoverability.md) (`DISC-*`); this plan owns the **measurement + console + technical SEO** track and links out to `DISC-*` where they overlap.
 
 Example PR title: `SEARCH-P1-003: Add GA4 generate_lead on inquiry success`
 
@@ -320,7 +320,7 @@ Asset: 1200×630 JPEG at `/images/og-default.jpg`. Width/height metas only for t
 | ID | Title | Status | Depends on | Primary refs |
 |----|-------|--------|------------|--------------|
 | `SEARCH-P3-001` | Monthly GSC + GA joint review | `planned` | `SEARCH-P1-003` (events make the loop more useful) | Extends `DISC-P3-006` |
-| `SEARCH-P3-002` | Feed review outcomes into casting/content backlog | `planned` | `SEARCH-P3-001` | [casting-discoverability.md](../casting-discoverability.md) Tier 2–3 |
+| `SEARCH-P3-002` | Feed review outcomes into casting/content backlog | `planned` | `SEARCH-P3-001` | [casting-discoverability.md](casting-discoverability.md) Tier 2–3 |
 | `SEARCH-P3-003` | Re-check CWV / Experience in GSC after major visual changes | `planned` | — | Hero/reel pages especially |
 
 Content that moves rankings (Person facts, `/for/*` landers, materials downloads, news cadence) remains owned by **`DISC-*`**. This phase is the **measurement feedback loop** into that backlog.
@@ -371,7 +371,7 @@ GSC and GA4 properties are live; run this on a cadence (roughly aligns with `DIS
 - Replacing App Insights with GA for Studio/ops telemetry
 - Keyword-stuffed titles/descriptions “for GSC”
 - Advertising / remarketing configuration (unless a future decision flips `SEARCH-P1-005`)
-- Full casting content strategy — see [casting-discoverability.md](../casting-discoverability.md)
+- Full casting content strategy — see [casting-discoverability.md](casting-discoverability.md)
 - Assuming sitemap submission alone ranks `/for/*` landers — index pipeline ≠ ranking lever
 
 ---
@@ -390,7 +390,7 @@ GSC and GA4 properties are live; run this on a cadence (roughly aligns with `DIS
 
 | Doc | Relationship |
 |-----|----------------|
-| [casting-discoverability.md](../casting-discoverability.md) | Casting SEO backlog (`DISC-*`); cutover/console P0 items marked done there too |
+| [casting-discoverability.md](casting-discoverability.md) | Casting SEO backlog (`DISC-*`); cutover/console P0 items marked done there too |
 | [wordpress-to-azure-cutover.md](../runbooks/wordpress-to-azure-cutover.md) §6 | Historical cutover checklist; residual indexing in `SEARCH-P0-004` |
 | [dns-and-domain.md](../runbooks/dns-and-domain.md) | Apex / www |
 | [observability.md](../runbooks/observability.md) | App Insights vs GA4 |
