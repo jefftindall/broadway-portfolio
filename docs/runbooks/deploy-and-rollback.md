@@ -10,6 +10,8 @@
    - If only app paths changed: **Deploy Staging** → **Smoke Staging** → **Deploy Production** (Terraform apply jobs skipped)
    - If neither changed (e.g. `docs/` only): CD jobs are skipped; **Static analysis** still runs on the push
 
+CD workflows share concurrency group `portfolio-cd` (`cancel-in-progress: false`), so main CD and **Staging branch** never deploy at the same time. A second CD run waits; if more arrive while one is pending, GitHub keeps only the latest pending run. Static analysis is unconstrained and may run in parallel across PRs.
+
 **Smoke Staging** runs Playwright against the live staging hostname. Journey scope depends on what changed: full suite for UI/infra changes, `@content` journeys for markdown-only updates, smoke-only for API-only changes. See [testing-strategy.md](testing-strategy.md). Production deploys the **same build artifact** that passed staging verification.
 
 Optional: add required reviewers on the GitHub Environment **prod** for a manual approval gate after smoke.

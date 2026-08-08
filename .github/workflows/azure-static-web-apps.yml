@@ -6,11 +6,18 @@ name: Azure Static Web Apps CI/CD
 # Manual staging-only test: Actions → Staging branch (workflow_dispatch).
 # After Deploy Staging: Smoke Staging (Playwright desktop + mobile) must pass before prod.
 # Build once per release; staging and prod deploy the same artifact that was verified.
+# Serialize CD with staging-branch.yml (shared group) so only one deploy runs at a time.
+# cancel-in-progress: false waits instead of cancelling; GitHub keeps one pending slot
+# (latest-wins if more runs arrive while one is queued).
 on:
   push:
     branches:
       - main
   workflow_dispatch:
+
+concurrency:
+  group: portfolio-cd
+  cancel-in-progress: false
 
 permissions:
   id-token: write
