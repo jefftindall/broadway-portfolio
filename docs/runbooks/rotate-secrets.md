@@ -6,7 +6,7 @@ Secrets live in Azure Key Vault as the source of truth. Managed Functions on SWA
 
 | Scope | Key Vault | Resource group | Purpose |
 |---|---|---|---|
-| **Shared (build + ACS)** | `kv-elyse-shared` | `rg-elyse-shared` | SITE-*, Turnstile, ACS email/SMS (identical across envs) |
+| **Shared (build + ACS + ops alerts)** | `kv-elyse-shared` | `rg-elyse-shared` | SITE-*, Turnstile, ACS email/SMS, `ALERT-*` (identical across envs) |
 | Staging API | `kv-elyse-staging` | `rg-elyse-portfolio-staging` | Gemini, GitHub App, allowlist, AAD |
 | Production API | `kv-elyse-prod` | `rg-elyse-portfolio-prod` | Same as staging |
 
@@ -109,33 +109,26 @@ For the verification program brief, use the public SMS policy URL:
 
 (also linked from the site footer and inquiry forms). Opt-out: reply **STOP**; help: reply **HELP**.
 
-## Ops alert contacts (`ALERT-*`, env vaults)
+## Ops alert contacts (`ALERT-*`, shared vault)
 
-**Separate from contact-form notify.** `SITE-CONTACT-*` / ACS SMS deliver inquiry notifications. On-call / Sev1–Sev3 Azure Monitor Action Groups use dedicated **`ALERT-*`** secrets in each **env** vault. Never commit real emails or phones — placeholders only in git.
+**Separate from contact-form notify.** `SITE-CONTACT-*` / ACS SMS deliver inquiry notifications. On-call / Sev1–Sev3 Azure Monitor Action Groups use dedicated **`ALERT-*`** secrets in **`kv-elyse-shared`** (same operator for staging + prod). Never commit real emails or phones — placeholders only in git.
 
-Tracked in [operational-excellence.md](../plans/operational-excellence.md) (`OPS-P0-002`). Terraform Action Group wiring lands in `OPS-P1-*`; until then, set secrets early so apply can read them.
+Created by **bootstrap** Terraform (`infra/bootstrap/shared_kv.tf`, `OPS-P0-002`). Action Group wiring lands in `OPS-P1-*`. Leave values as `REPLACE_ME` until you are ready to receive pages — Terraform will skip receivers while placeholders remain.
 
 | Secret name | Vault | Format | Used by |
 |---|---|---|---|
-| `ALERT-EMAIL` | `kv-elyse-staging` / `kv-elyse-prod` | Email address | Notify + critical Action Groups (`OPS-P1-001`) |
-| `ALERT-SMS-PHONE` | same | E.164 (`+1XXXXXXXXXX`) | SMS on notify + critical (`OPS-P1-002`) |
-| `ALERT-VOICE-PHONE` | same | E.164 (optional; may match SMS) | Voice on critical only (`OPS-P1-002`) |
-
-Leave values as `REPLACE_ME` until you are ready to receive pages. Terraform (when `OPS-P1-*` lands) skips receivers while secrets are still placeholders.
+| `ALERT-EMAIL` | `kv-elyse-shared` | Email address | Notify + critical Action Groups (`OPS-P1-001`) |
+| `ALERT-SMS-PHONE` | `kv-elyse-shared` | E.164 (`+1XXXXXXXXXX`) | SMS on notify + critical (`OPS-P1-002`) |
+| `ALERT-VOICE-PHONE` | `kv-elyse-shared` | E.164 (optional; may match SMS) | Voice on critical only (`OPS-P1-002`) |
 
 ```bash
-# Staging
-az keyvault secret set --vault-name kv-elyse-staging --name ALERT-EMAIL --value "<email>"
-az keyvault secret set --vault-name kv-elyse-staging --name ALERT-SMS-PHONE --value "+1XXXXXXXXXX"
-az keyvault secret set --vault-name kv-elyse-staging --name ALERT-VOICE-PHONE --value "+1XXXXXXXXXX"
-
-# Production
-az keyvault secret set --vault-name kv-elyse-prod --name ALERT-EMAIL --value "<email>"
-az keyvault secret set --vault-name kv-elyse-prod --name ALERT-SMS-PHONE --value "+1XXXXXXXXXX"
-az keyvault secret set --vault-name kv-elyse-prod --name ALERT-VOICE-PHONE --value "+1XXXXXXXXXX"
+# After bootstrap apply (secrets exist as REPLACE_ME):
+az keyvault secret set --vault-name kv-elyse-shared --name ALERT-EMAIL --value "<email>"
+az keyvault secret set --vault-name kv-elyse-shared --name ALERT-SMS-PHONE --value "+1XXXXXXXXXX"
+az keyvault secret set --vault-name kv-elyse-shared --name ALERT-VOICE-PHONE --value "+1XXXXXXXXXX"
 ```
 
-These secrets are **not** synced into SWA app settings (Monitor reads them at `terraform apply` via data sources). No `sync-swa-api-secrets` step.
+These secrets are **not** synced into SWA app settings and are **not** required for CD Build (unlike SITE-*/Turnstile). Monitor reads them at `terraform apply` via data sources under `OPS-P1-*`.
 
 Do **not** reuse `SITE-CONTACT-EMAIL`, `SITE-CONTACT-PHONE`, or `ACS-SMS-FROM` for ops paging.
 

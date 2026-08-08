@@ -1,5 +1,6 @@
-# Shared foundation Key Vault — site-build, Turnstile, and ACS (email/SMS) secrets
-# identical across staging and prod. Env vaults keep Gemini / GitHub App / allowlist / AAD.
+# Shared foundation Key Vault — site-build, Turnstile, ACS (email/SMS), and ops
+# ALERT-* contacts identical across staging and prod. Env vaults keep Gemini /
+# GitHub App / allowlist / AAD.
 
 locals {
   shared_kv_name = "kv-elyse-shared"
@@ -84,6 +85,41 @@ resource "azurerm_key_vault_secret" "turnstile_site_key" {
 
 resource "azurerm_key_vault_secret" "turnstile_secret_key" {
   name         = "TURNSTILE-SECRET-KEY"
+  value        = "REPLACE_ME"
+  key_vault_id = azurerm_key_vault.shared.id
+  depends_on   = [azurerm_role_assignment.shared_kv_admin]
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+# Ops / Azure Monitor Action Group contacts (OPS-P0-002). Not used by SWA or Astro
+# build — env stacks read these at apply under OPS-P1-*. Keep separate from SITE-CONTACT-*.
+resource "azurerm_key_vault_secret" "alert_email" {
+  name         = "ALERT-EMAIL"
+  value        = "REPLACE_ME"
+  key_vault_id = azurerm_key_vault.shared.id
+  depends_on   = [azurerm_role_assignment.shared_kv_admin]
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "azurerm_key_vault_secret" "alert_sms_phone" {
+  name         = "ALERT-SMS-PHONE"
+  value        = "REPLACE_ME"
+  key_vault_id = azurerm_key_vault.shared.id
+  depends_on   = [azurerm_role_assignment.shared_kv_admin]
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "azurerm_key_vault_secret" "alert_voice_phone" {
+  name         = "ALERT-VOICE-PHONE"
   value        = "REPLACE_ME"
   key_vault_id = azurerm_key_vault.shared.id
   depends_on   = [azurerm_role_assignment.shared_kv_admin]

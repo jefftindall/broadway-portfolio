@@ -29,7 +29,7 @@ Private operator contacts must **never** live in the git repo:
 
 **Today’s gap:** `alert_email` is a plain Terraform variable. When implementing alerting, **replace** it with Key Vault–backed `ALERT-*` secrets — do not add plaintext phone variables.
 
-**Separate from contact-form notify:** `SITE-CONTACT-*` in `kv-elyse-shared` are for ACS inquiry delivery. Ops alert contacts use dedicated `ALERT-*` secrets in **env** vaults (`kv-elyse-staging` / `kv-elyse-prod`).
+**Separate from contact-form notify:** `SITE-CONTACT-*` in `kv-elyse-shared` are for ACS inquiry delivery. Ops alert contacts use dedicated `ALERT-*` secrets in the **same shared vault** (`kv-elyse-shared`, bootstrap) so staging and prod Action Groups share one on-call contact set.
 
 The **persisted scorecard** in `/docs` must also omit private emails/phones — scores, evidence, and gaps only.
 
@@ -148,7 +148,7 @@ Initial SRE review — **not yet** the monthly persisted artifact (see [Scorecar
 
 ### Phase 1 — Azure Monitor native
 
-1. Env Key Vault: `ALERT-EMAIL`, `ALERT-SMS-PHONE`, optional `ALERT-VOICE-PHONE` (placeholders in TF; real values via CLI only).
+1. Shared Key Vault (`kv-elyse-shared`): `ALERT-EMAIL`, `ALERT-SMS-PHONE`, optional `ALERT-VOICE-PHONE` (placeholders in bootstrap TF; real values via CLI only).
 2. Action Groups: `ag-elyse-notify` (email ± SMS), `ag-elyse-critical` (email + SMS + voice).
 3. Homepage availability → **critical**; failed-request → **notify**.
 4. Prove with Action Group test + controlled threshold exercise.
@@ -173,7 +173,7 @@ Do **not** send ops alerts through ACS contact-form SMS (`ACS-SMS-FROM` + `SITE-
 | Action ID | Work | Acceptance criteria | Status |
 |-----------|------|---------------------|--------|
 | `OPS-P0-001` | Operational excellence plan + agent rule; privacy (no contacts in git) | Plan + AGENTS + cursor rule; no real contacts in repo | `done` |
-| `OPS-P0-002` | Define `ALERT-*` secret names in rotate-secrets (placeholders only) | Runbook lists names, vault, set commands; no real values | `done` |
+| `OPS-P0-002` | Define `ALERT-*` secret names + bootstrap placeholders in `kv-elyse-shared` | Runbook lists names/set commands; TF creates `REPLACE_ME` secrets; no real values | `done` |
 | `OPS-P0-003` | Persist initial scorecard under `docs/ops/operational-excellence-scorecard.md` | File exists; baseline scores copied from this plan; no private contacts | `done` |
 | `OPS-P0-004` | Monthly GitHub Actions workflow to re-evaluate scorecard + open PR | `schedule` + `workflow_dispatch`; updates scorecard doc; PR for review | `done` |
 
@@ -181,8 +181,8 @@ Do **not** send ops alerts through ACS contact-form SMS (`ACS-SMS-FROM` + `SITE-
 
 | Action ID | Work | Acceptance criteria | Status |
 |-----------|------|---------------------|--------|
-| `OPS-P1-001` | Replace `alert_email` TF variable with data source from `ALERT-EMAIL` | No email in tfvars/examples; skip receivers when `REPLACE_ME` | `planned` |
-| `OPS-P1-002` | Add `ALERT-SMS-PHONE` (+ voice) on critical/notify groups | SMS/voice on Action Group test; numbers only in Key Vault | `planned` |
+| `OPS-P1-001` | Replace `alert_email` TF variable with data source from shared `ALERT-EMAIL` | No email in tfvars/examples; skip receivers when `REPLACE_ME` | `planned` |
+| `OPS-P1-002` | Add shared `ALERT-SMS-PHONE` (+ voice) on critical/notify groups | SMS/voice on Action Group test; numbers only in Key Vault | `planned` |
 | `OPS-P1-003` | Confirm prod homepage Sev1 → critical group | Controlled test documents receipt (without committing PII) | `planned` |
 
 ### Phase 2 — Materials + FCP SLIs
@@ -210,7 +210,7 @@ Do **not** send ops alerts through ACS contact-form SMS (`ACS-SMS-FROM` + `SITE-
 
 ```text
 OPS-P0-001 (this plan / AI guidance) [done]
-    ├── OPS-P0-002 (ALERT-* in rotate-secrets) [done]
+    ├── OPS-P0-002 (ALERT-* in shared KV + rotate-secrets) [done]
     │       └── OPS-P1-001 (KV-backed email)
     │               ├── OPS-P1-002 (SMS/voice)
     │               │       └── OPS-P1-003 (homepage Sev1 prove-out)

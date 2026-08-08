@@ -21,7 +21,7 @@ Living reliability posture for the Elyse Tindall portfolio. Rubric, SLOs, and ba
 | Observability | 1.2 | 3.8 | Solid | Per-env AI; Studio correlation + events; GA4 public | Thin contact events; no Workbooks as code | ok |
 | Test automation | 1.1 | 3.5 | Solid | Staging smoke + journeys; homepage synthetic | No unit tests; materials synth; Studio E2E OOS | ok |
 | Cost & capacity | 0.7 | 3.5 | Solid | cost-and-quotas; AI caps | Manual budget/Gemini console alerts | ok |
-| Alerting & on-call | 1.1 | 2.0 | Thin | TF alerts if alert_email set | Empty default; no SMS/voice (ALERT-* named in rotate-secrets; TF wiring is OPS-P1) | ok |
+| Alerting & on-call | 1.1 | 2.0 | Thin | TF alerts if alert_email set | Empty default; no SMS/voice (ALERT-* placeholders in shared KV; TF wiring is OPS-P1) | ok |
 | Resilience & DR | 0.9 | 2.0 | Thin | Git rollback; env isolation; East US 2 only | Single region; shared ACS/Turnstile coupling | ok |
 | SLOs & error budget | 0.8 | 1.5 | Gap | Implicit homepage ping; committed SLOs in plan | Written SLOs not scored yet against weekly/monthly windows | stale: Homepage availability SLI not queried this review (baseline). Materials/FCP/Studio SLIs need OPS-P2/P3. |
 

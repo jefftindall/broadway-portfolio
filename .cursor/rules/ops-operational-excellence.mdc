@@ -32,7 +32,7 @@ When planning or implementing alerts, on-call, or support contacts:
 - **Never** commit real alert emails, SMS/voice numbers, PagerDuty/Better Stack routing keys, or similar private operator details in Terraform variables files, docs, examples, canvases, PR bodies, or source comments.
 - Store them in **Azure Key Vault** and read at deploy/apply time (data sources / sync scripts), same pattern as `SITE-CONTACT-*` and ACS secrets (`lifecycle { ignore_changes = [value] }`, set via `az keyvault secret set`).
 - Use placeholders only in the repo: `REPLACE_ME`, `<email>`, `+1XXXXXXXXXX`.
-- Prefer dedicated **`ALERT-*`** secrets in **env** vaults (`kv-elyse-staging` / `kv-elyse-prod`), not reuse of `SITE-CONTACT-EMAIL` / `SITE-CONTACT-PHONE` (those are inquiry notify via ACS).
+- Prefer dedicated **`ALERT-*`** secrets in **`kv-elyse-shared`** (bootstrap placeholders), not reuse of `SITE-CONTACT-EMAIL` / `SITE-CONTACT-PHONE` (those are inquiry notify via ACS).
 - Do **not** send ops/Sev1 alerts through ACS contact-form SMS.
 - When replacing today’s `alert_email` Terraform variable, move to Key Vault — do not add more plaintext contact variables.
 

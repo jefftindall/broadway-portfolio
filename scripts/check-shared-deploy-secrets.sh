@@ -42,6 +42,25 @@ check SITE-DATE-OF-BIRTH
 check TURNSTILE-SITE-KEY
 check TURNSTILE-SECRET-KEY
 
+# Ops ALERT-* (bootstrap shared_kv.tf): must exist; REPLACE_ME is fine until OPS-P1.
+check_alert_placeholder() {
+  local name="$1"
+  local value
+  if ! value=$(az keyvault secret show --vault-name "$vault" --name "$name" --query value -o tsv 2>/dev/null); then
+    warn "Secret ${name} is missing in ${vault} (apply infra/bootstrap shared_kv.tf)."
+    return
+  fi
+  if [[ -z "$value" || "$value" == "REPLACE_ME" ]]; then
+    echo "OK ${name} (placeholder — set before OPS-P1 Action Groups)"
+  else
+    echo "OK ${name}"
+  fi
+}
+
+check_alert_placeholder ALERT-EMAIL
+check_alert_placeholder ALERT-SMS-PHONE
+check_alert_placeholder ALERT-VOICE-PHONE
+
 # SMS from is optional for Build release (email-only until set); warn separately.
 sms_from=""
 if ! sms_from=$(az keyvault secret show --vault-name "$vault" --name ACS-SMS-FROM --query value -o tsv 2>/dev/null); then
