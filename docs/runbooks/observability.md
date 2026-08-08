@@ -37,7 +37,7 @@ Consent Mode / cookie banner: **not shipped** (`SEARCH-P1-006` = `wont_fix`). Pr
 
 Availability and failed-request metric alerts wire to Key Vault–backed Action Groups when shared `ALERT-*` secrets are set (not `REPLACE_ME`). See [rotate-secrets.md](./rotate-secrets.md) ops section and [operational-excellence.md](../plans/operational-excellence.md).
 
-**Operational excellence:** Living scorecard at [operational-excellence-scorecard.md](../ops/operational-excellence-scorecard.md). Backlog / SLOs / Sev1 SMS-voice plan: [operational-excellence.md](../plans/operational-excellence.md) (`OPS-*`). Private alert emails/phones must not be committed — only `ALERT-*` in `kv-elyse-shared`. Phase 0–2 done; Phase 3 (except optional PagerDuty `OPS-P3-002`) done — Studio SLO cadence, CD Sev1, inquiry SLI, IR stub, prod/shared KV purge protection.
+**Operational excellence:** Living scorecard at [operational-excellence-scorecard.md](../ops/operational-excellence-scorecard.md). Backlog / SLOs / Sev1 SMS-voice plan: [operational-excellence.md](../plans/operational-excellence.md) (`OPS-*`). Private alert emails/phones must not be committed — only `ALERT-*` in `kv-elyse-shared`. Phase 0–2 done; Phase 3 (except optional PagerDuty `OPS-P3-002`) done — Studio SLO cadence, CD Sev1, inquiry SLI, IR stub, prod/shared KV purge protection. Phase 4 done (budget + ACS digest). **Phase 5 planned:** monthly site performance (GA4 visits/top pages + App Insights contact/Studio-update counts) — see plan § Site performance; GA Data API needs KV secrets beyond the public Measurement ID.
 
 ## Action Groups (OPS-P1 / OPS-P2 / OPS-P3)
 

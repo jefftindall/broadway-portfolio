@@ -1,8 +1,8 @@
 # Plan: Google Search Console & Analytics
 
 **Artifact ID:** `ELYSE-SEARCH-001`  
-**Version:** 1.3  
-**Last updated:** 2026-08-06  
+**Version:** 1.4  
+**Last updated:** 2026-08-08  
 **Audience:** Agents, implementers, operators  
 **Scope:** Google Search Console (GSC), Google Analytics 4 (GA4), and related technical SEO that makes those tools useful — not casting content strategy itself.
 
@@ -325,6 +325,8 @@ Asset: 1200×630 JPEG at `/images/og-default.jpg`. Width/height metas only for t
 
 Content that moves rankings (Person facts, `/for/*` landers, materials downloads, news cadence) remains owned by **`DISC-*`**. This phase is the **measurement feedback loop** into that backlog.
 
+**Scorecard automation (ops-owned):** Monthly visits, top pages, contact counts, and Studio update counts in the ops scorecard are **`OPS-P5-*`** in [operational-excellence.md](operational-excellence.md) — hybrid **GA4 Data API** (visits/top pages) + **App Insights** (contacts/updates). That does **not** replace this Phase 3 GSC query review; it automates a thin activity slice into the ACS digest. GA Data API service-account setup is documented under OPS-P5-002 (required beyond the public Measurement ID).
+
 ---
 
 ## Dependency graph
@@ -362,7 +364,7 @@ GSC and GA4 properties are live; run this on a cadence (roughly aligns with `DIS
 | GSC Experience / CWV | LCP on hero/reel-heavy pages, mobile | Perf follow-ups (`SEARCH-P3-003`) |
 | GSC Enhancements | Person, VideoObject, EducationalOrganization, Offer | Fix schema; Rich Results Test before/after |
 
-**Rule of thumb:** App Insights answers “is Studio/prod healthy?”; GA4 + GSC answer “who finds us in search, where do they land, and do they inquire or download materials?”
+**Rule of thumb:** App Insights answers “is Studio/prod healthy?”; GA4 + GSC answer “who finds us in search, where do they land, and do they inquire or download materials?” The monthly ops scorecard will mirror a thin slice of that (visits / top pages from GA; contacts / Studio updates from App Insights) under `OPS-P5-*` — see [operational-excellence.md](operational-excellence.md) § Site performance.
 
 ---
 
@@ -393,6 +395,7 @@ GSC and GA4 properties are live; run this on a cadence (roughly aligns with `DIS
 | [casting-discoverability.md](casting-discoverability.md) | Casting SEO backlog (`DISC-*`); cutover/console P0 items marked done there too |
 | [wordpress-to-azure-cutover.md](../runbooks/wordpress-to-azure-cutover.md) §6 | Historical cutover checklist; residual indexing in `SEARCH-P0-004` |
 | [dns-and-domain.md](../runbooks/dns-and-domain.md) | Apex / www |
+| [operational-excellence.md](operational-excellence.md) | Monthly scorecard; `OPS-P5-*` site performance (GA visits/top pages + App Insights contacts/updates) |
 | [observability.md](../runbooks/observability.md) | App Insights vs GA4 |
 | [rotate-secrets.md](../runbooks/rotate-secrets.md) | GA Measurement ID rotation (public env, not KV) |
 | [add-casting-page.md](../runbooks/add-casting-page.md) | New `/for/*` landers (sitemap inclusion); bare title contract |
