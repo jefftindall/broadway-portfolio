@@ -15,6 +15,8 @@ Before committing or pushing any change to GitHub Actions workflows or composite
 
 ## Secrets in workflow logs (non-negotiable)
 
+Follow [`.cursor/rules/never-echo-secrets.mdc`](never-echo-secrets.mdc) for all pipelines and scripts. In particular:
+
 - **Never** pass PEMs / private keys through an action `with:` input — those blocks are printed to the job log in cleartext.
 - **Never** `echo "::add-mask::$MULTILINE_VAR"` for a PEM. Only the first line is treated as a workflow command; **remaining lines dump to the log unmasked**. Mask **line-by-line from a file**.
 - GitHub App tokens: use only [`scripts/mint-github-app-token.sh`](scripts/mint-github-app-token.sh). Do not inline `GITHUB-APP-PRIVATE-KEY` fetches in workflows.
