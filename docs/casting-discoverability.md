@@ -168,7 +168,7 @@ Snapshot **2026-08-02**. Re-score after `DISC-P0-001` (cutover) and after each t
 |----|-------|--------|------------|--------------------------|
 | `DISC-P1-001` | Reorder homepage for casting (hero CTAs + section order) | `done` | `DISC-P0-001` | `src/pages/index.astro`, `src/components/Hero.astro` |
 | `DISC-P1-002` | Add `/materials` page with reel, downloads, and casting CTA | `done` | `DISC-P0-001`, `DISC-GAP-001`, `DISC-GAP-002` | New `src/pages/materials.astro`, `public/downloads/` |
-| `DISC-P1-003` | Add performer facts block (range, type, union, availability) | `planned` | `DISC-GAP-003` | `src/lib/site.ts`, `src/components/PerformerFacts.astro`, `src/pages/about.astro`, `src/pages/contact.astro` |
+| `DISC-P1-003` | Add performer facts block (range, type, union, availability) | `done` | `DISC-GAP-003` | `src/lib/site.ts`, `src/components/PerformerFacts.astro`, `src/pages/about.astro`, `src/pages/contact.astro` |
 | `DISC-P1-004` | Enrich JSON-LD and `site.ts` for performer + AI discoverability | `planned` | `DISC-P1-003` | `src/lib/site.ts`, `src/components/Seo.astro`, `src/pages/index.astro` |
 | `DISC-P1-005` | Add nav/footer link to Materials | `done` | `DISC-P1-002` | `src/lib/site.ts` (`nav`), `src/components/Footer.astro` |
 | `DISC-P1-006` | Surface Tiffany King quote on site | `planned` | — | `src/pages/index.astro` or `src/pages/about.astro` |
@@ -214,17 +214,18 @@ Snapshot **2026-08-02**. Re-score after `DISC-P0-001` (cutover) and after each t
 
 **Acceptance criteria**
 
-- [ ] Visible block on About and Contact (and compact variant on homepage or Materials)
-- [ ] Fields rendered (when provided in `site.ts` or content):
+- [x] Visible block on About and Contact (and compact variant on homepage or Materials)
+- [x] Fields rendered (when provided in `site.ts` or content):
   - Playing age
   - Vocal range (e.g. belt/mix notation)
   - Ethnicity / presenting (e.g. ethnically ambiguous)
   - Union status (AEA / EMC / non-union)
   - Based in (NYC)
   - Availability / seeking representation (if applicable)
-- [ ] Facts are plain HTML text (not image-only) for crawlers and AI
-- [ ] Copy reviewed and approved by Elyse before publish
+- [x] Facts are plain HTML text (not image-only) for crawlers and AI
+- [x] Copy reviewed and approved by Elyse before publish
 
+Shipped facts in `site.performer`: playing age 15–28; vocal type (Mezzo-Soprano with an extended range); range D3-G6 (Belt: G5); ethnicity/presenting (White / Middle Eastern olive skin; Hispanic, Latina, Latin, Italian, Greek, Mediterranean, ethnically ambiguous); height 5'3" (160 cm); non-union; available.
 </details>
 
 <details>
@@ -390,10 +391,12 @@ URL: https://elysetindall.com
 Materials: https://elysetindall.com/materials/
 Job: Musical theatre actress (also vocal coach — voice lessons only)
 Location: New York, NY
-Playing age: <TBD>
-Vocal range: <TBD>
-Ethnicity/presenting: <TBD>
-Union: <TBD>
+Playing age: 15–28
+Vocal range: D3-G6 (Belt: G5)
+Type: Mezzo-Soprano with an extended range
+Ethnicity/presenting: White / Middle Eastern (olive skin); Hispanic, Latina, Latin, Italian, Greek, Mediterranean, ethnically ambiguous
+Union: Non-union
+Availability: Available
 Credits: Anastasia (Lily), Miss You Like Hell, Almost Maine, Little Women, NYC Cabaret (Stage Kiss)
 Reel: https://youtu.be/41jdPTkN_Sw
 Contact: elyse.tindall@gmail.com
@@ -421,7 +424,7 @@ Items Elyse (or representation) must supply before related actions can ship.
 |----|--------------|--------|--------|
 | `DISC-GAP-001` | Resume PDF (current, casting-formatted) | `DISC-P1-002` | `done` |
 | `DISC-GAP-002` | Headshot files (theatrical; commercial if available) | `DISC-P1-002` | `partial` (theatrical only) |
-| `DISC-GAP-003` | Performer spec: playing age, vocal range, ethnicity/presenting, union, height, availability | `DISC-P1-003`, `DISC-P1-004`, `DISC-P2-001`–`003` | `needed` |
+| `DISC-GAP-003` | Performer spec: playing age, vocal range, ethnicity/presenting, union, height, availability | `DISC-P1-003`, `DISC-P1-004`, `DISC-P2-001`–`003` | `done` |
 | `DISC-GAP-004` | 2–3 vocal demo recordings (YouTube unlisted or public) | `DISC-P2-009` | `needed` |
 | `DISC-GAP-005` | Confirmation whether to publish “seeking representation” publicly | `DISC-P2-005` | `needed` |
 | `DISC-GAP-006` | Legacy WordPress URL inventory for redirects | `DISC-P0-003` | `done` (see [wordpress-to-azure-cutover.md](runbooks/wordpress-to-azure-cutover.md) §2) |
@@ -479,7 +482,7 @@ flowchart TD
 - [ ] `npm run lint` passes
 - [ ] `npm run build` passes
 - [ ] Acceptance criteria for each ID met
-- [ ] Elyse approved copy for performer facts (if touching DISC-P1-003)
+- [x] Elyse approved copy for performer facts (if touching DISC-P1-003)
 ```
 
 ---

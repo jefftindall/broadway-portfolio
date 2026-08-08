@@ -3,7 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import VideoEmbed from '../components/VideoEmbed.astro';
 import GlassPanel from '../components/GlassPanel.astro';
 import CtaLink from '../components/CtaLink.astro';
-import Age from '../components/Age.astro';
+import PerformerFacts from '../components/PerformerFacts.astro';
 import InquiryForm from '../components/InquiryForm.astro';
 import { site } from '../lib/site';
 
@@ -50,9 +50,8 @@ const jsonLd = {
     <p class="mt-4 max-w-2xl text-lg text-muted">
       Reel, resume, and headshot for {site.name} — musical theatre actress based in {site.location}.
     </p>
-    <p class="mt-3 text-sm text-muted">
-      Age <Age /> · {site.jobTitle}
-    </p>
+    <p class="mt-3 text-sm text-muted">{site.jobTitle}</p>
+    <PerformerFacts variant="compact" class="mt-3" />
     <div class="mt-8 flex flex-wrap gap-4">
       <CtaLink
         href="#casting-inquiry"

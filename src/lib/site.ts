@@ -10,6 +10,17 @@ function requiredSiteEnv(name: 'SITE_CONTACT_EMAIL', fromMeta: string | undefine
   return value;
 }
 
+/** Casting-facing performer facts (DISC-P1-003). Optional keys omit from UI until set. */
+export type PerformerSpec = {
+  vocalType: string;
+  vocalRange: string;
+  union: string;
+  availability: string;
+  playingAge?: string;
+  ethnicity?: string;
+  height?: string;
+};
+
 export const site = {
   name: 'Elyse Tindall',
   tagline: 'Musical Theatre Actress & Vocal Coach · Atlanta to New York',
@@ -26,6 +37,16 @@ export const site = {
   get age() {
     return ageInYears();
   },
+  performer: {
+    playingAge: '15–28',
+    vocalType: 'Mezzo-Soprano with an extended range',
+    vocalRange: 'D3-G6 (Belt: G5)',
+    ethnicity:
+      'White / Middle Eastern (olive skin); presents as Hispanic, Latina, Latin, Italian, Greek, Mediterranean, ethnically ambiguous',
+    height: '5\'3" (160 cm)',
+    union: 'Non-union',
+    availability: 'Available',
+  } as PerformerSpec,
   materials: {
     resumePdf: '/downloads/elyse-tindall-resume.pdf',
     headshotTheatrical: '/downloads/elyse-tindall-headshot-theatrical.jpg',

@@ -1,0 +1,85 @@
+---
+/**
+ * Casting-facing performer facts (DISC-P1-003).
+ * Plain HTML text for crawlers and AI — not image-only.
+ */
+import Age from './Age.astro';
+import { site } from '../lib/site';
+
+interface Props {
+  /** `full` = labeled list (About / Contact); `compact` = inline summary (Materials). */
+  variant?: 'full' | 'compact';
+  class?: string;
+  /** Heading level for the full variant title (default h2). */
+  headingLevel?: 'h2' | 'h3';
+}
+
+const {
+  variant = 'full',
+  class: className = '',
+  headingLevel: Heading = 'h2',
+} = Astro.props;
+
+const { performer, location } = site;
+
+type Fact = { label: string; value: string | 'age' };
+
+const facts: Fact[] = [
+  { label: 'Age', value: 'age' },
+  ...(performer.playingAge
+    ? [{ label: 'Playing age', value: performer.playingAge }]
+    : []),
+  { label: 'Type', value: performer.vocalType },
+  { label: 'Vocal range', value: performer.vocalRange },
+  ...(performer.ethnicity
+    ? [{ label: 'Ethnicity / presenting', value: performer.ethnicity }]
+    : []),
+  ...(performer.height ? [{ label: 'Height', value: performer.height }] : []),
+  { label: 'Union', value: performer.union },
+  { label: 'Based in', value: location },
+  { label: 'Availability', value: performer.availability },
+];
+
+const compactText = [
+  performer.playingAge ? `Playing age ${performer.playingAge}` : null,
+  performer.vocalType,
+  `Range ${performer.vocalRange}`,
+  performer.ethnicity ?? null,
+  performer.height ? `Height ${performer.height}` : null,
+  performer.union,
+  location,
+  performer.availability,
+]
+  .filter(Boolean)
+  .join(' · ');
+---
+
+{
+  variant === 'compact' ? (
+    <p class:list={['text-sm text-muted', className]}>
+      Age <Age /> · {compactText}
+    </p>
+  ) : (
+    <aside
+      class:list={['border border-line rounded-sm p-5 md:p-6', className]}
+      aria-labelledby="performer-facts-heading"
+    >
+      <Heading
+        id="performer-facts-heading"
+        class="font-display text-2xl text-spotlight md:text-3xl"
+      >
+        Performer facts
+      </Heading>
+      <dl class="mt-5 grid gap-3 sm:grid-cols-[11rem_1fr] sm:gap-x-4 sm:gap-y-2">
+        {facts.map((fact) => (
+          <>
+            <dt class="text-sm uppercase tracking-[0.12em] text-gel">{fact.label}</dt>
+            <dd class="text-spotlight">
+              {fact.value === 'age' ? <Age /> : fact.value}
+            </dd>
+          </>
+        ))}
+      </dl>
+    </aside>
+  )
+}
