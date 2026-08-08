@@ -22,7 +22,7 @@ Phased work and action IDs live in [docs/plans/operational-excellence.md](docs/p
 ## Scorecard
 
 - Rubric lives in the plan. Living scores: `docs/ops/operational-excellence-scorecard.md` (from `docs/ops/scorecard-evaluation.json` via `scripts/ops-scorecard-refresh.mjs`).
-- Monthly refresh (`OPS-P0-004`): `.github/workflows/ops-scorecard-monthly.yml` re-evaluates and opens a PR — do not invent a different path or auto-merge to `main` without an explicit decision.
+- Monthly refresh (`OPS-P0-004`): `.github/workflows/ops-scorecard-monthly.yml` re-evaluates and commits to `main` via the Studio GitHub App (Key Vault `GITHUB-APP-*`). CD ignores scorecard-only pushes (`paths-ignore`). Do not reintroduce a PR-only path unless product asks.
 - Scorecard content is scores, evidence, and gaps only — **never** alert emails, phones, or secrets.
 
 ## Private details never in git
@@ -38,4 +38,4 @@ When planning or implementing alerts, on-call, or support contacts:
 
 ## Keep the plan in sync
 
-When you change scorecard dimensions/rubric, SLO targets, severity→channel mapping, alert secret names, or the monthly workflow contract, update `docs/plans/operational-excellence.md` in the same PR. Extend [rotate-secrets.md](docs/runbooks/rotate-secrets.md) when secret names change. After the living scorecard exists, update it (or let the monthly workflow PR do so) rather than only editing canvases.
+When you change scorecard dimensions/rubric, SLO targets, severity→channel mapping, alert secret names, or the monthly workflow contract, update `docs/plans/operational-excellence.md` in the same PR. Extend [rotate-secrets.md](docs/runbooks/rotate-secrets.md) when secret names change. After the living scorecard exists, update it (or let the monthly workflow commit do so) rather than only editing canvases.

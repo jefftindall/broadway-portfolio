@@ -802,10 +802,10 @@ function renderScorecard(evaluation) {
     "2. Run `node scripts/ops-scorecard-refresh.mjs` (add `--monthly --azure` when Azure CLI is logged in for homepage/materials/FCP/Studio/inquiry SLIs).",
   );
   lines.push(
-    "3. Monthly GitHub Action (`.github/workflows/ops-scorecard-monthly.yml`) does the same on a schedule and opens a PR titled `OPS: monthly operational excellence scorecard`.",
+    "3. Monthly GitHub Action (`.github/workflows/ops-scorecard-monthly.yml`) does the same on a schedule and commits to `main` via the Studio GitHub App (CD ignores scorecard-only pushes).",
   );
   lines.push(
-    "4. Do not auto-merge that PR; humans review score changes.",
+    "4. Spot-check the commit if scores move unexpectedly; optional SLIs stay `stale` until Azure probes have enough samples.",
   );
   lines.push("");
   lines.push(
