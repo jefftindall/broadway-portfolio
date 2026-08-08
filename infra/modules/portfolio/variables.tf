@@ -97,6 +97,23 @@ variable "manage_github_actions" {
   default     = true
 }
 
+variable "purge_protection_enabled" {
+  type        = bool
+  description = "Enable Key Vault purge protection (cannot be turned off while retention remains). Enable for prod (OPS-P3-006); leave false on staging."
+  default     = false
+}
+
+variable "soft_delete_retention_days" {
+  type        = number
+  description = "Key Vault soft-delete retention (7–90). Immutable after vault create — keep aligned with the live vault."
+  default     = 7
+
+  validation {
+    condition     = var.soft_delete_retention_days >= 7 && var.soft_delete_retention_days <= 90
+    error_message = "soft_delete_retention_days must be between 7 and 90."
+  }
+}
+
 variable "shared_key_vault_name" {
   type        = string
   description = "Bootstrap foundational Key Vault for SITE-*, Turnstile, ACS, and ALERT-* ops contacts (shared by staging/prod)"

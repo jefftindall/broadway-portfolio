@@ -189,7 +189,7 @@ resource "azurerm_monitor_action_group" "notify" {
   }
 }
 
-# Sev1 — email + SMS + voice (OPS-P1-002). Homepage + materials availability use this group.
+# Sev1 — email + SMS + voice (OPS-P1-002). Homepage + materials availability and DeployFailed use this group.
 resource "azurerm_monitor_action_group" "critical" {
   count = local.alert_critical_enabled ? 1 : 0
 
@@ -289,6 +289,45 @@ resource "azurerm_monitor_metric_alert" "availability" {
 
   action {
     action_group_id = azurerm_monitor_action_group.critical[0].id
+  }
+}
+
+# Sev1 — Deploy Production failure (OPS-P3-003). CD emits DeployFailed; this pages critical AG.
+# Count aggregation: any matching row in the window fires. Staging failures are out of scope.
+resource "azurerm_monitor_scheduled_query_rules_alert_v2" "deploy_failed" {
+  count = local.alert_critical_enabled && var.environment == "prod" ? 1 : 0
+
+  name                    = "alert-elyse-deploy-failed-${local.name_suffix}"
+  resource_group_name     = azurerm_resource_group.main.name
+  location                = azurerm_resource_group.main.location
+  scopes                  = [azurerm_application_insights.main.id]
+  description             = "Deploy Production failed (DeployFailed event; Sev1 → critical)"
+  severity                = 1
+  enabled                 = true
+  evaluation_frequency    = "PT5M"
+  window_duration         = "PT5M"
+  skip_query_validation   = true
+  auto_mitigation_enabled = true
+  tags                    = local.tags
+
+  criteria {
+    query                   = <<-QUERY
+      customEvents
+      | where name == "DeployFailed"
+      | where tostring(customDimensions.environment) == "prod"
+    QUERY
+    time_aggregation_method = "Count"
+    operator                = "GreaterThan"
+    threshold               = 0
+
+    failing_periods {
+      minimum_failing_periods_to_trigger_alert = 1
+      number_of_evaluation_periods             = 1
+    }
+  }
+
+  action {
+    action_groups = [azurerm_monitor_action_group.critical[0].id]
   }
 }
 

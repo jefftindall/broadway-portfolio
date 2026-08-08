@@ -52,6 +52,14 @@ Or restore a previous file version and commit. Prefer `revert` over force-push. 
 
 Same as above on the commit that broke the build/UI. Confirm **Deploy Staging**, **Smoke Staging**, and **Deploy Production** are green before announcing recovery.
 
+## Deploy Production failure (Sev1)
+
+When the **Deploy Production** job fails, CD emits `DeployFailed` to prod App Insights (`OPS-P3-003`). A scheduled-query alert pages `ag-elyse-critical-prod` (email + SMS + voice via `ALERT-*`). Staging deploy failures are **not** Sev1.
+
+1. Open the failed Actions run; fix or revert ([incident-response.md](incident-response.md)).
+2. Re-run CD from `main` (or merge a revert) so staging → smoke → prod succeeds.
+3. Confirm homepage/materials synthetics and that the critical alert mitigated.
+
 ## Rollback infrastructure
 
 Prefer a forward fix: revert the infra commit and merge so CD re-applies the previous configuration. Avoid `terraform destroy` against shared staging/prod unless you intend a full teardown.

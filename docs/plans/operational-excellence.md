@@ -10,7 +10,7 @@ Use the **Action ID** column (`OPS-*`) to reference items in PRs, issues, and co
 
 **Status values:** `planned` · `in_progress` · `blocked` · `done` · `wont_fix`
 
-**Implementation stance:** This document is the backlog. Prefer **one phase (or one `OPS-*` item) per PR**. Phase 0–2 are complete. Do **not** implement Phase 3+ (PagerDuty escalate-if-unacked, Studio SLO cadence, CD Sev1, etc.) until an `OPS-P3-*` item is explicitly picked up.
+**Implementation stance:** This document is the backlog. Prefer **one phase (or one `OPS-*` item) per PR**. Phase 0–3 (except optional `OPS-P3-002` PagerDuty) are complete. Do **not** implement PagerDuty escalate-if-unacked (`OPS-P3-002`) until explicitly requested.
 
 ---
 
@@ -130,7 +130,7 @@ Initial SRE review — **not yet** the monthly persisted artifact (see [Scorecar
 
 **Process invariant (not an SLO):** 100% of production site deploys reuse a staging-verified artifact after green smoke (and journeys when required).
 
-**Next (not committed):** Inquiry accept rate 99% / 28d after contact failure telemetry (`OPS-P3-004`).
+**Next (not committed):** Promote inquiry accept rate **99% / 28d** from optional SLI to committed after steady volume (`OPS-P3-004` instrumentation done).
 
 ---
 
@@ -138,7 +138,7 @@ Initial SRE review — **not yet** the monthly persisted artifact (see [Scorecar
 
 | Severity | Examples | Channels | Ack expectation |
 |----------|----------|----------|-----------------|
-| **Sev1 — critical** | Homepage or materials availability fail; Deploy Production failed leaving prod broken | Email + SMS immediately; voice if unacked in 5 min (Phase 3 / `OPS-P3-002`) or native voice (Phase 1) | Respond / silence within 15 min |
+| **Sev1 — critical** | Homepage or materials availability fail; Deploy Production failed leaving prod broken | Email + SMS immediately; native voice on critical AG (Phase 1); optional vendor escalate-if-unacked (`OPS-P3-002`) | Respond / silence within 15 min |
 | **Sev2 — urgent** | Failed-request spike; Studio publish failures ≥2 / 24h | Email + SMS (no voice) | Same day |
 | **Sev3 — watch** | FCP p75 burn; error-budget Watch state | Email only (`ag-elyse-watch-*`) | Next working session |
 
@@ -159,12 +159,14 @@ Initial SRE review — **not yet** the monthly persisted artifact (see [Scorecar
 2. Field FCP: browser paint timing → `HomepageFcpMs` custom metric (force-sampled on `/`); Sev3 email via `ag-elyse-watch-*` when **2d** p75 &gt; 1.5s with ≥10 samples (Azure scheduled-query max lookback). Committed **SLO-6** remains **7d** and is scored by the monthly scorecard Kusto probe (`OPS-P2-002`).
 3. Soft lab FCP gate on staging: `npm run test:lab-fcp` (median &lt; 1.5s policy; `LAB_FCP_HARD=1` for hard fail) (`OPS-P2-003`).
 
-### Phase 3 — Escalate-if-unacked phone (planned)
+### Phase 3 — Escalate-if-unacked phone (`OPS-P3-002` only still planned)
 
 1. Webhook → PagerDuty / Better Stack / Opsgenie.
 2. SMS → voice if unacked in **5 minutes**.
 3. Routing keys only in Key Vault or GitHub Environment secrets.
 4. Prefer disabling simultaneous native Azure voice once the vendor owns escalation.
+
+Studio SLO cadence, CD Sev1 `DeployFailed`, inquiry SLI docs, IR stub, and prod/shared KV purge protection are **done** (see backlog table).
 
 ### Non-goal
 
@@ -203,12 +205,12 @@ Do **not** send ops alerts through ACS contact-form SMS (`ACS-SMS-FROM` + `SITE-
 
 | Action ID | Work | Acceptance criteria | Status |
 |-----------|------|---------------------|--------|
-| `OPS-P3-001` | Kusto + cadence for SLO-2 / SLO-3 in observability runbook | Queries documented; monthly scorecard can cite them | `planned` |
+| `OPS-P3-001` | Kusto + cadence for SLO-2 / SLO-3 in observability runbook | Queries documented; monthly scorecard can cite them | `done` |
 | `OPS-P3-002` | Optional PagerDuty/Better Stack + 5-minute escalate | Routing key in vault/GH secrets; mobile ack works | `planned` |
-| `OPS-P3-003` | Deploy Production failure → Sev1 path | CD break pages SMS (and Phase 2 voice policy) | `planned` |
-| `OPS-P3-004` | Inquiry accept-rate SLO (optional) | Contact 5xx SLI excluding Turnstile bots | `planned` |
-| `OPS-P3-005` | Short incident severity + response stub runbook | Links severity table; no private phones in doc | `planned` |
-| `OPS-P3-006` | Prod KV purge protection (optional harden) | Documented decision + TF if accepted | `planned` |
+| `OPS-P3-003` | Deploy Production failure → Sev1 path | CD break pages SMS (and Phase 1 voice policy) | `done` |
+| `OPS-P3-004` | Inquiry accept-rate SLO (optional) | Contact 5xx SLI excluding Turnstile bots | `done` |
+| `OPS-P3-005` | Short incident severity + response stub runbook | Links severity table; no private phones in doc | `done` |
+| `OPS-P3-006` | Prod KV purge protection (optional harden) | Documented decision + TF if accepted | `done` |
 
 ---
 
@@ -221,14 +223,15 @@ OPS-P0-001 (this plan / AI guidance) [done]
     │               ├── OPS-P1-002 (SMS/voice) [done]
     │               │       └── OPS-P1-003 (homepage Sev1 prove-out) [done]
     │               │               ├── OPS-P2-001 (materials → critical) [done]
-    │               │               └── OPS-P3-003 (CD failure → Sev1)
+    │               │               └── OPS-P3-003 (CD failure → Sev1) [done]
     │               └── OPS-P2-002 / OPS-P2-003 (FCP) [done]
     ├── OPS-P0-003 (persist scorecard under docs/ops/) [done]
     │       └── OPS-P0-004 (monthly re-evaluate workflow → PR) [done]
-    └── OPS-P3-001 / OPS-P3-005 (Studio cadence + IR stub) — parallel
-OPS-P3-002 (PagerDuty) — after OPS-P1-002 [done]
+    ├── OPS-P3-001 / OPS-P3-005 (Studio cadence + IR stub) [done]
+    ├── OPS-P3-004 (inquiry SLI) [done]
+    └── OPS-P3-006 (prod/shared KV purge protection) [done]
+OPS-P3-002 (PagerDuty) — after OPS-P1-002 [done]; still planned
 ```
-
 ---
 
 ## Out of scope
@@ -246,10 +249,11 @@ OPS-P3-002 (PagerDuty) — after OPS-P1-002 [done]
 
 | Doc | Role |
 |-----|------|
-| [observability.md](../runbooks/observability.md) | App Insights, Kusto; Action Groups via shared `ALERT-*` (`OPS-P1-*` done) |
-| [rotate-secrets.md](../runbooks/rotate-secrets.md) | Key Vault SoT; `ALERT-*` names + Sev1 prove-out |
+| [observability.md](../runbooks/observability.md) | App Insights, Kusto; Action Groups via shared `ALERT-*`; Studio + inquiry SLO queries |
+| [rotate-secrets.md](../runbooks/rotate-secrets.md) | Key Vault SoT; `ALERT-*` names + Sev1 prove-out; KV purge decision |
 | [testing-strategy.md](../runbooks/testing-strategy.md) | Staging gates; smoke covers materials URLs |
-| [deploy-and-rollback.md](../runbooks/deploy-and-rollback.md) | Change-safety evidence for scorecard |
+| [deploy-and-rollback.md](../runbooks/deploy-and-rollback.md) | Change-safety evidence; Deploy Production Sev1 |
+| [incident-response.md](../runbooks/incident-response.md) | Severity stub (`OPS-P3-005`) |
 | [cost-and-quotas.md](../runbooks/cost-and-quotas.md) | Budget alerts (separate from Sev1) |
 | [search-and-analytics.md](search-and-analytics.md) | GA4/GSC — not ops paging |
 | `docs/ops/operational-excellence-scorecard.md` | Living scorecard (`OPS-P0-003` done; refreshed by `OPS-P0-004`) |

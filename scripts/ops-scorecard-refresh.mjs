@@ -3,9 +3,9 @@
  * OPS-P0-004 — Refresh the operational excellence scorecard.
  *
  * Reads docs/ops/scorecard-evaluation.json, optionally probes prod SLIs
- * (homepage + materials availability, homepage FCP p75) via Azure CLI when
- * logged in, recomputes weighted overall, and regenerates
- * docs/ops/operational-excellence-scorecard.md.
+ * (homepage + materials availability, homepage FCP p75, Studio SLO-2/3,
+ * optional inquiry accept rate) via Azure CLI when logged in, recomputes
+ * weighted overall, and regenerates docs/ops/operational-excellence-scorecard.md.
  *
  * Never writes emails, phones, or secret values into the scorecard or stdout.
  *
@@ -30,6 +30,11 @@ const HOMEPAGE_AVAIL_TARGET = 99.8;
 const MATERIALS_AVAIL_TARGET = 99.8;
 const FCP_P75_TARGET_MS = 1500;
 const FCP_MIN_SAMPLES = 10;
+const STUDIO_PUBLISH_SUCCESS_TARGET = 95;
+const STUDIO_PUBLISH_MIN_ATTEMPTS = 3;
+const STUDIO_LATENCY_P95_TARGET_MS = 1_200_000; // 20 minutes
+const INQUIRY_ACCEPT_TARGET = 99;
+const INQUIRY_MIN_SAMPLES = 3;
 
 const MATURITY = [
   { min: 4.0, label: "Strong" },
@@ -370,14 +375,226 @@ customMetrics
   }
 }
 
+/**
+ * Studio publish success over 28d (OPS-P3-001 / SLO-2).
+ * Excludes allowlist denials (reason=unauthorized) and draft-mode UI failures.
+ */
+function probeStudioPublishSuccess() {
+  if (!azureLoggedIn()) {
+    return {
+      ok: false,
+      note: "Azure CLI not logged in; Studio publish success SLI left stale.",
+    };
+  }
+
+  const query = `
+customEvents
+| where timestamp > ago(28d)
+| where name in ("StudioPublishUiSuccess", "StudioPublishUiFailed")
+| extend operation = tostring(customDimensions.operation)
+| extend reason = tostring(customDimensions.reason)
+| where name == "StudioPublishUiSuccess"
+    or (name == "StudioPublishUiFailed" and operation == "publish" and reason != "unauthorized")
+| summarize
+    successes = countif(name == "StudioPublishUiSuccess"),
+    failures = countif(name == "StudioPublishUiFailed"),
+    attempts = count()
+| extend successPct = 100.0 * successes / attempts
+| project successPct, successes, failures, attempts
+`.trim();
+
+  try {
+    const raw = runAz([
+      "monitor",
+      "app-insights",
+      "query",
+      "--app",
+      PROD_APPI,
+      "--resource-group",
+      PROD_RG,
+      "--analytics-query",
+      query,
+      "-o",
+      "json",
+    ]);
+    const parsed = JSON.parse(raw);
+    const row = parsed?.tables?.[0]?.rows?.[0];
+    const successPct = Number(row?.[0]);
+    const attempts = Number(row?.[3] ?? 0);
+    if (!attempts || attempts < STUDIO_PUBLISH_MIN_ATTEMPTS || !Number.isFinite(successPct)) {
+      return {
+        ok: false,
+        note: attempts
+          ? `Studio publish has ${attempts} attempt(s) (<${STUDIO_PUBLISH_MIN_ATTEMPTS}); left stale.`
+          : "No Studio publish UI events in the last 28 days; SLO-2 left stale.",
+      };
+    }
+    const pct = round1(successPct);
+    return {
+      ok: true,
+      pct,
+      meets: pct >= STUDIO_PUBLISH_SUCCESS_TARGET,
+      note: `Studio publish success ${pct}% over ${attempts} attempt(s) (target ${STUDIO_PUBLISH_SUCCESS_TARGET}% / 28d).`,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return {
+      ok: false,
+      note: `Studio publish success query failed; SLI left stale. (${redact(msg).slice(0, 200)})`,
+    };
+  }
+}
+
+/**
+ * Publish → live p95 over 28d (OPS-P3-001 / SLO-3). Target ≤ 20 minutes.
+ */
+function probeStudioPublishLatency() {
+  if (!azureLoggedIn()) {
+    return {
+      ok: false,
+      note: "Azure CLI not logged in; Studio publish latency SLI left stale.",
+    };
+  }
+
+  const query = `
+customMetrics
+| where timestamp > ago(28d)
+| where name == "StudioPublishToProdDurationMs"
+| summarize samples = count(), p95 = percentile(value, 95)
+`.trim();
+
+  try {
+    const raw = runAz([
+      "monitor",
+      "app-insights",
+      "query",
+      "--app",
+      PROD_APPI,
+      "--resource-group",
+      PROD_RG,
+      "--analytics-query",
+      query,
+      "-o",
+      "json",
+    ]);
+    const parsed = JSON.parse(raw);
+    const row = parsed?.tables?.[0]?.rows?.[0];
+    const samples = Number(row?.[0] ?? 0);
+    const p95 = Number(row?.[1]);
+    if (!samples || !Number.isFinite(p95)) {
+      return {
+        ok: false,
+        note: "No StudioPublishToProdDurationMs samples in the last 28 days; SLO-3 left stale.",
+      };
+    }
+    const ms = Math.round(p95);
+    const minutes = round1(ms / 60_000);
+    return {
+      ok: true,
+      p95: ms,
+      meets: ms <= STUDIO_LATENCY_P95_TARGET_MS,
+      note: `Publish→live p95 ${minutes}m (${ms}ms) over ${samples} sample(s) (target ≤ 20m / 28d).`,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return {
+      ok: false,
+      note: `Studio publish latency query failed; SLI left stale. (${redact(msg).slice(0, 200)})`,
+    };
+  }
+}
+
+/**
+ * Inquiry accept rate over 28d (OPS-P3-004 optional SLI).
+ * Excludes turnstile_rejected (bots) and validation (client 4xx).
+ */
+function probeInquiryAcceptRate() {
+  if (!azureLoggedIn()) {
+    return {
+      ok: false,
+      note: "Azure CLI not logged in; inquiry accept-rate SLI left stale.",
+    };
+  }
+
+  const query = `
+customEvents
+| where timestamp > ago(28d)
+| where name in ("ContactInquiryReceived", "ContactInquiryFailed")
+| extend errorKind = tostring(customDimensions.errorKind)
+| where name == "ContactInquiryReceived"
+    or (name == "ContactInquiryFailed"
+        and errorKind !in ("turnstile_rejected", "validation"))
+| summarize
+    accepted = countif(name == "ContactInquiryReceived"),
+    failed = countif(name == "ContactInquiryFailed"),
+    n = count()
+| extend acceptPct = 100.0 * accepted / n
+| project acceptPct, accepted, failed, n
+`.trim();
+
+  try {
+    const raw = runAz([
+      "monitor",
+      "app-insights",
+      "query",
+      "--app",
+      PROD_APPI,
+      "--resource-group",
+      PROD_RG,
+      "--analytics-query",
+      query,
+      "-o",
+      "json",
+    ]);
+    const parsed = JSON.parse(raw);
+    const row = parsed?.tables?.[0]?.rows?.[0];
+    const acceptPct = Number(row?.[0]);
+    const n = Number(row?.[3] ?? 0);
+    if (!n || n < INQUIRY_MIN_SAMPLES || !Number.isFinite(acceptPct)) {
+      return {
+        ok: false,
+        note: n
+          ? `Inquiry SLI has ${n} sample(s) (<${INQUIRY_MIN_SAMPLES}); left stale.`
+          : "No inquiry events in the last 28 days (excluding bots/validation); left stale.",
+      };
+    }
+    const pct = round1(acceptPct);
+    return {
+      ok: true,
+      pct,
+      meets: pct >= INQUIRY_ACCEPT_TARGET,
+      note: `Inquiry accept rate ${pct}% over ${n} attempt(s) (intended ${INQUIRY_ACCEPT_TARGET}% / 28d; not committed).`,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return {
+      ok: false,
+      note: `Inquiry accept-rate query failed; SLI left stale. (${redact(msg).slice(0, 200)})`,
+    };
+  }
+}
+
 function setSlo(evaluation, id, patch) {
   const slo = evaluation.committedSlos.find((s) => s.id === id);
   if (!slo) return;
   Object.assign(slo, patch);
 }
 
+function setOptionalSlo(evaluation, id, patch) {
+  if (!Array.isArray(evaluation.optionalSlos)) {
+    evaluation.optionalSlos = [];
+  }
+  let slo = evaluation.optionalSlos.find((s) => s.id === id);
+  if (!slo) {
+    slo = { id, name: id, target: "", status: "stale", note: "" };
+    evaluation.optionalSlos.push(slo);
+  }
+  Object.assign(slo, patch);
+}
+
 function applyAzureSlis(evaluation, probes) {
-  const { homepage, materials, fcp } = probes;
+  const { homepage, materials, fcp, studioSuccess, studioLatency, inquiry } =
+    probes;
   const sloDim = evaluation.dimensions.find((d) => d.id === "slo");
   const notes = [];
 
@@ -414,12 +631,71 @@ function applyAzureSlis(evaluation, probes) {
     notes.push(fcp.note);
   }
 
+  if (studioSuccess.ok) {
+    setSlo(evaluation, "SLO-2", {
+      status: studioSuccess.meets ? "met" : "missed",
+      note: studioSuccess.note,
+    });
+    notes.push(studioSuccess.note);
+  } else {
+    setSlo(evaluation, "SLO-2", {
+      status: "stale",
+      note: studioSuccess.note,
+    });
+    notes.push(studioSuccess.note);
+  }
+
+  if (studioLatency.ok) {
+    setSlo(evaluation, "SLO-3", {
+      status: studioLatency.meets ? "met" : "missed",
+      note: studioLatency.note,
+    });
+    notes.push(studioLatency.note);
+  } else {
+    setSlo(evaluation, "SLO-3", {
+      status: "stale",
+      note: studioLatency.note,
+    });
+    notes.push(studioLatency.note);
+  }
+
+  if (inquiry) {
+    if (inquiry.ok) {
+      setOptionalSlo(evaluation, "SLO-5", {
+        name: "Inquiry accept rate",
+        target: "99% / 28d (optional)",
+        status: inquiry.meets ? "met" : "missed",
+        note: inquiry.note,
+      });
+      notes.push(inquiry.note);
+    } else {
+      setOptionalSlo(evaluation, "SLO-5", {
+        name: "Inquiry accept rate",
+        target: "99% / 28d (optional)",
+        status: "stale",
+        note: inquiry.note,
+      });
+      notes.push(inquiry.note);
+    }
+  }
+
   if (sloDim) {
-    const anyOk = homepage.ok || materials.ok || fcp.ok;
+    const anyOk =
+      homepage.ok ||
+      materials.ok ||
+      fcp.ok ||
+      studioSuccess.ok ||
+      studioLatency.ok;
     sloDim.sliStatus = anyOk ? "ok" : "stale";
     sloDim.sliNote = notes.join(" ");
     if (anyOk) {
-      const okNotes = [homepage, materials, fcp]
+      const okNotes = [
+        homepage,
+        materials,
+        fcp,
+        studioSuccess,
+        studioLatency,
+      ]
         .filter((p) => p.ok)
         .map((p) => p.note);
       sloDim.evidence = `Field/synthetic SLIs: ${okNotes.join(" ")}`;
@@ -433,11 +709,19 @@ function markSlisStaleSkipped(evaluation, reason) {
     sloDim.sliStatus = "stale";
     sloDim.sliNote = reason;
   }
-  for (const id of ["SLO-1", "SLO-4", "SLO-6"]) {
+  for (const id of ["SLO-1", "SLO-2", "SLO-3", "SLO-4", "SLO-6"]) {
     const slo = evaluation.committedSlos.find((s) => s.id === id);
     if (slo && slo.status !== "blocked") {
       slo.status = "stale";
       slo.note = reason;
+    }
+  }
+  if (Array.isArray(evaluation.optionalSlos)) {
+    for (const slo of evaluation.optionalSlos) {
+      if (slo.status !== "blocked") {
+        slo.status = "stale";
+        slo.note = reason;
+      }
     }
   }
 }
@@ -495,6 +779,19 @@ function renderScorecard(evaluation) {
     );
   }
 
+  if (Array.isArray(evaluation.optionalSlos) && evaluation.optionalSlos.length) {
+    lines.push("");
+    lines.push("## Optional SLIs (not committed)");
+    lines.push("");
+    lines.push("| ID | SLO | Target | Status | Note |");
+    lines.push("|----|-----|--------|--------|------|");
+    for (const s of evaluation.optionalSlos) {
+      lines.push(
+        `| ${s.id} | ${s.name} | ${s.target} | ${s.status} | ${s.note} |`,
+      );
+    }
+  }
+
   lines.push("");
   lines.push("## How this file is updated");
   lines.push("");
@@ -502,7 +799,7 @@ function renderScorecard(evaluation) {
     "1. Edit [`scorecard-evaluation.json`](./scorecard-evaluation.json) (scores / evidence / gaps).",
   );
   lines.push(
-    "2. Run `node scripts/ops-scorecard-refresh.mjs` (add `--monthly --azure` when Azure CLI is logged in for homepage/materials/FCP SLIs).",
+    "2. Run `node scripts/ops-scorecard-refresh.mjs` (add `--monthly --azure` when Azure CLI is logged in for homepage/materials/FCP/Studio/inquiry SLIs).",
   );
   lines.push(
     "3. Monthly GitHub Action (`.github/workflows/ops-scorecard-monthly.yml`) does the same on a schedule and opens a PR titled `OPS: monthly operational excellence scorecard`.",
@@ -519,6 +816,23 @@ function renderScorecard(evaluation) {
   return lines.join("\n");
 }
 
+function collectAzureProbes() {
+  return {
+    homepage: probeHomepageAvailability(),
+    materials: probeMaterialsAvailability(),
+    fcp: probeHomepageFcp(),
+    studioSuccess: probeStudioPublishSuccess(),
+    studioLatency: probeStudioPublishLatency(),
+    inquiry: probeInquiryAcceptRate(),
+  };
+}
+
+function logProbes(probes) {
+  for (const p of Object.values(probes)) {
+    if (p?.note) console.log(p.note);
+  }
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   const evaluation = JSON.parse(readFileSync(EVAL_PATH, "utf8"));
@@ -533,15 +847,11 @@ function main() {
       : "monthly-workflow";
 
     if (args.azure) {
-      console.log("Probing prod homepage / materials / FCP SLIs (read-only)…");
-      const probes = {
-        homepage: probeHomepageAvailability(),
-        materials: probeMaterialsAvailability(),
-        fcp: probeHomepageFcp(),
-      };
-      console.log(probes.homepage.note);
-      console.log(probes.materials.note);
-      console.log(probes.fcp.note);
+      console.log(
+        "Probing prod homepage / materials / FCP / Studio / inquiry SLIs (read-only)…",
+      );
+      const probes = collectAzureProbes();
+      logProbes(probes);
       applyAzureSlis(evaluation, probes);
     } else {
       markSlisStaleSkipped(
@@ -550,15 +860,11 @@ function main() {
       );
     }
   } else if (args.azure) {
-    console.log("Probing prod homepage / materials / FCP SLIs (read-only)…");
-    const probes = {
-      homepage: probeHomepageAvailability(),
-      materials: probeMaterialsAvailability(),
-      fcp: probeHomepageFcp(),
-    };
-    console.log(probes.homepage.note);
-    console.log(probes.materials.note);
-    console.log(probes.fcp.note);
+    console.log(
+      "Probing prod homepage / materials / FCP / Studio / inquiry SLIs (read-only)…",
+    );
+    const probes = collectAzureProbes();
+    logProbes(probes);
     applyAzureSlis(evaluation, probes);
   }
 
