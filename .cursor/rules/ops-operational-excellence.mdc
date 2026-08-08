@@ -17,7 +17,7 @@ alwaysApply: true
 
 # Operational excellence (scorecard, SLOs, alerting)
 
-Phased work and action IDs live in [docs/plans/operational-excellence.md](docs/plans/operational-excellence.md) (`OPS-*`). Treat that document as the backlog — **do not implement** Action Group SMS/voice, materials synthetics, FCP wiring, or later `OPS-P1+` items unless the user explicitly asks. Phase 0 (ALERT-* naming, living scorecard, monthly workflow) is done.
+Phased work and action IDs live in [docs/plans/operational-excellence.md](docs/plans/operational-excellence.md) (`OPS-*`). Treat that document as the backlog — **do not implement** materials synthetics, FCP wiring, PagerDuty, or later `OPS-P2+` / `OPS-P3-*` items unless the user explicitly asks. Phase 0–1 are done (`ALERT-*` Action Groups + living scorecard + monthly workflow).
 
 ## Scorecard
 
@@ -34,8 +34,8 @@ When planning or implementing alerts, on-call, or support contacts:
 - Use placeholders only in the repo: `REPLACE_ME`, `<email>`, `+1XXXXXXXXXX`.
 - Prefer dedicated **`ALERT-*`** secrets in **`kv-elyse-shared`** (bootstrap placeholders), not reuse of `SITE-CONTACT-EMAIL` / `SITE-CONTACT-PHONE` (those are inquiry notify via ACS).
 - Do **not** send ops/Sev1 alerts through ACS contact-form SMS.
-- When replacing today’s `alert_email` Terraform variable, move to Key Vault — do not add more plaintext contact variables.
+- Action Groups read `ALERT-EMAIL` / `ALERT-SMS-PHONE` / `ALERT-VOICE-PHONE` at apply — do **not** reintroduce plaintext `alert_email` (or phone) Terraform variables.
 
 ## Keep the plan in sync
 
-When you change scorecard dimensions/rubric, SLO targets, severity→channel mapping, alert secret names, or the monthly workflow contract, update `docs/plans/operational-excellence.md` in the same PR. Extend [rotate-secrets.md](docs/runbooks/rotate-secrets.md) under `OPS-P0-002` when secret names are finalized. After the living scorecard exists, update it (or let the monthly workflow PR do so) rather than only editing canvases.
+When you change scorecard dimensions/rubric, SLO targets, severity→channel mapping, alert secret names, or the monthly workflow contract, update `docs/plans/operational-excellence.md` in the same PR. Extend [rotate-secrets.md](docs/runbooks/rotate-secrets.md) when secret names change. After the living scorecard exists, update it (or let the monthly workflow PR do so) rather than only editing canvases.

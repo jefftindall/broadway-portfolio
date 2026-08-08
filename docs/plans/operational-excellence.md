@@ -10,7 +10,7 @@ Use the **Action ID** column (`OPS-*`) to reference items in PRs, issues, and co
 
 **Status values:** `planned` · `in_progress` · `blocked` · `done` · `wont_fix`
 
-**Implementation stance:** This document is the backlog. Prefer **one phase (or one `OPS-*` item) per PR**. Phase 0 is complete. Do **not** implement Phase 1+ (Action Group SMS/voice, materials synthetics, FCP wiring) until an `OPS-P1+` item is explicitly picked up.
+**Implementation stance:** This document is the backlog. Prefer **one phase (or one `OPS-*` item) per PR**. Phase 0 and Phase 1 are complete. Do **not** implement Phase 2+ (materials synthetics, FCP wiring, PagerDuty) until an `OPS-P2+` / `OPS-P3-*` item is explicitly picked up.
 
 ---
 
@@ -27,7 +27,7 @@ Private operator contacts must **never** live in the git repo:
 
 **Pattern:** Placeholder secrets with `lifecycle { ignore_changes = [value] }`, set via `az keyvault secret set`, Terraform data sources at apply — same as [`infra/bootstrap/shared_kv.tf`](../../infra/bootstrap/shared_kv.tf) and [`docs/runbooks/rotate-secrets.md`](../runbooks/rotate-secrets.md).
 
-**Today’s gap:** `alert_email` is a plain Terraform variable. When implementing alerting, **replace** it with Key Vault–backed `ALERT-*` secrets — do not add plaintext phone variables.
+**Today’s gap:** ~~`alert_email` plaintext TF variable~~ — **resolved in Phase 1.** Contacts are Key Vault `ALERT-*` only.
 
 **Separate from contact-form notify:** `SITE-CONTACT-*` in `kv-elyse-shared` are for ACS inquiry delivery. Ops alert contacts use dedicated `ALERT-*` secrets in the **same shared vault** (`kv-elyse-shared`, bootstrap) so staging and prod Action Groups share one on-call contact set.
 
@@ -91,7 +91,7 @@ Initial SRE review — **not yet** the monthly persisted artifact (see [Scorecar
 | Observability | 3.8 | Solid | Per-env AI; Studio correlation + events; GA4 public | Thin contact events; no Workbooks as code |
 | Test automation | 3.5 | Solid | Staging smoke + journeys; homepage synthetic | No unit tests; materials synth; Studio E2E OOS |
 | Cost & capacity | 3.5 | Solid | cost-and-quotas; AI caps | Manual budget/Gemini console alerts |
-| Alerting & on-call | 2.0 | Thin | TF alerts if `alert_email` set | Empty default; no SMS/voice |
+| Alerting & on-call | 2.0 | Thin | TF alerts if `alert_email` set | Empty default; no SMS/voice → **P1 closed:** KV `ALERT-*` + notify/critical AGs |
 | Resilience & DR | 2.0 | Thin | Git rollback; env isolation; East US 2 only | Single region; shared ACS/Turnstile coupling |
 | SLOs & error budget | 1.5 | Gap | Implicit homepage ping | Written SLOs not scored yet |
 
@@ -146,12 +146,12 @@ Initial SRE review — **not yet** the monthly persisted artifact (see [Scorecar
 
 ## Critical alerting plan
 
-### Phase 1 — Azure Monitor native
+### Phase 1 — Azure Monitor native (`done`)
 
 1. Shared Key Vault (`kv-elyse-shared`): `ALERT-EMAIL`, `ALERT-SMS-PHONE`, optional `ALERT-VOICE-PHONE` (placeholders in bootstrap TF; real values via CLI only).
-2. Action Groups: `ag-elyse-notify` (email ± SMS), `ag-elyse-critical` (email + SMS + voice).
+2. Action Groups: `ag-elyse-notify-{env}` (email ± SMS), `ag-elyse-critical-{env}` (email + SMS + voice).
 3. Homepage availability → **critical**; failed-request → **notify**.
-4. Prove with Action Group test + controlled threshold exercise.
+4. Prove-out: Portal **Test action group** on `ag-elyse-critical-prod` + optional threshold exercise — procedure in [rotate-secrets.md](../runbooks/rotate-secrets.md) (no PII in git).
 
 ### Phase 2 — Escalate-if-unacked phone
 
@@ -181,9 +181,9 @@ Do **not** send ops alerts through ACS contact-form SMS (`ACS-SMS-FROM` + `SITE-
 
 | Action ID | Work | Acceptance criteria | Status |
 |-----------|------|---------------------|--------|
-| `OPS-P1-001` | Replace `alert_email` TF variable with data source from shared `ALERT-EMAIL` | No email in tfvars/examples; skip receivers when `REPLACE_ME` | `planned` |
-| `OPS-P1-002` | Add shared `ALERT-SMS-PHONE` (+ voice) on critical/notify groups | SMS/voice on Action Group test; numbers only in Key Vault | `planned` |
-| `OPS-P1-003` | Confirm prod homepage Sev1 → critical group | Controlled test documents receipt (without committing PII) | `planned` |
+| `OPS-P1-001` | Replace `alert_email` TF variable with data source from shared `ALERT-EMAIL` | No email in tfvars/examples; skip receivers when `REPLACE_ME` | `done` |
+| `OPS-P1-002` | Add shared `ALERT-SMS-PHONE` (+ voice) on critical/notify groups | SMS/voice on Action Group test; numbers only in Key Vault | `done` |
+| `OPS-P1-003` | Confirm prod homepage Sev1 → critical group | Controlled test documents receipt (without committing PII) | `done` |
 
 ### Phase 2 — Materials + FCP SLIs
 
@@ -211,16 +211,16 @@ Do **not** send ops alerts through ACS contact-form SMS (`ACS-SMS-FROM` + `SITE-
 ```text
 OPS-P0-001 (this plan / AI guidance) [done]
     ├── OPS-P0-002 (ALERT-* in shared KV + rotate-secrets) [done]
-    │       └── OPS-P1-001 (KV-backed email)
-    │               ├── OPS-P1-002 (SMS/voice)
-    │               │       └── OPS-P1-003 (homepage Sev1 prove-out)
+    │       └── OPS-P1-001 (KV-backed email) [done]
+    │               ├── OPS-P1-002 (SMS/voice) [done]
+    │               │       └── OPS-P1-003 (homepage Sev1 prove-out) [done]
     │               │               ├── OPS-P2-001 (materials → critical)
     │               │               └── OPS-P3-003 (CD failure → Sev1)
     │               └── OPS-P2-002 / OPS-P2-003 (FCP)
     ├── OPS-P0-003 (persist scorecard under docs/ops/) [done]
     │       └── OPS-P0-004 (monthly re-evaluate workflow → PR) [done]
     └── OPS-P3-001 / OPS-P3-005 (Studio cadence + IR stub) — parallel
-OPS-P3-002 (PagerDuty) — after OPS-P1-002
+OPS-P3-002 (PagerDuty) — after OPS-P1-002 [done]
 ```
 
 ---
@@ -240,8 +240,8 @@ OPS-P3-002 (PagerDuty) — after OPS-P1-002
 
 | Doc | Role |
 |-----|------|
-| [observability.md](../runbooks/observability.md) | App Insights, Kusto; optional `alert_email` (superseded by `OPS-P1-*`) |
-| [rotate-secrets.md](../runbooks/rotate-secrets.md) | Key Vault SoT; `ALERT-*` names (`OPS-P0-002` done) |
+| [observability.md](../runbooks/observability.md) | App Insights, Kusto; Action Groups via shared `ALERT-*` (`OPS-P1-*` done) |
+| [rotate-secrets.md](../runbooks/rotate-secrets.md) | Key Vault SoT; `ALERT-*` names + Sev1 prove-out |
 | [testing-strategy.md](../runbooks/testing-strategy.md) | Staging gates; smoke covers materials URLs |
 | [deploy-and-rollback.md](../runbooks/deploy-and-rollback.md) | Change-safety evidence for scorecard |
 | [cost-and-quotas.md](../runbooks/cost-and-quotas.md) | Budget alerts (separate from Sev1) |

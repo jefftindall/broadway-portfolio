@@ -73,7 +73,6 @@ module "portfolio" {
   github_branch             = var.github_branch
   manage_github_actions     = var.manage_github_actions
   ga_measurement_id         = var.ga_measurement_id
-  alert_email               = var.alert_email
 }
 
 output "resource_group_name" {

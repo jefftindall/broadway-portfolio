@@ -199,11 +199,7 @@ cd infra/bootstrap && terraform output terraform_oidc_subjects
 
 If Actions reports `AADSTS700213` with a different subject, update `github_owner_id` / `github_repo_id` and re-apply.
 
-Terraform also provisions Application Insights + Log Analytics per environment, sets `APPLICATIONINSIGHTS_CONNECTION_STRING` on the SWA, and publishes GitHub Environment variable `APPINSIGHTS_CONNECTION_STRING` for the browser SDK and deploy telemetry. It also publishes `GA_MEASUREMENT_ID` (default `G-XEE29C0RRE`) for Google Analytics 4 builds (`PUBLIC_GA_MEASUREMENT_ID`). Optional alerts:
-
-```bash
-terraform apply -var="alert_email=you@example.com"
-```
+Terraform also provisions Application Insights + Log Analytics per environment, sets `APPLICATIONINSIGHTS_CONNECTION_STRING` on the SWA, and publishes GitHub Environment variable `APPINSIGHTS_CONNECTION_STRING` for the browser SDK and deploy telemetry. It also publishes `GA_MEASUREMENT_ID` (default `G-XEE29C0RRE`) for Google Analytics 4 builds (`PUBLIC_GA_MEASUREMENT_ID`). Metric alerts use shared Key Vault `ALERT-*` contacts (see [runbooks/rotate-secrets.md](runbooks/rotate-secrets.md)); set those secrets then `terraform apply` — do not pass emails/phones as Terraform variables.
 
 See [runbooks/observability.md](runbooks/observability.md).
 

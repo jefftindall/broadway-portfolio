@@ -1,5 +1,6 @@
-# Shared foundation vault (bootstrap) — site-build, Turnstile, and ACS secrets identical
-# across staging and prod so a single release artifact / one SMS number is shared.
+# Shared foundation vault (bootstrap) — site-build, Turnstile, ACS, and ALERT-* ops
+# contacts identical across staging and prod so a single release artifact / one SMS
+# number / one on-call set is shared.
 # Deploy OIDC principals get Key Vault Secrets User on this vault from bootstrap
 # (not here) so Build release (prod identity) is not blocked on prod Terraform apply.
 
@@ -20,5 +21,21 @@ data "azurerm_key_vault_secret" "site_contact_phone" {
 
 data "azurerm_key_vault_secret" "turnstile_secret_key" {
   name         = "TURNSTILE-SECRET-KEY"
+  key_vault_id = data.azurerm_key_vault.shared.id
+}
+
+# Ops Action Group contacts (OPS-P1-*). Placeholders (REPLACE_ME) skip receivers in monitoring.tf.
+data "azurerm_key_vault_secret" "alert_email" {
+  name         = "ALERT-EMAIL"
+  key_vault_id = data.azurerm_key_vault.shared.id
+}
+
+data "azurerm_key_vault_secret" "alert_sms_phone" {
+  name         = "ALERT-SMS-PHONE"
+  key_vault_id = data.azurerm_key_vault.shared.id
+}
+
+data "azurerm_key_vault_secret" "alert_voice_phone" {
+  name         = "ALERT-VOICE-PHONE"
   key_vault_id = data.azurerm_key_vault.shared.id
 }

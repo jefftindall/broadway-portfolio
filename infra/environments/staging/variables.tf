@@ -63,8 +63,3 @@ variable "ga_measurement_id" {
   default     = "G-XEE29C0RRE"
 }
 
-variable "alert_email" {
-  type        = string
-  description = "Email for App Insights / availability alerts (empty skips metric alert action group)"
-  default     = ""
-}

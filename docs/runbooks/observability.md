@@ -35,9 +35,18 @@ Measurement-only checklist for the `elysetindall.com` property (`G-XEE29C0RRE`):
 
 Consent Mode / cookie banner: **not shipped** (`SEARCH-P1-006` = `wont_fix`). Privacy policy covers GA use without a consent gate.
 
-Optional: set `alert_email` when applying Terraform to create an action group + failed-request / availability metric alerts.
+Availability and failed-request metric alerts wire to Key Vault–backed Action Groups when shared `ALERT-*` secrets are set (not `REPLACE_ME`). See [rotate-secrets.md](./rotate-secrets.md) ops section and [operational-excellence.md](../plans/operational-excellence.md).
 
-**Operational excellence:** Living scorecard at [operational-excellence-scorecard.md](../ops/operational-excellence-scorecard.md). Backlog / SLOs / Sev1 SMS-voice plan: [operational-excellence.md](../plans/operational-excellence.md) (`OPS-*`). `ALERT-*` Key Vault names (placeholders only) are documented in [rotate-secrets.md](./rotate-secrets.md). Today’s `alert_email` Terraform variable is superseded when `OPS-P1-*` is executed — do not implement Action Group SMS/voice until those items are explicitly picked up. Private alert emails/phones must not be committed.
+**Operational excellence:** Living scorecard at [operational-excellence-scorecard.md](../ops/operational-excellence-scorecard.md). Backlog / SLOs / Sev1 SMS-voice plan: [operational-excellence.md](../plans/operational-excellence.md) (`OPS-*`). Private alert emails/phones must not be committed — only `ALERT-*` in `kv-elyse-shared`.
+
+## Action Groups (OPS-P1)
+
+| Group | Name pattern | Channels | Wired alerts |
+|-------|--------------|----------|--------------|
+| Notify (Sev2) | `ag-elyse-notify-{env}` | Email ± SMS | Failed-request spike |
+| Critical (Sev1) | `ag-elyse-critical-{env}` | Email + SMS + voice | Prod homepage availability |
+
+Contacts: `ALERT-EMAIL`, `ALERT-SMS-PHONE`, `ALERT-VOICE-PHONE` in `kv-elyse-shared`. Invalid / `REPLACE_ME` values skip that receiver; if all contacts are placeholders, Action Groups and metric alerts are not created.
 
 ## Cost controls
 
@@ -189,11 +198,18 @@ availabilityResults
 ## Apply / rotate
 
 ```bash
+# Set ops contacts in shared vault first (placeholders skip Action Groups):
+az keyvault secret set --vault-name kv-elyse-shared --name ALERT-EMAIL --value "<email>"
+az keyvault secret set --vault-name kv-elyse-shared --name ALERT-SMS-PHONE --value "+1XXXXXXXXXX"
+az keyvault secret set --vault-name kv-elyse-shared --name ALERT-VOICE-PHONE --value "+1XXXXXXXXXX"
+
 cd infra/environments/staging
-terraform apply -var="alert_email=you@example.com"
+terraform apply
 
 cd ../prod
-terraform apply -var="alert_email=you@example.com"
+terraform apply
 ```
+
+Prove Sev1 receipt via Portal **Test action group** on `ag-elyse-critical-prod` (see [rotate-secrets.md](./rotate-secrets.md)); do not commit contact values.
 
 Connection string changes flow to SWA app settings and GitHub Environment variables on apply; the next Actions build picks up the browser SDK value.
