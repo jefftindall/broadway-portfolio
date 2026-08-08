@@ -61,7 +61,7 @@ jobs:
             echo "::error::Expected contents=write on installation token."
             exit 1
           fi
-          repos="$(gh api /installation/repositories --jq '.repositories[].full_name')"
+          repos="$(gh api installation/repositories --jq '.repositories[].full_name')"
           echo "Installation can access:"
           printf '%s\n' "$repos"
           printf '%s\n' "$repos" | grep -qx "${GITHUB_REPOSITORY}"

@@ -53,3 +53,16 @@ The App’s numeric ID (Key Vault `GITHUB-APP-ID`) is the Integration `actor_id`
 ## Verify
 
 Publish a harmless Studio update and confirm a commit authored by the GitHub App appears on `main`.
+
+### Local mint dry-run (no push)
+
+Before re-running **OPS monthly scorecard** after App key or mint-script changes:
+
+```bash
+# Git Bash / macOS / Linux; az login with Key Vault Secrets User on the vault
+export AZURE_KEY_VAULT_NAME=kv-elyse-prod
+npm run test:github-app-token
+# or: ./scripts/test-github-app-token.sh --vault kv-elyse-prod
+```
+
+This mints an installation token via `scripts/mint-github-app-token.sh`, checks Contents:write + repo access, and `git ls-remote` with App auth — **never prints** the PEM or token. Fix failures locally before another Actions run.
