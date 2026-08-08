@@ -1,8 +1,9 @@
 name: OPS monthly scorecard
 
-# OPS-P0-004 — Re-evaluate docs/ops scorecard and commit directly to main
-# via the Studio GitHub App (Protect main bypass). Never writes alert emails,
-# phones, App private keys, or other secrets into the scorecard or logs.
+# OPS-P0-004 / OPS-P4-002 — Re-evaluate docs/ops scorecard, commit to main via
+# Studio GitHub App, email ACS digest (ALERT-EMAIL + SITE-CONTACT-EMAIL) with
+# scores + subscription spend/MoM. Never writes emails, phones, App private keys,
+# or other secrets into the scorecard or logs.
 # Scorecard-only pushes are excluded from azure-static-web-apps.yml (paths-ignore).
 
 on:
@@ -32,7 +33,7 @@ jobs:
           # Never persist GITHUB_TOKEN into git — that pushes as github-actions[bot].
           persist-credentials: false
 
-      - name: Azure login (SLI probe + GitHub App secrets)
+      - name: Azure login (SLI probe + GitHub App + digest secrets)
         uses: azure/login@v3
         with:
           client-id: ${{ vars.AZURE_TF_CLIENT_ID }}
@@ -86,6 +87,10 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Refresh scorecard
         run: node scripts/ops-scorecard-refresh.mjs --monthly --azure
@@ -97,12 +102,24 @@ jobs:
 
           if git diff --quiet -- docs/ops/operational-excellence-scorecard.md docs/ops/scorecard-evaluation.json; then
             echo "No scorecard changes; skipping commit."
-            exit 0
+          else
+            stamp="$(date -u +%Y-%m)"
+            git add docs/ops/operational-excellence-scorecard.md docs/ops/scorecard-evaluation.json
+            git commit -m "OPS: monthly operational excellence scorecard (${stamp})"
+            git push origin HEAD:main
+            echo "Pushed scorecard refresh to main as elyse-portfolio-studio[bot] (${stamp})."
           fi
 
-          stamp="$(date -u +%Y-%m)"
-          git add docs/ops/operational-excellence-scorecard.md docs/ops/scorecard-evaluation.json
-          git commit -m "OPS: monthly operational excellence scorecard (${stamp})"
-          git push origin HEAD:main
+      - name: Fetch ACS digest secrets
+        env:
+          AZURE_SHARED_KEY_VAULT_NAME: ${{ vars.AZURE_SHARED_KEY_VAULT_NAME }}
+        run: |
+          set -euo pipefail
+          set +x
+          chmod +x scripts/fetch-ops-digest-secrets.sh
+          ./scripts/fetch-ops-digest-secrets.sh
 
-          echo "Pushed scorecard refresh to main as elyse-portfolio-studio[bot] (${stamp})."
+      - name: Email scorecard digest
+        env:
+          SCORECARD_REPO_URL: https://github.com/${{ github.repository }}
+        run: node scripts/ops-scorecard-email.mjs

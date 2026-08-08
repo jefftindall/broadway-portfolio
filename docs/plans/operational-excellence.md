@@ -10,7 +10,7 @@ Use the **Action ID** column (`OPS-*`) to reference items in PRs, issues, and co
 
 **Status values:** `planned` · `in_progress` · `blocked` · `done` · `wont_fix`
 
-**Implementation stance:** This document is the backlog. Prefer **one phase (or one `OPS-*` item) per PR**. Phase 0–3 (except optional `OPS-P3-002` PagerDuty) are complete. Do **not** implement PagerDuty escalate-if-unacked (`OPS-P3-002`) until explicitly requested.
+**Implementation stance:** This document is the backlog. Prefer **one phase (or one `OPS-*` item) per PR**. Phase 0–3 (except optional `OPS-P3-002` PagerDuty) and Phase 4 (`OPS-P4-001` / `OPS-P4-002`) are complete. Do **not** implement PagerDuty escalate-if-unacked (`OPS-P3-002`) until explicitly requested.
 
 ---
 
@@ -109,11 +109,13 @@ Initial SRE review — **not yet** the monthly persisted artifact (see [Scorecar
 **Monthly workflow** (`.github/workflows/ops-scorecard-monthly.yml`):
 
 1. **Trigger:** GitHub Actions `schedule` (`0 14 1 * *` — 1st of month 14:00 UTC) + `workflow_dispatch`.
-2. **Job:** `environment: prod` (TF OIDC subject). Azure login is required. Mint a Studio GitHub App installation token via [`scripts/mint-github-app-token.sh`](../../scripts/mint-github-app-token.sh) (PEM line-masked; never via action `with:`), verify Contents:write + `/installation/repositories`, configure git with the installation token (`persist-credentials: false` on checkout), then `node scripts/ops-scorecard-refresh.mjs --monthly --azure`.
-3. **Privacy:** Workflow must **never** write alert emails, phones, App PEMs, or secrets into the scorecard or logs. CI enforces this with `npm run lint:actions-secrets` / **Actions secret-safety**.
+2. **Job:** `environment: prod` (TF OIDC subject). Azure login is required. Mint a Studio GitHub App installation token via [`scripts/mint-github-app-token.sh`](../../scripts/mint-github-app-token.sh) (PEM line-masked; never via action `with:`), verify Contents:write + `/installation/repositories`, configure git with the installation token (`persist-credentials: false` on checkout), then `node scripts/ops-scorecard-refresh.mjs --monthly --azure` (SLIs + Cost Management spend/MoM).
+3. **Privacy:** Workflow must **never** write alert emails, phones, App PEMs, or secrets into the scorecard or logs. CI enforces this with `npm run lint:actions-secrets` / **Actions secret-safety**. Digest body is scores + USD only (no recipient addresses).
 4. **Output:** Commit and push scorecard files directly to `main` as `elyse-portfolio-studio[bot]` (App is a **Protect main** bypass actor — same as Studio publishes). Do **not** open a PR. Do **not** push with the job `GITHUB_TOKEN` (`github-actions[bot]`). Do **not** trust `GET /repos` `.permissions.push` for installation tokens (often all-false).
 5. **CD:** Scorecard-only pushes are excluded from [`azure-static-web-apps.yml`](../../.github/workflows/azure-static-web-apps.yml) via `paths-ignore` on the two scorecard artifacts.
-6. **Failure:** If Azure SLI queries fail after login, still refresh qualitative dimensions and mark SLI-backed rows `stale` with a note. If Azure login or App token minting fails, the job fails (no silent `GITHUB_TOKEN` fallback).
+6. **Failure:** If Azure SLI/spend queries fail after login, still refresh qualitative dimensions and mark SLI-backed rows `stale` with a note. If Azure login or App token minting fails, the job fails (no silent `GITHUB_TOKEN` fallback).
+7. **Spend (`OPS-P4-002`):** Cost Management ActualCost for the previous calendar month vs the month before; vs subscription budget **ceil(expected retail × 1.25)** (`OPS-P4-001`; amount in `cost-and-quotas.md` / `budget.tf`). Persist in evaluation `costProbe` and the scorecard Cost section.
+8. **Digest (`OPS-P4-002`):** After refresh (even if no git diff), fetch ACS + recipients from `kv-elyse-shared` and send ACS email via [`scripts/ops-scorecard-email.mjs`](../../scripts/ops-scorecard-email.mjs) to `ALERT-EMAIL` and `SITE-CONTACT-EMAIL` (dedupe; skip if both `REPLACE_ME`). ACS **email** only — not ACS SMS.
 
 ---
 
@@ -213,6 +215,13 @@ Do **not** send ops alerts through ACS contact-form SMS (`ACS-SMS-FROM` + `SITE-
 | `OPS-P3-005` | Short incident severity + response stub runbook | Links severity table; no private phones in doc | `done` |
 | `OPS-P3-006` | Prod KV purge protection (optional harden) | Documented decision + TF if accepted | `done` |
 
+### Phase 4 — Subscription budget + monthly digest
+
+| Action ID | Work | Acceptance criteria | Status |
+|-----------|------|---------------------|--------|
+| `OPS-P4-001` | Subscription Azure Budget = **ceil(expected retail × 1.25)** in bootstrap | `budget-elyse-portfolio-monthly`; keep `cost-and-quotas.md` breakdown current; **80%**/100% Actual → `ALERT-EMAIL` (Owners fallback if REPLACE_ME) | `done` |
+| `OPS-P4-002` | Monthly scorecard ACS digest + Cost Management spend/MoM | Digests to `ALERT-EMAIL` + `SITE-CONTACT-EMAIL`; body scores + USD only; spend in scorecard `costProbe` | `done` |
+
 ---
 
 ## Dependency graph
@@ -228,9 +237,11 @@ OPS-P0-001 (this plan / AI guidance) [done]
     │               └── OPS-P2-002 / OPS-P2-003 (FCP) [done]
     ├── OPS-P0-003 (persist scorecard under docs/ops/) [done]
     │       └── OPS-P0-004 (monthly re-evaluate → App push to main) [done]
+    │               └── OPS-P4-002 (ACS digest + spend/MoM) [done]
     ├── OPS-P3-001 / OPS-P3-005 (Studio cadence + IR stub) [done]
     ├── OPS-P3-004 (inquiry SLI) [done]
-    └── OPS-P3-006 (prod/shared KV purge protection) [done]
+    ├── OPS-P3-006 (prod/shared KV purge protection) [done]
+    └── OPS-P4-001 (subscription budget = ceil(expected×1.25); 80% alert) [done]
 OPS-P3-002 (PagerDuty) — after OPS-P1-002 [done]; still planned
 ```
 ---
@@ -241,6 +252,7 @@ OPS-P3-002 (PagerDuty) — after OPS-P1-002 [done]; still planned
 - Authenticated Studio E2E in CI
 - Using ACS inquiry SMS as the on-call channel
 - Committing real emails, phones, or vendor API keys
+- Putting `SITE-CONTACT-EMAIL` on Azure Budget threshold notifications (digest covers both)
 - Full enterprise incident-management / paging product as a day-one requirement
 
 ---
@@ -254,7 +266,7 @@ OPS-P3-002 (PagerDuty) — after OPS-P1-002 [done]; still planned
 | [testing-strategy.md](../runbooks/testing-strategy.md) | Staging gates; smoke covers materials URLs |
 | [deploy-and-rollback.md](../runbooks/deploy-and-rollback.md) | Change-safety evidence; Deploy Production Sev1 |
 | [incident-response.md](../runbooks/incident-response.md) | Severity stub (`OPS-P3-005`) |
-| [cost-and-quotas.md](../runbooks/cost-and-quotas.md) | Budget alerts (separate from Sev1) |
-| [search-and-analytics.md](search-and-analytics.md) | GA4/GSC — not ops paging |
+| [cost-and-quotas.md](../runbooks/cost-and-quotas.md) | Retail expected breakdown + budget ceil(expected×1.25) (`OPS-P4-001`); Gemini console residual |
 | [github-app.md](../runbooks/github-app.md) | Studio App Contents:write + Protect main bypass (scorecard monthly push) |
-| `docs/ops/operational-excellence-scorecard.md` | Living scorecard (`OPS-P0-003` done; refreshed by `OPS-P0-004`) |
+| [search-and-analytics.md](search-and-analytics.md) | GA4/GSC — not ops paging |
+| `docs/ops/operational-excellence-scorecard.md` | Living scorecard (`OPS-P0-003` done; refreshed by `OPS-P0-004`; digest `OPS-P4-002`) |

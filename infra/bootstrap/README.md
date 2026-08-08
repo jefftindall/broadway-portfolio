@@ -10,8 +10,9 @@
 #   Resource group:    rg-elyse-tfstate
 #   Storage account:   stelysetfstateeu2
 #   Container:         tfstate
-#   Shared RG/vault:   rg-elyse-shared / kv-elyse-shared (SITE-*, Turnstile, ACS)
+#   Shared RG/vault:   rg-elyse-shared / kv-elyse-shared (SITE-*, Turnstile, ACS, ALERT-*)
 #   Shared ACS:        acs-elyse-shared + email-elyse-shared (one MailFrom / SMS number)
+#   Subscription budget: budget-elyse-portfolio-monthly (ceil(expected×1.25), currently $31/mo; ALERT-EMAIL at 80%/100%)
 #   Region:            eastus2
 #   Subscription:      e601e59a-c7f4-41f0-8178-b59740fb1974
 #   Entra app:         elyse-portfolio-gha-terraform (OIDC for plan/apply)
@@ -23,5 +24,6 @@
 # (PAT with environment variable access) for the GitHub provider in CI.
 #
 # Staging/prod backends are preconfigured to use this account with distinct state keys.
-# Re-apply after pulling OIDC / shared vault changes so Actions can run Terraform.
+# Re-apply after pulling OIDC / shared vault / budget changes so Actions can run Terraform.
 # Populate shared vault secrets per docs/runbooks/rotate-secrets.md before CD builds.
+# Set ALERT-EMAIL before expecting budget threshold emails (otherwise Owners are notified).

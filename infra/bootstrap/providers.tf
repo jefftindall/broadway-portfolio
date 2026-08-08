@@ -32,6 +32,8 @@ provider "azurerm" {
     "Microsoft.Web",
     "Microsoft.Authorization",
     "Microsoft.Communication",
+    "Microsoft.Consumption",
+    "Microsoft.CostManagement",
   ]
   features {}
 }
