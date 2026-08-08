@@ -20,10 +20,10 @@ Living reliability posture for the Elyse Tindall portfolio. Rubric, SLOs, and ba
 | Secrets & config | 0.9 | 4.0 | Strong | Env + shared KV; sync workflow; rotate-secrets | Functions need explicit secret sync | ok |
 | Observability | 1.2 | 4.2 | Strong | Per-env AI; Studio correlation + events; GA4 public; HomepageFcpMs; contact inquiry events + SLI docs | No Workbooks as code | ok |
 | Test automation | 1.1 | 4.0 | Strong | Staging smoke + journeys; homepage + materials synthetics; soft lab FCP | No unit tests; Studio E2E OOS | ok |
-| Cost & capacity | 0.7 | 4.0 | Strong | Subscription budget $31/mo = ceil($24.54 expected × 1.25) (OPS-P4-001); Cost Management spend/MoM in monthly refresh (OPS-P4-002); cost-and-quotas retail breakdown; AI caps | Gemini/Google console budget alert still manual | stale: Re-run with --azure after bootstrap budget apply to populate costProbe. |
+| Cost & capacity | 0.7 | 4.0 | Strong | Subscription budget $31/mo (OPS-P4-001); Subscription ActualCost 2026-07: $2.10 (6.7% of $31 budget). MoM unavailable (no prior-month rows). | Gemini/Google console budget alert still manual | ok: Subscription ActualCost 2026-07: $2.10 (6.7% of $31 budget). MoM unavailable (no prior-month rows). |
 | Alerting & on-call | 1.1 | 4.3 | Strong | KV ALERT-* → notify/critical/watch AGs; homepage+materials Sev1; DeployFailed Sev1 (OPS-P3-003); FCP Sev3 | Optional vendor escalate-if-unacked still OPS-P3-002; operator must keep ALERT-* real | ok |
 | Resilience & DR | 0.9 | 2.0 | Thin | Git rollback; env isolation; East US 2 only | Single region; shared ACS/Turnstile coupling | ok |
-| SLOs & error budget | 0.8 | 3.8 | Solid | Field/synthetic SLIs: Materials availability avg 100% over 12 probe(s) (target 99.8% / 7d). Homepage FCP p75 156ms over 32 sample(s) (target < 1500ms / 7d). | Windows need traffic before met/missed; inquiry not yet a committed SLO | ok: App Insights returned no availability datapoints for the last 7 days (Homepage). Materials availability avg 100% over 12 probe(s) (target 99.8% / 7d). Homepage FCP p75 156ms over 32 sample(s) (target < 1500ms / 7d). No Studio publish UI events in the last 28 days; SLO-2 left stale. No StudioPublishToProdDurationMs samples in the last 28 days; SLO-3 left stale. No inquiry events in the last 28 days (excluding bots/validation); left stale. |
+| SLOs & error budget | 0.8 | 3.8 | Solid | Field/synthetic SLIs: Materials availability avg 100% over 12 probe(s) (target 99.8% / 7d). Homepage FCP p75 184ms over 46 sample(s) (target < 1500ms / 7d). | Windows need traffic before met/missed; inquiry not yet a committed SLO | ok: App Insights returned no availability datapoints for the last 7 days (Homepage). Materials availability avg 100% over 12 probe(s) (target 99.8% / 7d). Homepage FCP p75 184ms over 46 sample(s) (target < 1500ms / 7d). No Studio publish UI events in the last 28 days; SLO-2 left stale. No StudioPublishToProdDurationMs samples in the last 28 days; SLO-3 left stale. No inquiry events in the last 28 days (excluding bots/validation); left stale. |
 
 ## Committed SLOs (status this review)
 
@@ -31,7 +31,7 @@ Living reliability posture for the Elyse Tindall portfolio. Rubric, SLOs, and ba
 |----|-----|--------|--------|------|
 | SLO-1 | Homepage availability | 99.8% / 7d | stale | App Insights returned no availability datapoints for the last 7 days (Homepage). |
 | SLO-4 | Materials availability | 99.8% / 7d | met | Materials availability avg 100% over 12 probe(s) (target 99.8% / 7d). |
-| SLO-6 | Homepage FCP | p75 < 1.5s / 7d | met | Homepage FCP p75 156ms over 32 sample(s) (target < 1500ms / 7d). |
+| SLO-6 | Homepage FCP | p75 < 1.5s / 7d | met | Homepage FCP p75 184ms over 46 sample(s) (target < 1500ms / 7d). |
 | SLO-2 | Studio publish success | 95% / 28d | stale | No Studio publish UI events in the last 28 days; SLO-2 left stale. |
 | SLO-3 | Publish → live latency | p95 ≤ 20m / 28d | stale | No StudioPublishToProdDurationMs samples in the last 28 days; SLO-3 left stale. |
 
@@ -40,6 +40,16 @@ Living reliability posture for the Elyse Tindall portfolio. Rubric, SLOs, and ba
 | ID | SLO | Target | Status | Note |
 |----|-----|--------|--------|------|
 | SLO-5 | Inquiry accept rate | 99% / 28d (optional) | stale | No inquiry events in the last 28 days (excluding bots/validation); left stale. |
+
+## Subscription cost (this review)
+
+| Field | Value |
+|-------|-------|
+| **Budget** | $31 / month |
+| **Last month (2026-07)** | $2.10 (6.7% of budget) |
+| **Prior month (2026-06)** | n/a |
+| **MoM** | n/a |
+| **Under budget** | yes |
 
 ## How this file is updated
 
