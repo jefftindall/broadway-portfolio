@@ -22,7 +22,7 @@ Phased work and action IDs live in [docs/plans/operational-excellence.md](docs/p
 ## Scorecard
 
 - Rubric lives in the plan. Living scores: `docs/ops/operational-excellence-scorecard.md` (from `docs/ops/scorecard-evaluation.json` via `scripts/ops-scorecard-refresh.mjs`).
-- Monthly refresh (`OPS-P0-004`): `.github/workflows/ops-scorecard-monthly.yml` re-evaluates and commits to `main` via the Studio GitHub App (Key Vault `GITHUB-APP-*`). CD ignores scorecard-only pushes (`paths-ignore`). Do not reintroduce a PR-only path unless product asks.
+- Monthly refresh (`OPS-P0-004`): `.github/workflows/ops-scorecard-monthly.yml` mints a Studio GitHub App installation token in-shell (PEM masked; never via action `with:`), checks out with that token, and commits to `main`. CD ignores scorecard-only pushes (`paths-ignore`). Do not reintroduce `GITHUB_TOKEN` pushes or a PR-only path unless product asks.
 - Scorecard content is scores, evidence, and gaps only — **never** alert emails, phones, or secrets.
 
 ## Private details never in git

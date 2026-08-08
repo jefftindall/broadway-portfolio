@@ -1,0 +1,20 @@
+---
+description: Upgrade GitHub Actions off Node.js 20 before committing workflow changes
+globs: .github/workflows/**/*
+alwaysApply: true
+---
+
+# GitHub Actions Node.js runtime
+
+Before committing or pushing any change to GitHub Actions workflows or composite actions:
+
+1. **Scan** every `uses:` entry (and nested actions those call, when known) for runtimes still on **Node.js 20**.
+2. **Upgrade** to a release that runs on **Node.js 24+** (or replace the action) so CI does not emit Node 20 deprecation warnings. Prefer current majors that advertise `node24` (example: `actions/create-github-app-token@v3`, not `@v2`).
+3. Prefer existing repo majors already on Node 24 where present (`actions/checkout@v7`, `actions/setup-node@v7`, `actions/upload-artifact@v7`, `actions/download-artifact@v8`).
+4. Do **not** ship workflow edits that leave known Node 20 actions in place “to fix later.”
+
+## Secrets in workflow logs
+
+- Never pass Key Vault PEMs / private keys through an action `with:` input unless they are masked first (`::add-mask::` on the full value and each line). Action `with:` blocks are printed to the job log.
+- Prefer minting GitHub App installation tokens in-shell (JWT + `POST .../access_tokens`) so the PEM never appears as an action input.
+- If a private key is ever printed in Actions logs, rotate it immediately ([rotate-secrets.md](docs/runbooks/rotate-secrets.md)) before re-running the job.

@@ -163,6 +163,8 @@ az keyvault secret set --vault-name kv-elyse-prod --name GEMINI-API-KEY --value 
 
 ## Rotate the GitHub App private key
 
+**Rotate immediately** if the PEM appears in GitHub Actions logs (or any other log/chat/PR). Treat a leaked key as compromised even if the run failed afterward.
+
 1. GitHub App settings → **Private keys → Generate a private key**
 2. Upload to both Key Vaults:
 
@@ -172,11 +174,13 @@ az keyvault secret set --vault-name kv-elyse-prod --name GITHUB-APP-PRIVATE-KEY 
 ```
 
 3. Sync both environments (script above or Sync SWA API secrets workflow)
-4. Delete the previous private key in the GitHub App UI
+4. Delete the previous private key in the GitHub App UI (revokes the leaked material)
 5. Delete the local `.pem`
-6. Verify Studio can still commit
+6. Verify Studio can still commit; re-run **OPS monthly scorecard** if that job needs the App
 
 App ID and installation ID rarely change; only update those Key Vault secrets if you recreate the App or reinstall it, then sync.
+
+Workflows that mint App tokens must **mask** the PEM (`::add-mask::` on the full value and each line) and must **not** pass it through an action `with:` input (those inputs are printed to the job log). Prefer in-shell JWT + installation-token minting (see `.github/workflows/ops-scorecard-monthly.yml`).
 
 ## Rotate the Entra client secret (Studio login)
 
