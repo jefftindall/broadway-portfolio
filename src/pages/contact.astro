@@ -2,7 +2,6 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import GlassPanel from '../components/GlassPanel.astro';
 import InquiryForm from '../components/InquiryForm.astro';
-import PerformerFacts from '../components/PerformerFacts.astro';
 import { site } from '../lib/site';
 ---
 
@@ -20,7 +19,6 @@ import { site } from '../lib/site';
     <p class="mt-4 max-w-2xl text-muted">
       Casting directors and agents — send a request below and it goes straight to Elyse’s inbox.
     </p>
-    <PerformerFacts class="mt-8" />
 
     <GlassPanel strong class="mt-10 p-6 md:p-8">
       <InquiryForm type="casting" id="casting-inquiry" />

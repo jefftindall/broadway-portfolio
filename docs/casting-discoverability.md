@@ -168,7 +168,7 @@ Snapshot **2026-08-02**. Re-score after `DISC-P0-001` (cutover) and after each t
 |----|-------|--------|------------|--------------------------|
 | `DISC-P1-001` | Reorder homepage for casting (hero CTAs + section order) | `done` | `DISC-P0-001` | `src/pages/index.astro`, `src/components/Hero.astro` |
 | `DISC-P1-002` | Add `/materials` page with reel, downloads, and casting CTA | `done` | `DISC-P0-001`, `DISC-GAP-001`, `DISC-GAP-002` | New `src/pages/materials.astro`, `public/downloads/` |
-| `DISC-P1-003` | Add performer facts block (range, type, union, availability) | `done` | `DISC-GAP-003` | `src/lib/site.ts`, `src/components/PerformerFacts.astro`, `src/pages/about.astro`, `src/pages/contact.astro` |
+| `DISC-P1-003` | Add performer facts block (range, type, union, availability) | `done` | `DISC-GAP-003` | `src/lib/site.ts`, `src/components/PerformerFacts.astro`, `src/pages/about.astro`, `src/pages/materials.astro` |
 | `DISC-P1-004` | Enrich JSON-LD and `site.ts` for performer + AI discoverability | `planned` | `DISC-P1-003` | `src/lib/site.ts`, `src/components/Seo.astro`, `src/pages/index.astro` |
 | `DISC-P1-005` | Add nav/footer link to Materials | `done` | `DISC-P1-002` | `src/lib/site.ts` (`nav`), `src/components/Footer.astro` |
 | `DISC-P1-006` | Surface Tiffany King quote on site | `planned` | — | `src/pages/index.astro` or `src/pages/about.astro` |
@@ -214,7 +214,7 @@ Snapshot **2026-08-02**. Re-score after `DISC-P0-001` (cutover) and after each t
 
 **Acceptance criteria**
 
-- [x] Visible block on About and Contact (and compact variant on homepage or Materials)
+- [x] Visible block on About and Materials
 - [x] Fields rendered (when provided in `site.ts` or content):
   - Playing age
   - Vocal range (e.g. belt/mix notation)
@@ -222,10 +222,11 @@ Snapshot **2026-08-02**. Re-score after `DISC-P0-001` (cutover) and after each t
   - Union status (AEA / EMC / non-union)
   - Based in (NYC)
   - Availability / seeking representation (if applicable)
+  - Chronological age and height (listed last)
 - [x] Facts are plain HTML text (not image-only) for crawlers and AI
 - [x] Copy reviewed and approved by Elyse before publish
 
-Shipped facts in `site.performer`: playing age 15–28; vocal type (Mezzo-Soprano with an extended range); range D3-G6 (Belt: G5); ethnicity/presenting (White / Middle Eastern olive skin; Hispanic, Latina, Latin, Italian, Greek, Mediterranean, ethnically ambiguous); height 5'3" (160 cm); non-union; available.
+Shipped facts in `site.performer`: playing age 15–28; vocal type (Mezzo-Soprano with an extended range); range D3-G6 (Belt: G5); ethnicity/presenting (White / Middle Eastern olive skin; Hispanic, Latina, Latin, Italian, Greek, Mediterranean, ethnically ambiguous); height 5'3" (160 cm); non-union; available. Full facts table on About and Materials (not Contact).
 </details>
 
 <details>
