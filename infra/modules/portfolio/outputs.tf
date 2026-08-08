@@ -28,9 +28,14 @@ output "key_vault_uri" {
 }
 
 output "custom_domain_validation_token" {
-  description = "TXT record value for domain validation (when custom_domain is set)"
+  description = "TXT record value for apex domain validation (when custom_domain is set)"
   value       = try(azurerm_static_web_app_custom_domain.apex[0].validation_token, null)
   sensitive   = true
+}
+
+output "www_custom_domain" {
+  description = "www hostname bound when custom_domain is set (CNAME validation)"
+  value       = try(azurerm_static_web_app_custom_domain.www[0].domain_name, null)
 }
 
 output "managed_identity_principal_id" {

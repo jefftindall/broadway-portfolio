@@ -5,10 +5,10 @@ locals {
   auth_callback_path = "/.auth/login/aad/callback"
 
   # Hostnames that must be able to complete an Entra sign-in:
-  # the Azure-generated SWA hostname plus any custom domains for this environment.
+  # the Azure-generated SWA hostname plus apex/www custom domains for this environment.
   auth_hostnames = distinct(concat(
     [azurerm_static_web_app.main.default_host_name],
-    var.custom_domain == "" ? [] : [var.custom_domain],
+    var.custom_domain == "" ? [] : [var.custom_domain, "www.${var.custom_domain}"],
     var.additional_auth_hostnames,
   ))
 

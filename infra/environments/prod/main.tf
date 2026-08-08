@@ -106,6 +106,10 @@ output "custom_domain_validation_token" {
   sensitive = true
 }
 
+output "www_custom_domain" {
+  value = module.portfolio.www_custom_domain
+}
+
 output "managed_identity_principal_id" {
   value = module.portfolio.managed_identity_principal_id
 }

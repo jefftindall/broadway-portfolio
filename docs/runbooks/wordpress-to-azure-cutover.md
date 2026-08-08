@@ -119,7 +119,7 @@ Namecheap → Domain List → `elysetindall.com` → **Manage** → **Advanced D
    |------|------|-------|
    | CNAME | `www` | `<swa-default-hostname>.azurestaticapps.net` |
 
-   Then add `www.elysetindall.com` as a custom domain on the SWA (Portal or later Terraform) so TLS works. Optional follow-up: configure www → apex redirect once both hostnames are bound.
+   Terraform binds `www.elysetindall.com` via `cname-delegation` when `custom_domain` is set. After both domains are Ready, set the apex as the **default** custom domain in Portal so www 301s to apex — see [dns-and-domain.md](dns-and-domain.md).
 
 6. Save. Propagation is often minutes; allow up to 48–72 hours in the worst case.
 
