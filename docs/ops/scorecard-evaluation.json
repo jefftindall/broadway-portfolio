@@ -92,10 +92,10 @@
       "name": "SLOs & error budget",
       "weight": 0.8,
       "score": 3.8,
-      "evidence": "Field/synthetic SLIs: Materials availability avg 100% over 12 probe(s) (target 99.8% / 7d). Homepage FCP p75 184ms over 46 sample(s) (target < 1500ms / 7d).",
+      "evidence": "Field/synthetic SLIs: Materials availability avg 100% over 12 probe(s) (target 99.8% / 7d). Homepage FCP p75 184ms over 18 sample(s) (target < 1500ms / 7d).",
       "gap": "Windows need traffic before met/missed; inquiry not yet a committed SLO",
       "sliStatus": "ok",
-      "sliNote": "App Insights returned no availability datapoints for the last 7 days (Homepage). Materials availability avg 100% over 12 probe(s) (target 99.8% / 7d). Homepage FCP p75 184ms over 46 sample(s) (target < 1500ms / 7d). No Studio publish UI events in the last 28 days; SLO-2 left stale. No StudioPublishToProdDurationMs samples in the last 28 days; SLO-3 left stale. No inquiry events in the last 28 days (excluding bots/validation); left stale."
+      "sliNote": "App Insights returned no availability datapoints for the last 7 days (Homepage). Materials availability avg 100% over 12 probe(s) (target 99.8% / 7d). Homepage FCP p75 184ms over 18 sample(s) (target < 1500ms / 7d). No Studio publish UI events in the last 28 days; SLO-2 left stale. No StudioPublishToProdDurationMs samples in the last 28 days; SLO-3 left stale. No inquiry events in the last 28 days (excluding bots/validation); left stale."
     }
   ],
   "committedSlos": [
@@ -118,7 +118,7 @@
       "name": "Homepage FCP",
       "target": "p75 < 1.5s / 7d",
       "status": "met",
-      "note": "Homepage FCP p75 184ms over 46 sample(s) (target < 1500ms / 7d)."
+      "note": "Homepage FCP p75 184ms over 18 sample(s) (target < 1500ms / 7d)."
     },
     {
       "id": "SLO-2",
