@@ -180,7 +180,7 @@ Terraform also manages GitHub Environment variables. The default Actions `GITHUB
 Promotion path:
 
 - Pull requests → **Static analysis** only (plan when infra changes); no app or infra deploy
-- Push / merge to `main` → CD runs only when app or infra paths change (`src/`, `public/`, `api/`, build config, `infra/`, etc.); **docs-only** and other non-release paths skip deploy jobs. Terraform apply runs when `infra/` changes; **Smoke Staging** after staging deploy; prod only if staging deploy **and** verification succeeded
+- Push / merge to `main` → CD runs only when app or infra paths change (`src/`, `public/`, `api/`, build config, `infra/`, etc.); **docs-only** and other non-release paths skip deploy jobs. Terraform apply runs when `infra/` changes; **Smoke Staging** after staging deploy; prod only if staging deploy **and** verification succeeded; **Smoke Production** after prod deploy (failure → Sev1 SMS+voice, no auto-rollback)
 - Manual branch test → Actions → **Staging branch** → pick the branch → Run workflow (includes smoke + journeys)
 
 See [runbooks/testing-strategy.md](runbooks/testing-strategy.md) for persona journeys, local commands, and phased backlog.

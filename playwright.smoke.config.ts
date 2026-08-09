@@ -6,7 +6,7 @@ if (!baseURL) {
 }
 
 /**
- * Post-deploy smoke against a live environment (staging).
+ * Post-deploy smoke against a live environment (staging or production).
  * Desktop + mobile Chromium projects; public routes only.
  */
 export default defineConfig({

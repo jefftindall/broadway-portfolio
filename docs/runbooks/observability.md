@@ -44,7 +44,7 @@ Availability and failed-request metric alerts wire to Key Vault–backed Action 
 | Group | Name pattern | Channels | Wired alerts |
 |-------|--------------|----------|--------------|
 | Notify (Sev2) | `ag-elyse-notify-{env}` | Email ± SMS | Failed-request spike |
-| Critical (Sev1) | `ag-elyse-critical-{env}` | Email + SMS + voice | Prod homepage + materials availability; **DeployFailed** (`OPS-P3-003`) |
+| Critical (Sev1) | `ag-elyse-critical-{env}` | Email + SMS + voice | Prod homepage + materials availability; **DeployFailed** / **SmokeFailed** (`OPS-P3-003` / `TEST-D-003`) |
 | Watch (Sev3) | `ag-elyse-watch-{env}` | Email only | Homepage field FCP p75 burn (`HomepageFcpMs`; 2d watch window; SLO-6 scored over 7d in scorecard) |
 
 Contacts: `ALERT-EMAIL`, `ALERT-SMS-PHONE`, `ALERT-VOICE-PHONE` in `kv-elyse-shared`. Invalid / `REPLACE_ME` values skip that receiver; if all contacts are placeholders, Action Groups and metric alerts are not created. Watch group requires a real `ALERT-EMAIL`.
@@ -93,6 +93,7 @@ User-facing messages stay short and non-technical. Full provider/SDK detail is o
 | `StudioPublishToProdDurationMs` | Browser custom metric (same window as above; always sampled) |
 | `DeployCompleted` | GitHub Actions after SWA upload (staging or prod) |
 | `DeployFailed` | GitHub Actions when **Deploy Production** job fails (`OPS-P3-003`; pages critical AG) |
+| `SmokeFailed` | GitHub Actions when **Smoke Production** fails after deploy (`TEST-D-003`; pages critical AG; no auto-rollback) |
 | `ContactInquiryReceived` / `ContactInquiryFailed` | Contact form API (`errorKind` on failures; see inquiry SLI below) |
 
 Gemini model-side traces stay in Google — not App Insights. Coarse `errorKind` values include `gemini_quota`, `gemini`, `github`, `config`, `unknown`.
@@ -162,7 +163,7 @@ Studio / publish events:
 
 ```kusto
 customEvents
-| where name in ("StudioAccessDenied", "StudioPublishDenied", "StudioDraftRequested", "StudioDraftFailed", "StudioPublishRequested", "StudioPublishFailed", "StudioToolExecuted", "GitHubCommitSucceeded", "GitHubCommitFailed", "StudioPublishUiSuccess", "StudioPublishUiFailed", "StudioPublishToProdCompleted", "DeployCompleted", "DeployFailed", "ContactInquiryReceived", "ContactInquiryFailed")
+| where name in ("StudioAccessDenied", "StudioPublishDenied", "StudioDraftRequested", "StudioDraftFailed", "StudioPublishRequested", "StudioPublishFailed", "StudioToolExecuted", "GitHubCommitSucceeded", "GitHubCommitFailed", "StudioPublishUiSuccess", "StudioPublishUiFailed", "StudioPublishToProdCompleted", "DeployCompleted", "DeployFailed", "SmokeFailed", "ContactInquiryReceived", "ContactInquiryFailed")
 | order by timestamp desc
 | take 100
 ```
@@ -273,7 +274,7 @@ Deploy timeline:
 
 ```kusto
 customEvents
-| where name in ("DeployCompleted", "DeployFailed")
+| where name in ("DeployCompleted", "DeployFailed", "SmokeFailed")
 | project timestamp, name, environment = tostring(customDimensions.environment), sha = tostring(customDimensions.sha), job = tostring(customDimensions.job)
 | order by timestamp desc
 ```

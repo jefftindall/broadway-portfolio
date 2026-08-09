@@ -7,6 +7,8 @@ name: Azure Static Web Apps CI/CD
 # Manual dispatch from other branches runs staging only; prod stages are skipped.
 # Manual staging-only test: Actions → Staging branch (workflow_dispatch).
 # After Deploy Staging: Smoke Staging (Playwright desktop + mobile) must pass before prod.
+# After Deploy Production: Smoke Production re-runs the same suite against prod; failure → Sev1
+# (SmokeFailed → ag-elyse-critical-prod: email + SMS + voice). No auto-rollback (TEST-D-003).
 # Build once per release; staging and prod deploy the same artifact that was verified.
 # Serialize CD with staging-branch.yml (shared group) so only one deploy runs at a time.
 # cancel-in-progress: false waits instead of cancelling; GitHub keeps one pending slot
@@ -585,3 +587,100 @@ jobs:
               }
             }]"
           echo "Emitted DeployFailed (Sev1 SLI). Critical Action Group alert evaluates within ~5m."
+
+  # TEST-D-003 — post-release prod smoke. Same Playwright suite as staging, against prod hostname.
+  # Failures page Sev1 (SMS + voice via critical AG); no auto-rollback.
+  smoke_prod:
+    name: Smoke Production
+    needs: [deploy_prod]
+    if: always() && !cancelled() && needs.deploy_prod.result == 'success'
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Resolve production hostname
+        id: host
+        run: |
+          HOST=$(az staticwebapp show \
+            --name "${{ vars.AZURE_STATIC_WEB_APP_NAME }}" \
+            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+            --query defaultHostname -o tsv)
+          if [ -z "$HOST" ]; then
+            echo "::error::Could not resolve production Static Web App hostname"
+            exit 1
+          fi
+          echo "hostname=$HOST" >> "$GITHUB_OUTPUT"
+          echo "Production URL: https://$HOST"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run production smoke (desktop + mobile)
+        env:
+          BASE_URL: https://${{ steps.host.outputs.hostname }}
+          CI: true
+        run: npm run test:smoke
+
+  notify_prod_smoke_failure:
+    name: Notify prod smoke failure
+    needs: [smoke_prod]
+    if: always() && !cancelled() && needs.smoke_prod.result == 'failure'
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - name: Emit SmokeFailed to App Insights
+        continue-on-error: true
+        env:
+          APPINSIGHTS_CONNECTION_STRING: ${{ vars.APPINSIGHTS_CONNECTION_STRING }}
+          DEPLOY_ENVIRONMENT: prod
+          GIT_SHA: ${{ github.sha }}
+          JOB_NAME: Smoke Production
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$APPINSIGHTS_CONNECTION_STRING" ]; then
+            echo "No App Insights connection string; cannot emit SmokeFailed."
+            exit 0
+          fi
+          IKEY=$(echo "$APPINSIGHTS_CONNECTION_STRING" | sed -n 's/.*InstrumentationKey=\([^;]*\).*/\1/p')
+          ENDPOINT=$(echo "$APPINSIGHTS_CONNECTION_STRING" | sed -n 's/.*IngestionEndpoint=\([^;]*\).*/\1/p')
+          ENDPOINT=${ENDPOINT:-https://dc.services.visualstudio.com}
+          ENDPOINT=${ENDPOINT%/}
+          TIME=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
+          curl -sS -X POST "${ENDPOINT}/v2/track" \
+            -H "Content-Type: application/json" \
+            -d "[{
+              \"name\": \"Microsoft.ApplicationInsights.Event\",
+              \"time\": \"${TIME}\",
+              \"iKey\": \"${IKEY}\",
+              \"data\": {
+                \"baseType\": \"EventData\",
+                \"baseData\": {
+                  \"ver\": 2,
+                  \"name\": \"SmokeFailed\",
+                  \"properties\": {
+                    \"environment\": \"${DEPLOY_ENVIRONMENT}\",
+                    \"sha\": \"${GIT_SHA}\",
+                    \"job\": \"${JOB_NAME}\",
+                    \"runUrl\": \"${RUN_URL}\"
+                  }
+                }
+              }
+            }]"
+          echo "Emitted SmokeFailed (Sev1 SLI). Critical Action Group alert evaluates within ~5m."

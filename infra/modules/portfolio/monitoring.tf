@@ -189,7 +189,7 @@ resource "azurerm_monitor_action_group" "notify" {
   }
 }
 
-# Sev1 — email + SMS + voice (OPS-P1-002). Homepage + materials availability and DeployFailed use this group.
+# Sev1 — email + SMS + voice (OPS-P1-002). Homepage + materials availability, DeployFailed, and SmokeFailed use this group.
 resource "azurerm_monitor_action_group" "critical" {
   count = local.alert_critical_enabled ? 1 : 0
 
@@ -292,7 +292,8 @@ resource "azurerm_monitor_metric_alert" "availability" {
   }
 }
 
-# Sev1 — Deploy Production failure (OPS-P3-003). CD emits DeployFailed; this pages critical AG.
+# Sev1 — Deploy Production or post-release Smoke Production failure (OPS-P3-003 / TEST-D-003).
+# CD emits DeployFailed or SmokeFailed; this pages critical AG (email + SMS + voice).
 # Count aggregation: any matching row in the window fires. Staging failures are out of scope.
 resource "azurerm_monitor_scheduled_query_rules_alert_v2" "deploy_failed" {
   count = local.alert_critical_enabled && var.environment == "prod" ? 1 : 0
@@ -301,7 +302,7 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "deploy_failed" {
   resource_group_name     = azurerm_resource_group.main.name
   location                = azurerm_resource_group.main.location
   scopes                  = [azurerm_application_insights.main.id]
-  description             = "Deploy Production failed (DeployFailed event; Sev1 → critical)"
+  description             = "Deploy Production or Smoke Production failed (DeployFailed/SmokeFailed; Sev1 → critical SMS+voice)"
   severity                = 1
   enabled                 = true
   evaluation_frequency    = "PT5M"
@@ -313,7 +314,7 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "deploy_failed" {
   criteria {
     query                   = <<-QUERY
       customEvents
-      | where name == "DeployFailed"
+      | where name in ("DeployFailed", "SmokeFailed")
       | where tostring(customDimensions.environment) == "prod"
     QUERY
     time_aggregation_method = "Count"
