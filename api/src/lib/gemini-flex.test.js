@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { isAllowedContentPath, normalizeLessonRates } from './gemini.js';
 import { validateContentFile, StudioContentValidationError } from './contentValidate.js';
-import { SITE_SETTINGS_PATH } from './siteSettings.js';
+import { DEFAULT_SITE_SETTINGS, SITE_SETTINGS_PATH } from './siteSettings.js';
+import { siteSettingsSchema } from './contentSchemas.js';
 
 test('normalizeLessonRates accepts both allowlisted ids with priceAmount', () => {
   const rates = normalizeLessonRates([
@@ -63,6 +64,12 @@ test('isAllowedContentPath denies about and unknown paths', () => {
   assert.equal(isAllowedContentPath('src/data/other.json'), false);
   assert.equal(isAllowedContentPath('../etc/passwd'), false);
   assert.equal(isAllowedContentPath('/absolute.md'), false);
+});
+
+test('DEFAULT_SITE_SETTINGS matches site-settings schema (bootstrap when GitHub file missing)', () => {
+  const parsed = siteSettingsSchema.parse(DEFAULT_SITE_SETTINGS);
+  assert.equal(parsed.performer.availability, 'Available');
+  assert.ok(parsed.reelUrl.startsWith('https://'));
 });
 
 test('validateContentFile accepts site-settings JSON', () => {

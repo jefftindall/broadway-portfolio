@@ -4,12 +4,33 @@ import { siteSettingsSchema } from './contentSchemas.js';
 export const SITE_SETTINGS_PATH = 'src/data/site-settings.json';
 
 /**
+ * Used when the file is not on the GitHub branch yet (e.g. pre-merge staging
+ * while Studio still reads/writes GITHUB_BRANCH, usually main). First publish
+ * of reel / short bio / performer facts creates the file.
+ */
+export const DEFAULT_SITE_SETTINGS = siteSettingsSchema.parse({
+  reelUrl: 'https://youtu.be/41jdPTkN_Sw',
+  shortBio:
+    'Elyse Tindall is a musical theatre actress and vocal coach from Atlanta, Georgia, now based in New York City.',
+  performer: {
+    playingAge: '15–28',
+    vocalType: 'Mezzo-Soprano with an extended range',
+    vocalRange: 'D3-G6 (Belt: G5)',
+    ethnicity:
+      'White; olive skin presents as Middle Eastern, Hispanic, Latina, Latin, Italian, Greek, Mediterranean, ethnically ambiguous',
+    height: '5\'3" (160 cm)',
+    union: 'Non-union',
+    availability: 'Available',
+  },
+});
+
+/**
  * @returns {Promise<import('zod').infer<typeof siteSettingsSchema>>}
  */
 export async function readSiteSettings() {
   const raw = await readRepoTextFile(SITE_SETTINGS_PATH);
   if (!raw) {
-    throw new Error('Site settings file is missing.');
+    return structuredClone(DEFAULT_SITE_SETTINGS);
   }
   let parsed;
   try {
