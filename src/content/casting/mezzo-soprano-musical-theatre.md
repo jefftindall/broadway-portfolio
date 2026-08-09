@@ -17,4 +17,4 @@ Elyse Tindall is a **mezzo-soprano** musical theatre actress with an extended ra
 
 Feature and supporting credits include Lily in *Anastasia*, Amy in *Little Women*, and cabaret work including *Stage Kiss* at Ripley-Grier Studios. Casting teams looking for a mezzo who can carry comic ingénue tracks or contemporary belt material are invited to request her packet.
 
-[Materials](/materials) has the reel, resume, and headshot. More type pages live on the [casting index](/for).
+Request headshot, resume, and reel for casting consideration.

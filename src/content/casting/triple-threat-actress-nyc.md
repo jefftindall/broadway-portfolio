@@ -17,4 +17,4 @@ Looking for a **triple threat actress in NYC** who can sing, act, and dance in t
 
 Recent work spans Lily in *Anastasia*, *Miss You Like Hell*, plays such as *Almost, Maine*, and off-Broadway cabaret — including her NYC debut at Ripley-Grier Studios and Broadway Artists Alliance at Don't Tell Mama. She shows up prepared, listens in the room, and treats every callback as collaborative work.
 
-Request materials for casting, or browse related type pages from the [casting index](/for).
+Request materials for casting consideration.

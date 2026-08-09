@@ -30,6 +30,7 @@ Phased work and action IDs live in [docs/plans/search-and-analytics.md](docs/pla
 ## Phase 2 — Technical SEO
 
 - **Titles:** Pages pass bare titles. `BaseLayout` appends ` · Elyse Tindall` (and strips legacy `| Elyse Tindall`). Do not embed the brand in casting frontmatter — see [add-casting-page.md](docs/runbooks/add-casting-page.md).
+- **Casting landers:** `LandingLayout` ends after **Related credits** (plus “View all shows”). Never add CTAs, casting-index links, Materials links, or other chrome below that section — footer Materials / Contact / Lessons is the action strip.
 - **JSON-LD:** `Seo.astro` prepends default `Person` when custom `jsonLd` has no top-level / `@graph` Person. Nested `about` / `founder` do not count. Do not emit duplicate conflicting Person `@id`s.
 - **Canonicals / schema URLs:** Prefer slashless paths (e.g. `/materials`, not `/materials/`).
 - **Studio:** `noIndex` on `/studio`; sitemap filters `/studio`; `Disallow: /studio` in `public/robots.txt`.

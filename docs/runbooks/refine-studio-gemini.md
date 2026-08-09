@@ -63,7 +63,7 @@ Canonical values live in [`src/data/site-settings.json`](../../src/data/site-set
 | `update_reel_url` | Reel link on Materials / Shows / home |
 | `update_performer_facts` | Casting facts on About + Materials |
 | `update_short_bio` | About lead paragraph only (full About body is PR-only) |
-| `update_casting_fields` | Frontmatter on an **existing** `/for/…` page (no create, no body rewrite) |
+| `update_casting_fields` | Frontmatter on an **existing** `/for/…` page (no create, no body rewrite). Lander chrome ends at **Related credits** — never add CTAs / Materials / casting-index links below that block. |
 
 Publish allowlist is kind-scoped: shows/news/gallery/lessons/book/casting + exact `site-settings.json`. `about.md` is not Studio-writable.
 
@@ -85,7 +85,7 @@ Keep these in `systemInstruction` (and the lessons tool descriptions):
 
 - Keep “professional, warm, accurate” (or replace with clearer brand language).
 - Keep **Do not invent fake credits** (and similar) as explicit rules.
-- If Gemini pads thin SEO pages, say so under casting field tools (helpful copy, no keyword stuffing) — new landers are hand/PR only (`update_casting_fields` does not create pages).
+- If Gemini pads thin SEO pages, say so under casting field tools (helpful copy, no keyword stuffing) — new landers are hand/PR only (`update_casting_fields` does not create pages). Do not add footer-style CTAs or Materials / casting-index links below the Related credits section in `LandingLayout`.
 - If lessons drafts drift into acting-coach language, re-check the brand facts block in `systemInstruction`.
 - About full-page rewrites are removed; use `update_short_bio` for the lead only.
 

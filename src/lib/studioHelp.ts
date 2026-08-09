@@ -148,7 +148,7 @@ export const studioCapabilities: StudioCapability[] = [
     tool: 'update_casting_fields',
     title: 'Casting page fields',
     summary:
-      'Update title, description, CTA, keyword, or related shows/skills on an existing /for/… page. New casting pages are added by hand (see the casting runbook) — Studio does not create them.',
+      'Update title, description, CTA, keyword, or related shows/skills on an existing /for/… page. New casting pages are added by hand (see the casting runbook) — Studio does not create them. Do not add links or CTAs below Related credits; the footer already has Materials / Contact / Lessons.',
     livePath: '/for',
     examplePrompts: [
       'Change the CTA on my musical theatre actress page to Request materials.',

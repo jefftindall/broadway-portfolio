@@ -18,10 +18,12 @@ relatedShows:
 cta: Request materials
 ---
 
-Write 2–4 useful paragraphs. Link naturally to shows and contact.
+Write 2–4 useful paragraphs. Link naturally inside the body only.
 ```
 
 **Title contract:** Pass a bare `title` (no `| Elyse Tindall` and no ` · Elyse Tindall`). `BaseLayout` appends the brand suffix, so the document title becomes `Human Title · Elyse Tindall`. Do not embed the brand in frontmatter.
+
+**Layout contract:** `LandingLayout` renders body markdown, then the **Related credits** block (from `relatedShows`) and stops. Do **not** add CTAs, “browse casting pages”, Materials links, or any other content below Related credits — the shared footer already owns Materials / Contact / Lessons.
 
 2. Commit and push to `main`
 3. Verify `/for/my-keyword` and that it appears in `sitemap-index.xml`

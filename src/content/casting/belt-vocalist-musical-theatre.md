@@ -17,4 +17,4 @@ Casting a **belt vocalist** for musical theatre who can deliver contemporary pow
 
 Credit highlights include Lily in *Anastasia*, *Miss You Like Hell*, and her NYC cabaret monologue *Stage Kiss*. She approaches belt as character-first singing — clear text, healthy coordination, and comic or dramatic heat when the score asks for it.
 
-Request materials for casting consideration, or start from the [casting index](/for).
+Request materials for casting consideration.

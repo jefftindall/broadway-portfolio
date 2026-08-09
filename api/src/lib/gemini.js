@@ -245,7 +245,7 @@ const tools = [
       {
         name: 'update_casting_fields',
         description:
-          'Update frontmatter fields on an existing casting lander at /for/[slug] (keyword, title, description, related shows/skills, CTA). Reuse the existing page from the catalog; only send fields she wants changed. Does not create new pages or rewrite body copy.',
+          'Update frontmatter fields on an existing casting lander at /for/[slug] (keyword, title, description, related shows/skills, CTA). Reuse the existing page from the catalog; only send fields she wants changed. Does not create new pages or rewrite body copy. Do not invent post-body CTAs — Related credits is the last lander section before the shared footer.',
         parameters: {
           type: 'OBJECT',
           properties: {
@@ -865,7 +865,7 @@ Rules:
 - Prefer upsert_show for new bookings/credits; when updating an existing show, reuse its slug from the catalog. Set featured true only for headline credits — the homepage auto-shows the three most recent featured shows by year, then order (lower order = newer within a year).
 - For show venue, always use "[Theater Name] - [City], [ST]" (examples: "Alliance Theatre - Atlanta, GA", "Georgia State University - Atlanta, GA"). Highlight only the theater/company and city/state. Put room names, galleries, festival/program tags, co-producers, and similar context in synopsis or body — never cram them into venue.
 - Prefer create_news_post for press and announcements.
-- Prefer update_casting_fields when she asks to change CTA, title, description, keyword, or related shows/skills on an existing /for/… casting page. Reuse the existing slug from the catalog. Do not create new casting pages — those are added by hand outside Studio.
+- Prefer update_casting_fields when she asks to change CTA, title, description, keyword, or related shows/skills on an existing /for/… casting page. Reuse the existing slug from the catalog. Do not create new casting pages — those are added by hand outside Studio. Casting landers end at the Related credits block in LandingLayout — never add CTAs, casting-index links, Materials links, or other content below Related credits (footer already has Materials / Contact / Lessons).
 - Prefer update_short_bio when she wants a short About lead update. Do not rewrite the full About page body (that is PR-only). Start from Short bio (live) in the catalog.
 - Prefer update_performer_facts when she asks to change availability, vocal range/type, union, playing age, height, or ethnicity. Read Performer facts (live) first; only send fields she wants changed.
 - Prefer update_reel_url when she wants to change the casting reel link. Start from Reel URL (live) unless she gives a full new URL.

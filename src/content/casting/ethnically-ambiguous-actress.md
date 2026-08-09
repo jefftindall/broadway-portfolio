@@ -17,4 +17,4 @@ Looking for an **ethnically ambiguous actress** for musical theatre who can read
 
 Her recent feature work includes Lily in *Anastasia* at the Strand Theater, *Miss You Like Hell*, and a NYC cabaret debut at Ripley-Grier Studios. Playing age 15–28; mezzo with belt; based in New York with Atlanta roots.
 
-Directors and agents: request materials for headshot, resume, and reel, or browse [all casting pages](/for).
+Directors and agents: reach out for materials, availability, and upcoming audition interest.
