@@ -11,13 +11,17 @@ globs:
   - infra/environments/**/*
   - infra/bootstrap/**/*
   - .github/workflows/**/*
+  - docs/runbooks/ga-data-api-access.md
+  - docs/runbooks/monthly-site-check-in.md
   - scripts/ops-scorecard-refresh.mjs
+  - scripts/ops-scorecard-email.mjs
+  - scripts/fetch-ga-scorecard-secrets.sh
 alwaysApply: true
 ---
 
 # Operational excellence (scorecard, SLOs, alerting)
 
-Phased work and action IDs live in [docs/plans/operational-excellence.md](docs/plans/operational-excellence.md) (`OPS-*`). Treat that document as the backlog — **do not implement** PagerDuty escalate-if-unacked (`OPS-P3-002`) unless the user explicitly asks. Phase 0–4 (except `OPS-P3-002`) are done (`ALERT-*` Action Groups + living scorecard + monthly workflow + materials synthetics + field/lab FCP + Studio SLO cadence + CD Sev1 + inquiry SLI + IR stub + prod/shared KV purge protection + subscription budget at **125% of retail expected** + ACS monthly digest). **Phase 5** (`OPS-P5-*` site performance in the scorecard: GA4 visits/top pages + App Insights contacts/updates) is planned — do not implement until picked up; GA Data API needs extra KV secrets beyond the public Measurement ID.
+Phased work and action IDs live in [docs/plans/operational-excellence.md](docs/plans/operational-excellence.md) (`OPS-*`). Treat that document as the backlog — **do not implement** PagerDuty escalate-if-unacked (`OPS-P3-002`) unless the user explicitly asks. Phase 0–5 (except `OPS-P3-002`) are done (`ALERT-*` Action Groups + living scorecard + monthly workflow + materials synthetics + field/lab FCP + Studio SLO cadence + CD Sev1 + inquiry SLI + IR stub + prod/shared KV purge protection + subscription budget at **125% of retail expected** + ACS monthly digest + site performance in scorecard/digest). Populate `GA-PROPERTY-ID` / `GA-DATA-API-SA-JSON` via [ga-data-api-access.md](docs/runbooks/ga-data-api-access.md) so visits/top pages leave `stale`. **Do not implement** `OPS-P3-002` until explicitly requested.
 
 ## Azure cost estimate + subscription budget (required on infra change)
 
@@ -35,8 +39,9 @@ Do **not** invent rates or leave `cost-and-quotas.md` as vague “negligible” 
 ## Scorecard
 
 - Rubric lives in the plan. Living scores: `docs/ops/operational-excellence-scorecard.md` (from `docs/ops/scorecard-evaluation.json` via `scripts/ops-scorecard-refresh.mjs`).
-- Monthly refresh (`OPS-P0-004` / `OPS-P4-002`): `.github/workflows/ops-scorecard-monthly.yml` uses `scripts/mint-github-app-token.sh` (line-masked PEM), verifies Contents:write via mint response + `/installation/repositories`, pushes with App git credentials (`persist-credentials: false`), probes Cost Management spend/MoM vs the **current** subscription budget (see `cost-and-quotas.md` / `budget.tf`), and emails an ACS digest to `ALERT-EMAIL` + `SITE-CONTACT-EMAIL` (recipients never written into git artifacts). CD ignores scorecard-only pushes. Never reintroduce `GITHUB_TOKEN` pushes, PEM `with:` inputs, or multiline `::add-mask::$PEM`.
-- Scorecard content is scores, evidence, gaps, and USD figures only — **never** alert emails, phones, or secrets.
+- Monthly refresh (`OPS-P0-004` / `OPS-P4-002` / `OPS-P5-*`): `.github/workflows/ops-scorecard-monthly.yml` uses `scripts/mint-github-app-token.sh` (line-masked PEM), verifies Contents:write via mint response + `/installation/repositories`, pushes with App git credentials (`persist-credentials: false`), probes Cost Management spend/MoM vs the **current** subscription budget (see `cost-and-quotas.md` / `budget.tf`), probes site performance (GA visits/top pages + App Insights contacts/updates), and emails an ACS digest to `ALERT-EMAIL` + `SITE-CONTACT-EMAIL` (recipients never written into git artifacts). On **workflow failure**, a follow-up job emails **`ALERT-EMAIL` only** (`scripts/ops-scorecard-failure-email.mjs`) — never `SITE-CONTACT-EMAIL`. CD ignores scorecard-only pushes. Never reintroduce `GITHUB_TOKEN` pushes, PEM `with:` inputs, or multiline `::add-mask::$PEM`.
+- Scorecard content is scores, evidence, gaps, USD figures, and activity counts/paths only — **never** alert emails, phones, secrets, or inquiry PII.
+- Monthly ACS digest layout/tone: [ops-monthly-checkin-email.mdc](ops-monthly-checkin-email.mdc) — evolve `scripts/ops-scorecard-email.mjs`; no sender branding; no threshold crib sheets in the email body.
 - Subscription budget (`OPS-P4-001`): bootstrap `budget-elyse-portfolio-monthly` = **ceil(expected × 1.25)**; Actual **80%** / **100%** → `ALERT-EMAIL` only. Expected breakdown SoT: `docs/runbooks/cost-and-quotas.md`.
 
 ## Private details never in git

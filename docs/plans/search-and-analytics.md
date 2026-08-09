@@ -1,8 +1,8 @@
 # Plan: Google Search Console & Analytics
 
 **Artifact ID:** `ELYSE-SEARCH-001`  
-**Version:** 1.4  
-**Last updated:** 2026-08-08  
+**Version:** 1.6  
+**Last updated:** 2026-08-09  
 **Audience:** Agents, implementers, operators  
 **Scope:** Google Search Console (GSC), Google Analytics 4 (GA4), and related technical SEO that makes those tools useful — not casting content strategy itself.
 
@@ -90,8 +90,8 @@ GA must load only on **public** pages (never `/studio`). App Insights remains th
 |-----|--------|
 | GA Admin measurement-only settings | Operator checklist (`SEARCH-P1-005`) — not code |
 | Conversion/event DebugView verification | Confirm once in GA4 after deploy (`SEARCH-P1-003` acceptance) |
-| Monthly operating loop | Phase 3 below |
 | Request indexing for key Astro URLs | Remaining Phase 0 item (`SEARCH-P0-004`) |
+| Monthly GSC+GA review habit | Runbook done (`SEARCH-P3-*`); execute checklist monthly |
 | Optional Bing Webmaster sitemap | Nice-to-have; not blocking |
 
 ---
@@ -319,13 +319,47 @@ Asset: 1200×630 JPEG at `/images/og-default.jpg`. Width/height metas only for t
 
 | ID | Title | Status | Depends on | Primary refs |
 |----|-------|--------|------------|--------------|
-| `SEARCH-P3-001` | Monthly GSC + GA joint review | `planned` | `SEARCH-P1-003` (events make the loop more useful) | Extends `DISC-P3-006` |
-| `SEARCH-P3-002` | Feed review outcomes into casting/content backlog | `planned` | `SEARCH-P3-001` | [casting-discoverability.md](casting-discoverability.md) Tier 2–3 |
-| `SEARCH-P3-003` | Re-check CWV / Experience in GSC after major visual changes | `planned` | — | Hero/reel pages especially |
+| `SEARCH-P3-001` | Monthly GSC + GA joint review | `done` (runbook) | `SEARCH-P1-003` (events make the loop more useful) | [search-ops-monthly.md](../runbooks/search-ops-monthly.md); extends `DISC-P3-006` |
+| `SEARCH-P3-002` | Feed review outcomes into casting/content backlog | `done` (runbook) | `SEARCH-P3-001` | Same runbook; [casting-discoverability.md](casting-discoverability.md) Tier 2–3 |
+| `SEARCH-P3-003` | Re-check CWV / Experience in GSC after major visual changes | `done` (runbook) | — | Same runbook; hero/reel pages especially |
+
+**Phase 3 repo delivery (this PR track):** runbook + cross-links shipped; residual habit ACs under each ID stay unchecked until operators execute the monthly loop.
+
+<details>
+<summary><code>SEARCH-P3-001</code> — Monthly GSC + GA joint review</summary>
+
+**Acceptance criteria**
+
+- [x] Operator checklist documented in [search-ops-monthly.md](../runbooks/search-ops-monthly.md) (GSC Performance/Pages/CWV/Enhancements + GA Acquisition/Events + GA↔GSC)
+- [x] Cadence aligned with monthly ops scorecard / `DISC-P3-006` (roughly 1st of month)
+- [ ] Checklist executed at least once in production ops (habit; not a code gate)
+
+</details>
+
+<details>
+<summary><code>SEARCH-P3-002</code> — Feed outcomes into casting backlog</summary>
+
+**Acceptance criteria**
+
+- [x] Runbook rule: meaningful findings → `DISC-*` item or content PR (Tier 2–3 / `/for/*`)
+- [x] Privacy: no inquiry PII or full query-export dumps with emails in git
+- [x] Cross-linked from `DISC-P3-006`
+
+</details>
+
+<details>
+<summary><code>SEARCH-P3-003</code> — CWV after major visual changes</summary>
+
+**Acceptance criteria**
+
+- [x] Runbook step to re-check GSC Experience/CWV after hero/reel ships
+- [x] Points at perf/RUM follow-ups when field CWV regresses
+
+</details>
 
 Content that moves rankings (Person facts, `/for/*` landers, materials downloads, news cadence) remains owned by **`DISC-*`**. This phase is the **measurement feedback loop** into that backlog.
 
-**Scorecard automation (ops-owned):** Monthly visits, top pages, contact counts, and Studio update counts in the ops scorecard are **`OPS-P5-*`** in [operational-excellence.md](operational-excellence.md) — hybrid **GA4 Data API** (visits/top pages) + **App Insights** (contacts/updates). That does **not** replace this Phase 3 GSC query review; it automates a thin activity slice into the ACS digest. GA Data API service-account setup is documented under OPS-P5-002 (required beyond the public Measurement ID).
+**Scorecard automation (ops-owned):** Monthly visits, top pages, contact counts, and Studio update counts in the ops scorecard are **`OPS-P5-*`** in [operational-excellence.md](operational-excellence.md) — hybrid **GA4 Data API** (visits/top pages) + **App Insights** (contacts/updates). That does **not** replace this Phase 3 GSC query review; it automates a thin activity slice into the ACS digest. GA Data API setup: [ga-data-api-access.md](../runbooks/ga-data-api-access.md) (`OPS-P5-002`).
 
 ---
 
@@ -364,7 +398,7 @@ GSC and GA4 properties are live; run this on a cadence (roughly aligns with `DIS
 | GSC Experience / CWV | LCP on hero/reel-heavy pages, mobile | Perf follow-ups (`SEARCH-P3-003`) |
 | GSC Enhancements | Person, VideoObject, EducationalOrganization, Offer | Fix schema; Rich Results Test before/after |
 
-**Rule of thumb:** App Insights answers “is Studio/prod healthy?”; GA4 + GSC answer “who finds us in search, where do they land, and do they inquire or download materials?” The monthly ops scorecard will mirror a thin slice of that (visits / top pages from GA; contacts / Studio updates from App Insights) under `OPS-P5-*` — see [operational-excellence.md](operational-excellence.md) § Site performance.
+**Rule of thumb:** App Insights answers “is Studio/prod healthy?”; GA4 + GSC answer “who finds us in search, where do they land, and do they inquire or download materials?” Operator checklist: [search-ops-monthly.md](../runbooks/search-ops-monthly.md). The monthly ops scorecard mirrors a thin slice (visits / top pages from GA; contacts / Studio updates from App Insights) under `OPS-P5-*` — see [operational-excellence.md](operational-excellence.md) § Site performance.
 
 ---
 
@@ -384,7 +418,7 @@ GSC and GA4 properties are live; run this on a cadence (roughly aligns with `DIS
 2. **Phase 1a** — Measurement ID + loader + privacy — **done** (`SEARCH-P1-001`, `002`, `004`)
 3. **Phase 1b** — Conversion events — **done in repo** (`SEARCH-P1-003`); Consent Mode — **wont_fix** (`SEARCH-P1-006`); residual ops: measurement-only GA Admin (`SEARCH-P1-005`) + DebugView verify
 4. **Phase 2** — SEO polish — **done** (`SEARCH-P2-001`–`007`)
-5. **Phase 3** — Monthly loop → feed `DISC-*` content backlog
+5. **Phase 3** — Monthly loop runbook → feed `DISC-*` content backlog — **done in repo** ([search-ops-monthly.md](../runbooks/search-ops-monthly.md)); residual: execute the checklist monthly
 
 ---
 
@@ -393,11 +427,13 @@ GSC and GA4 properties are live; run this on a cadence (roughly aligns with `DIS
 | Doc | Relationship |
 |-----|----------------|
 | [casting-discoverability.md](casting-discoverability.md) | Casting SEO backlog (`DISC-*`); cutover/console P0 items marked done there too |
+| [search-ops-monthly.md](../runbooks/search-ops-monthly.md) | Phase 3 operator checklist (`SEARCH-P3-001`–`003`) |
 | [wordpress-to-azure-cutover.md](../runbooks/wordpress-to-azure-cutover.md) §6 | Historical cutover checklist; residual indexing in `SEARCH-P0-004` |
 | [dns-and-domain.md](../runbooks/dns-and-domain.md) | Apex / www |
 | [operational-excellence.md](operational-excellence.md) | Monthly scorecard; `OPS-P5-*` site performance (GA visits/top pages + App Insights contacts/updates) |
+| [ga-data-api-access.md](../runbooks/ga-data-api-access.md) | GA Data API KV secrets for scorecard (`OPS-P5-002`) |
 | [observability.md](../runbooks/observability.md) | App Insights vs GA4 |
-| [rotate-secrets.md](../runbooks/rotate-secrets.md) | GA Measurement ID rotation (public env, not KV) |
+| [rotate-secrets.md](../runbooks/rotate-secrets.md) | GA Measurement ID rotation (public env, not KV); GA Data API SA JSON |
 | [add-casting-page.md](../runbooks/add-casting-page.md) | New `/for/*` landers (sitemap inclusion); bare title contract |
 | [ux-release-testing-strategy.md](ux-release-testing-strategy.md) | `J-SEO-01` implemented (`tests/journeys/seo.spec.ts`) |
 | [AGENTS.md](../../AGENTS.md) | Agent-facing Phase 1/2 SEO & analytics contracts |

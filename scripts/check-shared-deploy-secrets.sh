@@ -62,6 +62,25 @@ check_alert ALERT-EMAIL
 check_alert ALERT-SMS-PHONE
 check_alert ALERT-VOICE-PHONE
 
+# GA Data API (OPS-P5-002): must exist. REPLACE_ME → visits/top pages stay stale
+# until populated (see docs/runbooks/ga-data-api-access.md). Does not block CD.
+check_ga() {
+  local name="$1"
+  local value
+  if ! value=$(az keyvault secret show --vault-name "$vault" --name "$name" --query value -o tsv 2>/dev/null); then
+    warn "Secret ${name} is missing in ${vault} (apply infra/bootstrap shared_kv.tf)."
+    return
+  fi
+  if [[ -z "$value" || "$value" == "REPLACE_ME" ]]; then
+    echo "::warning title=Shared Key Vault::${name} is still REPLACE_ME — scorecard visits/top pages stay stale until set (see docs/runbooks/ga-data-api-access.md)."
+  else
+    echo "OK ${name}"
+  fi
+}
+
+check_ga GA-PROPERTY-ID
+check_ga GA-DATA-API-SA-JSON
+
 # SMS from is optional for Build release (email-only until set); warn separately.
 sms_from=""
 if ! sms_from=$(az keyvault secret show --vault-name "$vault" --name ACS-SMS-FROM --query value -o tsv 2>/dev/null); then

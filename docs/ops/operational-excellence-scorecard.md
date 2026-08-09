@@ -4,7 +4,7 @@ Living reliability posture for the Elyse Tindall portfolio. Rubric, SLOs, and ba
 
 | Field | Value |
 |-------|-------|
-| **Last reviewed** | 2026-08-08 |
+| **Last reviewed** | 2026-08-09 |
 | **Review source** | monthly-workflow (+ Azure SLI attempt) |
 | **Weighted overall** | **4.1 / 5** |
 | **Target overall** | ≥ 3.8 (after P1 alerting) |
@@ -20,10 +20,10 @@ Living reliability posture for the Elyse Tindall portfolio. Rubric, SLOs, and ba
 | Secrets & config | 0.9 | 4.0 | Strong | Env + shared KV; sync workflow; rotate-secrets | Functions need explicit secret sync | ok |
 | Observability | 1.2 | 4.2 | Strong | Per-env AI; Studio correlation + events; GA4 public; HomepageFcpMs; contact inquiry events + SLI docs | No Workbooks as code | ok |
 | Test automation | 1.1 | 4.0 | Strong | Staging smoke + journeys; homepage + materials synthetics; soft lab FCP | No unit tests; Studio E2E OOS | ok |
-| Cost & capacity | 0.7 | 4.0 | Strong | Subscription budget $31/mo (OPS-P4-001); Subscription ActualCost 2026-07: $2.10 (6.7% of $31 budget). MoM unavailable (no prior-month rows). | Gemini/Google console budget alert still manual | ok: Subscription ActualCost 2026-07: $2.10 (6.7% of $31 budget). MoM unavailable (no prior-month rows). |
+| Cost & capacity | 0.7 | 4.0 | Strong | Subscription budget $31/mo (OPS-P4-001); Subscription ActualCost 2026-07: $2.10 (6.7% of $31 budget). MoM unavailable (no prior-month rows). | Gemini/Google console budget alert still manual | ok: Subscription ActualCost 2026-07: $2.10 (6.7% of $31 budget). MoM unavailable (no prior-month rows). Re-probe skipped: Cost Management spend probe failed: Cost Management returned 429 (rate limited); retry later. |
 | Alerting & on-call | 1.1 | 4.3 | Strong | KV ALERT-* → notify/critical/watch AGs; homepage+materials Sev1; DeployFailed Sev1 (OPS-P3-003); FCP Sev3 | Optional vendor escalate-if-unacked still OPS-P3-002; operator must keep ALERT-* real | ok |
 | Resilience & DR | 0.9 | 2.0 | Thin | Git rollback; env isolation; East US 2 only | Single region; shared ACS/Turnstile coupling | ok |
-| SLOs & error budget | 0.8 | 3.8 | Solid | Field/synthetic SLIs: Materials availability avg 100% over 12 probe(s) (target 99.8% / 7d). Homepage FCP p75 184ms over 18 sample(s) (target < 1500ms / 7d). | Windows need traffic before met/missed; inquiry not yet a committed SLO | ok: App Insights returned no availability datapoints for the last 7 days (Homepage). Materials availability avg 100% over 12 probe(s) (target 99.8% / 7d). Homepage FCP p75 184ms over 18 sample(s) (target < 1500ms / 7d). No Studio publish UI events in the last 28 days; SLO-2 left stale. No StudioPublishToProdDurationMs samples in the last 28 days; SLO-3 left stale. No inquiry events in the last 28 days (excluding bots/validation); left stale. |
+| SLOs & error budget | 0.8 | 3.8 | Solid | Field/synthetic SLIs: Materials availability avg 100% over 12 probe(s) (target 99.8% / 7d). | Windows need traffic before met/missed; inquiry not yet a committed SLO | ok: App Insights returned no availability datapoints for the last 7 days (Homepage). Materials availability avg 100% over 12 probe(s) (target 99.8% / 7d). No HomepageFcpMs samples in the last 7 days (field pipeline pending deploy traffic). No Studio publish UI events in the last 28 days; SLO-2 left stale. No StudioPublishToProdDurationMs samples in the last 28 days; SLO-3 left stale. No inquiry events in the last 28 days (excluding bots/validation); left stale. App Insights 2026-07: 0 contact(s), 0 Studio publish(es). GA Data API credentials not loaded (GA-PROPERTY-ID / GA-DATA-API-SA-JSON); visits/top pages left stale. |
 
 ## Committed SLOs (status this review)
 
@@ -31,7 +31,7 @@ Living reliability posture for the Elyse Tindall portfolio. Rubric, SLOs, and ba
 |----|-----|--------|--------|------|
 | SLO-1 | Homepage availability | 99.8% / 7d | stale | App Insights returned no availability datapoints for the last 7 days (Homepage). |
 | SLO-4 | Materials availability | 99.8% / 7d | met | Materials availability avg 100% over 12 probe(s) (target 99.8% / 7d). |
-| SLO-6 | Homepage FCP | p75 < 1.5s / 7d | met | Homepage FCP p75 184ms over 18 sample(s) (target < 1500ms / 7d). |
+| SLO-6 | Homepage FCP | p75 < 1.5s / 7d | stale | No HomepageFcpMs samples in the last 7 days (field pipeline pending deploy traffic). |
 | SLO-2 | Studio publish success | 95% / 28d | stale | No Studio publish UI events in the last 28 days; SLO-2 left stale. |
 | SLO-3 | Publish → live latency | p95 ≤ 20m / 28d | stale | No StudioPublishToProdDurationMs samples in the last 28 days; SLO-3 left stale. |
 
@@ -51,10 +51,30 @@ Living reliability posture for the Elyse Tindall portfolio. Rubric, SLOs, and ba
 | **MoM** | n/a |
 | **Under budget** | yes |
 
+## Site performance (previous month)
+
+| Field | Value |
+|-------|-------|
+| **Month** | 2026-07 |
+| **Status** | stale |
+| **Visits (GA4)** | 0 sessions · 0 users — GA Data API credentials not loaded (GA-PROPERTY-ID / GA-DATA-API-SA-JSON); visits/top pages left stale. |
+| **Contacts (App Insights)** | 0 total (0 casting · 0 lesson) |
+| **Studio publishes** | 0 |
+| **Top pages** | — |
+| **Note** | App Insights 2026-07: 0 contact(s), 0 Studio publish(es). GA Data API credentials not loaded (GA-PROPERTY-ID / GA-DATA-API-SA-JSON); visits/top pages left stale. |
+
+## Content freshness (casting materials)
+
+| Item | Status | Days since update | Note |
+|------|--------|-------------------|------|
+| Homepage | ok | 5 | Updated 5 day(s) ago (2026-08-03). |
+| Resume | ok | 1 | Updated 1 day(s) ago (2026-08-07). |
+| Headshot | ok | 6 | Updated 6 day(s) ago (2026-08-02). |
+
 ## How this file is updated
 
 1. Edit [`scorecard-evaluation.json`](./scorecard-evaluation.json) (scores / evidence / gaps).
-2. Run `node scripts/ops-scorecard-refresh.mjs` (add `--monthly --azure` when Azure CLI is logged in for homepage/materials/FCP/Studio/inquiry SLIs and subscription spend).
+2. Run `node scripts/ops-scorecard-refresh.mjs` (add `--monthly --azure` when Azure CLI is logged in for homepage/materials/FCP/Studio/inquiry SLIs, site performance, and subscription spend). Load GA secrets via `scripts/fetch-ga-scorecard-secrets.sh` for visits/top pages.
 3. Monthly GitHub Action (`.github/workflows/ops-scorecard-monthly.yml`) refreshes, commits to `main` via the Studio GitHub App, and emails an ACS digest to ALERT-EMAIL + SITE-CONTACT-EMAIL (recipients never written into this file).
 4. Spot-check the commit if scores move unexpectedly; optional SLIs stay `stale` until Azure probes have enough samples.
 

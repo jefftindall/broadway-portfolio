@@ -1,0 +1,63 @@
+---
+description: Keep the monthly site check-in email format and visual style stable
+globs:
+  - scripts/ops-scorecard-email.mjs
+  - docs/runbooks/monthly-site-check-in.md
+  - docs/ops/images/monthly-site-check-in-annotated.png
+  - docs/plans/operational-excellence.md
+alwaysApply: false
+---
+
+# Monthly site check-in email (format SoT)
+
+Source of truth for **layout, tone, and color**: [`scripts/ops-scorecard-email.mjs`](scripts/ops-scorecard-email.mjs). Elyse-facing reading guide: [`docs/runbooks/monthly-site-check-in.md`](docs/runbooks/monthly-site-check-in.md). Annotated mock: [`docs/ops/images/monthly-site-check-in-annotated.png`](docs/ops/images/monthly-site-check-in-annotated.png).
+
+When changing the digest, **evolve the existing template** — do not redesign from scratch, invent a sender brand, or restyle colors each pass.
+
+## What this email is
+
+- An **automated monthly summary** for recipients’ convenience (ops + site contact).
+- About **elysetindall.com** health and activity — not a marketing letter from a company or person.
+- Subject pattern: `ElyseTindall.com monthly check-in · {Month YYYY}`.
+
+## Do
+
+- **Group by fixed sections** (in this order): overall banner → Worth a glance (**omit entirely when empty**) → Last month on the site → For visitors & casting → Hosting cost → optional scorecard link.
+- **Color-code status** with the existing `COLORS` / `statusTone()` palette only:
+  - Green = Looking good
+  - Amber / yellow = Keep an eye on it
+  - Red = Needs attention
+  - Neutral gray = Not enough data / unavailable
+- Use **plain, non-technical language** (no Azure, Kusto, GA Data API, SLO IDs in the body).
+- Explain **why** a row matters or why a status is good/bad (“casting may wonder if the resume is current”), not just the metric name.
+- Show **% of budget used** on the hosting bar.
+- Split **inquiries** into **casting** vs **lesson** counts.
+- Rank **top pages** as a **numbered** list (`1.`, `2.`, …) with plain-language labels (no raw paths).
+- Keep status pills + short notes; keep section grouping and the warm stone + rose accent scheme already in `COLORS`.
+
+## Do not
+
+- Add **sender / studio / family branding** (“Tindall Co”, from-line persona, logo lockups, “from Jeff”, signature blocks). No decorative brand header beyond the functional title.
+- Print **scoring formulas, day/month thresholds, or target ranges** in the email (e.g. “amber after 30 days”, “goal 3.8”, “overall 4.1 / 5”). Thresholds live in code + the runbook for Jeff/Elyse action guidance — status pills already convey the grade.
+- Redesign typography, invent new accent colors, or switch to a dashboard / purple / cream-serif promo look.
+- Put secrets, emails, phones, inquiry PII, or raw paths that leak private URLs into the body.
+- Treat visits / inquiry totals as pass/fail grades (informational). **Studio updates** stay graded; other activity counts stay calm facts.
+
+## Stable section contract
+
+| Section | Contents |
+|---------|----------|
+| Header | Title “Monthly site check-in” + month · `elysetindall.com` (no company nameplate) |
+| Banner | Status label + short headline + one plain sentence |
+| Worth a glance | Amber/red action items only — **do not render** this section when the list is empty |
+| Last month on the site | Visits; inquiries (casting · lesson); Studio updates + grade pill + why-note; numbered top pages |
+| For visitors & casting | Homepage / Resume / Headshot / page speed / Studio rows: **why blurb** + status pill + plain note (no threshold crib sheet) |
+| Hosting cost | Dollars spent, budget $, **% used** bar, under/over pill, MoM plain sentence |
+| Footer | One line that this is automated + privacy note; optional scorecard link |
+
+## After visual or copy changes
+
+1. Preview: `npm run ops:scorecard-email:preview`
+2. Update `docs/runbooks/monthly-site-check-in.md` if section meaning or actions changed
+3. Refresh the annotated PNG so callouts still match the live template
+4. Keep grading thresholds in sync in `ops-scorecard-refresh.mjs` / email graders — document them in the runbook, **not** in the email body

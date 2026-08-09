@@ -371,7 +371,7 @@ Shipped facts in `site.performer`: playing age 15–28; vocal type (Mezzo-Sopran
 | `DISC-P3-003` | Gallery refresh: headshot tags + alt text | `planned` | Quarterly | `src/content/gallery/`, `src/pages/gallery.astro` |
 | `DISC-P3-004` | Maintain `public/llms.txt` with structured facts | `planned` | On credit/fact change | `public/llms.txt` |
 | `DISC-P3-005` | External profile consistency (IMDb, Backstage, etc.) | `planned` | Ongoing | Off-site profiles |
-| `DISC-P3-006` | Monthly Search Console query review → new/refined `/for/*` | `planned` | Monthly | Search Console, casting content; joint GSC+GA loop in [search-and-analytics.md](search-and-analytics.md) (`SEARCH-P3-001`) |
+| `DISC-P3-006` | Monthly Search Console query review → new/refined `/for/*` | `done` (runbook) | Monthly | Search Console, casting content; joint GSC+GA checklist in [search-ops-monthly.md](../runbooks/search-ops-monthly.md) (`SEARCH-P3-001` / `SEARCH-P3-002`); residual: execute monthly |
 | `DISC-P3-007` | Re-run rubric scoring (`DISC-SCORE`) | `planned` | Quarterly or post-tier | This document |
 
 <details>
@@ -492,4 +492,5 @@ flowchart TD
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.1 | 2026-08-09 | `DISC-P3-006` → `done` (runbook) with [search-ops-monthly.md](../runbooks/search-ops-monthly.md); monthly execution residual |
 | 1.0 | 2026-08-02 | Initial artifact from discoverability assessment |

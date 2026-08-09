@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 /**
- * OPS-P0-004 — Refresh the operational excellence scorecard.
+ * OPS-P0-004 / OPS-P5 — Refresh the operational excellence scorecard.
  *
  * Reads docs/ops/scorecard-evaluation.json, optionally probes prod SLIs
  * (homepage + materials availability, homepage FCP p75, Studio SLO-2/3,
- * optional inquiry accept rate) via Azure CLI when logged in, recomputes
- * weighted overall, and regenerates docs/ops/operational-excellence-scorecard.md.
+ * optional inquiry accept rate) plus previous-month site performance
+ * (GA4 visits/top pages + App Insights contacts/Studio publishes) and
+ * subscription spend via Azure CLI when logged in, recomputes weighted
+ * overall, and regenerates docs/ops/operational-excellence-scorecard.md.
  *
  * Never writes emails, phones, or secret values into the scorecard or stdout.
  *
@@ -13,12 +15,17 @@
  *   node scripts/ops-scorecard-refresh.mjs
  *   node scripts/ops-scorecard-refresh.mjs --monthly [--azure]
  *   node scripts/ops-scorecard-refresh.mjs --date 2026-09-01
+ *
+ * GA Data API (optional): GA_PROPERTY_ID + GA_DATA_API_SA_JSON_FILE
+ *   (see scripts/fetch-ga-scorecard-secrets.sh)
  */
 
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { BetaAnalyticsDataClient } from "@google-analytics/data";
+import { withPageLabel } from "./lib/page-labels.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const EVAL_PATH = join(ROOT, "docs/ops/scorecard-evaluation.json");
@@ -35,6 +42,12 @@ const STUDIO_PUBLISH_MIN_ATTEMPTS = 3;
 const STUDIO_LATENCY_P95_TARGET_MS = 1_200_000; // 20 minutes
 const INQUIRY_ACCEPT_TARGET = 99;
 const INQUIRY_MIN_SAMPLES = 3;
+const TOP_PAGES_LIMIT = 8;
+/** Content freshness thresholds (days). Homepage is tighter; materials are seasonal. */
+const HOMEPAGE_FRESH_WATCH_DAYS = 30;
+const HOMEPAGE_FRESH_STALE_DAYS = 60;
+const MATERIALS_FRESH_WATCH_DAYS = 183; // ~6 months
+const MATERIALS_FRESH_STALE_DAYS = 365; // ~12 months
 /** Keep in sync with infra/bootstrap/budget.tf + docs/runbooks/cost-and-quotas.md (ceil(expected × 1.25)). */
 const SUBSCRIPTION_BUDGET_USD = 31;
 
@@ -119,11 +132,38 @@ function redact(msg) {
   );
 }
 
+function resolveAzInvocation() {
+  if (process.platform !== "win32") {
+    return { command: "az", argsPrefix: [] };
+  }
+  // Windows ships az as a .cmd wrapper around python -IBm azure.cli. Node cannot
+  // spawn .cmd without shell:true (DEP0190), so call the Python entrypoint directly.
+  const candidates = [
+    join(process.env.ProgramFiles || "C:\\Program Files", "Microsoft SDKs", "Azure", "CLI2", "python.exe"),
+    join(
+      process.env["ProgramFiles(x86)"] || "C:\\Program Files (x86)",
+      "Microsoft SDKs",
+      "Azure",
+      "CLI2",
+      "python.exe",
+    ),
+  ];
+  for (const python of candidates) {
+    if (existsSync(python)) {
+      return { command: python, argsPrefix: ["-IBm", "azure.cli"] };
+    }
+  }
+  // Fallback: az.cmd with shell (local-only; CI is Linux).
+  return { command: "az.cmd", argsPrefix: [], shell: true };
+}
+
 function runAz(args) {
-  return execFileSync("az", args, {
+  const inv = resolveAzInvocation();
+  return execFileSync(inv.command, [...inv.argsPrefix, ...args], {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
     timeout: 120_000,
+    shell: Boolean(inv.shell),
   });
 }
 
@@ -256,9 +296,13 @@ function probeSubscriptionSpend(anchorYmd) {
       note: `Subscription ActualCost ${last.label}: $${round1(lastMonthUsd).toFixed(2)} (${budgetUsedPct}% of $${SUBSCRIPTION_BUDGET_USD} budget). ${momNote}`,
     };
   } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    const short = /429|Too Many Requests/i.test(msg)
+      ? "Cost Management returned 429 (rate limited); retry later."
+      : redact(msg).replace(/\s+/g, " ").slice(0, 160);
     return {
       ok: false,
-      note: `Cost Management spend probe failed: ${redact(err.message || err)}.`,
+      note: `Cost Management spend probe failed: ${short}`,
     };
   }
 }
@@ -703,6 +747,357 @@ customEvents
   }
 }
 
+/**
+ * OPS-P5-004 — previous calendar month contact + Studio publish counts (App Insights).
+ * Counts and casting/lesson split only — never inquiry PII.
+ */
+function probeSiteActivityAppInsights(anchorYmd) {
+  const month = monthRangeUtc(anchorYmd, 1);
+  if (!azureLoggedIn()) {
+    return {
+      ok: false,
+      monthLabel: month.label,
+      note: "Azure CLI not logged in; App Insights site activity left stale.",
+    };
+  }
+
+  const contactsQuery = `
+customEvents
+| where timestamp >= datetime(${month.from}) and timestamp < datetime(${month.to})
+| where name == "ContactInquiryReceived"
+| extend type = tostring(customDimensions.type)
+| summarize
+    total = count(),
+    casting = countif(type == "casting"),
+    lesson = countif(type == "lesson")
+| project total, casting, lesson
+`.trim();
+
+  const updatesQuery = `
+customEvents
+| where timestamp >= datetime(${month.from}) and timestamp < datetime(${month.to})
+| where name == "StudioPublishUiSuccess"
+| summarize studioPublishes = count()
+| project studioPublishes
+`.trim();
+
+  try {
+    const contactsRaw = runAz([
+      "monitor",
+      "app-insights",
+      "query",
+      "--app",
+      PROD_APPI,
+      "--resource-group",
+      PROD_RG,
+      "--analytics-query",
+      contactsQuery,
+      "-o",
+      "json",
+    ]);
+    const updatesRaw = runAz([
+      "monitor",
+      "app-insights",
+      "query",
+      "--app",
+      PROD_APPI,
+      "--resource-group",
+      PROD_RG,
+      "--analytics-query",
+      updatesQuery,
+      "-o",
+      "json",
+    ]);
+    const contactsRow = JSON.parse(contactsRaw)?.tables?.[0]?.rows?.[0];
+    const updatesRow = JSON.parse(updatesRaw)?.tables?.[0]?.rows?.[0];
+    const total = Number(contactsRow?.[0] ?? 0);
+    const casting = Number(contactsRow?.[1] ?? 0);
+    const lesson = Number(contactsRow?.[2] ?? 0);
+    const studioPublishes = Number(updatesRow?.[0] ?? 0);
+    return {
+      ok: true,
+      monthLabel: month.label,
+      contacts: {
+        total: Number.isFinite(total) ? total : 0,
+        casting: Number.isFinite(casting) ? casting : 0,
+        lesson: Number.isFinite(lesson) ? lesson : 0,
+        source: "app-insights",
+        note: "",
+      },
+      updates: {
+        studioPublishes: Number.isFinite(studioPublishes) ? studioPublishes : 0,
+        source: "app-insights",
+        note: "",
+      },
+      note: `App Insights ${month.label}: ${Number.isFinite(total) ? total : 0} contact(s), ${Number.isFinite(studioPublishes) ? studioPublishes : 0} Studio publish(es).`,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return {
+      ok: false,
+      monthLabel: month.label,
+      note: `App Insights site activity query failed; left stale. (${redact(msg).slice(0, 200)})`,
+    };
+  }
+}
+
+/**
+ * OPS-P5-003 — previous calendar month visits + top pages via GA4 Data API.
+ * Paths and counts only. Soft-fail when secrets missing or API errors.
+ */
+async function probeSiteActivityGa(anchorYmd) {
+  const month = monthRangeUtc(anchorYmd, 1);
+  const propertyId = String(process.env.GA_PROPERTY_ID || "").trim();
+  const keyFile = String(process.env.GA_DATA_API_SA_JSON_FILE || "").trim();
+
+  if (!propertyId || propertyId === "REPLACE_ME" || !keyFile || !existsSync(keyFile)) {
+    return {
+      ok: false,
+      monthLabel: month.label,
+      note: "GA Data API credentials not loaded (GA-PROPERTY-ID / GA-DATA-API-SA-JSON); visits/top pages left stale.",
+    };
+  }
+
+  try {
+    const client = new BetaAnalyticsDataClient({ keyFilename: keyFile });
+    const property = `properties/${propertyId}`;
+    // Data API endDate is inclusive; month.to is exclusive (first of next month).
+    const endInclusive = new Date(`${month.to}T00:00:00.000Z`);
+    endInclusive.setUTCDate(endInclusive.getUTCDate() - 1);
+    const endDate = endInclusive.toISOString().slice(0, 10);
+    const dateRanges = [{ startDate: month.from, endDate }];
+
+    const [totalsRes] = await client.runReport({
+      property,
+      dateRanges,
+      metrics: [{ name: "sessions" }, { name: "activeUsers" }],
+    });
+    const totalRow = totalsRes?.rows?.[0]?.metricValues;
+    const sessions = Number(totalRow?.[0]?.value ?? 0);
+    const users = Number(totalRow?.[1]?.value ?? 0);
+
+    const [pagesRes] = await client.runReport({
+      property,
+      dateRanges,
+      dimensions: [{ name: "pagePath" }],
+      metrics: [{ name: "sessions" }],
+      orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+      limit: TOP_PAGES_LIMIT + 5,
+      dimensionFilter: {
+        notExpression: {
+          filter: {
+            fieldName: "pagePath",
+            stringFilter: {
+              matchType: "BEGINS_WITH",
+              value: "/studio",
+            },
+          },
+        },
+      },
+    });
+
+    const topPages = [];
+    for (const row of pagesRes?.rows || []) {
+      const path = String(row.dimensionValues?.[0]?.value || "").trim() || "/";
+      if (path.startsWith("/studio")) continue;
+      // Strip query strings if GA ever returns them
+      const clean = path.split("?")[0] || "/";
+      topPages.push(
+        withPageLabel({
+          path: clean,
+          sessions: Number(row.metricValues?.[0]?.value ?? 0),
+        }),
+      );
+      if (topPages.length >= TOP_PAGES_LIMIT) break;
+    }
+
+    return {
+      ok: true,
+      monthLabel: month.label,
+      visits: {
+        sessions: Number.isFinite(sessions) ? sessions : 0,
+        users: Number.isFinite(users) ? users : 0,
+        source: "ga4",
+        note: "",
+      },
+      topPages,
+      note: `GA4 ${month.label}: ${Number.isFinite(sessions) ? sessions : 0} session(s), ${Number.isFinite(users) ? users : 0} user(s).`,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return {
+      ok: false,
+      monthLabel: month.label,
+      note: `GA Data API probe failed; visits/top pages left stale. (${redact(msg).slice(0, 200)})`,
+    };
+  }
+}
+
+/**
+ * OPS content freshness — days since last git commit touching homepage / resume / headshot.
+ * Amber (watch) after 30 days; red (missed) after 60 days. No secrets; local git only.
+ */
+function gitLastCommitIso(paths) {
+  try {
+    const out = execFileSync(
+      "git",
+      ["log", "-1", "--format=%cI", "--", ...paths],
+      {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+        timeout: 30_000,
+        cwd: ROOT,
+      },
+    ).trim();
+    return out || null;
+  } catch {
+    return null;
+  }
+}
+
+function freshnessStatus(days, watchDays, staleDays) {
+  if (!Number.isFinite(days)) return "stale";
+  if (days > staleDays) return "missed";
+  if (days > watchDays) return "watch";
+  return "ok";
+}
+
+function probeOneContentFreshness(id, label, paths, anchorYmd, watchDays, staleDays) {
+  const iso = gitLastCommitIso(paths);
+  if (!iso) {
+    return {
+      id,
+      label,
+      status: "stale",
+      daysSinceUpdate: null,
+      lastUpdated: null,
+      watchDays,
+      staleDays,
+      note: `Could not read git history for ${label}; freshness left stale.`,
+    };
+  }
+  const last = new Date(iso);
+  const anchor = new Date(`${anchorYmd}T12:00:00.000Z`);
+  const days = Math.max(
+    0,
+    Math.floor((anchor.getTime() - last.getTime()) / 86_400_000),
+  );
+  const status = freshnessStatus(days, watchDays, staleDays);
+  const lastUpdated = iso.slice(0, 10);
+  let note;
+  if (status === "ok") {
+    note = `Updated ${days} day(s) ago (${lastUpdated}).`;
+  } else if (status === "watch") {
+    note = `No update in ${days} days (since ${lastUpdated}) — overdue for a refresh.`;
+  } else {
+    note = `No update in ${days} days (since ${lastUpdated}) — content looks stale.`;
+  }
+  return {
+    id,
+    label,
+    status,
+    daysSinceUpdate: days,
+    lastUpdated,
+    watchDays,
+    staleDays,
+    note,
+  };
+}
+
+function probeContentFreshness(anchorYmd) {
+  const ymd = anchorYmd || todayUtc();
+  return {
+    homepage: probeOneContentFreshness(
+      "homepage",
+      "Homepage",
+      ["src/pages/index.astro"],
+      ymd,
+      HOMEPAGE_FRESH_WATCH_DAYS,
+      HOMEPAGE_FRESH_STALE_DAYS,
+    ),
+    resume: probeOneContentFreshness(
+      "resume",
+      "Resume",
+      [
+        "public/downloads/elyse-tindall-resume.pdf",
+        "src/content/resume-meta.json",
+        "src/content/shows",
+      ],
+      ymd,
+      MATERIALS_FRESH_WATCH_DAYS,
+      MATERIALS_FRESH_STALE_DAYS,
+    ),
+    headshot: probeOneContentFreshness(
+      "headshot",
+      "Headshot",
+      ["public/downloads/elyse-tindall-headshot-theatrical.jpg"],
+      ymd,
+      MATERIALS_FRESH_WATCH_DAYS,
+      MATERIALS_FRESH_STALE_DAYS,
+    ),
+  };
+}
+
+/**
+ * Merge App Insights + GA probes into sitePerformance (OPS-P5).
+ */
+function buildSitePerformance(aiProbe, gaProbe, anchorYmd) {
+  const monthLabel =
+    aiProbe?.monthLabel || gaProbe?.monthLabel || monthRangeUtc(anchorYmd, 1).label;
+  const notes = [];
+  let status = "ok";
+
+  const block = {
+    monthLabel,
+    status: "ok",
+    visits: {
+      sessions: 0,
+      users: 0,
+      source: "ga4",
+      note: "",
+    },
+    contacts: {
+      total: 0,
+      casting: 0,
+      lesson: 0,
+      source: "app-insights",
+      note: "",
+    },
+    updates: {
+      studioPublishes: 0,
+      source: "app-insights",
+      note: "",
+    },
+    topPages: [],
+    note: "",
+  };
+
+  if (aiProbe?.ok) {
+    block.contacts = { ...aiProbe.contacts };
+    block.updates = { ...aiProbe.updates };
+    notes.push(aiProbe.note);
+  } else {
+    status = "stale";
+    block.contacts.note = aiProbe?.note || "App Insights contacts unavailable.";
+    block.updates.note = aiProbe?.note || "App Insights Studio publishes unavailable.";
+    notes.push(aiProbe?.note || "App Insights site activity stale.");
+  }
+
+  if (gaProbe?.ok) {
+    block.visits = { ...gaProbe.visits };
+    block.topPages = gaProbe.topPages || [];
+    notes.push(gaProbe.note);
+  } else {
+    status = "stale";
+    block.visits.note = gaProbe?.note || "GA4 visits unavailable.";
+    notes.push(gaProbe?.note || "GA4 visits/top pages stale.");
+  }
+
+  block.status = status;
+  block.note = notes.filter(Boolean).join(" ");
+  return block;
+}
+
 function setSlo(evaluation, id, patch) {
   const slo = evaluation.committedSlos.find((s) => s.id === id);
   if (!slo) return;
@@ -730,6 +1125,8 @@ function applyAzureSlis(evaluation, probes) {
     studioLatency,
     inquiry,
     spend,
+    siteActivityAi,
+    siteActivityGa,
   } = probes;
   const sloDim = evaluation.dimensions.find((d) => d.id === "slo");
   const costDim = evaluation.dimensions.find((d) => d.id === "cost");
@@ -840,19 +1237,44 @@ function applyAzureSlis(evaluation, probes) {
         costDim.sliNote = spend.note;
       }
     } else {
-      evaluation.costProbe = {
-        status: "stale",
-        budgetUsd: SUBSCRIPTION_BUDGET_USD,
-        note: spend.note,
-      };
-      if (costDim) {
-        costDim.sliStatus = "stale";
-        costDim.sliNote = spend.note;
-        costDim.evidence =
-          costDim.evidence ||
-          `Subscription budget $${SUBSCRIPTION_BUDGET_USD}/mo (OPS-P4-001); spend probe pending`;
-        costDim.gap = "Gemini/Google console budget alert still manual; spend probe stale";
+      // Keep a prior successful costProbe when the re-probe soft-fails (e.g. 429).
+      const prior = evaluation.costProbe;
+      if (prior?.status === "ok" && prior.lastMonthUsd != null) {
+        evaluation.costProbe = {
+          ...prior,
+          note: `${prior.note} Re-probe skipped: ${spend.note}`,
+        };
+        if (costDim) {
+          costDim.sliStatus = "ok";
+          costDim.sliNote = evaluation.costProbe.note;
+          costDim.gap = "Gemini/Google console budget alert still manual";
+        }
+      } else {
+        evaluation.costProbe = {
+          status: "stale",
+          budgetUsd: SUBSCRIPTION_BUDGET_USD,
+          note: spend.note,
+        };
+        if (costDim) {
+          costDim.sliStatus = "stale";
+          costDim.sliNote = spend.note;
+          costDim.evidence =
+            costDim.evidence ||
+            `Subscription budget $${SUBSCRIPTION_BUDGET_USD}/mo (OPS-P4-001); spend probe pending`;
+          costDim.gap = "Gemini/Google console budget alert still manual; spend probe stale";
+        }
       }
+    }
+  }
+
+  if (siteActivityAi || siteActivityGa) {
+    evaluation.sitePerformance = buildSitePerformance(
+      siteActivityAi,
+      siteActivityGa,
+      evaluation.lastReviewed || todayUtc(),
+    );
+    if (evaluation.sitePerformance.note) {
+      notes.push(evaluation.sitePerformance.note);
     }
   }
 
@@ -1006,6 +1428,66 @@ function renderScorecard(evaluation) {
     }
   }
 
+  const sp = evaluation.sitePerformance;
+  if (sp) {
+    lines.push("");
+    lines.push("## Site performance (previous month)");
+    lines.push("");
+    lines.push("| Field | Value |");
+    lines.push("|-------|-------|");
+    lines.push(`| **Month** | ${sp.monthLabel || "—"} |`);
+    lines.push(`| **Status** | ${sp.status || "stale"} |`);
+    if (sp.visits) {
+      const vNote = sp.visits.note ? ` — ${sp.visits.note}` : "";
+      lines.push(
+        `| **Visits (GA4)** | ${sp.visits.sessions ?? 0} sessions · ${sp.visits.users ?? 0} users${vNote} |`,
+      );
+    }
+    if (sp.contacts) {
+      const cNote = sp.contacts.note ? ` — ${sp.contacts.note}` : "";
+      lines.push(
+        `| **Contacts (App Insights)** | ${sp.contacts.total ?? 0} total (${sp.contacts.casting ?? 0} casting · ${sp.contacts.lesson ?? 0} lesson)${cNote} |`,
+      );
+    }
+    if (sp.updates) {
+      const uNote = sp.updates.note ? ` — ${sp.updates.note}` : "";
+      lines.push(
+        `| **Studio publishes** | ${sp.updates.studioPublishes ?? 0}${uNote} |`,
+      );
+    }
+    if (Array.isArray(sp.topPages) && sp.topPages.length) {
+      lines.push(`| **Top pages** | See list below |`);
+    } else if (sp.visits?.note || sp.status === "stale") {
+      lines.push(`| **Top pages** | — |`);
+    }
+    if (sp.note) {
+      lines.push(`| **Note** | ${sp.note} |`);
+    }
+    if (Array.isArray(sp.topPages) && sp.topPages.length) {
+      lines.push("");
+      for (const p of sp.topPages) {
+        const label = p.label || p.path;
+        lines.push(`- ${label} — ${p.sessions} visit(s)`);
+      }
+    }
+  }
+
+  const cf = evaluation.contentFreshness;
+  if (cf && (cf.homepage || cf.resume || cf.headshot)) {
+    lines.push("");
+    lines.push("## Content freshness (casting materials)");
+    lines.push("");
+    lines.push("| Item | Status | Days since update | Note |");
+    lines.push("|------|--------|-------------------|------|");
+    for (const key of ["homepage", "resume", "headshot"]) {
+      const row = cf[key];
+      if (!row) continue;
+      lines.push(
+        `| ${row.label || key} | ${row.status} | ${row.daysSinceUpdate ?? "—"} | ${row.note || ""} |`,
+      );
+    }
+  }
+
   lines.push("");
   lines.push("## How this file is updated");
   lines.push("");
@@ -1013,7 +1495,7 @@ function renderScorecard(evaluation) {
     "1. Edit [`scorecard-evaluation.json`](./scorecard-evaluation.json) (scores / evidence / gaps).",
   );
   lines.push(
-    "2. Run `node scripts/ops-scorecard-refresh.mjs` (add `--monthly --azure` when Azure CLI is logged in for homepage/materials/FCP/Studio/inquiry SLIs and subscription spend).",
+    "2. Run `node scripts/ops-scorecard-refresh.mjs` (add `--monthly --azure` when Azure CLI is logged in for homepage/materials/FCP/Studio/inquiry SLIs, site performance, and subscription spend). Load GA secrets via `scripts/fetch-ga-scorecard-secrets.sh` for visits/top pages.",
   );
   lines.push(
     "3. Monthly GitHub Action (`.github/workflows/ops-scorecard-monthly.yml`) refreshes, commits to `main` via the Studio GitHub App, and emails an ACS digest to ALERT-EMAIL + SITE-CONTACT-EMAIL (recipients never written into this file).",
@@ -1030,7 +1512,9 @@ function renderScorecard(evaluation) {
   return lines.join("\n");
 }
 
-function collectAzureProbes(anchorYmd) {
+async function collectAzureProbes(anchorYmd) {
+  const siteActivityAi = probeSiteActivityAppInsights(anchorYmd);
+  const siteActivityGa = await probeSiteActivityGa(anchorYmd);
   return {
     homepage: probeHomepageAvailability(),
     materials: probeMaterialsAvailability(),
@@ -1039,21 +1523,36 @@ function collectAzureProbes(anchorYmd) {
     studioLatency: probeStudioPublishLatency(),
     inquiry: probeInquiryAcceptRate(),
     spend: probeSubscriptionSpend(anchorYmd || todayUtc()),
+    siteActivityAi,
+    siteActivityGa,
   };
 }
 
 function logProbes(probes) {
-  for (const p of Object.values(probes)) {
+  for (const [key, p] of Object.entries(probes)) {
+    if (key === "siteActivityAi" || key === "siteActivityGa") {
+      if (p?.note) console.log(p.note);
+      continue;
+    }
     if (p?.note) console.log(p.note);
   }
 }
 
-function main() {
+async function main() {
   const args = parseArgs(process.argv.slice(2));
   const evaluation = JSON.parse(readFileSync(EVAL_PATH, "utf8"));
 
   if (args.monthly || args.date) {
     evaluation.lastReviewed = todayUtc(args.date);
+  }
+
+  // Always refresh casting-content freshness from git (no Azure / secrets).
+  evaluation.contentFreshness = probeContentFreshness(
+    evaluation.lastReviewed || todayUtc(),
+  );
+  if (Array.isArray(evaluation.sitePerformance?.topPages)) {
+    evaluation.sitePerformance.topPages =
+      evaluation.sitePerformance.topPages.map((p) => withPageLabel(p));
   }
 
   if (args.monthly) {
@@ -1063,9 +1562,9 @@ function main() {
 
     if (args.azure) {
       console.log(
-        "Probing prod homepage / materials / FCP / Studio / inquiry SLIs + subscription spend (read-only)…",
+        "Probing prod homepage / materials / FCP / Studio / inquiry SLIs + site performance + subscription spend (read-only)…",
       );
-      const probes = collectAzureProbes(evaluation.lastReviewed);
+      const probes = await collectAzureProbes(evaluation.lastReviewed);
       logProbes(probes);
       applyAzureSlis(evaluation, probes);
     } else {
@@ -1076,9 +1575,9 @@ function main() {
     }
   } else if (args.azure) {
     console.log(
-      "Probing prod homepage / materials / FCP / Studio / inquiry SLIs + subscription spend (read-only)…",
+      "Probing prod homepage / materials / FCP / Studio / inquiry SLIs + site performance + subscription spend (read-only)…",
     );
-    const probes = collectAzureProbes(evaluation.lastReviewed || todayUtc());
+    const probes = await collectAzureProbes(evaluation.lastReviewed || todayUtc());
     logProbes(probes);
     applyAzureSlis(evaluation, probes);
   }
@@ -1101,4 +1600,7 @@ function main() {
   );
 }
 
-main();
+main().catch((err) => {
+  console.error(err instanceof Error ? err.message : String(err));
+  process.exit(1);
+});

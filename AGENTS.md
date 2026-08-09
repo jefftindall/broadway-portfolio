@@ -24,6 +24,10 @@ This mirrors the PR gate workflow [`.github/workflows/static-analysis.yml`](.git
 
 Requirements for Terraform lint: Terraform >= 1.5 and [TFLint](https://github.com/terraform-linters/tflint) on `PATH` (`tflint --init` uses [`infra/.tflint.hcl`](infra/.tflint.hcl)). On Cursor Cloud these come from the environment snapshot; if they are missing, install them before committing rather than skipping the gate. Do not commit if lint fails; do not skip these checks.
 
+### Plan backlog status (required on phase PRs)
+
+When a PR implements work from [`docs/plans/`](docs/plans/) (`OPS-*`, `SEARCH-*`, `DISC-*`, …), update Action ID statuses and acceptance checklists **in that same PR**. See [`.cursor/rules/plans-status-on-pr.mdc`](.cursor/rules/plans-status-on-pr.mdc).
+
 ### Never echo secrets (pipelines + scripts)
 
 **Never** print secret values (`echo` / `printf` / `console.log` / traces / action `with:` dumps) in workflows or scripts. Mask line-by-line; prefer temp files; on errors log names only. Full rules: [`.cursor/rules/never-echo-secrets.mdc`](.cursor/rules/never-echo-secrets.mdc). GitHub App minting: [`scripts/mint-github-app-token.sh`](scripts/mint-github-app-token.sh). If leaked, rotate immediately ([rotate-secrets.md](docs/runbooks/rotate-secrets.md)).
@@ -58,6 +62,7 @@ Phased GSC + GA4 work: [`docs/plans/search-and-analytics.md`](docs/plans/search-
 - **Titles (Phase 2):** Pages pass bare titles; [`BaseLayout`](src/layouts/BaseLayout.astro) appends ` · Elyse Tindall` (strips legacy `| Elyse Tindall`). Casting frontmatter must not embed the brand — [`add-casting-page.md`](docs/runbooks/add-casting-page.md).
 - **JSON-LD:** [`Seo.astro`](src/components/Seo.astro) prepends default `Person` when custom `jsonLd` lacks a top-level / `@graph` Person (nested `about`/`founder` do not count). Prefer slashless URLs in JSON-LD and canonicals.
 - **Crawlers:** Sitemap filters `/studio`; `noIndex` on Studio; `Disallow: /studio` in [`public/robots.txt`](public/robots.txt). Default OG: [`public/images/og-default.jpg`](public/images/og-default.jpg) (1200×630) with width/height/alt when used. Journey coverage: `tests/journeys/seo.spec.ts` (`J-SEO-01`).
+- **Monthly search ops (Phase 3):** Operator checklist in [`docs/runbooks/search-ops-monthly.md`](docs/runbooks/search-ops-monthly.md) — does not replace ops scorecard activity (`OPS-P5-*`).
 
 ### Studio API (`api/`, optional local)
 - Requires **Azure Functions Core Tools** (`func`), which is present in the Cursor Cloud base image (v4) but is NOT part of `npm` deps and NOT installed by the update script. If it is ever missing, install it separately (`npm i -g azure-functions-core-tools@4`).
@@ -75,9 +80,9 @@ Phased GSC + GA4 work: [`docs/plans/search-and-analytics.md`](docs/plans/search-
 
 ### Operational excellence
 
-Phased backlog: [`docs/plans/operational-excellence.md`](docs/plans/operational-excellence.md) (`OPS-*`) — reliability scorecard, SLOs, Sev1 SMS/voice, monthly scorecard refresh + ACS digest, subscription budget = **ceil(expected retail × 1.25)** (currently **$31/mo**; alert at **80%**/100% Actual). Committed SLO targets include homepage/materials availability **99.8%/7d**, homepage FCP p75 **&lt;1.5s**, Studio publish **95%/28d**, publish→live p95 **≤20m**. Phase 0–4 (except optional PagerDuty `OPS-P3-002`) are done. **Phase 5** (site performance: visits / top pages from GA4, contacts / Studio updates from App Insights) is planned — see plan § Site performance. **Do not implement** `OPS-P3-002` until explicitly requested.
+Phased backlog: [`docs/plans/operational-excellence.md`](docs/plans/operational-excellence.md) (`OPS-*`) — reliability scorecard, SLOs, Sev1 SMS/voice, monthly scorecard refresh + ACS digest, subscription budget = **ceil(expected retail × 1.25)** (currently **$31/mo**; alert at **80%**/100% Actual). Committed SLO targets include homepage/materials availability **99.8%/7d**, homepage FCP p75 **&lt;1.5s**, Studio publish **95%/28d**, publish→live p95 **≤20m**. Phase 0–5 (except optional PagerDuty `OPS-P3-002`) are done. **Phase 5** site performance (visits / top pages from GA4 Data API, contacts / Studio updates from App Insights) lands in the scorecard + digest — populate `GA-*` secrets per [`docs/runbooks/ga-data-api-access.md`](docs/runbooks/ga-data-api-access.md). **Do not implement** `OPS-P3-002` until explicitly requested.
 
-Living scorecard: [`docs/ops/operational-excellence-scorecard.md`](docs/ops/operational-excellence-scorecard.md). Monthly Actions workflow (`.github/workflows/ops-scorecard-monthly.yml`) re-evaluates, commits to `main` via the Studio GitHub App, probes subscription spend/MoM, and emails an ACS digest to `ALERT-EMAIL` + `SITE-CONTACT-EMAIL` (`OPS-P0-003` / `OPS-P0-004` / `OPS-P4-002`; CD ignores scorecard-only pushes). Refresh locally with `node scripts/ops-scorecard-refresh.mjs`. Local digest: `npm run ops:scorecard-email` after KV env is loaded.
+Living scorecard: [`docs/ops/operational-excellence-scorecard.md`](docs/ops/operational-excellence-scorecard.md). Monthly Actions workflow (`.github/workflows/ops-scorecard-monthly.yml`) re-evaluates, commits to `main` via the Studio GitHub App, probes subscription spend/MoM + site performance, and emails an ACS digest to `ALERT-EMAIL` + `SITE-CONTACT-EMAIL` (`OPS-P0-003` / `OPS-P0-004` / `OPS-P4-002` / `OPS-P5-*`; CD ignores scorecard-only pushes). On workflow failure, ACS emails **`ALERT-EMAIL` only**. Refresh locally with `node scripts/ops-scorecard-refresh.mjs`. Local digest: `npm run ops:scorecard-email` after KV env is loaded.
 
 **Azure cost sync:** When adding/removing Azure resources, recalculate retail expected cost for deployed region(s), update [`docs/runbooks/cost-and-quotas.md`](docs/runbooks/cost-and-quotas.md), and set bootstrap budget to **ceil(expected × 1.25)** with **80%** Actual alert — see [`.cursor/rules/ops-operational-excellence.mdc`](.cursor/rules/ops-operational-excellence.mdc).
 

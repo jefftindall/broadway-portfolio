@@ -1,9 +1,10 @@
 name: OPS monthly scorecard
 
-# OPS-P0-004 / OPS-P4-002 — Re-evaluate docs/ops scorecard, commit to main via
-# Studio GitHub App, email ACS digest (ALERT-EMAIL + SITE-CONTACT-EMAIL) with
-# scores + subscription spend/MoM. Never writes emails, phones, App private keys,
-# or other secrets into the scorecard or logs.
+# OPS-P0-004 / OPS-P4-002 / OPS-P5 — Re-evaluate docs/ops scorecard, commit to
+# main via Studio GitHub App, email ACS digest (ALERT-EMAIL + SITE-CONTACT-EMAIL)
+# with scores + subscription spend/MoM + site performance. On job failure, email
+# ALERT-EMAIL only (not SITE-CONTACT-EMAIL). Never writes emails, phones, App
+# private keys, GA SA JSON, or other secrets into the scorecard or logs.
 # Scorecard-only pushes are excluded from azure-static-web-apps.yml (paths-ignore).
 
 on:
@@ -92,6 +93,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Fetch GA Data API secrets
+        env:
+          AZURE_SHARED_KEY_VAULT_NAME: ${{ vars.AZURE_SHARED_KEY_VAULT_NAME }}
+        run: |
+          set -euo pipefail
+          set +x
+          chmod +x scripts/fetch-ga-scorecard-secrets.sh
+          ./scripts/fetch-ga-scorecard-secrets.sh
+
       - name: Refresh scorecard
         run: node scripts/ops-scorecard-refresh.mjs --monthly --azure
 
@@ -110,6 +120,16 @@ jobs:
             echo "Pushed scorecard refresh to main as elyse-portfolio-studio[bot] (${stamp})."
           fi
 
+      - name: Cleanup GA service-account temp file
+        if: always()
+        run: |
+          set -euo pipefail
+          set +x
+          if [[ -n "${GA_DATA_API_SA_JSON_FILE:-}" && -f "${GA_DATA_API_SA_JSON_FILE}" ]]; then
+            rm -f "${GA_DATA_API_SA_JSON_FILE}"
+            echo "Removed GA Data API temp credentials file."
+          fi
+
       - name: Fetch ACS digest secrets
         env:
           AZURE_SHARED_KEY_VAULT_NAME: ${{ vars.AZURE_SHARED_KEY_VAULT_NAME }}
@@ -123,3 +143,45 @@ jobs:
         env:
           SCORECARD_REPO_URL: https://github.com/${{ github.repository }}
         run: node scripts/ops-scorecard-email.mjs
+
+  notify_failure:
+    name: Notify scorecard workflow failure
+    needs: [refresh]
+    if: always() && !cancelled() && needs.refresh.result == 'failure'
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Azure login (digest secrets)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_TF_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TF_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_TF_SUBSCRIPTION_ID }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Fetch ACS digest secrets
+        env:
+          AZURE_SHARED_KEY_VAULT_NAME: ${{ vars.AZURE_SHARED_KEY_VAULT_NAME }}
+        run: |
+          set -euo pipefail
+          set +x
+          chmod +x scripts/fetch-ops-digest-secrets.sh
+          ./scripts/fetch-ops-digest-secrets.sh
+
+      - name: Email ALERT-EMAIL failure notice
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW_NAME: OPS monthly scorecard
+        run: node scripts/ops-scorecard-failure-email.mjs

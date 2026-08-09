@@ -6,7 +6,7 @@ Secrets live in Azure Key Vault as the source of truth. Managed Functions on SWA
 
 | Scope | Key Vault | Resource group | Purpose |
 |---|---|---|---|
-| **Shared (build + ACS + ops alerts)** | `kv-elyse-shared` | `rg-elyse-shared` | SITE-*, Turnstile, ACS email/SMS, `ALERT-*` (identical across envs) |
+| **Shared (build + ACS + ops alerts + GA scorecard)** | `kv-elyse-shared` | `rg-elyse-shared` | SITE-*, Turnstile, ACS email/SMS, `ALERT-*`, `GA-*` (identical across envs) |
 | Staging API | `kv-elyse-staging` | `rg-elyse-portfolio-staging` | Gemini, GitHub App, allowlist, AAD |
 | Production API | `kv-elyse-prod` | `rg-elyse-portfolio-prod` | Same as staging |
 
@@ -72,16 +72,24 @@ Not a Key Vault secret — the ID is public-by-design and embedded in the client
 
 To rotate the Measurement ID: `terraform apply -var='ga_measurement_id=G-…'` in each environment, then redeploy so the Astro bundle picks up the new value.
 
-### Planned: GA Data API (scorecard reads) — `OPS-P5-002`
+### GA Data API (scorecard reads) — `OPS-P5-002`
 
-Browser collection does **not** need this. Automating **visits / top pages** into the monthly scorecard does. When implementing Phase 5, add shared vault secrets (placeholders in bootstrap TF; real values via CLI only):
+Browser collection does **not** need this. Automating **visits / top pages** into the monthly scorecard does. Bootstrap Terraform creates placeholders in `kv-elyse-shared`; set real values via CLI only.
 
 | Secret | Purpose |
 |--------|---------|
 | `GA-PROPERTY-ID` | Numeric GA4 property ID (`properties/{id}` — not `G-…`) |
 | `GA-DATA-API-SA-JSON` | Google Cloud service-account JSON key with **Viewer** on the GA4 property |
 
-Never echo the JSON key; mask line-by-line in Actions; rotate the GCP key immediately if leaked. Full operator checklist: [operational-excellence.md](../plans/operational-excellence.md) § Site performance / GA4 access.
+```bash
+# After bootstrap apply — full GCP + GA Viewer checklist:
+#   docs/runbooks/ga-data-api-access.md
+az keyvault secret set --vault-name kv-elyse-shared --name GA-PROPERTY-ID --value "<numeric-property-id>"
+az keyvault secret set --vault-name kv-elyse-shared --name GA-DATA-API-SA-JSON --file ./ga-scorecard-sa.json
+rm -f ./ga-scorecard-sa.json
+```
+
+Never echo the JSON key; mask line-by-line in Actions; rotate the GCP key immediately if leaked. These secrets are **not** synced into SWA. Full operator checklist + rotate: [ga-data-api-access.md](ga-data-api-access.md).
 
 ## Contact forms (ACS email / SMS + Cloudflare Turnstile)
 
@@ -151,7 +159,7 @@ Do **not** reuse `SITE-CONTACT-EMAIL`, `SITE-CONTACT-PHONE`, or `ACS-SMS-FROM` f
 
 | Vault | Scope |
 |-------|--------|
-| `kv-elyse-shared` | Bootstrap (`infra/bootstrap/shared_kv.tf`) — SITE-*, Turnstile, ACS, `ALERT-*` |
+| `kv-elyse-shared` | Bootstrap (`infra/bootstrap/shared_kv.tf`) — SITE-*, Turnstile, ACS, `ALERT-*`, `GA-*` |
 | `kv-elyse-prod` | Prod env module (`purge_protection_enabled = true`) |
 
 Staging env vault stays **without** purge protection so tear-down / experiment remains possible.
