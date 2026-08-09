@@ -56,7 +56,7 @@ export const studioCapabilities: StudioCapability[] = [
     tool: 'update_short_bio',
     title: 'Short bio (About)',
     summary:
-      'Update the short lead paragraph at the top of About. The longer Background and Philosophy sections are edited by hand / PR — not full-page rewrites in Studio.',
+      'Update the short lead paragraph at the top of About. Edit in the Studio hub (or by voice), then confirm in read-only Preview before publishing. Longer About sections stay PR-only.',
     livePath: '/about',
     examplePrompts: [
       'Update my short bio on About to: Elyse Tindall is a musical theatre actress and vocal coach from Atlanta, now based in New York City.',
@@ -67,7 +67,7 @@ export const studioCapabilities: StudioCapability[] = [
     tool: 'update_performer_facts',
     title: 'Performer facts',
     summary:
-      'Update casting facts shown on About and Materials (availability, vocal type/range, union, playing age, height, ethnicity). You can also tweak the fields in Preview after you speak or type.',
+      'Update casting facts shown on About and Materials (availability, vocal type/range, union, playing age, height, ethnicity). Edit in the Studio hub (or by voice), then confirm in read-only Preview before publishing.',
     livePath: '/materials',
     examplePrompts: [
       'Mark me unavailable until September.',
@@ -84,7 +84,7 @@ export const studioCapabilities: StudioCapability[] = [
     tool: 'update_reel_url',
     title: 'Reel link',
     summary:
-      'Change the casting reel video link used on Materials, Shows, and home. You can also edit the link in Preview.',
+      'Change the casting reel video link used on Materials, Shows, and home. Edit in the Studio hub (or by voice), then confirm in read-only Preview before publishing.',
     livePath: '/materials',
     examplePrompts: [
       'Update my reel to this YouTube link: https://youtu.be/41jdPTkN_Sw',
@@ -116,7 +116,7 @@ export const studioCapabilities: StudioCapability[] = [
     tool: 'update_lesson_rates',
     title: 'Lesson rates',
     summary:
-      'Update session prices on the book-a-lesson page. From the Studio hub, open Lesson rates and enter dollar amounts — or say a prompt under Speak or type. Preview still shows number fields.',
+      'Update session prices on the book-a-lesson page. From the Studio hub, open Lesson rates and enter dollar amounts — or say a prompt under Speak or type. Preview is a read-only confirmation before publish.',
     livePath: '/lessons/book',
     examplePrompts: [
       'Raise my 60-minute rate to $120 and keep the 30-minute rate at $60.',
