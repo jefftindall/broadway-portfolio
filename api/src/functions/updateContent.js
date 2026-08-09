@@ -6,7 +6,7 @@ import {
   publisherIdentity,
   unauthorized,
 } from '../lib/auth.js';
-import { commitFile, ensurePullRequest, preparePublishTarget } from '../lib/github.js';
+import { ensurePullRequest, preparePublishTarget } from '../lib/github.js';
 import { applyContentChanges, buildContentChange, runContentAgent } from '../lib/gemini.js';
 import { studioFailureResponse } from '../lib/httpErrors.js';
 import { flush, trackEvent, trackException } from '../lib/telemetry.js';
@@ -156,33 +156,37 @@ app.http('updateContent', {
         commitMessage: String(c.commitMessage || c.message || ''),
         tool: c.tool ? String(c.tool) : undefined,
         summary: c.summary ? String(c.summary) : undefined,
+        preview: c.preview && typeof c.preview === 'object' ? c.preview : undefined,
+        commitParams:
+          c.commitParams && typeof c.commitParams === 'object' ? c.commitParams : undefined,
       }));
 
-      let photoPath;
-      let lastCommitSha = '';
+      /** @type {Array<{ path: string, content: string, binary: boolean }>} */
+      let extraFiles = [];
       if (hasPhoto && body.photo?.name) {
         const filename = realPhotoFilename(body.photo.name);
         const repoPath = `public/images/photos/${filename}`;
-        const photoCommit = await commitFile({
-          path: repoPath,
-          content: body.photo.dataBase64,
-          message: `media: upload ${filename}`,
-          binary: true,
-          branch: target.branch,
-        });
-        if (photoCommit.commitSha) lastCommitSha = photoCommit.commitSha;
-        photoPath = `/images/photos/${filename}`;
+        const photoPath = `/images/photos/${filename}`;
         const provisional = body.provisionalPhotoPath
           ? String(body.provisionalPhotoPath)
           : provisionalPhotoPath(body.photo.name);
+        // Rewrite markdown to the final public path before the single atomic commit.
         changes = rewritePhotoPaths(changes, provisional, photoPath);
+        extraFiles = [
+          {
+            path: repoPath,
+            content: body.photo.dataBase64,
+            binary: true,
+          },
+        ];
       }
 
       const result = await applyContentChanges(changes, {
         branch: target.branch,
         publishMode: target.mode,
+        extraFiles,
       });
-      const commitSha = result.commitSha || lastCommitSha || undefined;
+      const commitSha = result.commitSha || undefined;
 
       /** @type {{ number: number, url: string, created: boolean } | null} */
       let pullRequest = null;

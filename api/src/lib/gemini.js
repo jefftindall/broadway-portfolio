@@ -2,13 +2,18 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import matter from 'gray-matter';
 import { trackEvent } from './telemetry.js';
 import slugify from 'slugify';
-import { commitFile, listRepoFiles, readRepoTextFile, toFrontmatter } from './github.js';
-import { validateContentFile } from './contentValidate.js';
+import { commitFiles, listRepoFiles, readRepoTextFile, toFrontmatter } from './github.js';
+import { validateContentFile, StudioContentValidationError } from './contentValidate.js';
 import {
   LESSON_RATE_DEFS,
   LESSON_RATE_ID_VALUES,
   PERFORMER_FACT_KEYS,
 } from './contentSchemas.js';
+import {
+  GALLERY_TAG_VALUES,
+  normalizeGalleryTags,
+  validateGallerySlug,
+} from './galleryMeta.js';
 import { SITE_SETTINGS_PATH, mergeSiteSettings, readSiteSettings } from './siteSettings.js';
 
 const LESSONS_PAGE = 'src/content/pages/lessons.md';
@@ -182,17 +187,28 @@ const tools = [
       {
         name: 'add_gallery_photo',
         description:
-          'Add a gallery entry referencing an already-uploaded image path. Do not invent captions — leave caption empty; the public gallery does not display captions. New photos always appear first in the gallery (sort order is automatic).',
+          'Add a gallery entry referencing an already-uploaded image path. Do not invent captions — leave caption empty; the public gallery does not display captions. New photos always appear first in the gallery (sort order is automatic). Tags must be chosen only from the fixed allowlist (never invent new tags).',
         parameters: {
           type: 'OBJECT',
           properties: {
-            slug: { type: 'STRING', description: 'URL-safe id for the markdown filename' },
+            slug: {
+              type: 'STRING',
+              description:
+                'Optional markdown basename for src/content/gallery/<slug>.md — lowercase letters, numbers, and hyphens only. Omit .md (it is added automatically). Leave empty to derive from the image name.',
+            },
             caption: {
               type: 'STRING',
               description: 'Optional; prefer empty string. Gallery UI does not show captions.',
             },
             image: { type: 'STRING', description: 'Path like /images/photos/foo.jpg or src path served as public' },
-            tags: { type: 'ARRAY', items: { type: 'STRING' } },
+            tags: {
+              type: 'ARRAY',
+              items: {
+                type: 'STRING',
+                description: `One of: ${GALLERY_TAG_VALUES.join(', ')}`,
+              },
+              description: `Zero or more tags from the fixed allowlist only: ${GALLERY_TAG_VALUES.join(', ')}. Do not invent tags.`,
+            },
             focus: {
               type: 'STRING',
               description:
@@ -431,9 +447,19 @@ export async function buildContentChange(name, args, photoPath) {
         tool: name,
         path: `src/content/shows/${slug}.md`,
         content,
-        commitMessage: `content: upsert show ${args.title}`,
+        commitMessage: `studio: upsert_show ${slug}.md`,
         summary: `Updated show “${args.title}” at /shows.`,
         livePath: '/shows',
+        commitParams: {
+          title: args.title,
+          year: args.year,
+          role: args.role,
+          venue: args.venue,
+          featured: Boolean(args.featured),
+          category: args.category || undefined,
+          image: args.image || photoPath,
+          imageFocus: args.imageFocus,
+        },
       };
       break;
     }
@@ -454,9 +480,16 @@ export async function buildContentChange(name, args, photoPath) {
         tool: name,
         path: `src/content/news/${slug}.md`,
         content,
-        commitMessage: `content: news ${args.title}`,
+        commitMessage: `studio: create_news_post ${slug}.md`,
         summary: `Published news post “${args.title}” at /news/${slug}.`,
         livePath: `/news/${slug}`,
+        commitParams: {
+          title: args.title,
+          date: args.date || today,
+          description: args.description,
+          tags: args.tags || [],
+          image: args.image || photoPath,
+        },
       };
       break;
     }
@@ -466,9 +499,10 @@ export async function buildContentChange(name, args, photoPath) {
         tool: name,
         path: LESSONS_PAGE,
         content,
-        commitMessage: 'content: update lessons copy',
+        commitMessage: 'studio: update_lessons_copy lessons.md',
         summary: 'Updated lessons philosophy and details at /lessons.',
         livePath: '/lessons',
+        commitParams: { path: LESSONS_PAGE },
       };
       break;
     }
@@ -484,9 +518,13 @@ export async function buildContentChange(name, args, photoPath) {
         tool: name,
         path: LESSONS_PAGE,
         content,
-        commitMessage: 'content: update lessons seo',
+        commitMessage: 'studio: update_lessons_seo lessons.md',
         summary: 'Updated Lessons page title/description.',
         livePath: '/lessons',
+        commitParams: {
+          title: args.title,
+          description: args.description,
+        },
       };
       break;
     }
@@ -497,9 +535,12 @@ export async function buildContentChange(name, args, photoPath) {
         tool: name,
         path: LESSONS_BOOK_PAGE,
         content,
-        commitMessage: 'content: update lesson rates',
+        commitMessage: 'studio: update_lesson_rates lessons-book.md',
         summary: 'Updated lesson rates at /lessons/book.',
         livePath: '/lessons/book',
+        commitParams: {
+          rates: formatRatesParam(rates),
+        },
         preview: {
           kind: 'rates',
           rates: rates.map((r) => ({
@@ -526,9 +567,13 @@ export async function buildContentChange(name, args, photoPath) {
         tool: name,
         path: LESSONS_BOOK_PAGE,
         content,
-        commitMessage: 'content: update lesson scheduling',
+        commitMessage: 'studio: update_lesson_scheduling lessons-book.md',
         summary: 'Updated lesson scheduling details at /lessons/book.',
         livePath: '/lessons/book',
+        commitParams: {
+          format: args.format,
+          scheduling: args.scheduling,
+        },
       };
       break;
     }
@@ -544,26 +589,46 @@ export async function buildContentChange(name, args, photoPath) {
         tool: name,
         path: LESSONS_BOOK_PAGE,
         content,
-        commitMessage: 'content: update lesson book seo',
+        commitMessage: 'studio: update_lesson_book_seo lessons-book.md',
         summary: 'Updated book-a-lesson page title/description.',
         livePath: '/lessons/book',
+        commitParams: {
+          title: args.title,
+          description: args.description,
+        },
       };
       break;
     }
     case 'add_gallery_photo': {
       const image = args.image || photoPath;
       if (!image) throw new Error('Gallery photo requires an image path or upload.');
-      const slug = makeSlug(
-        args.slug ||
+
+      const slugRaw = args.slug != null && String(args.slug).trim() ? String(args.slug).trim() : '';
+      let slug;
+      if (slugRaw) {
+        const slugCheck = validateGallerySlug(slugRaw);
+        if (!slugCheck.ok) {
+          throw new StudioContentValidationError(
+            slugCheck.error || 'Gallery filename is invalid.',
+            { path: 'src/content/gallery/' },
+          );
+        }
+        slug = slugCheck.slug;
+      } else {
+        slug = makeSlug(
           String(image)
             .split('/')
             .pop()
-            ?.replace(/\.[^.]+$/, '') ||
-          'gallery-photo',
-      );
-      const tags = Array.isArray(args.tags)
-        ? args.tags.map((t) => String(t || '').trim()).filter(Boolean)
-        : [];
+            ?.replace(/\.[^.]+$/, '') || 'gallery-photo',
+        );
+      }
+      if (!slug) {
+        throw new StudioContentValidationError('Gallery filename could not be derived.', {
+          path: 'src/content/gallery/',
+        });
+      }
+
+      const { tags } = normalizeGalleryTags(args.tags);
       // Newest first on /gallery (ascending sort). Ignore any client-supplied order.
       const order = -Date.now();
       const focus = String(args.focus || '').trim() || undefined;
@@ -578,9 +643,15 @@ export async function buildContentChange(name, args, photoPath) {
         tool: name,
         path: `src/content/gallery/${slug}.md`,
         content,
-        commitMessage: `content: gallery ${slug}`,
+        commitMessage: `studio: add_gallery_photo ${slug}.md`,
         summary: `Added gallery photo (${slug}).`,
         livePath: '/gallery',
+        commitParams: {
+          slug,
+          image,
+          tags,
+          focus: focus || 'center',
+        },
         preview: {
           kind: 'gallery',
           slug,
@@ -599,9 +670,10 @@ export async function buildContentChange(name, args, photoPath) {
         tool: name,
         path: merged.path,
         content: merged.content,
-        commitMessage: 'content: update reel url',
+        commitMessage: 'studio: update_reel_url site-settings.json',
         summary: 'Updated the casting reel link on Materials and related pages.',
         livePath: '/materials',
+        commitParams: { reelUrl: merged.data.reelUrl },
         preview: { kind: 'reel', reelUrl: merged.data.reelUrl },
       };
       break;
@@ -622,9 +694,15 @@ export async function buildContentChange(name, args, photoPath) {
         tool: name,
         path: merged.path,
         content: merged.content,
-        commitMessage: 'content: update performer facts',
+        commitMessage: 'studio: update_performer_facts site-settings.json',
         summary: 'Updated performer facts on About and Materials.',
         livePath: '/materials',
+        commitParams: {
+          patchedKeys: Object.keys(performer),
+          ...Object.fromEntries(
+            Object.entries(performer).map(([k, v]) => [`performer.${k}`, v]),
+          ),
+        },
         preview: {
           kind: 'performer',
           performer: merged.data.performer,
@@ -641,9 +719,10 @@ export async function buildContentChange(name, args, photoPath) {
         tool: name,
         path: merged.path,
         content: merged.content,
-        commitMessage: 'content: update short bio',
+        commitMessage: 'studio: update_short_bio site-settings.json',
         summary: 'Updated the short bio on the About page.',
         livePath: '/about',
+        commitParams: { shortBio: merged.data.shortBio },
         preview: { kind: 'shortBio', shortBio: merged.data.shortBio },
       };
       break;
@@ -664,9 +743,13 @@ export async function buildContentChange(name, args, photoPath) {
         tool: name,
         path: merged.path,
         content: merged.content,
-        commitMessage: 'content: update press quote',
+        commitMessage: 'studio: update_press_quote site-settings.json',
         summary: 'Updated the homepage press quote.',
         livePath: '/',
+        commitParams: {
+          quote: merged.data.pressQuote.quote,
+          attribution: merged.data.pressQuote.attribution,
+        },
         preview: {
           kind: 'pressQuote',
           quote: merged.data.pressQuote.quote,
@@ -700,9 +783,18 @@ export async function buildContentChange(name, args, photoPath) {
         tool: name,
         path,
         content,
-        commitMessage: `content: update casting fields ${slug}`,
+        commitMessage: `studio: update_casting_fields ${slug}.md`,
         summary: `Updated casting page fields at /for/${slug}.`,
         livePath: `/for/${slug}`,
+        commitParams: {
+          slug,
+          keyword: parsed.data.keyword,
+          title: parsed.data.title,
+          description: parsed.data.description,
+          cta: parsed.data.cta,
+          relatedShows: parsed.data.relatedShows || [],
+          relatedSkills: parsed.data.relatedSkills || [],
+        },
         preview: {
           kind: 'casting',
           slug,
@@ -744,9 +836,269 @@ export function publicUrlForContentPath(path) {
 }
 
 /**
- * Commit approved content changes to GitHub.
+ * Format a commit-message param value for the commit body.
+ * @param {unknown} value
+ * @returns {string}
+ */
+function formatCommitParamValue(value) {
+  if (value == null) return '';
+  if (Array.isArray(value)) {
+    return value
+      .map((v) => String(v ?? '').trim())
+      .filter(Boolean)
+      .join(', ');
+  }
+  if (typeof value === 'object') {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  }
+  const text = String(value).replace(/\s+/g, ' ').trim();
+  if (text.length > 120) return `${text.slice(0, 117)}...`;
+  return text;
+}
+
+/**
+ * Summarize lesson rates for a commit message body.
+ * @param {unknown} rates
+ */
+function formatRatesParam(rates) {
+  if (!Array.isArray(rates)) return '';
+  return rates
+    .map((r) => {
+      if (!r || typeof r !== 'object') return '';
+      const id = String(/** @type {{ id?: string }} */ (r).id || '').trim();
+      const price =
+        /** @type {{ price?: string, priceAmount?: number }} */ (r).price ||
+        (/** @type {{ priceAmount?: number }} */ (r).priceAmount != null
+          ? `$${/** @type {{ priceAmount?: number }} */ (r).priceAmount}`
+          : '');
+      if (!id) return '';
+      return price ? `${id}=${price}` : id;
+    })
+    .filter(Boolean)
+    .join('; ');
+}
+
+/**
+ * Pull configuration params from a change (explicit params, preview, or file content).
+ * @param {{
+ *   tool?: string,
+ *   path?: string,
+ *   content?: string,
+ *   commitParams?: Record<string, unknown>,
+ *   preview?: Record<string, unknown>,
+ * }} change
+ * @returns {Record<string, string>}
+ */
+export function extractCommitParams(change) {
+  /** @type {Record<string, string>} */
+  const out = {};
+  const put = (key, value) => {
+    const formatted = formatCommitParamValue(value);
+    if (!formatted) return;
+    out[key] = formatted;
+  };
+
+  const explicit =
+    change.commitParams && typeof change.commitParams === 'object' ? change.commitParams : null;
+  if (explicit) {
+    for (const [key, value] of Object.entries(explicit)) {
+      if (key === 'kind' || key === 'order') continue;
+      put(key, value);
+    }
+  }
+
+  const preview = change.preview && typeof change.preview === 'object' ? change.preview : null;
+  if (preview) {
+    for (const [key, value] of Object.entries(preview)) {
+      if (key === 'kind' || key === 'order' || out[key]) continue;
+      if (key === 'rates') {
+        put('rates', formatRatesParam(value));
+        continue;
+      }
+      if (key === 'patchedKeys' && Array.isArray(value)) {
+        put('patchedKeys', value);
+        continue;
+      }
+      put(key, value);
+    }
+  }
+
+  const path = String(change.path || '').replace(/\\/g, '/');
+  const content = String(change.content ?? '');
+  const tool = String(change.tool || '');
+
+  if (path.endsWith('.md') && content.includes('---')) {
+    try {
+      const { data } = matter(content);
+      const fm = data && typeof data === 'object' ? data : {};
+      const keysByTool = {
+        upsert_show: [
+          'title',
+          'year',
+          'role',
+          'venue',
+          'featured',
+          'category',
+          'image',
+          'imageFocus',
+          'videoUrl',
+        ],
+        create_news_post: ['title', 'date', 'description', 'tags', 'image', 'videoUrl'],
+        add_gallery_photo: ['image', 'tags', 'focus'],
+        update_lessons_seo: ['title', 'description'],
+        update_lesson_rates: ['rates'],
+        update_lesson_scheduling: ['format', 'scheduling'],
+        update_lesson_book_seo: ['title', 'description'],
+        update_casting_fields: [
+          'keyword',
+          'title',
+          'description',
+          'cta',
+          'relatedShows',
+          'relatedSkills',
+        ],
+      };
+      const keys =
+        keysByTool[tool] ||
+        [
+          'title',
+          'year',
+          'role',
+          'venue',
+          'date',
+          'tags',
+          'image',
+          'focus',
+          'imageFocus',
+          'keyword',
+          'featured',
+          'category',
+          'format',
+          'scheduling',
+          'rates',
+          'description',
+          'cta',
+        ];
+      for (const key of keys) {
+        if (out[key] || fm[key] == null || fm[key] === '') continue;
+        if (key === 'rates') {
+          put('rates', formatRatesParam(fm[key]));
+          continue;
+        }
+        put(key, fm[key]);
+      }
+    } catch {
+      // Ignore frontmatter parse errors; subject/paths still land in the commit.
+    }
+  }
+
+  if (path === SITE_SETTINGS_PATH || path.endsWith('site-settings.json')) {
+    try {
+      const data = JSON.parse(content);
+      if (tool === 'update_reel_url' || data.reelUrl) put('reelUrl', data.reelUrl);
+      if (tool === 'update_short_bio' || data.shortBio) put('shortBio', data.shortBio);
+      if (tool === 'update_press_quote' || data.pressQuote) {
+        if (data.pressQuote?.quote) put('quote', data.pressQuote.quote);
+        if (data.pressQuote?.attribution) put('attribution', data.pressQuote.attribution);
+      }
+      if (tool === 'update_performer_facts' || data.performer) {
+        const performer = data.performer && typeof data.performer === 'object' ? data.performer : {};
+        for (const key of PERFORMER_FACT_KEYS) {
+          if (performer[key]) put(`performer.${key}`, performer[key]);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return out;
+}
+
+/**
+ * Build one commit message for a multi-file Studio publish.
+ * Subject stays scannable in `git log --oneline`; body lists paths + config params.
+ *
+ * @param {Array<{
+ *   path?: string,
+ *   content?: string,
+ *   commitMessage?: string,
+ *   message?: string,
+ *   tool?: string,
+ *   commitParams?: Record<string, unknown>,
+ *   preview?: Record<string, unknown>,
+ * }>} changes
+ * @param {Array<{ path?: string }>} [extraFiles]
+ */
+export function buildPublishCommitMessage(changes, extraFiles = []) {
+  const list = Array.isArray(changes) ? changes : [];
+  const media = Array.isArray(extraFiles) ? extraFiles : [];
+  const tools = [
+    ...new Set(list.map((c) => String(c.tool || '').trim()).filter(Boolean)),
+  ];
+  const contentPaths = list
+    .map((c) => String(c.path || '').replace(/\\/g, '/'))
+    .filter(Boolean);
+  const mediaPaths = media
+    .map((f) => String(f.path || '').replace(/\\/g, '/'))
+    .filter(Boolean);
+  const allPaths = [...new Set([...contentPaths, ...mediaPaths])];
+
+  const toolLabel =
+    tools.length === 1 ? tools[0] : tools.length > 1 ? tools.join('+') : 'publish';
+  const primary =
+    contentPaths[0]?.split('/').pop() || mediaPaths[0]?.split('/').pop() || 'update';
+  let subject = `studio: ${toolLabel} ${primary}`;
+  if (mediaPaths.length > 0) subject += ' (+image)';
+  // Prefer a dedicated subject from the first change when it already looks Studio-shaped.
+  const legacy = String(list[0]?.commitMessage || list[0]?.message || '').trim();
+  if (legacy.startsWith('studio:') && list.length === 1 && mediaPaths.length === 0) {
+    subject = legacy.split('\n')[0].trim() || subject;
+  }
+  if (subject.length > 90) subject = `${subject.slice(0, 87)}...`;
+
+  const lines = [subject, ''];
+  lines.push(`Tool: ${tools.length ? tools.join(', ') : 'publish'}`);
+  lines.push('Paths:');
+  if (allPaths.length === 0) {
+    lines.push('- (none)');
+  } else {
+    for (const p of allPaths) lines.push(`- ${p}`);
+  }
+
+  if (list.length <= 1) {
+    const params = extractCommitParams(list[0] || {});
+    const entries = Object.entries(params);
+    if (entries.length) {
+      lines.push('', 'Params:');
+      for (const [key, value] of entries) lines.push(`- ${key}: ${value}`);
+    }
+  } else {
+    for (const change of list) {
+      const params = extractCommitParams(change);
+      const entries = Object.entries(params);
+      if (!entries.length) continue;
+      const label = String(change.path || change.tool || 'change');
+      lines.push('', `Params (${label}):`);
+      for (const [key, value] of entries) lines.push(`- ${key}: ${value}`);
+    }
+  }
+
+  return lines.join('\n').trimEnd() + '\n';
+}
+
+/**
+ * Commit approved content changes (and optional media) to GitHub in **one** commit.
  * @param {Array<{ path: string, content: string, commitMessage?: string, message?: string, tool?: string, summary?: string }>} changes
- * @param {{ branch?: string, publishMode?: 'pr'|'direct' }} [opts]
+ * @param {{
+ *   branch?: string,
+ *   publishMode?: 'pr'|'direct',
+ *   extraFiles?: Array<{ path: string, content: string | Buffer, binary?: boolean }>,
+ * }} [opts]
  */
 export async function applyContentChanges(changes, opts = {}) {
   if (!Array.isArray(changes) || changes.length === 0) {
@@ -755,8 +1107,11 @@ export async function applyContentChanges(changes, opts = {}) {
 
   const branch = opts.branch || undefined;
   const publishMode = opts.publishMode || 'direct';
+  const extraFiles = Array.isArray(opts.extraFiles) ? opts.extraFiles : [];
+  /** @type {Array<{ path: string, content: string | Buffer, binary?: boolean }>} */
+  const files = [];
   const actions = [];
-  let commitSha = '';
+
   for (const change of changes) {
     const path = String(change.path || '').replace(/\\/g, '/');
     if (!isAllowedContentPath(path)) {
@@ -764,9 +1119,7 @@ export async function applyContentChanges(changes, opts = {}) {
     }
     const content = String(change.content ?? '');
     validateContentFile(path, content);
-    const commitMessage = String(change.commitMessage || change.message || `content: update ${path}`);
-    const committed = await commitFile({ path, content, message: commitMessage, branch });
-    if (committed.commitSha) commitSha = committed.commitSha;
+    files.push({ path, content, binary: false });
     const summary = change.summary || `Updated ${path}.`;
     trackEvent('StudioToolExecuted', { tool: change.tool || 'publish' });
     actions.push({
@@ -774,8 +1127,26 @@ export async function applyContentChanges(changes, opts = {}) {
       summary,
       path,
       url: publicUrlForContentPath(path),
-      commitSha: committed.commitSha || undefined,
     });
+  }
+
+  for (const media of extraFiles) {
+    const path = String(media.path || '').replace(/\\/g, '/');
+    if (!isAllowedContentPath(path)) {
+      throw new Error(`Disallowed media path: ${path}`);
+    }
+    files.push({
+      path,
+      content: media.content,
+      binary: media.binary !== false,
+    });
+  }
+
+  const commitMessage = buildPublishCommitMessage(changes, extraFiles);
+  const committed = await commitFiles({ files, message: commitMessage, branch });
+  const commitSha = committed.commitSha || undefined;
+  for (const action of actions) {
+    action.commitSha = commitSha;
   }
 
   const summaryText = actions.map((a) => a.summary).join(' ');
@@ -784,7 +1155,7 @@ export async function applyContentChanges(changes, opts = {}) {
       ? `${summaryText} Saved on a staging branch — not live on production until the pull request is merged. Use Actions → Staging branch to test on the staging site.`
       : `${summaryText} The site will rebuild and go live within a few minutes.`;
 
-  return { reply, actions, commitSha: commitSha || undefined };
+  return { reply, actions, commitSha };
 }
 
 const CONTENT_DIRS = [
@@ -948,7 +1319,7 @@ Rules:
 - Prefer update_lesson_book_seo only when she explicitly wants to change the book-a-lesson page title or search description.
 - Never use lessons tools to change show credits, news, or gallery content.
 - When drafting lessons copy, keep it vocal-coach accurate (pedagogy, vocal health, CCM); never add acting-lesson offerings.
-- Prefer add_gallery_photo when she attaches a photo for the gallery (image path will be provided). Leave caption empty — the public gallery does not display captions. Do not set sort order; new photos always appear first.
+- Prefer add_gallery_photo when she attaches a photo for the gallery (image path will be provided). Leave caption empty — the public gallery does not display captions. Do not set sort order; new photos always appear first. Tags must be from the fixed allowlist only (${GALLERY_TAG_VALUES.join(', ')}) — never invent new tags.
 - Keep tone professional, warm, and accurate. Do not invent fake credits; align facts with the catalog and production site.
 - Content is expected to be evergreen unless otherwise specified. Avoid relative terms like today, this week, this month, etc which would not make sense in the future.
 - Never mention technical terms like "YAML," "Azure," or "Astro" to her—keep her user experience purely creative and effortless.

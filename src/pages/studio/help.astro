@@ -90,7 +90,11 @@ import { studioCapabilities, studioVoiceNotes } from '../../lib/studioHelp';
         <h3 class="font-display text-2xl text-spotlight">Gallery photo</h3>
         <ol class="list-decimal space-y-2 pl-5 text-sm text-muted">
           <li>Open <span class="text-spotlight">Gallery photo</span> from the hub.</li>
-          <li>Choose a JPEG, PNG, or WebP. Pick tags and crop focus if you want.</li>
+          <li>
+            Choose a JPEG, PNG, or WebP. Pick tags from the fixed list (custom tags can’t be added) and
+            crop focus if you want. Optionally set a gallery file name — Studio explains why it matters
+            and adds <span class="text-spotlight">.md</span> if you leave it off.
+          </li>
           <li>
             If Studio warns that the photo is already on the site, pick a different file — or confirm
             only if you mean to publish a duplicate.
@@ -110,7 +114,7 @@ import { studioCapabilities, studioVoiceNotes } from '../../lib/studioHelp';
             loading="lazy"
           />
           <figcaption class="text-xs text-muted text-center">
-            Attach a photo, set tags and focus, then preview the gallery tile.
+            Attach a photo, choose allowlisted tags and focus, then preview the gallery tile.
           </figcaption>
         </figure>
       </div>

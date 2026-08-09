@@ -1,8 +1,9 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getCollection, getEntry } from 'astro:content';
+import { getEntry } from 'astro:content';
 import { site } from '../lib/site';
 import { buildPublicImageHashIndex } from '../lib/imageContentHashes';
+import { GALLERY_TAG_VALUES } from '../lib/galleryStudio';
 
 const book = await getEntry('pages', 'lessons-book');
 const bookRates = book?.data.rates ?? [];
@@ -21,8 +22,7 @@ const pressQuote = site.pressQuote;
 const siteLocation = site.location;
 const siteAge = String(site.age);
 
-const galleryEntries = await getCollection('gallery');
-const galleryTagOptions = [...new Set(galleryEntries.flatMap((e) => e.data.tags || []))].sort();
+const galleryTagOptions = GALLERY_TAG_VALUES;
 const imageHashIndex = buildPublicImageHashIndex();
 ---
 
@@ -297,8 +297,8 @@ const imageHashIndex = buildPublicImageHashIndex();
 
       <div id="compose-gallery" class="hidden space-y-4">
         <p class="text-sm text-muted">
-          Choose a photo and tags. New photos appear first in the gallery. Captions stay empty — the
-          public gallery does not show them.
+          Choose a photo and tags from the list below. New photos appear first in the gallery.
+          Captions stay empty — the public gallery does not show them.
         </p>
         <label class="block text-sm text-muted">
           Photo
@@ -324,6 +324,9 @@ const imageHashIndex = buildPublicImageHashIndex();
         ></p>
         <fieldset>
           <legend class="text-sm text-muted">Tags</legend>
+          <p class="mt-1 text-xs text-muted">
+            Pick from existing gallery filters only — new custom tags can’t be added here.
+          </p>
           <div id="gallery-tag-chips" class="mt-2 flex flex-wrap gap-2">
             {
               galleryTagOptions.map((tag) => (
@@ -339,15 +342,6 @@ const imageHashIndex = buildPublicImageHashIndex();
               ))
             }
           </div>
-          <label class="mt-3 block text-sm text-muted">
-            Extra tags (comma-separated)
-            <input
-              id="gallery-tags-extra"
-              type="text"
-              placeholder="e.g. rehearsal, portrait"
-              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
-            />
-          </label>
         </fieldset>
         <label class="block text-sm text-muted">
           Crop focus
@@ -372,15 +366,35 @@ const imageHashIndex = buildPublicImageHashIndex();
             class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
           />
         </label>
-        <label class="block text-sm text-muted">
-          Filename slug (optional)
+        <div>
+          <label class="block text-sm text-muted" for="gallery-slug">
+            Gallery file name (optional)
+          </label>
+          <p id="gallery-slug-help" class="mt-1 text-xs text-muted">
+            Sets the markdown file name in the repo
+            (<code class="text-spotlight">src/content/gallery/&lt;name&gt;.md</code>). A stable name
+            makes this photo easy to find in git history and Studio commits. Leave blank to auto-name
+            from the photo. You can omit <code class="text-spotlight">.md</code> — Studio adds it.
+          </p>
           <input
             id="gallery-slug"
             type="text"
-            placeholder="auto from photo name"
-            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+            inputmode="text"
+            autocomplete="off"
+            spellcheck="false"
+            maxlength="83"
+            placeholder="e.g. nyc-winter-headshot"
+            aria-describedby="gallery-slug-help gallery-slug-hint gallery-slug-error"
+            class="mt-2 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
           />
-        </label>
+          <p id="gallery-slug-hint" class="mt-1 text-xs text-muted" aria-live="polite"></p>
+          <p
+            id="gallery-slug-error"
+            class="mt-1 hidden text-sm text-red-300"
+            role="alert"
+            aria-live="assertive"
+          ></p>
+        </div>
         <div class="flex flex-wrap gap-3">
           <button
             id="gallery-preview-btn"
@@ -701,6 +715,7 @@ const imageHashIndex = buildPublicImageHashIndex();
 
   <script>
     import { flush, trackEvent, trackException, trackMetric } from '../scripts/app-insights';
+    import { validateGallerySlug } from '../lib/galleryStudio';
 
     type PhotoPayload = { name: string; contentType: string; dataBase64: string };
     type DiscretePreview =
@@ -741,6 +756,7 @@ const imageHashIndex = buildPublicImageHashIndex();
       summary?: string;
       livePath?: string;
       preview?: DiscretePreview;
+      commitParams?: Record<string, unknown>;
     };
     type PublishAction = {
       tool?: string;
@@ -794,11 +810,12 @@ const imageHashIndex = buildPublicImageHashIndex();
       'gallery-photo-preview',
     ) as HTMLImageElement;
     const galleryDupWarn = document.getElementById('gallery-dup-warn')!;
-    const galleryTagsExtra = document.getElementById('gallery-tags-extra') as HTMLInputElement;
     const galleryFocusSelect = document.getElementById('gallery-focus') as HTMLSelectElement;
     const galleryFocusCustomWrap = document.getElementById('gallery-focus-custom-wrap')!;
     const galleryFocusCustom = document.getElementById('gallery-focus-custom') as HTMLInputElement;
     const gallerySlugInput = document.getElementById('gallery-slug') as HTMLInputElement;
+    const gallerySlugHint = document.getElementById('gallery-slug-hint')!;
+    const gallerySlugError = document.getElementById('gallery-slug-error')!;
     const factAvailability = document.getElementById('fact-availability') as HTMLInputElement;
     const factVocalType = document.getElementById('fact-vocalType') as HTMLInputElement;
     const factVocalRange = document.getElementById('fact-vocalRange') as HTMLInputElement;
@@ -952,11 +969,11 @@ const imageHashIndex = buildPublicImageHashIndex();
       galleryPhotoPreview.style.objectPosition = 'center';
       clearDuplicateWarning(galleryDupWarn);
       galleryPhotoDuplicatePath = null;
-      galleryTagsExtra.value = '';
       galleryFocusSelect.value = 'center';
       galleryFocusCustom.value = '';
       galleryFocusCustomWrap.classList.add('hidden');
       gallerySlugInput.value = '';
+      syncGallerySlugFeedback();
       document.querySelectorAll<HTMLInputElement>('input[name="gallery-tag"]').forEach((el) => {
         el.checked = false;
       });
@@ -1149,7 +1166,6 @@ const imageHashIndex = buildPublicImageHashIndex();
       messageEl.disabled = busy;
       photoEl.disabled = busy;
       galleryPhotoEl.disabled = busy;
-      galleryTagsExtra.disabled = busy;
       galleryFocusSelect.disabled = busy;
       galleryFocusCustom.disabled = busy;
       gallerySlugInput.disabled = busy;
@@ -2133,6 +2149,7 @@ const imageHashIndex = buildPublicImageHashIndex();
           summary: c.summary,
           livePath: c.livePath,
           preview: c.preview,
+          commitParams: c.commitParams,
         })),
         provisionalPhotoPath:
           typeof data.provisionalPhotoPath === 'string' ? data.provisionalPhotoPath : null,
@@ -2161,6 +2178,7 @@ const imageHashIndex = buildPublicImageHashIndex();
           commitMessage: base.commitMessage,
           livePath: base.livePath,
           preview: base.preview,
+          commitParams: base.commitParams,
         });
       }
       return out;
@@ -2245,14 +2263,32 @@ const imageHashIndex = buildPublicImageHashIndex();
     }
 
     function readGalleryTags(): string[] {
-      const fromChips = Array.from(
-        document.querySelectorAll<HTMLInputElement>('input[name="gallery-tag"]:checked'),
-      ).map((el) => el.value.trim());
-      const fromExtra = galleryTagsExtra.value
-        .split(',')
-        .map((t) => t.trim().toLowerCase().replace(/\s+/g, '-'))
-        .filter(Boolean);
-      return [...new Set([...fromChips, ...fromExtra])];
+      return [
+        ...new Set(
+          Array.from(
+            document.querySelectorAll<HTMLInputElement>('input[name="gallery-tag"]:checked'),
+          ).map((el) => el.value.trim()),
+        ),
+      ].filter(Boolean);
+    }
+
+    function syncGallerySlugFeedback(): boolean {
+      const result = validateGallerySlug(gallerySlugInput.value);
+      gallerySlugInput.setAttribute('aria-invalid', result.ok ? 'false' : 'true');
+      if (result.ok) {
+        gallerySlugError.textContent = '';
+        gallerySlugError.classList.add('hidden');
+        gallerySlugInput.classList.remove('border-red-400');
+        gallerySlugHint.textContent = result.empty
+          ? 'Will auto-name from the photo; Studio adds .md automatically.'
+          : `Will save as ${result.repoPath}`;
+        return true;
+      }
+      gallerySlugHint.textContent = '';
+      gallerySlugError.textContent = result.error || 'That file name isn’t valid.';
+      gallerySlugError.classList.remove('hidden');
+      gallerySlugInput.classList.add('border-red-400');
+      return false;
     }
 
     function syncGalleryFocusPreview() {
@@ -2316,6 +2352,18 @@ const imageHashIndex = buildPublicImageHashIndex();
     galleryFocusCustom.addEventListener('input', () => {
       syncGalleryFocusPreview();
     });
+    gallerySlugInput.addEventListener('input', () => {
+      syncGallerySlugFeedback();
+    });
+    gallerySlugInput.addEventListener('blur', () => {
+      const result = validateGallerySlug(gallerySlugInput.value);
+      if (result.ok && !result.empty && gallerySlugInput.value.trim() !== result.filename) {
+        // Normalize casing and ensure .md is visible when the user typed a basename only.
+        gallerySlugInput.value = result.filename;
+      }
+      syncGallerySlugFeedback();
+    });
+    syncGallerySlugFeedback();
 
     async function runDiscretePreview(
       tool: string,
@@ -2393,12 +2441,17 @@ const imageHashIndex = buildPublicImageHashIndex();
       }
       const tags = readGalleryTags();
       const focus = readGalleryFocus();
-      const slug = gallerySlugInput.value.trim();
+      if (!syncGallerySlugFeedback()) {
+        setStatus(gallerySlugError.textContent || 'Fix the gallery file name, then try again.');
+        gallerySlugInput.focus();
+        return;
+      }
+      const slugResult = validateGallerySlug(gallerySlugInput.value);
       const args: Record<string, unknown> = {
         tags,
         focus,
       };
-      if (slug) args.slug = slug;
+      if (!slugResult.empty) args.slug = slugResult.slug;
       await runDiscretePreview(
         'add_gallery_photo',
         args,
@@ -2583,6 +2636,8 @@ const imageHashIndex = buildPublicImageHashIndex();
           summary: c.summary ? String(c.summary) : undefined,
           livePath: c.livePath ? String(c.livePath) : undefined,
           preview: c.preview,
+          commitParams:
+            c.commitParams && typeof c.commitParams === 'object' ? c.commitParams : undefined,
         }));
         provisionalPhotoPath =
           typeof data.provisionalPhotoPath === 'string' ? data.provisionalPhotoPath : null;

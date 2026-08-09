@@ -84,7 +84,8 @@ User-facing messages stay short and non-technical. Full provider/SDK detail is o
 | `StudioStagingPrCreated` / `StudioStagingPrReused` | `api` open or reuse PR for staging-studio branch |
 | `StudioPublishFailed` | `api` updateContent / uploadMedia catch path (`correlationId`, `errorKind`, `operation`) |
 | `StudioToolExecuted` | Gemini tool loop |
-| `GitHubCommitSucceeded` / `GitHubCommitFailed` | Contents API commits |
+| `GitHubCommitSucceeded` / `GitHubCommitFailed` | Git Data API single-commit publishes (`fileCount` on success/failure) |
+| `GitHubCommitRetry` | Transient GitHub/network or tip-race retry before success/failure |
 | `GET /api/publisherStatus` | Preflight allowlist check for Studio UI |
 | `GET /api/publishStatus` | Studio Done-step pipeline poll (`sha` → Actions run status) |
 | Page views / client errors / fetch | Browser SDK in `BaseLayout` |
@@ -163,7 +164,7 @@ Studio / publish events:
 
 ```kusto
 customEvents
-| where name in ("StudioAccessDenied", "StudioPublishDenied", "StudioDraftRequested", "StudioDraftFailed", "StudioPublishRequested", "StudioPublishFailed", "StudioToolExecuted", "GitHubCommitSucceeded", "GitHubCommitFailed", "StudioPublishUiSuccess", "StudioPublishUiFailed", "StudioPublishToProdCompleted", "DeployCompleted", "DeployFailed", "SmokeFailed", "ContactInquiryReceived", "ContactInquiryFailed")
+| where name in ("StudioAccessDenied", "StudioPublishDenied", "StudioDraftRequested", "StudioDraftFailed", "StudioPublishRequested", "StudioPublishFailed", "StudioToolExecuted", "GitHubCommitSucceeded", "GitHubCommitFailed", "GitHubCommitRetry", "StudioPublishUiSuccess", "StudioPublishUiFailed", "StudioPublishToProdCompleted", "DeployCompleted", "DeployFailed", "SmokeFailed", "ContactInquiryReceived", "ContactInquiryFailed")
 | order by timestamp desc
 | take 100
 ```

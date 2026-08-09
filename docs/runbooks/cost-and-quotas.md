@@ -44,7 +44,7 @@ The monthly OPS scorecard digest also reports last-month spend and MoM trend to 
 ## Quotas / limits
 
 - SWA build minutes and bandwidth per tier — see Azure docs
-- GitHub Contents API rate limits — Studio traffic is low
+- GitHub Git Data / Contents API rate limits — Studio traffic is low; publishes use one commit per update with transient retries
 - Photo commits grow the git repo — compress before upload (Studio already resizes)
 - **Gemini models (two configs)** — Studio: `GEMINI_MODEL` → `gemini-3.6-flash`. Search ops / `/for/` drafts: `GEMINI_MODEL_SEARCH_OPS` → `gemini-3.5-flash`. Do not reinstate shut-down IDs such as `gemini-2.0-flash`. If either path fails with quota/429, confirm **that path’s model ID** and that the API key’s Google project matches the quotas you are viewing (per-model, not shared across 3.5 vs 3.6).
 - **Gemini rate limits** — Treat Studio and search-ops budgets as **independent**. Draft jobs must not multi-turn agent-loop in CI; defer on 429 rather than retry-storm. Optional paid upgrade / higher quota is an explicit dependency before raising monthly draft caps on either model.

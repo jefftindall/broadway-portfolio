@@ -61,7 +61,17 @@ app.http('uploadMedia', {
       const committed = await commitFile({
         path: repoPath,
         content: body.dataBase64,
-        message: `media: upload ${filename}`,
+        message: [
+          `studio: uploadMedia ${filename}`,
+          '',
+          'Tool: uploadMedia',
+          'Paths:',
+          `- ${repoPath}`,
+          '',
+          'Params:',
+          `- filename: ${filename}`,
+          `- binary: true`,
+        ].join('\n'),
         binary: true,
         branch: target.branch,
       });

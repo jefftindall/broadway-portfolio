@@ -45,7 +45,7 @@ export const studioCapabilities: StudioCapability[] = [
     tool: 'add_gallery_photo',
     title: 'Gallery photos',
     summary:
-      'From the Studio hub, open Gallery photo — attach a JPEG, PNG, or WebP, pick tags and crop focus, then confirm a site-style tile Preview before publishing. New photos always appear first in the public gallery. You can still attach a photo under Speak or type and ask to add it. Captions stay empty — the public gallery does not show them. If the exact file is already on the site, Studio warns before preview so you can avoid duplicates.',
+      'From the Studio hub, open Gallery photo — attach a JPEG, PNG, or WebP, pick tags from the fixed filter list (custom tags can’t be added), set crop focus, and optionally set a stable gallery file name (Studio adds .md). Confirm a site-style tile Preview before publishing. New photos always appear first in the public gallery. You can still attach a photo under Speak or type and ask to add it. Captions stay empty — the public gallery does not show them. If the exact file is already on the site, Studio warns before preview so you can avoid duplicates.',
     livePath: '/gallery',
     examplePrompts: [
       'Add this photo to my gallery.',
