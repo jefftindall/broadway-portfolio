@@ -46,8 +46,19 @@ variable "github_repo_id" {
 
 variable "github_branch" {
   type        = string
-  description = "Branch Studio commits to"
+  description = "Base git branch for Studio (catalog reads + direct publish). Staging SWA uses STUDIO_PUBLISH_MODE=pr to commit to staging-studio-YYYYMMDD instead."
   default     = "main"
+}
+
+variable "studio_publish_mode" {
+  type        = string
+  description = "Studio publish target: \"direct\" commits to github_branch; \"pr\" commits to staging-studio-YYYYMMDD and opens/updates a PR into github_branch."
+  default     = ""
+
+  validation {
+    condition     = var.studio_publish_mode == "" || contains(["direct", "pr"], var.studio_publish_mode)
+    error_message = "studio_publish_mode must be \"\", \"direct\", or \"pr\"."
+  }
 }
 
 variable "gemini_model" {

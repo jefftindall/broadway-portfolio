@@ -6,7 +6,7 @@ import {
   publisherIdentity,
   unauthorized,
 } from '../lib/auth.js';
-import { commitFile } from '../lib/github.js';
+import { commitFile, ensurePullRequest, preparePublishTarget } from '../lib/github.js';
 import { applyContentChanges, buildContentChange, runContentAgent } from '../lib/gemini.js';
 import { studioFailureResponse } from '../lib/httpErrors.js';
 import { flush, trackEvent, trackException } from '../lib/telemetry.js';
@@ -139,11 +139,15 @@ app.http('updateContent', {
         return { status: 400, jsonBody: { error: 'changes is required for publish' } };
       }
 
+      const target = await preparePublishTarget();
+
       trackEvent('StudioPublishRequested', {
         userId: principal?.userId || 'local',
         hasPhoto,
         correlationId,
         changeCount: String(rawChanges.length),
+        publishMode: target.mode,
+        branch: target.branch,
       });
 
       let changes = rawChanges.map((c) => ({
@@ -164,6 +168,7 @@ app.http('updateContent', {
           content: body.photo.dataBase64,
           message: `media: upload ${filename}`,
           binary: true,
+          branch: target.branch,
         });
         if (photoCommit.commitSha) lastCommitSha = photoCommit.commitSha;
         photoPath = `/images/photos/${filename}`;
@@ -173,8 +178,21 @@ app.http('updateContent', {
         changes = rewritePhotoPaths(changes, provisional, photoPath);
       }
 
-      const result = await applyContentChanges(changes);
+      const result = await applyContentChanges(changes, {
+        branch: target.branch,
+        publishMode: target.mode,
+      });
       const commitSha = result.commitSha || lastCommitSha || undefined;
+
+      /** @type {{ number: number, url: string, created: boolean } | null} */
+      let pullRequest = null;
+      if (target.mode === 'pr') {
+        pullRequest = await ensurePullRequest({
+          head: target.branch,
+          base: target.base,
+        });
+      }
+
       return {
         status: 200,
         jsonBody: {
@@ -182,6 +200,14 @@ app.http('updateContent', {
           actions: result.actions,
           commitSha,
           correlationId,
+          publishMode: target.mode,
+          branch: target.branch,
+          ...(pullRequest
+            ? {
+                prUrl: pullRequest.url,
+                prNumber: pullRequest.number,
+              }
+            : {}),
         },
       };
     } catch (err) {

@@ -6,7 +6,7 @@ import {
   publisherIdentity,
   unauthorized,
 } from '../lib/auth.js';
-import { commitFile } from '../lib/github.js';
+import { commitFile, ensurePullRequest, preparePublishTarget } from '../lib/github.js';
 import { studioFailureResponse } from '../lib/httpErrors.js';
 import { flush, trackEvent, trackException } from '../lib/telemetry.js';
 import slugify from 'slugify';
@@ -51,21 +51,41 @@ app.http('uploadMedia', {
     const correlationId = newCorrelationId();
 
     try {
+      const target = await preparePublishTarget();
       const safe = slugify(String(body.name).replace(/\.\w+$/, ''), {
         lower: true,
         strict: true,
       });
       const filename = `${Date.now()}-${safe || 'photo'}.jpg`;
       const repoPath = `public/images/photos/${filename}`;
-      await commitFile({
+      const committed = await commitFile({
         path: repoPath,
         content: body.dataBase64,
         message: `media: upload ${filename}`,
         binary: true,
+        branch: target.branch,
       });
+      /** @type {{ number: number, url: string } | null} */
+      let pullRequest = null;
+      if (target.mode === 'pr') {
+        const pr = await ensurePullRequest({
+          head: target.branch,
+          base: target.base,
+        });
+        pullRequest = { number: pr.number, url: pr.url };
+      }
       return {
         status: 200,
-        jsonBody: { path: `/images/photos/${filename}`, repoPath },
+        jsonBody: {
+          path: `/images/photos/${filename}`,
+          repoPath,
+          commitSha: committed.commitSha || undefined,
+          publishMode: target.mode,
+          branch: target.branch,
+          ...(pullRequest
+            ? { prUrl: pullRequest.url, prNumber: pullRequest.number }
+            : {}),
+        },
       };
     } catch (err) {
       const failure = studioFailureResponse(err, correlationId, {

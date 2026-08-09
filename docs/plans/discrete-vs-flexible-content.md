@@ -1,10 +1,10 @@
 # Plan: Discrete site variables vs flexible Studio content
 
 **Artifact ID:** `ELYSE-FLEX-001`  
-**Version:** 1.7  
+**Version:** 1.8  
 **Last updated:** 2026-08-09  
 **Audience:** Agents, implementers, Studio publishers  
-**Scope:** Which Studio/Gemini tools may rewrite which content, and how **discrete** fields (rates, later site settings) stay consistent across UI + SEO — not casting SEO strategy itself (`DISC-*`) or GA/GSC (`SEARCH-*`).
+**Scope:** Which Studio/Gemini tools may rewrite which content, and how **discrete** fields (rates, later site settings) stay consistent across UI + SEO — not casting SEO strategy itself (`DISC-*`) or GA/GSC (`SEARCH-*`). Includes staging publish isolation (`FLEX-P5-001`).
 
 Use the **Action ID** column (`FLEX-*`) to reference items in PRs, issues, and commits.
 
@@ -49,6 +49,7 @@ Implement **one phase (or one `FLEX-*` item) per PR** when practical. Prefer lin
 | Structured Preview for discrete fields | `done` | `FLEX-P4-001` — labeled Preview + Quick edit rates |
 | Tool ↔ path pair enforcement at publish | `planned` | Phase 4 residual (`FLEX-P4-002`) |
 | Dedupe `DEFAULT_SITE_SETTINGS` bootstrap vs JSON | `planned` | `FLEX-P4-004` — avoid seed drift |
+| Staging Studio PR publish (dated branches) | `done` | `FLEX-P5-001` — `staging-studio-YYYYMMDD` + PR; 28d cleanup |
 | Extend discrete registry (reel, performer facts, bio, press quote, …) | `done` | Strong P3 shipped (incl. `update_press_quote`); medium candidates still on-demand |
 | Studio hub: Gallery photo compose flow | `done` | `FLEX-P3-002` — structured hub UX for Tier A `add_gallery_photo` |
 
@@ -60,6 +61,7 @@ Implement **one phase (or one `FLEX-*` item) per PR** when practical. Prefer lin
 | **Phase 2** — Discrete rates pipeline | Safe Studio updates for prices only | **Done** (P2-004/005/007; rates on book page) |
 | **Phase 3** — Extend discrete registry | More allowlisted fields as needed | **Strong done**; gallery hub UX `done`; medium still `planned` on demand |
 | **Phase 4** — Preview & guardrails polish | Structured diffs; tool/path mismatch reject | **Partial** — `FLEX-P4-001` `done`; P4-002/003/004 `planned` |
+| **Phase 5** — Staging publish isolation | Staging Studio → dated branch + PR; prod stays direct | **Done** (`FLEX-P5-001`) |
 
 ---
 
@@ -313,13 +315,36 @@ Out of scope for P3 (stay PR/ops): site email (`SITE_CONTACT_EMAIL` / Key Vault)
 <details>
 <summary><code>FLEX-P4-004</code> — Deduplicate site-settings bootstrap</summary>
 
-**Context:** Staging compose reads GitHub `main`. Before this PR merged, `site-settings.json` was missing there, so `readSiteSettings` bootstraps from inline `DEFAULT_SITE_SETTINGS`. Live SoT remains the JSON on the branch once present; the constants are unused day-to-day but can **drift** from the file if someone edits only one copy.
+**Context:** Staging compose reads today's `staging-studio-YYYYMMDD` branch when it exists (PR mode), otherwise `main`. Before `site-settings.json` exists on that branch, `readSiteSettings` bootstraps from inline `DEFAULT_SITE_SETTINGS`. Live SoT remains the JSON on the branch once present; the constants are unused day-to-day but can **drift** from the file if someone edits only one copy.
 
 **Acceptance criteria**
 
 - [ ] Bootstrap seed is loaded from `src/data/site-settings.json` (or another single checked-in SoT), not a hand-copied object in `siteSettings.js`
 - [ ] Missing remote file still allows compose/preview; first publish still creates the GitHub file
 - [ ] Flex/unit test asserts seed parse + schema without a second hardcoded payload (or derives from the same JSON)
+
+</details>
+
+---
+
+### Phase 5 — Staging Studio publish isolation
+
+| ID | Title | Status | Depends on | Primary refs |
+|----|-------|--------|------------|--------------|
+| `FLEX-P5-001` | Staging Studio commits to `staging-studio-YYYYMMDD` + PR into `main` | `done` | — | `api/src/lib/studioPublish.js`, `github.js`, Studio UI, cleanup workflow |
+
+<details>
+<summary><code>FLEX-P5-001</code> — Staging PR publish</summary>
+
+**Acceptance criteria**
+
+- [x] Staging SWA `STUDIO_PUBLISH_MODE=pr` (Terraform); prod remains `direct`
+- [x] Same UTC day reuses one `staging-studio-YYYYMMDD` branch; publish merges latest `main` into it
+- [x] Open/update PR into `main`; Studio Done step shows branch + PR (no prod pipeline poll)
+- [x] Manual **Staging branch** workflow documents testing that branch on staging SWA
+- [x] Daily cleanup deletes dated branches older than 28 days
+- [x] GitHub App runbook requires Pull requests: write; Studio help / deploy / AGENTS updated
+- [ ] Operator grants Pull requests: write on the installed App and applies staging Terraform so `STUDIO_PUBLISH_MODE` is live (out-of-band)
 
 </details>
 
@@ -333,7 +358,7 @@ Out of scope for P3 (stay PR/ops): site email (`SITE_CONTACT_EMAIL` / Key Vault)
 | Publish handler | `api/src/functions/updateContent.js` |
 | Schemas / validate | `api/src/lib/contentSchemas.js`, `contentValidate.js` |
 | Book / lessons content | `src/content/pages/lessons-book.md`, `lessons.md` |
-| Docs / Studio copy | `docs/runbooks/refine-studio-gemini.md`, `src/lib/studioHelp.ts`, `AGENTS.md` |
+| Docs / Studio copy | `docs/runbooks/refine-studio-gemini.md`, `src/lib/studioHelp.ts`, `AGENTS.md`, Studio help Preview & publish |
 
 Infra/Terraform: none expected for Phases 1–2 residual.
 
@@ -368,4 +393,4 @@ Infra/Terraform: none expected for Phases 1–2 residual.
 1. ~~Finish Phase 1 residual~~ `done`
 2. ~~Harden rates + catalog + flex tests~~ `done`
 3. ~~Strong Phase 3 + structured Preview (`FLEX-P4-001`)~~ `done`
-4. Remaining: medium P3 on demand; `FLEX-P4-002` / `FLEX-P4-003` polish; `FLEX-P4-004` single-source settings bootstrap. Gallery hub compose (`FLEX-P3-002`) `done`.
+4. Remaining: medium P3 on demand; `FLEX-P4-002` / `FLEX-P4-003` polish; `FLEX-P4-004` single-source settings bootstrap. Gallery hub compose (`FLEX-P3-002`) `done`. Staging PR publish (`FLEX-P5-001`) `done` (operator: grant App Pull requests write + apply staging TF).

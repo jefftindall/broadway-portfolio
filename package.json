@@ -14,6 +14,7 @@
     "lint": "node scripts/lint.mjs",
     "lint:api": "node scripts/lint-api.mjs",
     "test:api-flex": "node --test api/src/lib/gemini-flex.test.js",
+    "test:api-studio-publish": "node --test api/src/lib/studioPublish.test.js",
     "lint:actions-secrets": "node scripts/check-actions-secret-safety.mjs",
     "test:github-app-token": "bash scripts/test-github-app-token.sh",
     "lint:terraform": "node scripts/lint-terraform.mjs",
