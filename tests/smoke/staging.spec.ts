@@ -90,12 +90,27 @@ test.describe('public smoke', () => {
 
   test('anonymous studio requires sign-in', async ({ request }) => {
     test.skip(!isStaticWebAppHost(), 'SWA auth is only enforced on deployed hosts');
-    const response = await request.get('/studio', { maxRedirects: 0 });
+    let response = await request.get('/studio', { maxRedirects: 0 });
     expect(response.status(), 'studio should redirect unauthenticated users').toBeGreaterThanOrEqual(
       300,
     );
     expect(response.status()).toBeLessThan(400);
-    const location = response.headers()['location'] ?? '';
+    let location = response.headers()['location'] ?? '';
+
+    // When BASE_URL is *.azurestaticapps.net and a custom domain is SWA's default,
+    // Azure 301s /studio to https://<custom>/studio before the auth challenge.
+    // Follow one hop so we still assert Entra login (prod smoke prefers the apex).
+    if (!/\.auth\/login/i.test(location) && /\/studio\/?(\?|$)/i.test(location)) {
+      response = await request.get(location, { maxRedirects: 0 });
+      expect(
+        response.status(),
+        'canonical-domain /studio should still redirect unauthenticated users',
+      ).toBeGreaterThanOrEqual(300);
+      expect(response.status()).toBeLessThan(400);
+      location = response.headers()['location'] ?? '';
+    }
+
     expect(location).toMatch(/\.auth\/login/i);
   });
 });
+
