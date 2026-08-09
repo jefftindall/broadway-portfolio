@@ -154,6 +154,9 @@ test('buildContentChange add_gallery_photo writes gallery markdown + preview', a
   assert.equal(change.tool, 'add_gallery_photo');
   assert.equal(change.path, 'src/content/gallery/nyc-winter-headshot.md');
   assert.equal(change.livePath, '/gallery');
+  assert.match(change.commitMessage, /^studio: add_gallery_photo nyc-winter-headshot\.md$/);
+  assert.equal(change.commitParams?.focus, '50% 28%');
+  assert.deepEqual(change.commitParams?.tags, ['headshot', 'portrait']);
   assert.equal(change.preview?.kind, 'gallery');
   assert.equal(change.preview?.focus, '50% 28%');
   assert.equal(change.preview?.order, undefined);

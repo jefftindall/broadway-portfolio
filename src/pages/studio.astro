@@ -741,6 +741,7 @@ const imageHashIndex = buildPublicImageHashIndex();
       summary?: string;
       livePath?: string;
       preview?: DiscretePreview;
+      commitParams?: Record<string, unknown>;
     };
     type PublishAction = {
       tool?: string;
@@ -2133,6 +2134,7 @@ const imageHashIndex = buildPublicImageHashIndex();
           summary: c.summary,
           livePath: c.livePath,
           preview: c.preview,
+          commitParams: c.commitParams,
         })),
         provisionalPhotoPath:
           typeof data.provisionalPhotoPath === 'string' ? data.provisionalPhotoPath : null,
@@ -2161,6 +2163,7 @@ const imageHashIndex = buildPublicImageHashIndex();
           commitMessage: base.commitMessage,
           livePath: base.livePath,
           preview: base.preview,
+          commitParams: base.commitParams,
         });
       }
       return out;
@@ -2583,6 +2586,8 @@ const imageHashIndex = buildPublicImageHashIndex();
           summary: c.summary ? String(c.summary) : undefined,
           livePath: c.livePath ? String(c.livePath) : undefined,
           preview: c.preview,
+          commitParams:
+            c.commitParams && typeof c.commitParams === 'object' ? c.commitParams : undefined,
         }));
         provisionalPhotoPath =
           typeof data.provisionalPhotoPath === 'string' ? data.provisionalPhotoPath : null;

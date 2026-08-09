@@ -431,9 +431,19 @@ export async function buildContentChange(name, args, photoPath) {
         tool: name,
         path: `src/content/shows/${slug}.md`,
         content,
-        commitMessage: `content: upsert show ${args.title}`,
+        commitMessage: `studio: upsert_show ${slug}.md`,
         summary: `Updated show “${args.title}” at /shows.`,
         livePath: '/shows',
+        commitParams: {
+          title: args.title,
+          year: args.year,
+          role: args.role,
+          venue: args.venue,
+          featured: Boolean(args.featured),
+          category: args.category || undefined,
+          image: args.image || photoPath,
+          imageFocus: args.imageFocus,
+        },
       };
       break;
     }
@@ -454,9 +464,16 @@ export async function buildContentChange(name, args, photoPath) {
         tool: name,
         path: `src/content/news/${slug}.md`,
         content,
-        commitMessage: `content: news ${args.title}`,
+        commitMessage: `studio: create_news_post ${slug}.md`,
         summary: `Published news post “${args.title}” at /news/${slug}.`,
         livePath: `/news/${slug}`,
+        commitParams: {
+          title: args.title,
+          date: args.date || today,
+          description: args.description,
+          tags: args.tags || [],
+          image: args.image || photoPath,
+        },
       };
       break;
     }
@@ -466,9 +483,10 @@ export async function buildContentChange(name, args, photoPath) {
         tool: name,
         path: LESSONS_PAGE,
         content,
-        commitMessage: 'content: update lessons copy',
+        commitMessage: 'studio: update_lessons_copy lessons.md',
         summary: 'Updated lessons philosophy and details at /lessons.',
         livePath: '/lessons',
+        commitParams: { path: LESSONS_PAGE },
       };
       break;
     }
@@ -484,9 +502,13 @@ export async function buildContentChange(name, args, photoPath) {
         tool: name,
         path: LESSONS_PAGE,
         content,
-        commitMessage: 'content: update lessons seo',
+        commitMessage: 'studio: update_lessons_seo lessons.md',
         summary: 'Updated Lessons page title/description.',
         livePath: '/lessons',
+        commitParams: {
+          title: args.title,
+          description: args.description,
+        },
       };
       break;
     }
@@ -497,9 +519,12 @@ export async function buildContentChange(name, args, photoPath) {
         tool: name,
         path: LESSONS_BOOK_PAGE,
         content,
-        commitMessage: 'content: update lesson rates',
+        commitMessage: 'studio: update_lesson_rates lessons-book.md',
         summary: 'Updated lesson rates at /lessons/book.',
         livePath: '/lessons/book',
+        commitParams: {
+          rates: formatRatesParam(rates),
+        },
         preview: {
           kind: 'rates',
           rates: rates.map((r) => ({
@@ -526,9 +551,13 @@ export async function buildContentChange(name, args, photoPath) {
         tool: name,
         path: LESSONS_BOOK_PAGE,
         content,
-        commitMessage: 'content: update lesson scheduling',
+        commitMessage: 'studio: update_lesson_scheduling lessons-book.md',
         summary: 'Updated lesson scheduling details at /lessons/book.',
         livePath: '/lessons/book',
+        commitParams: {
+          format: args.format,
+          scheduling: args.scheduling,
+        },
       };
       break;
     }
@@ -544,9 +573,13 @@ export async function buildContentChange(name, args, photoPath) {
         tool: name,
         path: LESSONS_BOOK_PAGE,
         content,
-        commitMessage: 'content: update lesson book seo',
+        commitMessage: 'studio: update_lesson_book_seo lessons-book.md',
         summary: 'Updated book-a-lesson page title/description.',
         livePath: '/lessons/book',
+        commitParams: {
+          title: args.title,
+          description: args.description,
+        },
       };
       break;
     }
@@ -578,9 +611,15 @@ export async function buildContentChange(name, args, photoPath) {
         tool: name,
         path: `src/content/gallery/${slug}.md`,
         content,
-        commitMessage: `content: gallery ${slug}`,
+        commitMessage: `studio: add_gallery_photo ${slug}.md`,
         summary: `Added gallery photo (${slug}).`,
         livePath: '/gallery',
+        commitParams: {
+          slug,
+          image,
+          tags,
+          focus: focus || 'center',
+        },
         preview: {
           kind: 'gallery',
           slug,
@@ -599,9 +638,10 @@ export async function buildContentChange(name, args, photoPath) {
         tool: name,
         path: merged.path,
         content: merged.content,
-        commitMessage: 'content: update reel url',
+        commitMessage: 'studio: update_reel_url site-settings.json',
         summary: 'Updated the casting reel link on Materials and related pages.',
         livePath: '/materials',
+        commitParams: { reelUrl: merged.data.reelUrl },
         preview: { kind: 'reel', reelUrl: merged.data.reelUrl },
       };
       break;
@@ -622,9 +662,15 @@ export async function buildContentChange(name, args, photoPath) {
         tool: name,
         path: merged.path,
         content: merged.content,
-        commitMessage: 'content: update performer facts',
+        commitMessage: 'studio: update_performer_facts site-settings.json',
         summary: 'Updated performer facts on About and Materials.',
         livePath: '/materials',
+        commitParams: {
+          patchedKeys: Object.keys(performer),
+          ...Object.fromEntries(
+            Object.entries(performer).map(([k, v]) => [`performer.${k}`, v]),
+          ),
+        },
         preview: {
           kind: 'performer',
           performer: merged.data.performer,
@@ -641,9 +687,10 @@ export async function buildContentChange(name, args, photoPath) {
         tool: name,
         path: merged.path,
         content: merged.content,
-        commitMessage: 'content: update short bio',
+        commitMessage: 'studio: update_short_bio site-settings.json',
         summary: 'Updated the short bio on the About page.',
         livePath: '/about',
+        commitParams: { shortBio: merged.data.shortBio },
         preview: { kind: 'shortBio', shortBio: merged.data.shortBio },
       };
       break;
@@ -664,9 +711,13 @@ export async function buildContentChange(name, args, photoPath) {
         tool: name,
         path: merged.path,
         content: merged.content,
-        commitMessage: 'content: update press quote',
+        commitMessage: 'studio: update_press_quote site-settings.json',
         summary: 'Updated the homepage press quote.',
         livePath: '/',
+        commitParams: {
+          quote: merged.data.pressQuote.quote,
+          attribution: merged.data.pressQuote.attribution,
+        },
         preview: {
           kind: 'pressQuote',
           quote: merged.data.pressQuote.quote,
@@ -700,9 +751,18 @@ export async function buildContentChange(name, args, photoPath) {
         tool: name,
         path,
         content,
-        commitMessage: `content: update casting fields ${slug}`,
+        commitMessage: `studio: update_casting_fields ${slug}.md`,
         summary: `Updated casting page fields at /for/${slug}.`,
         livePath: `/for/${slug}`,
+        commitParams: {
+          slug,
+          keyword: parsed.data.keyword,
+          title: parsed.data.title,
+          description: parsed.data.description,
+          cta: parsed.data.cta,
+          relatedShows: parsed.data.relatedShows || [],
+          relatedSkills: parsed.data.relatedSkills || [],
+        },
         preview: {
           kind: 'casting',
           slug,
@@ -744,28 +804,259 @@ export function publicUrlForContentPath(path) {
 }
 
 /**
+ * Format a commit-message param value for the commit body.
+ * @param {unknown} value
+ * @returns {string}
+ */
+function formatCommitParamValue(value) {
+  if (value == null) return '';
+  if (Array.isArray(value)) {
+    return value
+      .map((v) => String(v ?? '').trim())
+      .filter(Boolean)
+      .join(', ');
+  }
+  if (typeof value === 'object') {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  }
+  const text = String(value).replace(/\s+/g, ' ').trim();
+  if (text.length > 120) return `${text.slice(0, 117)}...`;
+  return text;
+}
+
+/**
+ * Summarize lesson rates for a commit message body.
+ * @param {unknown} rates
+ */
+function formatRatesParam(rates) {
+  if (!Array.isArray(rates)) return '';
+  return rates
+    .map((r) => {
+      if (!r || typeof r !== 'object') return '';
+      const id = String(/** @type {{ id?: string }} */ (r).id || '').trim();
+      const price =
+        /** @type {{ price?: string, priceAmount?: number }} */ (r).price ||
+        (/** @type {{ priceAmount?: number }} */ (r).priceAmount != null
+          ? `$${/** @type {{ priceAmount?: number }} */ (r).priceAmount}`
+          : '');
+      if (!id) return '';
+      return price ? `${id}=${price}` : id;
+    })
+    .filter(Boolean)
+    .join('; ');
+}
+
+/**
+ * Pull configuration params from a change (explicit params, preview, or file content).
+ * @param {{
+ *   tool?: string,
+ *   path?: string,
+ *   content?: string,
+ *   commitParams?: Record<string, unknown>,
+ *   preview?: Record<string, unknown>,
+ * }} change
+ * @returns {Record<string, string>}
+ */
+export function extractCommitParams(change) {
+  /** @type {Record<string, string>} */
+  const out = {};
+  const put = (key, value) => {
+    const formatted = formatCommitParamValue(value);
+    if (!formatted) return;
+    out[key] = formatted;
+  };
+
+  const explicit =
+    change.commitParams && typeof change.commitParams === 'object' ? change.commitParams : null;
+  if (explicit) {
+    for (const [key, value] of Object.entries(explicit)) {
+      if (key === 'kind' || key === 'order') continue;
+      put(key, value);
+    }
+  }
+
+  const preview = change.preview && typeof change.preview === 'object' ? change.preview : null;
+  if (preview) {
+    for (const [key, value] of Object.entries(preview)) {
+      if (key === 'kind' || key === 'order' || out[key]) continue;
+      if (key === 'rates') {
+        put('rates', formatRatesParam(value));
+        continue;
+      }
+      if (key === 'patchedKeys' && Array.isArray(value)) {
+        put('patchedKeys', value);
+        continue;
+      }
+      put(key, value);
+    }
+  }
+
+  const path = String(change.path || '').replace(/\\/g, '/');
+  const content = String(change.content ?? '');
+  const tool = String(change.tool || '');
+
+  if (path.endsWith('.md') && content.includes('---')) {
+    try {
+      const { data } = matter(content);
+      const fm = data && typeof data === 'object' ? data : {};
+      const keysByTool = {
+        upsert_show: [
+          'title',
+          'year',
+          'role',
+          'venue',
+          'featured',
+          'category',
+          'image',
+          'imageFocus',
+          'videoUrl',
+        ],
+        create_news_post: ['title', 'date', 'description', 'tags', 'image', 'videoUrl'],
+        add_gallery_photo: ['image', 'tags', 'focus'],
+        update_lessons_seo: ['title', 'description'],
+        update_lesson_rates: ['rates'],
+        update_lesson_scheduling: ['format', 'scheduling'],
+        update_lesson_book_seo: ['title', 'description'],
+        update_casting_fields: [
+          'keyword',
+          'title',
+          'description',
+          'cta',
+          'relatedShows',
+          'relatedSkills',
+        ],
+      };
+      const keys =
+        keysByTool[tool] ||
+        [
+          'title',
+          'year',
+          'role',
+          'venue',
+          'date',
+          'tags',
+          'image',
+          'focus',
+          'imageFocus',
+          'keyword',
+          'featured',
+          'category',
+          'format',
+          'scheduling',
+          'rates',
+          'description',
+          'cta',
+        ];
+      for (const key of keys) {
+        if (out[key] || fm[key] == null || fm[key] === '') continue;
+        if (key === 'rates') {
+          put('rates', formatRatesParam(fm[key]));
+          continue;
+        }
+        put(key, fm[key]);
+      }
+    } catch {
+      // Ignore frontmatter parse errors; subject/paths still land in the commit.
+    }
+  }
+
+  if (path === SITE_SETTINGS_PATH || path.endsWith('site-settings.json')) {
+    try {
+      const data = JSON.parse(content);
+      if (tool === 'update_reel_url' || data.reelUrl) put('reelUrl', data.reelUrl);
+      if (tool === 'update_short_bio' || data.shortBio) put('shortBio', data.shortBio);
+      if (tool === 'update_press_quote' || data.pressQuote) {
+        if (data.pressQuote?.quote) put('quote', data.pressQuote.quote);
+        if (data.pressQuote?.attribution) put('attribution', data.pressQuote.attribution);
+      }
+      if (tool === 'update_performer_facts' || data.performer) {
+        const performer = data.performer && typeof data.performer === 'object' ? data.performer : {};
+        for (const key of PERFORMER_FACT_KEYS) {
+          if (performer[key]) put(`performer.${key}`, performer[key]);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  return out;
+}
+
+/**
  * Build one commit message for a multi-file Studio publish.
- * @param {Array<{ path?: string, commitMessage?: string, message?: string }>} changes
+ * Subject stays scannable in `git log --oneline`; body lists paths + config params.
+ *
+ * @param {Array<{
+ *   path?: string,
+ *   content?: string,
+ *   commitMessage?: string,
+ *   message?: string,
+ *   tool?: string,
+ *   commitParams?: Record<string, unknown>,
+ *   preview?: Record<string, unknown>,
+ * }>} changes
  * @param {Array<{ path?: string }>} [extraFiles]
  */
 export function buildPublishCommitMessage(changes, extraFiles = []) {
-  const messages = (Array.isArray(changes) ? changes : [])
-    .map((c) => String(c.commitMessage || c.message || '').trim())
+  const list = Array.isArray(changes) ? changes : [];
+  const media = Array.isArray(extraFiles) ? extraFiles : [];
+  const tools = [
+    ...new Set(list.map((c) => String(c.tool || '').trim()).filter(Boolean)),
+  ];
+  const contentPaths = list
+    .map((c) => String(c.path || '').replace(/\\/g, '/'))
     .filter(Boolean);
-  const unique = [...new Set(messages)];
-  let message =
-    unique.length === 0
-      ? 'content: studio update'
-      : unique.length === 1
-        ? unique[0]
-        : unique.join('; ');
-  const mediaCount = Array.isArray(extraFiles) ? extraFiles.length : 0;
-  if (mediaCount > 0 && !/\b(media|image|photo)\b/i.test(message)) {
-    message = `${message} (+ image)`;
+  const mediaPaths = media
+    .map((f) => String(f.path || '').replace(/\\/g, '/'))
+    .filter(Boolean);
+  const allPaths = [...new Set([...contentPaths, ...mediaPaths])];
+
+  const toolLabel =
+    tools.length === 1 ? tools[0] : tools.length > 1 ? tools.join('+') : 'publish';
+  const primary =
+    contentPaths[0]?.split('/').pop() || mediaPaths[0]?.split('/').pop() || 'update';
+  let subject = `studio: ${toolLabel} ${primary}`;
+  if (mediaPaths.length > 0) subject += ' (+image)';
+  // Prefer a dedicated subject from the first change when it already looks Studio-shaped.
+  const legacy = String(list[0]?.commitMessage || list[0]?.message || '').trim();
+  if (legacy.startsWith('studio:') && list.length === 1 && mediaPaths.length === 0) {
+    subject = legacy.split('\n')[0].trim() || subject;
   }
-  // GitHub commit subject soft limit; keep message readable in history.
-  if (message.length > 180) message = `${message.slice(0, 177)}...`;
-  return message;
+  if (subject.length > 90) subject = `${subject.slice(0, 87)}...`;
+
+  const lines = [subject, ''];
+  lines.push(`Tool: ${tools.length ? tools.join(', ') : 'publish'}`);
+  lines.push('Paths:');
+  if (allPaths.length === 0) {
+    lines.push('- (none)');
+  } else {
+    for (const p of allPaths) lines.push(`- ${p}`);
+  }
+
+  if (list.length <= 1) {
+    const params = extractCommitParams(list[0] || {});
+    const entries = Object.entries(params);
+    if (entries.length) {
+      lines.push('', 'Params:');
+      for (const [key, value] of entries) lines.push(`- ${key}: ${value}`);
+    }
+  } else {
+    for (const change of list) {
+      const params = extractCommitParams(change);
+      const entries = Object.entries(params);
+      if (!entries.length) continue;
+      const label = String(change.path || change.tool || 'change');
+      lines.push('', `Params (${label}):`);
+      for (const [key, value] of entries) lines.push(`- ${key}: ${value}`);
+    }
+  }
+
+  return lines.join('\n').trimEnd() + '\n';
 }
 
 /**

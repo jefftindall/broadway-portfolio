@@ -156,6 +156,9 @@ app.http('updateContent', {
         commitMessage: String(c.commitMessage || c.message || ''),
         tool: c.tool ? String(c.tool) : undefined,
         summary: c.summary ? String(c.summary) : undefined,
+        preview: c.preview && typeof c.preview === 'object' ? c.preview : undefined,
+        commitParams:
+          c.commitParams && typeof c.commitParams === 'object' ? c.commitParams : undefined,
       }));
 
       /** @type {Array<{ path: string, content: string, binary: boolean }>} */

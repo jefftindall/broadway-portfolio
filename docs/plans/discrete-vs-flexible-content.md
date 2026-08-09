@@ -359,8 +359,10 @@ Out of scope for P3 (stay PR/ops): site email (`SITE_CONTACT_EMAIL` / Key Vault)
 - [x] `applyContentChanges` batches all approved content files (plus optional media) into that same commit
 - [x] Transient GitHub/network errors and tip races retry server-side before failing the Studio UI (`GitHubCommitRetry`)
 - [x] Partial blob/tree work is never visible on the branch until the final ref update succeeds
+- [x] Commit messages include tool, repo paths, and key config params (subject + body)
 - [x] Unit coverage for retry classification + commit message builder (`npm run test:api-github-commit`)
 - [x] GitHub App / observability runbooks mention Git Data API single-commit publishes
+- [x] Speak/type + attached photo uses the same publish path as hub Gallery (single commit)
 
 </details>
 

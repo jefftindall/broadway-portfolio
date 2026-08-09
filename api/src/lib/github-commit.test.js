@@ -106,28 +106,75 @@ test('withGithubRetry retries tip races', async () => {
   assert.equal(attempts, 2);
 });
 
-test('buildPublishCommitMessage prefers content message and notes image', () => {
-  assert.equal(
-    buildPublishCommitMessage([{ commitMessage: 'content: gallery abc' }]),
-    'content: gallery abc',
+test('buildPublishCommitMessage includes tool, paths, and params', () => {
+  const msg = buildPublishCommitMessage(
+    [
+      {
+        tool: 'add_gallery_photo',
+        path: 'src/content/gallery/nyc-headshot.md',
+        content: `---
+image: "/images/photos/123-nyc-headshot.jpg"
+tags:
+  - "headshot"
+  - "theatre"
+focus: "center"
+order: -1
+---
+`,
+        commitMessage: 'studio: add_gallery_photo nyc-headshot.md',
+        commitParams: {
+          slug: 'nyc-headshot',
+          tags: ['headshot', 'theatre'],
+          focus: 'center',
+          image: '/images/photos/123-nyc-headshot.jpg',
+        },
+      },
+    ],
+    [{ path: 'public/images/photos/123-nyc-headshot.jpg' }],
   );
-  assert.equal(
-    buildPublishCommitMessage([{ commitMessage: 'content: gallery abc' }], [
-      { path: 'public/images/photos/1.jpg' },
-    ]),
-    'content: gallery abc (+ image)',
-  );
-  assert.equal(
-    buildPublishCommitMessage(
-      [{ commitMessage: 'content: a' }, { commitMessage: 'content: b' }],
-      [],
-    ),
-    'content: a; content: b',
-  );
-  assert.equal(
-    buildPublishCommitMessage([{ commitMessage: 'media: upload x.jpg' }], [
-      { path: 'public/images/photos/x.jpg' },
-    ]),
-    'media: upload x.jpg',
-  );
+  assert.match(msg, /^studio: add_gallery_photo nyc-headshot\.md \(\+image\)\n/);
+  assert.match(msg, /Tool: add_gallery_photo/);
+  assert.match(msg, /- src\/content\/gallery\/nyc-headshot\.md/);
+  assert.match(msg, /- public\/images\/photos\/123-nyc-headshot\.jpg/);
+  assert.match(msg, /Params:/);
+  assert.match(msg, /- tags: headshot, theatre/);
+  assert.match(msg, /- focus: center/);
+  assert.match(msg, /- image: \/images\/photos\/123-nyc-headshot\.jpg/);
+});
+
+test('buildPublishCommitMessage extracts params from markdown when commitParams omitted', () => {
+  const msg = buildPublishCommitMessage([
+    {
+      tool: 'upsert_show',
+      path: 'src/content/shows/hamilton.md',
+      content: `---
+title: "Hamilton"
+year: 2026
+role: "Eliza"
+venue: "Demo Theatre - New York, NY"
+featured: true
+---
+Body
+`,
+      commitMessage: 'studio: upsert_show hamilton.md',
+    },
+  ]);
+  assert.match(msg, /^studio: upsert_show hamilton\.md\n/);
+  assert.match(msg, /- title: Hamilton/);
+  assert.match(msg, /- year: 2026/);
+  assert.match(msg, /- role: Eliza/);
+  assert.match(msg, /- featured: true/);
+});
+
+test('buildPublishCommitMessage summarizes lesson rates', () => {
+  const msg = buildPublishCommitMessage([
+    {
+      tool: 'update_lesson_rates',
+      path: 'src/content/pages/lessons-book.md',
+      content: '---\nrates: []\n---\n',
+      commitParams: { rates: '30min=$60; 60min=$110' },
+    },
+  ]);
+  assert.match(msg, /Tool: update_lesson_rates/);
+  assert.match(msg, /- rates: 30min=\$60; 60min=\$110/);
 });
