@@ -7,6 +7,7 @@ export const SITE_SETTINGS_PATH = 'src/data/site-settings.json';
  * Used when the file is not on the GitHub branch yet (e.g. pre-merge staging
  * while Studio still reads/writes GITHUB_BRANCH, usually main). First publish
  * of reel / short bio / performer facts creates the file.
+ * TODO(FLEX-P4-004): load seed from src/data/site-settings.json so this cannot drift.
  */
 export const DEFAULT_SITE_SETTINGS = siteSettingsSchema.parse({
   reelUrl: 'https://youtu.be/41jdPTkN_Sw',

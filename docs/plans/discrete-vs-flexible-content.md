@@ -1,7 +1,7 @@
 # Plan: Discrete site variables vs flexible Studio content
 
 **Artifact ID:** `ELYSE-FLEX-001`  
-**Version:** 1.3  
+**Version:** 1.4  
 **Last updated:** 2026-08-09  
 **Audience:** Agents, implementers, Studio publishers  
 **Scope:** Which Studio/Gemini tools may rewrite which content, and how **discrete** fields (rates, later site settings) stay consistent across UI + SEO — not casting SEO strategy itself (`DISC-*`) or GA/GSC (`SEARCH-*`).
@@ -48,6 +48,7 @@ Implement **one phase (or one `FLEX-*` item) per PR** when practical. Prefer lin
 | Inject live rates into draft catalog context | `done` | Catalog includes live rates + settings snapshot |
 | Structured Preview for discrete fields | `done` | `FLEX-P4-001` — labeled Preview + Quick edit rates |
 | Tool ↔ path pair enforcement at publish | `planned` | Phase 4 residual (`FLEX-P4-002`) |
+| Dedupe `DEFAULT_SITE_SETTINGS` bootstrap vs JSON | `planned` | `FLEX-P4-004` — avoid seed drift |
 | Extend discrete registry (reel, performer facts, bio, …) | `done` | Strong P3 shipped; medium candidates still on-demand |
 
 ### Phase rollup
@@ -57,7 +58,7 @@ Implement **one phase (or one `FLEX-*` item) per PR** when practical. Prefer lin
 | **Phase 1** — Stop the bleed | Remove dangerous full-page tools; tighten allowlist; de-dupe rates from philosophy markdown | **Done** |
 | **Phase 2** — Discrete rates pipeline | Safe Studio updates for prices only | **Done** (P2-004/005/007; rates on book page) |
 | **Phase 3** — Extend discrete registry | More allowlisted fields as needed | **Strong done**; medium still `planned` on demand |
-| **Phase 4** — Preview & guardrails polish | Structured diffs; tool/path mismatch reject | **Partial** — `FLEX-P4-001` `done`; P4-002/003 `planned` |
+| **Phase 4** — Preview & guardrails polish | Structured diffs; tool/path mismatch reject | **Partial** — `FLEX-P4-001` `done`; P4-002/003/004 `planned` |
 
 ---
 
@@ -279,6 +280,7 @@ Out of scope for P3 (stay PR/ops): site email (`SITE_CONTACT_EMAIL` / Key Vault)
 | `FLEX-P4-001` | Structured Preview for discrete rate changes | `done` | `FLEX-P2-003` | Studio UI + Quick edit rates |
 | `FLEX-P4-002` | Reject publish when tool / path pair mismatches | `planned` | `FLEX-P1-004` | `updateContent.js` / publish path |
 | `FLEX-P4-003` | Optional early Zod/frontmatter check UX for flexible markdown | `planned` | — | Already partial via `validateContentFile` |
+| `FLEX-P4-004` | Single-source site-settings bootstrap (no duplicated defaults) | `planned` | `FLEX-P3-001` | `api/src/lib/siteSettings.js`, `src/data/site-settings.json` |
 
 <details>
 <summary><code>FLEX-P4-001</code> / <code>FLEX-P4-002</code></summary>
@@ -287,6 +289,19 @@ Out of scope for P3 (stay PR/ops): site email (`SITE_CONTACT_EMAIL` / Key Vault)
 
 - [x] Rate updates show dollar fields in Preview (not only raw markdown/JSON); Quick edit on compose; Preview confirmation is read-only
 - [ ] Server rejects e.g. rates tool writing a non-book path (and inverse) — `FLEX-P4-002`
+
+</details>
+
+<details>
+<summary><code>FLEX-P4-004</code> — Deduplicate site-settings bootstrap</summary>
+
+**Context:** Staging compose reads GitHub `main`. Before this PR merged, `site-settings.json` was missing there, so `readSiteSettings` bootstraps from inline `DEFAULT_SITE_SETTINGS`. Live SoT remains the JSON on the branch once present; the constants are unused day-to-day but can **drift** from the file if someone edits only one copy.
+
+**Acceptance criteria**
+
+- [ ] Bootstrap seed is loaded from `src/data/site-settings.json` (or another single checked-in SoT), not a hand-copied object in `siteSettings.js`
+- [ ] Missing remote file still allows compose/preview; first publish still creates the GitHub file
+- [ ] Flex/unit test asserts seed parse + schema without a second hardcoded payload (or derives from the same JSON)
 
 </details>
 
@@ -316,6 +331,7 @@ Infra/Terraform: none expected for Phases 1–2 residual.
 | Preview path tampering | Enforce path allowlist by content kind at publish (`FLEX-P1-004`) |
 | Dual formatting (`$60` vs `60.00`) | Prefer required `priceAmount`; format display string at the edge |
 | `lessons_copy` still overwrites philosophy body | Accept for now; lock to PR if quality/risk warrants |
+| Inline `DEFAULT_SITE_SETTINGS` vs JSON | Seed-only for missing GitHub file; dedupe via `FLEX-P4-004` |
 
 ---
 
@@ -334,4 +350,4 @@ Infra/Terraform: none expected for Phases 1–2 residual.
 1. ~~Finish Phase 1 residual~~ `done`
 2. ~~Harden rates + catalog + flex tests~~ `done`
 3. ~~Strong Phase 3 + structured Preview (`FLEX-P4-001`)~~ `done`
-4. Remaining: medium P3 on demand; `FLEX-P4-002` / `FLEX-P4-003` polish.
+4. Remaining: medium P3 on demand; `FLEX-P4-002` / `FLEX-P4-003` polish; `FLEX-P4-004` single-source settings bootstrap.
