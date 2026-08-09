@@ -1,9 +1,9 @@
 name: OPS monthly scorecard
 
-# OPS-P0-004 / OPS-P4-002 — Re-evaluate docs/ops scorecard, commit to main via
-# Studio GitHub App, email ACS digest (ALERT-EMAIL + SITE-CONTACT-EMAIL) with
-# scores + subscription spend/MoM. Never writes emails, phones, App private keys,
-# or other secrets into the scorecard or logs.
+# OPS-P0-004 / OPS-P4-002 / OPS-P5 — Re-evaluate docs/ops scorecard, commit to
+# main via Studio GitHub App, email ACS digest (ALERT-EMAIL + SITE-CONTACT-EMAIL)
+# with scores + subscription spend/MoM + site performance. Never writes emails,
+# phones, App private keys, GA SA JSON, or other secrets into the scorecard or logs.
 # Scorecard-only pushes are excluded from azure-static-web-apps.yml (paths-ignore).
 
 on:
@@ -92,6 +92,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Fetch GA Data API secrets
+        env:
+          AZURE_SHARED_KEY_VAULT_NAME: ${{ vars.AZURE_SHARED_KEY_VAULT_NAME }}
+        run: |
+          set -euo pipefail
+          set +x
+          chmod +x scripts/fetch-ga-scorecard-secrets.sh
+          ./scripts/fetch-ga-scorecard-secrets.sh
+
       - name: Refresh scorecard
         run: node scripts/ops-scorecard-refresh.mjs --monthly --azure
 
@@ -108,6 +117,16 @@ jobs:
             git commit -m "OPS: monthly operational excellence scorecard (${stamp})"
             git push origin HEAD:main
             echo "Pushed scorecard refresh to main as elyse-portfolio-studio[bot] (${stamp})."
+          fi
+
+      - name: Cleanup GA service-account temp file
+        if: always()
+        run: |
+          set -euo pipefail
+          set +x
+          if [[ -n "${GA_DATA_API_SA_JSON_FILE:-}" && -f "${GA_DATA_API_SA_JSON_FILE}" ]]; then
+            rm -f "${GA_DATA_API_SA_JSON_FILE}"
+            echo "Removed GA Data API temp credentials file."
           fi
 
       - name: Fetch ACS digest secrets

@@ -1,5 +1,5 @@
 ---
-description: Keep Search/GA Phase 1–2 contracts current when SEO or analytics change
+description: Keep Search/GA Phase 1–3 contracts current when SEO or analytics change
 globs:
   - src/components/Seo.astro
   - src/layouts/BaseLayout.astro
@@ -11,10 +11,11 @@ globs:
   - tests/journeys/seo.spec.ts
   - tests/smoke/staging.spec.ts
   - docs/plans/search-and-analytics.md
+  - docs/runbooks/search-ops-monthly.md
   - src/content/casting/**
 ---
 
-# Search Console & Analytics (Phase 1 + Phase 2)
+# Search Console & Analytics (Phase 1–3)
 
 Phased work and action IDs live in [docs/plans/search-and-analytics.md](docs/plans/search-and-analytics.md) (`SEARCH-*`). Casting content strategy stays in `DISC-*` / [casting-discoverability.md](docs/plans/casting-discoverability.md).
 
@@ -35,6 +36,13 @@ Phased work and action IDs live in [docs/plans/search-and-analytics.md](docs/pla
 - **OG default:** `public/images/og-default.jpg` is 1200×630 JPEG; default path emits `og:image:width` / `height` / `alt`.
 - **Tests:** `J-SEO-01` in `tests/journeys/seo.spec.ts`; smoke asserts robots Disallow.
 
+## Phase 3 — Operating loop
+
+- Monthly GSC + GA review checklist: [search-ops-monthly.md](docs/runbooks/search-ops-monthly.md) (`SEARCH-P3-001`–`003`).
+- Feed findings into `DISC-*` / content PRs — do not paste PII or full query exports into git.
+- Re-check GSC Experience/CWV after major hero/reel visual changes.
+- Ops scorecard visits/contacts (`OPS-P5-*`) do **not** replace this GSC query review.
+
 ## Keep docs in sync
 
 When you change the surfaces in this rule’s globs (or GA events / SEO contracts), update in the **same PR**:
@@ -46,5 +54,6 @@ When you change the surfaces in this rule’s globs (or GA events / SEO contract
 | Person JSON-LD merge or page schemas | Plan Phase 2 + `docs/style-guide.md` SEO notes |
 | robots.txt / OG default / slashless URLs | Plan Phase 2 statuses/ACs |
 | SEO journey/smoke coverage | Plan `SEARCH-P2-007` + `ux-release-testing-strategy.md` (`J-SEO-01`) |
+| Monthly GSC/GA review process | Plan Phase 3 + [search-ops-monthly.md](docs/runbooks/search-ops-monthly.md) |
 
 Prefer linking the plan from PR bodies over pasting the full backlog.

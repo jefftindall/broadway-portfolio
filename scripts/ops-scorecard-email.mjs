@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 /**
- * OPS-P4-002 — Email monthly site health digest via ACS.
+ * OPS-P4-002 / OPS-P5-005 — Email monthly site health digest via ACS.
  *
  * Reads docs/ops/scorecard-evaluation.json (after refresh). Recipients and ACS
  * creds come from env (Key Vault → GITHUB_ENV). Never logs recipient addresses
- * or connection strings. Digest body is scores + USD figures only — written for
- * a non-technical reader (clear status, money, and site experience).
+ * or connection strings. Digest body is scores + USD + activity counts/paths
+ * only — written for a non-technical reader (clear status, money, and site experience).
+ * Format / visual SoT: .cursor/rules/ops-monthly-checkin-email.mdc — evolve this template;
+ * do not invent sender branding or print scoring thresholds in the body.
  *
  * Env:
  *   ACS_CONNECTION_STRING, ACS_EMAIL_SENDER (required to send)
@@ -20,6 +22,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { EmailClient } from "@azure/communication-email";
+import { withPageLabel } from "./lib/page-labels.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const EVAL_PATH = join(ROOT, "docs/ops/scorecard-evaluation.json");
@@ -51,25 +54,27 @@ const COLORS = {
 const SLO_COPY = {
   "SLO-1": {
     title: "Homepage",
-    blurb: "Visitors can open the home page",
+    blurb: "First stop for casting and fans — should load cleanly",
   },
   "SLO-4": {
     title: "Resume & headshot",
-    blurb: "Casting materials links work",
+    blurb: "Materials casting expects to open without friction",
   },
   "SLO-6": {
     title: "Page speed",
-    blurb: "Home page feels snappy on a phone",
+    blurb: "Home should feel snappy on a phone — slow loads lose attention",
   },
   "SLO-2": {
     title: "Studio publishing",
-    blurb: "Updates from Studio go through",
+    blurb: "When you publish from Studio, the update should go through",
   },
   "SLO-3": {
     title: "Live after publish",
-    blurb: "Site updates show up within about 20 minutes",
+    blurb: "Successful publishes should appear on the live site soon after",
   },
 };
+
+const STATUS_RANK = { missed: 3, watch: 2, stale: 1, ok: 0, met: 0 };
 
 function envTrim(name) {
   return String(process.env[name] || "").trim();
@@ -129,31 +134,15 @@ function statusTone(status) {
   };
 }
 
-function overallTone(overall, target) {
-  if (overall >= (target ?? 3.8)) {
-    return {
-      headline: "Everything looks healthy",
-      detail: "Your site and Studio are in good shape this month.",
-      ...statusTone("met"),
-    };
-  }
-  if (overall >= 3) {
-    return {
-      headline: "Mostly solid — a few things to watch",
-      detail: "Nothing urgent, but a couple of areas could use a closer look.",
-      ...statusTone("watch"),
-    };
-  }
-  return {
-    headline: "A few items need attention",
-    detail: "Jeff has the technical checklist; the highlights are below.",
-    ...statusTone("missed"),
-  };
+function worseStatus(a, b) {
+  const ra = STATUS_RANK[String(a || "").toLowerCase()] ?? 0;
+  const rb = STATUS_RANK[String(b || "").toLowerCase()] ?? 0;
+  return ra >= rb ? a : b;
 }
 
 function friendlySloNote(slo) {
   const status = String(slo.status || "").toLowerCase();
-  if (status === "met") return "On track.";
+  if (status === "met" || status === "ok") return "On track.";
   if (status === "missed") return "Below the goal — worth a look.";
   if (status === "watch") return "Close to the goal — worth watching.";
   if (status === "stale") {
@@ -163,6 +152,161 @@ function friendlySloNote(slo) {
     return "We did not get a clear reading this month.";
   }
   return slo.note || "—";
+}
+
+function friendlyFreshnessNote(row, assetLabel) {
+  if (!row) return "";
+  const status = String(row.status || "").toLowerCase();
+  const days = row.daysSinceUpdate;
+  const label = assetLabel || row.label || "This content";
+  if (status === "ok") {
+    return days == null
+      ? `${label} looks current.`
+      : `Updated about ${days} day(s) ago — still feels current.`;
+  }
+  if (status === "watch") {
+    return `${label} has not been refreshed in a while (${days} days) — a refresh would keep it feeling current.`;
+  }
+  if (status === "missed") {
+    return `${label} has gone a long time without an update (${days} days) — casting may wonder if it is still current.`;
+  }
+  return row.note || "Freshness could not be checked.";
+}
+
+/** Monthly Studio publish volume: red if &lt;1, amber if &lt;4, else green. */
+function studioUpdatesGrade(count, ready) {
+  if (!ready) {
+    return {
+      status: "stale",
+      note: "Studio update count was not available this month.",
+    };
+  }
+  const n = Number(count) || 0;
+  if (n < 1) {
+    return {
+      status: "missed",
+      note: "No Studio updates last month — publish at least once when you have news.",
+    };
+  }
+  if (n < 4) {
+    return {
+      status: "watch",
+      note: `${n} Studio update(s) last month — a few more posts keep the site feeling alive.`,
+    };
+  }
+  return {
+    status: "ok",
+    note: `${n} Studio update(s) last month — nice cadence.`,
+  };
+}
+
+/**
+ * Build Elyse-facing visitor rows: Homepage / Resume / Headshot combine
+ * availability SLOs with content freshness (homepage 30/60d; materials 6mo/12mo).
+ */
+function buildVisitorRows(evaluation) {
+  const byId = Object.fromEntries(
+    (evaluation.committedSlos || []).map((s) => [s.id, s]),
+  );
+  const cf = evaluation.contentFreshness || {};
+  const homeAvail = byId["SLO-1"];
+  const materialsAvail = byId["SLO-4"];
+  const rows = [];
+
+  const combine = (title, blurb, availSlo, fresh, downNote) => {
+    const availStatus = availSlo?.status || "stale";
+    const availDown =
+      String(availStatus).toLowerCase() === "missed" ||
+      String(availStatus).toLowerCase() === "fail";
+    let status = availDown ? "missed" : "ok";
+    const notes = [];
+    if (availDown) {
+      notes.push(downNote);
+    } else if (String(availStatus).toLowerCase() === "met" || String(availStatus).toLowerCase() === "ok") {
+      notes.push("Link is working.");
+    } else {
+      status = worseStatus(status, "stale");
+      notes.push("Availability not graded this month.");
+    }
+    if (fresh) {
+      status = availDown ? "missed" : worseStatus(status, fresh.status);
+      notes.push(friendlyFreshnessNote(fresh, title));
+    }
+    // Normalize met → ok for tone
+    if (status === "met") status = "ok";
+    rows.push({
+      title,
+      blurb,
+      status,
+      note: notes.filter(Boolean).join(" "),
+    });
+  };
+
+  combine(
+    "Homepage",
+    "First stop for casting and fans — should load and feel current",
+    homeAvail,
+    cf.homepage,
+    "Homepage did not respond reliably — visitors may see an error.",
+  );
+  combine(
+    "Resume",
+    "What casting downloads — needs a working link and a current PDF",
+    materialsAvail,
+    cf.resume,
+    "Resume link did not respond reliably — casting may not get your materials.",
+  );
+  combine(
+    "Headshot",
+    "What casting often opens first — needs a working link and a current photo",
+    materialsAvail,
+    cf.headshot,
+    "Headshot link did not respond reliably — casting may not see your photo.",
+  );
+
+  for (const id of ["SLO-6", "SLO-2", "SLO-3"]) {
+    const s = byId[id];
+    if (!s) continue;
+    const copy = SLO_COPY[id] || { title: s.name, blurb: s.name };
+    rows.push({
+      title: copy.title,
+      blurb: copy.blurb,
+      status: s.status,
+      note: friendlySloNote(s),
+    });
+  }
+  return rows;
+}
+
+function overallTone(overall, target, visitorRows, studioGrade) {
+  const candidates = [
+    ...(visitorRows || []).map((r) => String(r.status || "").toLowerCase()),
+    String(studioGrade?.status || "ok").toLowerCase(),
+  ];
+  const worstVisitor = candidates.reduce((worst, st) => {
+    if ((STATUS_RANK[st] ?? 0) > (STATUS_RANK[worst] ?? 0)) return st;
+    return worst;
+  }, "ok");
+
+  if (worstVisitor === "missed" || overall < 3) {
+    return {
+      headline: "A few items need attention",
+      detail: "The highlights are below — open anything marked red when you have a minute.",
+      ...statusTone("missed"),
+    };
+  }
+  if (worstVisitor === "watch" || overall < (target ?? 3.8)) {
+    return {
+      headline: "Mostly solid — a few things to watch",
+      detail: "Nothing urgent, but a couple of areas could use a closer look.",
+      ...statusTone("watch"),
+    };
+  }
+  return {
+    headline: "Everything looks healthy",
+    detail: "Your site and Studio are in good shape this month.",
+    ...statusTone("met"),
+  };
 }
 
 function spendSummary(cp, budgetUsd) {
@@ -197,13 +341,49 @@ function spendSummary(cp, budgetUsd) {
   };
 }
 
-function attentionItems(evaluation, spend) {
+function sitePerformanceSummary(sp) {
+  if (!sp) {
+    return { ready: false, note: "Site activity was not included in this check-in yet." };
+  }
+  const visitsReady = sp.visits && !sp.visits.note;
+  const contactsReady = sp.contacts && !sp.contacts.note;
+  const updatesReady = sp.updates && !sp.updates.note;
+  const anyReady = visitsReady || contactsReady || updatesReady;
+  const studioPublishes = Number(sp.updates?.studioPublishes ?? 0);
+  const topPages = (Array.isArray(sp.topPages) ? sp.topPages : [])
+    .slice(0, 5)
+    .map((p) => withPageLabel(p));
+  return {
+    ready: anyReady,
+    status: sp.status || "stale",
+    monthLabel: sp.monthLabel || "last month",
+    sessions: Number(sp.visits?.sessions ?? 0),
+    users: Number(sp.visits?.users ?? 0),
+    visitsReady,
+    contactsTotal: Number(sp.contacts?.total ?? 0),
+    casting: Number(sp.contacts?.casting ?? 0),
+    lesson: Number(sp.contacts?.lesson ?? 0),
+    contactsReady,
+    studioPublishes,
+    updatesReady,
+    studioGrade: studioUpdatesGrade(studioPublishes, updatesReady),
+    topPages,
+    note: sp.note || "",
+  };
+}
+
+function attentionItems(evaluation, spend, visitorRows, studioGrade) {
   const items = [];
-  for (const s of evaluation.committedSlos || []) {
-    const st = String(s.status || "").toLowerCase();
+  for (const row of visitorRows || []) {
+    const st = String(row.status || "").toLowerCase();
     if (st === "missed" || st === "watch") {
-      const copy = SLO_COPY[s.id] || { title: s.name, blurb: s.name };
-      items.push(`${copy.title}: ${friendlySloNote(s)}`);
+      items.push(`${row.title}: ${row.note}`);
+    }
+  }
+  if (studioGrade) {
+    const st = String(studioGrade.status || "").toLowerCase();
+    if (st === "missed" || st === "watch") {
+      items.push(`Studio updates: ${studioGrade.note}`);
     }
   }
   if (spend.ready && !spend.under) {
@@ -224,17 +404,68 @@ function buildBody(evaluation) {
     envTrim("SCORECARD_REPO_URL") ||
     "https://github.com/jefftindall/broadway-portfolio";
   const scorecardUrl = `${repo}/blob/main/docs/ops/operational-excellence-scorecard.md`;
-  const tone = overallTone(overall, target);
+  const visitorRows = buildVisitorRows(evaluation);
+  const site = sitePerformanceSummary(evaluation.sitePerformance);
+  const tone = overallTone(overall, target, visitorRows, site.studioGrade);
   const budgetUsd = evaluation.costProbe?.budgetUsd ?? BUDGET_USD;
   const spend = spendSummary(evaluation.costProbe, budgetUsd);
-  const attention = attentionItems(evaluation, spend);
-  const slos = evaluation.committedSlos || [];
+  const attention = attentionItems(
+    evaluation,
+    spend,
+    visitorRows,
+    site.studioGrade,
+  );
 
   const plainLines = [];
   plainLines.push(`ElyseTindall.com — monthly check-in (${monthName})`);
   plainLines.push("");
   plainLines.push(tone.headline);
   plainLines.push(tone.detail);
+  plainLines.push("");
+  if (attention.length) {
+    plainLines.push("Worth a glance");
+    for (const a of attention) plainLines.push(`  • ${a}`);
+    plainLines.push("");
+  }
+  plainLines.push(`Last month on the site (${site.monthLabel})`);
+  if (site.ready) {
+    if (site.visitsReady) {
+      plainLines.push(
+        `  Visits: ${site.sessions} sessions · ${site.users} people`,
+      );
+    } else {
+      plainLines.push("  Visits: not available this month");
+    }
+    if (site.contactsReady) {
+      plainLines.push(
+        `  Inquiries: ${site.contactsTotal} total · ${site.casting} casting · ${site.lesson} lesson`,
+      );
+    } else {
+      plainLines.push("  Inquiries: not available this month");
+    }
+    if (site.updatesReady) {
+      const sg = statusTone(site.studioGrade.status);
+      plainLines.push(
+        `  Studio updates: ${site.studioPublishes} — ${sg.label} (${site.studioGrade.note})`,
+      );
+    } else {
+      plainLines.push("  Studio updates: not available this month");
+    }
+    if (site.topPages.length) {
+      plainLines.push("  Top pages:");
+      site.topPages.forEach((p, i) => {
+        plainLines.push(`    ${i + 1}. ${p.label} (${p.sessions})`);
+      });
+    }
+  } else {
+    plainLines.push(`  ${site.note || "Activity numbers were not available for this check-in."}`);
+  }
+  plainLines.push("");
+  plainLines.push("How the site is doing for visitors");
+  for (const row of visitorRows) {
+    const st = statusTone(row.status);
+    plainLines.push(`  • ${row.title}: ${st.label} — ${row.note}`);
+  }
   plainLines.push("");
   plainLines.push("Hosting cost");
   if (spend.ready) {
@@ -247,35 +478,19 @@ function buildBody(evaluation) {
     plainLines.push(`  ${spend.note}`);
   }
   plainLines.push("");
-  plainLines.push("How the site is doing for visitors");
-  for (const s of slos) {
-    const copy = SLO_COPY[s.id] || { title: s.name, blurb: s.name };
-    const st = statusTone(s.status);
-    plainLines.push(`  • ${copy.title}: ${st.label} — ${friendlySloNote(s)}`);
-  }
-  if (attention.length) {
-    plainLines.push("");
-    plainLines.push("Worth a glance");
-    for (const a of attention) plainLines.push(`  • ${a}`);
-  } else {
-    plainLines.push("");
-    plainLines.push("Nothing needs your attention this month.");
-  }
-  plainLines.push("");
-  plainLines.push(`Full technical scorecard (for Jeff): ${scorecardUrl}`);
+  plainLines.push(`Full technical scorecard (optional): ${scorecardUrl}`);
   plainLines.push("");
   plainLines.push(
-    "This email shares health scores and dollar amounts only — never passwords or private contact details.",
+    "Automated monthly summary. Shares health status and dollar amounts only — never passwords or private contact details.",
   );
 
   const plainText = plainLines.join("\n");
   const html = renderHtml({
     monthName,
     tone,
-    overall,
-    target,
     spend,
-    slos,
+    site,
+    visitorRows,
     attention,
     scorecardUrl,
   });
@@ -283,31 +498,35 @@ function buildBody(evaluation) {
   return { stamp, monthName, plainText, html };
 }
 
-function renderHtml({ monthName, tone, overall, target, spend, slos, attention, scorecardUrl }) {
-  const sloRows = slos
-    .map((s) => {
-      const copy = SLO_COPY[s.id] || { title: s.name, blurb: s.name };
-      const st = statusTone(s.status);
+function renderHtml({ monthName, tone, spend, site, visitorRows, attention, scorecardUrl }) {
+  const sloRows = (visitorRows || [])
+    .map((row) => {
+      const st = statusTone(row.status);
       return `
         <tr>
           <td style="padding:14px 16px;border-bottom:1px solid ${COLORS.line};vertical-align:top;">
-            <div style="font-size:16px;font-weight:600;color:${COLORS.ink};">${escapeHtml(copy.title)}</div>
-            <div style="font-size:13px;color:${COLORS.muted};margin-top:2px;">${escapeHtml(copy.blurb)}</div>
+            <div style="font-size:16px;font-weight:600;color:${COLORS.ink};">${escapeHtml(row.title)}</div>
+            <div style="font-size:13px;color:${COLORS.muted};margin-top:2px;">${escapeHtml(row.blurb)}</div>
           </td>
           <td style="padding:14px 16px;border-bottom:1px solid ${COLORS.line};vertical-align:top;width:42%;">
             <span style="display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;background:${st.bg};color:${st.fg};">${escapeHtml(st.label)}</span>
-            <div style="font-size:13px;color:${COLORS.muted};margin-top:8px;line-height:1.4;">${escapeHtml(friendlySloNote(s))}</div>
+            <div style="font-size:13px;color:${COLORS.muted};margin-top:8px;line-height:1.4;">${escapeHtml(row.note)}</div>
           </td>
         </tr>`;
     })
     .join("");
 
-  const attentionHtml =
+  const attentionSectionHtml =
     attention.length === 0
-      ? `<p style="margin:0;font-size:15px;color:${COLORS.goodFg};">Nothing needs your attention this month.</p>`
-      : `<ul style="margin:0;padding-left:18px;color:${COLORS.ink};font-size:15px;line-height:1.55;">${attention
-          .map((a) => `<li style="margin-bottom:6px;">${escapeHtml(a)}</li>`)
-          .join("")}</ul>`;
+      ? ""
+      : `<tr>
+            <td style="padding:28px 28px 8px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+              <h2 style="margin:0 0 12px 0;font-size:13px;letter-spacing:0.06em;text-transform:uppercase;color:${COLORS.soft};font-weight:700;">Worth a glance</h2>
+              <ul style="margin:0;padding-left:18px;color:${COLORS.ink};font-size:15px;line-height:1.55;">${attention
+                .map((a) => `<li style="margin-bottom:6px;">${escapeHtml(a)}</li>`)
+                .join("")}</ul>
+            </td>
+          </tr>`;
 
   let spendHtml;
   if (spend.ready) {
@@ -343,6 +562,50 @@ function renderHtml({ monthName, tone, overall, target, spend, slos, attention, 
     spendHtml = `<p style="margin:0;font-size:15px;color:${COLORS.muted};line-height:1.5;">${escapeHtml(spend.note)}</p>`;
   }
 
+  let siteHtml;
+  if (site?.ready) {
+    const top =
+      site.topPages.length === 0
+        ? ""
+        : `<div style="margin:12px 0 0 0;font-size:13px;color:${COLORS.muted};line-height:1.55;">
+            <strong style="color:${COLORS.ink};">Top pages:</strong>
+            <ol style="margin:6px 0 0 0;padding-left:20px;">
+              ${site.topPages
+                .map(
+                  (p) =>
+                    `<li style="margin-bottom:4px;">${escapeHtml(p.label)} <span style="color:${COLORS.soft};">(${p.sessions})</span></li>`,
+                )
+                .join("")}
+            </ol>
+          </div>`;
+    siteHtml = `
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="padding:0 0 8px 0;font-size:14px;color:${COLORS.muted};">Activity for ${escapeHtml(site.monthLabel)}</td>
+        </tr>
+        <tr>
+          <td style="padding:0;">
+            <div style="font-size:15px;color:${COLORS.ink};line-height:1.55;">
+              <div><strong>Visits:</strong> ${site.visitsReady ? `${site.sessions} sessions · ${site.users} people` : "not available"}</div>
+              <div style="margin-top:4px;"><strong>Inquiries:</strong> ${
+                site.contactsReady
+                  ? `${site.contactsTotal} total · ${site.casting} casting · ${site.lesson} lesson`
+                  : "not available"
+              }</div>
+              <div style="margin-top:4px;"><strong>Studio updates:</strong> ${
+                site.updatesReady
+                  ? `${site.studioPublishes} <span style="display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:${statusTone(site.studioGrade.status).bg};color:${statusTone(site.studioGrade.status).fg};">${escapeHtml(statusTone(site.studioGrade.status).label)}</span><div style="font-size:13px;color:${COLORS.muted};margin-top:4px;">${escapeHtml(site.studioGrade.note)}</div>`
+                  : "not available"
+              }</div>
+            </div>
+            ${top}
+          </td>
+        </tr>
+      </table>`;
+  } else {
+    siteHtml = `<p style="margin:0;font-size:15px;color:${COLORS.muted};line-height:1.5;">${escapeHtml(site?.note || "Activity numbers were not available for this check-in.")}</p>`;
+  }
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -357,9 +620,9 @@ function renderHtml({ monthName, tone, overall, target, spend, slos, attention, 
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:${COLORS.card};border:1px solid ${COLORS.line};border-radius:12px;overflow:hidden;">
           <tr>
             <td style="padding:28px 28px 20px 28px;border-bottom:3px solid ${COLORS.brand};">
-              <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:${COLORS.brand};font-weight:700;">Elyse Tindall</div>
-              <h1 style="margin:10px 0 6px 0;font-size:26px;line-height:1.25;font-weight:700;color:${COLORS.ink};">Monthly site check-in</h1>
+              <h1 style="margin:0 0 6px 0;font-size:26px;line-height:1.25;font-weight:700;color:${COLORS.ink};">Monthly site check-in</h1>
               <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:${COLORS.muted};">${escapeHtml(monthName)} · elysetindall.com</p>
+              <p style="margin:10px 0 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;color:${COLORS.soft};">Automated monthly summary</p>
             </td>
           </tr>
 
@@ -368,7 +631,25 @@ function renderHtml({ monthName, tone, overall, target, spend, slos, attention, 
               <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:${tone.fg};">${escapeHtml(tone.label)}</div>
               <div style="font-size:22px;font-weight:700;color:${COLORS.ink};margin-top:6px;line-height:1.3;">${escapeHtml(tone.headline)}</div>
               <p style="margin:8px 0 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;color:${COLORS.muted};line-height:1.5;">${escapeHtml(tone.detail)}</p>
-              <p style="margin:10px 0 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;color:${COLORS.soft};">Overall health ${overall.toFixed(1)} / 5 (goal ${target})</p>
+            </td>
+          </tr>
+
+          ${attentionSectionHtml}
+
+          <tr>
+            <td style="padding:24px 28px 8px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+              <h2 style="margin:0 0 12px 0;font-size:13px;letter-spacing:0.06em;text-transform:uppercase;color:${COLORS.soft};font-weight:700;">Last month on the site</h2>
+              ${siteHtml}
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:28px 28px 8px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+              <h2 style="margin:0 0 4px 0;font-size:13px;letter-spacing:0.06em;text-transform:uppercase;color:${COLORS.soft};font-weight:700;">For visitors &amp; casting</h2>
+              <p style="margin:0 0 12px 0;font-size:14px;color:${COLORS.muted};">Checks that important links work — and that homepage, resume, and headshot still feel current for casting.</p>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${COLORS.line};border-radius:10px;overflow:hidden;">
+                ${sloRows}
+              </table>
             </td>
           </tr>
 
@@ -380,30 +661,13 @@ function renderHtml({ monthName, tone, overall, target, spend, slos, attention, 
           </tr>
 
           <tr>
-            <td style="padding:28px 28px 8px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-              <h2 style="margin:0 0 4px 0;font-size:13px;letter-spacing:0.06em;text-transform:uppercase;color:${COLORS.soft};font-weight:700;">For visitors &amp; casting</h2>
-              <p style="margin:0 0 12px 0;font-size:14px;color:${COLORS.muted};">Quick read on whether the public site and Studio behaved as expected.</p>
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid ${COLORS.line};border-radius:10px;overflow:hidden;">
-                ${sloRows}
-              </table>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="padding:28px 28px 8px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-              <h2 style="margin:0 0 12px 0;font-size:13px;letter-spacing:0.06em;text-transform:uppercase;color:${COLORS.soft};font-weight:700;">Worth a glance</h2>
-              ${attentionHtml}
-            </td>
-          </tr>
-
-          <tr>
             <td style="padding:28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
               <p style="margin:0 0 10px 0;font-size:14px;color:${COLORS.muted};line-height:1.5;">
-                Jeff gets the full technical write-up if anything needs fixing. You can ignore the link below unless you are curious.
+                Optional technical write-up for troubleshooting — skip unless you need the details.
               </p>
               <a href="${escapeHtml(scorecardUrl)}" style="color:${COLORS.brand};font-size:13px;">Open the detailed scorecard</a>
               <p style="margin:18px 0 0 0;font-size:11px;color:${COLORS.soft};line-height:1.45;">
-                This email shares health scores and dollar amounts only — never passwords or private contact details.
+                Automated monthly summary. Shares health status and dollar amounts only — never passwords or private contact details.
               </p>
             </td>
           </tr>

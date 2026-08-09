@@ -10,7 +10,7 @@
 #   Resource group:    rg-elyse-tfstate
 #   Storage account:   stelysetfstateeu2
 #   Container:         tfstate
-#   Shared RG/vault:   rg-elyse-shared / kv-elyse-shared (SITE-*, Turnstile, ACS, ALERT-*)
+#   Shared RG/vault:   rg-elyse-shared / kv-elyse-shared (SITE-*, Turnstile, ACS, ALERT-*, GA-*)
 #   Shared ACS:        acs-elyse-shared + email-elyse-shared (one MailFrom / SMS number)
 #   Subscription budget: budget-elyse-portfolio-monthly (ceil(expected×1.25), currently $31/mo; ALERT-EMAIL at 80%/100%)
 #   Region:            eastus2
@@ -27,3 +27,4 @@
 # Re-apply after pulling OIDC / shared vault / budget changes so Actions can run Terraform.
 # Populate shared vault secrets per docs/runbooks/rotate-secrets.md before CD builds.
 # Set ALERT-EMAIL before expecting budget threshold emails (otherwise Owners are notified).
+# GA-PROPERTY-ID / GA-DATA-API-SA-JSON: see docs/runbooks/ga-data-api-access.md (OPS-P5 scorecard).

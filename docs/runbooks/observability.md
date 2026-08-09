@@ -37,7 +37,7 @@ Consent Mode / cookie banner: **not shipped** (`SEARCH-P1-006` = `wont_fix`). Pr
 
 Availability and failed-request metric alerts wire to Key Vault–backed Action Groups when shared `ALERT-*` secrets are set (not `REPLACE_ME`). See [rotate-secrets.md](./rotate-secrets.md) ops section and [operational-excellence.md](../plans/operational-excellence.md).
 
-**Operational excellence:** Living scorecard at [operational-excellence-scorecard.md](../ops/operational-excellence-scorecard.md). Backlog / SLOs / Sev1 SMS-voice plan: [operational-excellence.md](../plans/operational-excellence.md) (`OPS-*`). Private alert emails/phones must not be committed — only `ALERT-*` in `kv-elyse-shared`. Phase 0–2 done; Phase 3 (except optional PagerDuty `OPS-P3-002`) done — Studio SLO cadence, CD Sev1, inquiry SLI, IR stub, prod/shared KV purge protection. Phase 4 done (budget + ACS digest). **Phase 5 planned:** monthly site performance (GA4 visits/top pages + App Insights contact/Studio-update counts) — see plan § Site performance; GA Data API needs KV secrets beyond the public Measurement ID.
+**Operational excellence:** Living scorecard at [operational-excellence-scorecard.md](../ops/operational-excellence-scorecard.md). Backlog / SLOs / Sev1 SMS-voice plan: [operational-excellence.md](../plans/operational-excellence.md) (`OPS-*`). Private alert emails/phones must not be committed — only `ALERT-*` in `kv-elyse-shared`. Phase 0–4 done (except optional PagerDuty `OPS-P3-002`). **Phase 5 done in repo:** monthly site performance (GA4 visits/top pages + App Insights contact/Studio-update counts) in the scorecard + ACS digest — populate `GA-*` secrets per [ga-data-api-access.md](ga-data-api-access.md) before visits appear.
 
 ## Action Groups (OPS-P1 / OPS-P2 / OPS-P3)
 
@@ -236,6 +236,36 @@ customEvents
 ```
 
 Monthly `--azure` refresh probes this into `optionalSlos` (scorecard evidence only until product commits the SLO).
+
+### Site performance — previous calendar month (OPS-P5-004)
+
+Used by `ops-scorecard-refresh.mjs` for the scorecard `sitePerformance` block (counts only — never inquiry PII). Substitute the previous month’s UTC bounds (example: July 2026 → `2026-07-01` inclusive start, `2026-08-01` exclusive end).
+
+Contacts (split by form type):
+
+```kusto
+customEvents
+| where timestamp >= datetime(2026-07-01) and timestamp < datetime(2026-08-01)
+| where name == "ContactInquiryReceived"
+| extend type = tostring(customDimensions.type)
+| summarize
+    total = count(),
+    casting = countif(type == "casting"),
+    lesson = countif(type == "lesson")
+| project total, casting, lesson
+```
+
+Studio publishes (UI success):
+
+```kusto
+customEvents
+| where timestamp >= datetime(2026-07-01) and timestamp < datetime(2026-08-01)
+| where name == "StudioPublishUiSuccess"
+| summarize studioPublishes = count()
+| project studioPublishes
+```
+
+Visits / top pages come from the **GA4 Data API** (not App Insights pageViews) — see [ga-data-api-access.md](ga-data-api-access.md).
 
 Deploy timeline:
 

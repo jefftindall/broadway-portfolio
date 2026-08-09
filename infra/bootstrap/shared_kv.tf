@@ -1,6 +1,7 @@
-# Shared foundation Key Vault — site-build, Turnstile, ACS (email/SMS), and ops
-# ALERT-* contacts identical across staging and prod. Env vaults keep Gemini /
-# GitHub App / allowlist / AAD.
+# Shared foundation Key Vault — site-build, Turnstile, ACS (email/SMS), ops
+# ALERT-*, and GA Data API scorecard reads (OPS-P5). ALERT-* / GA-* are
+# identical across staging and prod. Env vaults keep Gemini / GitHub App /
+# allowlist / AAD.
 
 locals {
   shared_kv_name = "kv-elyse-shared"
@@ -22,7 +23,7 @@ resource "azurerm_key_vault" "shared" {
   resource_group_name = azurerm_resource_group.shared.name
   tenant_id           = data.azurerm_client_config.current.tenant_id
   sku_name            = "standard"
-  # OPS-P3-006 — shared vault holds SITE-*/Turnstile/ACS/ALERT-*; purge protection is one-way.
+  # OPS-P3-006 — shared vault holds SITE-*/Turnstile/ACS/ALERT-*/GA-*; purge protection is one-way.
   # soft_delete_retention_days is immutable after create (stays 7); only enable purge protection.
   soft_delete_retention_days = 7
   purge_protection_enabled   = true
@@ -122,6 +123,31 @@ resource "azurerm_key_vault_secret" "alert_sms_phone" {
 
 resource "azurerm_key_vault_secret" "alert_voice_phone" {
   name         = "ALERT-VOICE-PHONE"
+  value        = "REPLACE_ME"
+  key_vault_id = azurerm_key_vault.shared.id
+  depends_on   = [azurerm_role_assignment.shared_kv_admin]
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+# GA4 Data API for monthly scorecard visits / top pages (OPS-P5-002). Not used by
+# SWA or Astro — monthly workflow + ops-scorecard-refresh.mjs only. Measurement ID
+# (G-…) stays public via Terraform/GitHub env; these are report-read credentials.
+resource "azurerm_key_vault_secret" "ga_property_id" {
+  name         = "GA-PROPERTY-ID"
+  value        = "REPLACE_ME"
+  key_vault_id = azurerm_key_vault.shared.id
+  depends_on   = [azurerm_role_assignment.shared_kv_admin]
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "azurerm_key_vault_secret" "ga_data_api_sa_json" {
+  name         = "GA-DATA-API-SA-JSON"
   value        = "REPLACE_ME"
   key_vault_id = azurerm_key_vault.shared.id
   depends_on   = [azurerm_role_assignment.shared_kv_admin]
