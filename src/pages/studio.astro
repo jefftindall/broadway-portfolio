@@ -1,5 +1,19 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { getEntry } from 'astro:content';
+import { site } from '../lib/site';
+
+const book = await getEntry('pages', 'lessons-book');
+const bookRates = book?.data.rates ?? [];
+const rate30 =
+  bookRates.find((r) => r.id === '30min')?.priceAmount ??
+  bookRates.find((r) => /30/.test(r.label || ''))?.priceAmount;
+const rate60 =
+  bookRates.find((r) => r.id === '60min')?.priceAmount ??
+  bookRates.find((r) => /60/.test(r.label || ''))?.priceAmount;
+const performer = site.performer;
+const reelUrl = site.reelUrl;
+const shortBio = site.shortBio;
 ---
 
 <BaseLayout
@@ -8,38 +22,25 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   hideFooterCta={true}
   noIndex={true}
 >
-  <section class="mx-auto max-w-xl px-4 py-8 md:py-12">
-    <p class="text-sm uppercase tracking-[0.2em] text-gel">Private</p>
-    <h1 class="mt-2 font-display text-4xl text-spotlight">Studio</h1>
-    <p class="mt-3 text-sm text-muted">
-      Draft a change (type or speak), optionally add a photo, preview and edit the post, then
-      publish. Updates go live after the site rebuilds (usually a few minutes).
-      <a
-        href="/studio/help"
-        class="text-gel underline-offset-2 hover:text-gold hover:underline"
+  <section class="mx-auto max-w-xl px-4 py-5 md:py-8">
+    <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+      <h1 class="font-display text-3xl text-spotlight md:text-4xl">Studio</h1>
+      <div
+        id="auth-user"
+        class="hidden flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted"
       >
-        Studio help</a
-      >
-      covers voice on iPhone and example prompts.
-    </p>
-
-    <div
-      id="auth-user"
-      class="mt-8 hidden flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4 text-sm text-muted"
-    >
-      <p>
-        Signed in as <span id="auth-user-name" class="text-spotlight"></span>
-      </p>
-      <div class="flex flex-wrap items-center gap-4">
+        <span class="max-w-[12rem] truncate sm:max-w-none">
+          <span id="auth-user-name" class="text-spotlight"></span>
+        </span>
         <a
           href="/studio/help"
-          class="text-sm text-gel underline-offset-2 hover:text-gold hover:underline"
+          class="text-gel underline-offset-2 hover:text-gold hover:underline"
         >
           Help
         </a>
         <a
           href="/.auth/logout?post_logout_redirect_uri=/"
-          class="text-sm text-gel underline-offset-2 hover:text-gold hover:underline"
+          class="text-gel underline-offset-2 hover:text-gold hover:underline"
         >
           Sign out
         </a>
@@ -48,14 +49,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
     <div
       id="access-check"
-      class="mt-8 rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted"
+      class="mt-6 rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted"
       role="status"
       aria-live="polite"
     >
       <p>Checking access…</p>
     </div>
 
-    <div id="auth-gate" class="mt-8 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted">
+    <div id="auth-gate" class="mt-6 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted">
       <p>Sign in required to publish.</p>
       <a
         id="login-link"
@@ -66,7 +67,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       </a>
     </div>
 
-    <div id="publisher-gate" class="mt-8 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted">
+    <div id="publisher-gate" class="mt-6 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted">
       <p id="publisher-denied-msg">You’re signed in, but this account can’t publish updates.</p>
       <p id="publisher-correlation-wrap" class="mt-3">
         Share this reference with an admin:&nbsp;<code
@@ -74,29 +75,117 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           class="break-all text-spotlight"></code>
       </p>
       <p class="mt-4">
-        You can still read how Studio works — voice, example prompts, and the preview flow — in
+        You can still read how Studio works — voice, example prompts, and the preview flow — in{' '}
         <a
           href="/studio/help"
           class="text-gel underline-offset-2 hover:text-gold hover:underline"
         >
-          Studio help</a
-        >.
+          Studio help
+        </a>
+        .
       </p>
     </div>
 
-    <div id="studio-app" class="mt-8 hidden space-y-6">
-      <ol class="flex flex-wrap gap-x-4 gap-y-1 text-xs uppercase tracking-[0.15em] text-muted" aria-hidden="true">
-        <li id="step-indicator-compose" class="text-gel">1. Compose</li>
-        <li id="step-indicator-preview">2. Preview</li>
-        <li id="step-indicator-done">3. Done</li>
-      </ol>
+    <div id="studio-app" class="mt-6 hidden space-y-5">
+      <div id="hub-step" class="space-y-4">
+        <p class="text-sm text-muted">What do you want to update?</p>
+        <div class="grid gap-3">
+          <button
+            type="button"
+            data-hub-task="ask"
+            class="hub-tile rounded-sm border border-gold/50 bg-gold/10 px-4 py-4 text-left transition hover:bg-gold/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+          >
+            <span class="block font-display text-2xl text-spotlight">Speak or type an update</span>
+            <span class="mt-1 block text-sm text-muted"
+              >Credits, news, gallery, lessons copy — say it or type it.</span
+            >
+          </button>
+          <div class="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              data-hub-task="rates"
+              class="hub-tile rounded-sm border border-line bg-panel/40 px-3 py-4 text-left transition hover:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            >
+              <span class="block text-sm font-semibold text-spotlight">Lesson rates</span>
+              <span class="mt-1 block text-xs text-muted">Dollar amounts</span>
+            </button>
+            <button
+              type="button"
+              data-hub-task="facts"
+              class="hub-tile rounded-sm border border-line bg-panel/40 px-3 py-4 text-left transition hover:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            >
+              <span class="block text-sm font-semibold text-spotlight">Performer facts</span>
+              <span class="mt-1 block text-xs text-muted">Range, availability…</span>
+            </button>
+            <button
+              type="button"
+              data-hub-task="reel"
+              class="hub-tile rounded-sm border border-line bg-panel/40 px-3 py-4 text-left transition hover:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            >
+              <span class="block text-sm font-semibold text-spotlight">Reel link</span>
+              <span class="mt-1 block text-xs text-muted">YouTube URL</span>
+            </button>
+            <button
+              type="button"
+              data-hub-task="bio"
+              class="hub-tile rounded-sm border border-line bg-panel/40 px-3 py-4 text-left transition hover:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            >
+              <span class="block text-sm font-semibold text-spotlight">Short bio</span>
+              <span class="mt-1 block text-xs text-muted">About lead</span>
+            </button>
+          </div>
+          <div class="pt-1">
+            <a
+              href="/studio/help"
+              class="inline-flex items-center gap-2 text-sm text-muted underline-offset-2 hover:text-gold hover:underline"
+            >
+              <svg
+                class="size-4 shrink-0 text-gel"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="9"></circle>
+                <path d="M9.5 9.5a2.5 2.5 0 1 1 3.8 2.1c-.7.4-1.3 1-1.3 1.9"></path>
+                <circle cx="12" cy="16.5" r="0.75" fill="currentColor" stroke="none"></circle>
+              </svg>
+              Help
+            </a>
+          </div>
+        </div>
+      </div>
 
-      <div id="compose-step" class="space-y-4">
+      <div id="task-chrome" class="hidden space-y-3">
+        <button
+          id="hub-back-btn"
+          type="button"
+          class="text-sm text-gel underline-offset-2 hover:text-gold hover:underline"
+        >
+          ← All updates
+        </button>
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 id="task-title" class="font-display text-2xl text-spotlight">Update</h2>
+          <ol
+            class="flex flex-wrap gap-x-3 gap-y-1 text-xs uppercase tracking-[0.15em] text-muted"
+            aria-hidden="true"
+          >
+            <li id="step-indicator-compose" class="text-gel">1. Edit</li>
+            <li id="step-indicator-preview">2. Preview</li>
+            <li id="step-indicator-done">3. Done</li>
+          </ol>
+        </div>
+      </div>
+
+      <div id="compose-step" class="hidden space-y-4">
         <label class="block text-sm text-muted">
           Message
           <textarea
             id="message"
-            rows="4"
+            rows="5"
             class="mt-2 w-full rounded-sm border border-line bg-ink px-3 py-3 text-spotlight outline-none focus:border-gold"
             placeholder='e.g. "I just booked Lily in Anastasia at the Strand, July 2025"'
           ></textarea>
@@ -133,9 +222,167 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           id="preview-btn"
           type="button"
           data-label="Preview update"
-          class="rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 disabled:hover:brightness-100"
+          class="w-full rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 disabled:hover:brightness-100 sm:w-auto"
         >
           Preview update
+        </button>
+      </div>
+
+      <div id="compose-rates" class="hidden space-y-4">
+        <p class="text-sm text-muted">Change the dollar amounts, then preview.</p>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <label class="block text-sm text-muted">
+            30-minute session ($)
+            <input
+              id="quick-rate-30"
+              type="number"
+              min="1"
+              step="1"
+              value={rate30 != null ? String(rate30) : ''}
+              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+            />
+          </label>
+          <label class="block text-sm text-muted">
+            60-minute session ($)
+            <input
+              id="quick-rate-60"
+              type="number"
+              min="1"
+              step="1"
+              value={rate60 != null ? String(rate60) : ''}
+              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+            />
+          </label>
+        </div>
+        <button
+          id="quick-rates-btn"
+          type="button"
+          data-label="Preview rate update"
+          class="w-full rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 sm:w-auto"
+        >
+          Preview rate update
+        </button>
+      </div>
+
+      <div id="compose-facts" class="hidden space-y-4">
+        <p class="text-sm text-muted">Edit casting facts shown on About and Materials.</p>
+        <label class="block text-sm text-muted">
+          Availability
+          <input
+            id="fact-availability"
+            type="text"
+            value={performer.availability}
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <label class="block text-sm text-muted">
+          Vocal type
+          <input
+            id="fact-vocalType"
+            type="text"
+            value={performer.vocalType}
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <label class="block text-sm text-muted">
+          Vocal range
+          <input
+            id="fact-vocalRange"
+            type="text"
+            value={performer.vocalRange}
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <label class="block text-sm text-muted">
+          Union
+          <input
+            id="fact-union"
+            type="text"
+            value={performer.union}
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <label class="block text-sm text-muted">
+          Playing age
+          <input
+            id="fact-playingAge"
+            type="text"
+            value={performer.playingAge ?? ''}
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <label class="block text-sm text-muted">
+          Height
+          <input
+            id="fact-height"
+            type="text"
+            value={performer.height ?? ''}
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <label class="block text-sm text-muted">
+          Ethnicity
+          <textarea
+            id="fact-ethnicity"
+            rows="3"
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          >{performer.ethnicity ?? ''}</textarea>
+        </label>
+        <button
+          id="facts-preview-btn"
+          type="button"
+          data-label="Preview facts update"
+          class="w-full rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 sm:w-auto"
+        >
+          Preview facts update
+        </button>
+      </div>
+
+      <div id="compose-reel" class="hidden space-y-4">
+        <p class="text-sm text-muted">Paste the YouTube (or video) link for Materials, Shows, and home.</p>
+        <label class="block text-sm text-muted">
+          Reel link
+          <input
+            id="reel-url"
+            type="url"
+            inputmode="url"
+            autocomplete="url"
+            value={reelUrl}
+            placeholder="https://youtu.be/…"
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <button
+          id="reel-preview-btn"
+          type="button"
+          data-label="Preview reel update"
+          class="w-full rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 sm:w-auto"
+        >
+          Preview reel update
+        </button>
+      </div>
+
+      <div id="compose-bio" class="hidden space-y-4">
+        <p class="text-sm text-muted">
+          Short lead on the About page (one or two sentences). Longer Background/Philosophy stay
+          as-is.
+        </p>
+        <label class="block text-sm text-muted">
+          Short bio
+          <textarea
+            id="short-bio"
+            rows="4"
+            maxlength="600"
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          >{shortBio}</textarea>
+        </label>
+        <button
+          id="bio-preview-btn"
+          type="button"
+          data-label="Preview bio update"
+          class="w-full rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 sm:w-auto"
+        >
+          Preview bio update
         </button>
       </div>
 
@@ -195,18 +442,60 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     import { flush, trackEvent, trackException, trackMetric } from '../scripts/app-insights';
 
     type PhotoPayload = { name: string; contentType: string; dataBase64: string };
+    type DiscretePreview =
+      | {
+          kind: 'rates';
+          rates: Array<{ id: string; label: string; priceAmount: number }>;
+        }
+      | { kind: 'reel'; reelUrl: string }
+      | { kind: 'shortBio'; shortBio: string }
+      | {
+          kind: 'performer';
+          performer: Record<string, string>;
+          patchedKeys?: string[];
+        }
+      | {
+          kind: 'casting';
+          slug: string;
+          keyword?: string;
+          title?: string;
+          description?: string;
+          cta?: string;
+          relatedShows?: string[];
+          relatedSkills?: string[];
+        };
     type ContentChange = {
       tool?: string;
       path: string;
       content: string;
       commitMessage: string;
       summary?: string;
+      livePath?: string;
+      preview?: DiscretePreview;
     };
     type PublishAction = {
       tool?: string;
       summary?: string;
       path?: string;
       url?: string | null;
+    };
+
+    const DISCRETE_TOOLS = new Set([
+      'update_lesson_rates',
+      'update_reel_url',
+      'update_performer_facts',
+      'update_short_bio',
+      'update_casting_fields',
+    ]);
+
+    const PERFORMER_FIELD_LABELS: Record<string, string> = {
+      availability: 'Availability',
+      vocalType: 'Vocal type',
+      vocalRange: 'Vocal range',
+      union: 'Union',
+      playingAge: 'Playing age',
+      height: 'Height',
+      ethnicity: 'Ethnicity',
     };
 
     const BUSY_CLASS = 'opacity-60';
@@ -221,9 +510,32 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     const publishBtn = document.getElementById('publish-btn') as HTMLButtonElement;
     const backBtn = document.getElementById('back-btn') as HTMLButtonElement;
     const anotherBtn = document.getElementById('another-btn') as HTMLButtonElement;
+    const hubBackBtn = document.getElementById('hub-back-btn') as HTMLButtonElement;
     const micBtn = document.getElementById('mic') as HTMLButtonElement;
+    const quickRatesBtn = document.getElementById('quick-rates-btn') as HTMLButtonElement;
+    const quickRate30 = document.getElementById('quick-rate-30') as HTMLInputElement;
+    const quickRate60 = document.getElementById('quick-rate-60') as HTMLInputElement;
+    const factsPreviewBtn = document.getElementById('facts-preview-btn') as HTMLButtonElement;
+    const reelPreviewBtn = document.getElementById('reel-preview-btn') as HTMLButtonElement;
+    const bioPreviewBtn = document.getElementById('bio-preview-btn') as HTMLButtonElement;
+    const factAvailability = document.getElementById('fact-availability') as HTMLInputElement;
+    const factVocalType = document.getElementById('fact-vocalType') as HTMLInputElement;
+    const factVocalRange = document.getElementById('fact-vocalRange') as HTMLInputElement;
+    const factUnion = document.getElementById('fact-union') as HTMLInputElement;
+    const factPlayingAge = document.getElementById('fact-playingAge') as HTMLInputElement;
+    const factHeight = document.getElementById('fact-height') as HTMLInputElement;
+    const factEthnicity = document.getElementById('fact-ethnicity') as HTMLTextAreaElement;
+    const reelUrlInput = document.getElementById('reel-url') as HTMLInputElement;
+    const shortBioInput = document.getElementById('short-bio') as HTMLTextAreaElement;
     const statusEl = document.getElementById('status')!;
+    const hubStep = document.getElementById('hub-step')!;
+    const taskChrome = document.getElementById('task-chrome')!;
+    const taskTitle = document.getElementById('task-title')!;
     const composeStep = document.getElementById('compose-step')!;
+    const composeRates = document.getElementById('compose-rates')!;
+    const composeFacts = document.getElementById('compose-facts')!;
+    const composeReel = document.getElementById('compose-reel')!;
+    const composeBio = document.getElementById('compose-bio')!;
     const previewStep = document.getElementById('preview-step')!;
     const doneStep = document.getElementById('done-step')!;
     const changesEditor = document.getElementById('changes-editor')!;
@@ -244,6 +556,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     const authUser = document.getElementById('auth-user')!;
     const authUserName = document.getElementById('auth-user-name')!;
     const studioApp = document.getElementById('studio-app')!;
+
+    type HubTask = 'ask' | 'rates' | 'facts' | 'reel' | 'bio';
+    let activeTask: HubTask = 'ask';
+
+    const TASK_TITLES: Record<HubTask, string> = {
+      ask: 'Speak or type',
+      rates: 'Lesson rates',
+      facts: 'Performer facts',
+      reel: 'Reel link',
+      bio: 'Short bio',
+    };
 
     let draftPhoto: PhotoPayload | undefined;
     let provisionalPhotoPath: string | null = null;
@@ -298,11 +621,40 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     }
 
     function setComposeBusy(busy: boolean) {
-      setBusy(busy, previewBtn, 'Preparing preview…');
+      const primary =
+        activeTask === 'rates'
+          ? quickRatesBtn
+          : activeTask === 'facts'
+            ? factsPreviewBtn
+            : activeTask === 'reel'
+              ? reelPreviewBtn
+              : activeTask === 'bio'
+                ? bioPreviewBtn
+                : previewBtn;
+      setBusy(busy, primary, 'Preparing preview…');
       previewBtn.disabled = busy;
+      quickRatesBtn.disabled = busy;
+      factsPreviewBtn.disabled = busy;
+      reelPreviewBtn.disabled = busy;
+      bioPreviewBtn.disabled = busy;
       messageEl.disabled = busy;
       photoEl.disabled = busy;
       micBtn.disabled = busy || !micSupported;
+      quickRate30.disabled = busy;
+      quickRate60.disabled = busy;
+      factAvailability.disabled = busy;
+      factVocalType.disabled = busy;
+      factVocalRange.disabled = busy;
+      factUnion.disabled = busy;
+      factPlayingAge.disabled = busy;
+      factHeight.disabled = busy;
+      factEthnicity.disabled = busy;
+      reelUrlInput.disabled = busy;
+      shortBioInput.disabled = busy;
+      hubBackBtn.disabled = busy;
+      document.querySelectorAll<HTMLButtonElement>('.hub-tile').forEach((el) => {
+        el.disabled = busy;
+      });
     }
 
     function setPreviewBusy(busy: boolean) {
@@ -325,6 +677,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       studioApp.classList.remove('hidden');
       setComposeBusy(false);
       setPreviewBusy(false);
+      showHub();
+      void loadDiscreteDefaults();
     }
 
     function showSignInGate() {
@@ -367,26 +721,83 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       }
     }
 
-    function showCompose() {
-      stopPolling();
-      composeStep.classList.remove('hidden');
+    function hideAllTaskPanels() {
+      composeStep.classList.add('hidden');
+      composeRates.classList.add('hidden');
+      composeFacts.classList.add('hidden');
+      composeReel.classList.add('hidden');
+      composeBio.classList.add('hidden');
       previewStep.classList.add('hidden');
       doneStep.classList.add('hidden');
+    }
+
+    function showHub() {
+      stopPolling();
+      hubStep.classList.remove('hidden');
+      taskChrome.classList.add('hidden');
+      hideAllTaskPanels();
+      setStatus('');
+    }
+
+    function showTask(task: HubTask, hint?: string) {
+      stopPolling();
+      activeTask = task;
+      hubStep.classList.add('hidden');
+      taskChrome.classList.remove('hidden');
+      taskTitle.textContent = TASK_TITLES[task];
+      hideAllTaskPanels();
+      if (task === 'ask') {
+        composeStep.classList.remove('hidden');
+        if (hint === 'credits') {
+          messageEl.placeholder =
+            'e.g. "Add my Anastasia credit" or "Write a news post about BroadwayWorld"';
+          if (!messageEl.value.trim()) {
+            setStatus('Describe a credit or news update — type or hold to speak.');
+          }
+        } else {
+          messageEl.placeholder =
+            'e.g. "I just booked Lily in Anastasia at the Strand, July 2025"';
+        }
+      } else if (task === 'rates') {
+        composeRates.classList.remove('hidden');
+      } else if (task === 'facts') {
+        composeFacts.classList.remove('hidden');
+      } else if (task === 'reel') {
+        composeReel.classList.remove('hidden');
+      } else {
+        composeBio.classList.remove('hidden');
+      }
       setStepIndicators('compose');
     }
 
+    function showCompose() {
+      showTask(activeTask);
+    }
+
     function showPreview() {
-      composeStep.classList.add('hidden');
+      hubStep.classList.add('hidden');
+      taskChrome.classList.remove('hidden');
+      hideAllTaskPanels();
       previewStep.classList.remove('hidden');
-      doneStep.classList.add('hidden');
       setStepIndicators('preview');
     }
 
     function showDone() {
-      composeStep.classList.add('hidden');
-      previewStep.classList.add('hidden');
+      hubStep.classList.add('hidden');
+      taskChrome.classList.remove('hidden');
+      hideAllTaskPanels();
       doneStep.classList.remove('hidden');
       setStepIndicators('done');
+    }
+
+    function isTaskEditVisible() {
+      return (
+        !composeStep.classList.contains('hidden') ||
+        !composeRates.classList.contains('hidden') ||
+        !composeFacts.classList.contains('hidden') ||
+        !composeReel.classList.contains('hidden') ||
+        !composeBio.classList.contains('hidden')
+      );
     }
 
     function formatApiError(data: { error?: string; correlationId?: string }, fallback: string) {
@@ -693,16 +1104,147 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       return { name: safe, contentType: 'image/jpeg', dataBase64 };
     }
 
+    function fieldClass() {
+      return 'mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold';
+    }
+
+    function appendLabeledInput(
+      wrap: HTMLElement,
+      labelText: string,
+      field: string,
+      value: string,
+      opts?: { type?: string; rows?: number },
+    ) {
+      const label = document.createElement('label');
+      label.className = 'block text-sm text-muted';
+      label.textContent = labelText;
+      if (opts?.rows) {
+        const area = document.createElement('textarea');
+        area.rows = opts.rows;
+        area.value = value;
+        area.dataset.field = field;
+        area.className = fieldClass();
+        label.appendChild(area);
+      } else {
+        const input = document.createElement('input');
+        input.type = opts?.type || 'text';
+        if (opts?.type === 'number') {
+          input.min = '1';
+          input.step = '1';
+        }
+        input.value = value;
+        input.dataset.field = field;
+        input.className = fieldClass();
+        label.appendChild(input);
+      }
+      wrap.appendChild(label);
+    }
+
+    function renderDiscretePreview(wrap: HTMLElement, change: ContentChange) {
+      const preview = change.preview;
+      const tool = change.tool || '';
+
+      if (tool === 'update_lesson_rates' || preview?.kind === 'rates') {
+        const rates =
+          preview && preview.kind === 'rates'
+            ? preview.rates
+            : [
+                { id: '30min', label: '30-minute session', priceAmount: 0 },
+                { id: '60min', label: '60-minute session', priceAmount: 0 },
+              ];
+        for (const rate of rates) {
+          appendLabeledInput(
+            wrap,
+            `${rate.label || rate.id} ($)`,
+            `rate:${rate.id}`,
+            String(rate.priceAmount ?? ''),
+            { type: 'number' },
+          );
+        }
+        return;
+      }
+
+      if (tool === 'update_reel_url' || preview?.kind === 'reel') {
+        const url = preview && preview.kind === 'reel' ? preview.reelUrl : '';
+        appendLabeledInput(wrap, 'Reel link', 'reelUrl', url);
+        return;
+      }
+
+      if (tool === 'update_short_bio' || preview?.kind === 'shortBio') {
+        const bio = preview && preview.kind === 'shortBio' ? preview.shortBio : '';
+        appendLabeledInput(wrap, 'Short bio', 'shortBio', bio, { rows: 4 });
+        return;
+      }
+
+      if (tool === 'update_performer_facts' || preview?.kind === 'performer') {
+        const performer =
+          preview && preview.kind === 'performer' ? preview.performer : ({} as Record<string, string>);
+        const keys =
+          preview && preview.kind === 'performer' && preview.patchedKeys?.length
+            ? preview.patchedKeys
+            : Object.keys(PERFORMER_FIELD_LABELS);
+        for (const key of keys) {
+          appendLabeledInput(
+            wrap,
+            PERFORMER_FIELD_LABELS[key] || key,
+            `performer:${key}`,
+            String(performer[key] || ''),
+          );
+        }
+        return;
+      }
+
+      if (tool === 'update_casting_fields' || preview?.kind === 'casting') {
+        const casting =
+          preview && preview.kind === 'casting'
+            ? preview
+            : {
+                slug: '',
+                keyword: '',
+                title: '',
+                description: '',
+                cta: '',
+                relatedShows: [] as string[],
+                relatedSkills: [] as string[],
+              };
+        wrap.dataset.castingSlug = casting.slug || '';
+        appendLabeledInput(wrap, 'Keyword', 'keyword', String(casting.keyword || ''));
+        appendLabeledInput(wrap, 'Title', 'title', String(casting.title || ''));
+        appendLabeledInput(wrap, 'Description', 'description', String(casting.description || ''), {
+          rows: 3,
+        });
+        appendLabeledInput(wrap, 'Button label (CTA)', 'cta', String(casting.cta || ''));
+        appendLabeledInput(
+          wrap,
+          'Related shows (one per line)',
+          'relatedShows',
+          (casting.relatedShows || []).join('\n'),
+          { rows: 3 },
+        );
+        appendLabeledInput(
+          wrap,
+          'Related skills (one per line)',
+          'relatedSkills',
+          (casting.relatedSkills || []).join('\n'),
+          { rows: 3 },
+        );
+      }
+    }
+
     function renderChangesEditor(changes: ContentChange[]) {
       changesEditor.replaceChildren();
       changes.forEach((change, index) => {
         const wrap = document.createElement('div');
         wrap.className = 'space-y-2 rounded-sm border border-line bg-panel/40 p-4';
         wrap.dataset.index = String(index);
+        wrap.dataset.tool = change.tool || '';
 
         const meta = document.createElement('p');
         meta.className = 'text-xs text-muted';
-        meta.textContent = [change.tool, change.path].filter(Boolean).join(' · ');
+        const liveHint = change.livePath || '';
+        meta.textContent = liveHint
+          ? `Updates ${liveHint}`
+          : change.summary || 'Website update';
         wrap.appendChild(meta);
 
         if (change.summary) {
@@ -712,67 +1254,188 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           wrap.appendChild(summary);
         }
 
-        const pathLabel = document.createElement('label');
-        pathLabel.className = 'block text-sm text-muted';
-        pathLabel.textContent = 'Path';
-        const pathInput = document.createElement('input');
-        pathInput.type = 'text';
-        pathInput.value = change.path;
-        pathInput.dataset.field = 'path';
-        pathInput.className =
-          'mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 font-mono text-xs text-spotlight outline-none focus:border-gold';
-        pathLabel.appendChild(pathInput);
-        wrap.appendChild(pathLabel);
-
-        const contentLabel = document.createElement('label');
-        contentLabel.className = 'block text-sm text-muted';
-        contentLabel.textContent = 'Content';
-        const contentArea = document.createElement('textarea');
-        contentArea.rows = 12;
-        contentArea.value = change.content;
-        contentArea.dataset.field = 'content';
-        contentArea.className =
-          'mt-1 w-full rounded-sm border border-line bg-ink px-3 py-3 font-mono text-xs text-spotlight outline-none focus:border-gold';
-        contentLabel.appendChild(contentArea);
-        wrap.appendChild(contentLabel);
-
-        const msgLabel = document.createElement('label');
-        msgLabel.className = 'block text-sm text-muted';
-        msgLabel.textContent = 'Commit message';
-        const msgInput = document.createElement('input');
-        msgInput.type = 'text';
-        msgInput.value = change.commitMessage;
-        msgInput.dataset.field = 'commitMessage';
-        msgInput.className =
-          'mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold';
-        msgLabel.appendChild(msgInput);
-        wrap.appendChild(msgLabel);
+        if (change.tool && DISCRETE_TOOLS.has(change.tool)) {
+          renderDiscretePreview(wrap, change);
+        } else {
+          const contentLabel = document.createElement('label');
+          contentLabel.className = 'block text-sm text-muted';
+          contentLabel.textContent = 'Content';
+          const contentArea = document.createElement('textarea');
+          contentArea.rows = 12;
+          contentArea.value = change.content;
+          contentArea.dataset.field = 'content';
+          contentArea.className =
+            'mt-1 w-full rounded-sm border border-line bg-ink px-3 py-3 font-mono text-xs text-spotlight outline-none focus:border-gold';
+          contentLabel.appendChild(contentArea);
+          wrap.appendChild(contentLabel);
+        }
 
         changesEditor.appendChild(wrap);
       });
     }
 
-    function readEditedChanges(): ContentChange[] {
-      const blocks = Array.from(changesEditor.children) as HTMLElement[];
-      return blocks.map((block, index) => {
-        const base = draftChanges[index] || { path: '', content: '', commitMessage: '' };
-        const path =
-          (block.querySelector('[data-field="path"]') as HTMLInputElement | null)?.value.trim() ||
-          base.path;
-        const content =
-          (block.querySelector('[data-field="content"]') as HTMLTextAreaElement | null)?.value ??
-          base.content;
-        const commitMessage =
-          (block.querySelector('[data-field="commitMessage"]') as HTMLInputElement | null)?.value.trim() ||
-          base.commitMessage;
-        return {
-          tool: base.tool,
-          summary: base.summary,
-          path,
-          content,
-          commitMessage,
-        };
+    async function composeDiscrete(tool: string, args: Record<string, unknown>): Promise<ContentChange[]> {
+      const res = await fetch('/api/updateContent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'compose', tool, args }),
       });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(formatApiError(data, 'Could not prepare that update.'));
+      }
+      const changes = Array.isArray(data.changes) ? (data.changes as ContentChange[]) : [];
+      if (!changes.length) {
+        throw new Error('No website update was prepared.');
+      }
+      return changes.map((c) => ({
+        tool: c.tool,
+        path: c.path,
+        content: c.content,
+        commitMessage: c.commitMessage,
+        summary: c.summary,
+        livePath: c.livePath,
+        preview: c.preview,
+      }));
+    }
+
+    async function rebuildDiscreteFromForm(block: HTMLElement, base: ContentChange): Promise<ContentChange> {
+      const tool = base.tool || block.dataset.tool || '';
+      if (tool === 'update_lesson_rates') {
+        const rates = ['30min', '60min'].map((id) => {
+          const input = block.querySelector(`[data-field="rate:${id}"]`) as HTMLInputElement | null;
+          const priceAmount = Number(input?.value || 0);
+          return {
+            id,
+            label: id === '30min' ? '30-minute session' : '60-minute session',
+            price: `$${Math.round(priceAmount)}`,
+            priceAmount,
+          };
+        });
+        const [change] = await composeDiscrete(tool, { rates });
+        return change;
+      }
+      if (tool === 'update_reel_url') {
+        const reelUrl =
+          (block.querySelector('[data-field="reelUrl"]') as HTMLInputElement | null)?.value.trim() || '';
+        const [change] = await composeDiscrete(tool, { reelUrl });
+        return change;
+      }
+      if (tool === 'update_short_bio') {
+        const shortBio =
+          (block.querySelector('[data-field="shortBio"]') as HTMLTextAreaElement | null)?.value.trim() ||
+          '';
+        const [change] = await composeDiscrete(tool, { shortBio });
+        return change;
+      }
+      if (tool === 'update_performer_facts') {
+        const performer: Record<string, string> = {};
+        block.querySelectorAll('[data-field^="performer:"]').forEach((el) => {
+          const field = (el as HTMLInputElement).dataset.field || '';
+          const key = field.replace(/^performer:/, '');
+          const value = (el as HTMLInputElement).value.trim();
+          if (key && value) performer[key] = value;
+        });
+        const [change] = await composeDiscrete(tool, performer);
+        return change;
+      }
+      if (tool === 'update_casting_fields') {
+        const slug = block.dataset.castingSlug || '';
+        const relatedShows = (
+          (block.querySelector('[data-field="relatedShows"]') as HTMLTextAreaElement | null)?.value || ''
+        )
+          .split('\n')
+          .map((s) => s.trim())
+          .filter(Boolean);
+        const relatedSkills = (
+          (block.querySelector('[data-field="relatedSkills"]') as HTMLTextAreaElement | null)?.value || ''
+        )
+          .split('\n')
+          .map((s) => s.trim())
+          .filter(Boolean);
+        const args: Record<string, unknown> = {
+          slug,
+          keyword:
+            (block.querySelector('[data-field="keyword"]') as HTMLInputElement | null)?.value.trim() ||
+            undefined,
+          title:
+            (block.querySelector('[data-field="title"]') as HTMLInputElement | null)?.value.trim() ||
+            undefined,
+          description:
+            (block.querySelector('[data-field="description"]') as HTMLTextAreaElement | null)?.value.trim() ||
+            undefined,
+          cta:
+            (block.querySelector('[data-field="cta"]') as HTMLInputElement | null)?.value.trim() ||
+            undefined,
+          relatedShows,
+          relatedSkills,
+        };
+        const [change] = await composeDiscrete(tool, args);
+        return change;
+      }
+      return base;
+    }
+
+    async function readEditedChanges(): Promise<ContentChange[]> {
+      const blocks = Array.from(changesEditor.children) as HTMLElement[];
+      const out: ContentChange[] = [];
+      for (let index = 0; index < blocks.length; index++) {
+        const block = blocks[index];
+        const base = draftChanges[index] || { path: '', content: '', commitMessage: '' };
+        if (base.tool && DISCRETE_TOOLS.has(base.tool)) {
+          out.push(await rebuildDiscreteFromForm(block, base));
+        } else {
+          const content =
+            (block.querySelector('[data-field="content"]') as HTMLTextAreaElement | null)?.value ??
+            base.content;
+          out.push({
+            tool: base.tool,
+            summary: base.summary,
+            path: base.path,
+            content,
+            commitMessage: base.commitMessage,
+            livePath: base.livePath,
+            preview: base.preview,
+          });
+        }
+      }
+      return out;
+    }
+
+    async function loadDiscreteDefaults() {
+      try {
+        const res = await fetch('/api/studioDiscrete');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data?.authorized) return;
+        const rates = Array.isArray(data.rates) ? data.rates : [];
+        for (const rate of rates) {
+          if (rate.id === '30min' && rate.priceAmount != null) {
+            quickRate30.value = String(rate.priceAmount);
+          }
+          if (rate.id === '60min' && rate.priceAmount != null) {
+            quickRate60.value = String(rate.priceAmount);
+          }
+        }
+        const performer = data.performer && typeof data.performer === 'object' ? data.performer : null;
+        if (performer) {
+          factAvailability.value = String(performer.availability || '');
+          factVocalType.value = String(performer.vocalType || '');
+          factVocalRange.value = String(performer.vocalRange || '');
+          factUnion.value = String(performer.union || '');
+          factPlayingAge.value = String(performer.playingAge || '');
+          factHeight.value = String(performer.height || '');
+          factEthnicity.value = String(performer.ethnicity || '');
+        }
+        if (typeof data.reelUrl === 'string' && data.reelUrl) {
+          reelUrlInput.value = data.reelUrl;
+        }
+        if (typeof data.shortBio === 'string' && data.shortBio) {
+          shortBioInput.value = data.shortBio;
+        }
+      } catch {
+        /* non-fatal */
+      }
     }
 
     function resetComposeForm() {
@@ -801,6 +1464,113 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       const url = URL.createObjectURL(file);
       photoPreview.src = url;
       photoPreviewWrap.classList.remove('hidden');
+    });
+
+    async function runDiscretePreview(
+      tool: string,
+      args: Record<string, unknown>,
+      emptyMessage: string,
+    ) {
+      setComposeBusy(true);
+      setStatus('Preparing preview…');
+      try {
+        const changes = await composeDiscrete(tool, args);
+        draftChanges = changes;
+        provisionalPhotoPath = null;
+        previewReply.textContent =
+          changes[0]?.summary || 'Review below, edit if needed, then publish.';
+        renderChangesEditor(draftChanges);
+        showPreview();
+        setStatus('Review, edit if needed, then publish.');
+      } catch (err) {
+        setStatus(err instanceof Error ? err.message : emptyMessage);
+        trackException(err, { operation: 'studioDiscretePreview', tool });
+        flush();
+      } finally {
+        if (!studioApp.classList.contains('hidden') && isTaskEditVisible()) {
+          setComposeBusy(false);
+        } else if (!studioApp.classList.contains('hidden')) {
+          setBusy(false);
+          studioApp.classList.remove(BUSY_CLASS);
+        }
+      }
+    }
+
+    studioApp.querySelectorAll('[data-hub-task]').forEach((el) => {
+      el.addEventListener('click', () => {
+        const task = (el as HTMLElement).dataset.hubTask as HubTask | undefined;
+        const hint = (el as HTMLElement).dataset.hubHint;
+        if (!task || !TASK_TITLES[task]) return;
+        showTask(task, hint);
+      });
+    });
+
+    hubBackBtn.addEventListener('click', () => {
+      showHub();
+    });
+
+    quickRatesBtn.addEventListener('click', async () => {
+      const amount30 = Number(quickRate30.value);
+      const amount60 = Number(quickRate60.value);
+      if (!Number.isFinite(amount30) || amount30 <= 0 || !Number.isFinite(amount60) || amount60 <= 0) {
+        setStatus('Enter dollar amounts for both 30- and 60-minute sessions.');
+        return;
+      }
+      await runDiscretePreview(
+        'update_lesson_rates',
+        {
+          rates: [
+            {
+              id: '30min',
+              label: '30-minute session',
+              price: `$${Math.round(amount30)}`,
+              priceAmount: amount30,
+            },
+            {
+              id: '60min',
+              label: '60-minute session',
+              price: `$${Math.round(amount60)}`,
+              priceAmount: amount60,
+            },
+          ],
+        },
+        'Could not prepare rate update.',
+      );
+    });
+
+    factsPreviewBtn.addEventListener('click', async () => {
+      const performer = {
+        availability: factAvailability.value.trim(),
+        vocalType: factVocalType.value.trim(),
+        vocalRange: factVocalRange.value.trim(),
+        union: factUnion.value.trim(),
+        playingAge: factPlayingAge.value.trim(),
+        height: factHeight.value.trim(),
+        ethnicity: factEthnicity.value.trim(),
+      };
+      if (!Object.values(performer).some(Boolean)) {
+        setStatus('Enter at least one performer fact.');
+        return;
+      }
+      await runDiscretePreview('update_performer_facts', performer, 'Could not prepare facts update.');
+    });
+
+    reelPreviewBtn.addEventListener('click', async () => {
+      const reelUrl = reelUrlInput.value.trim();
+      if (!reelUrl) {
+        setStatus('Paste a reel link first.');
+        return;
+      }
+      await runDiscretePreview('update_reel_url', { reelUrl }, 'Could not prepare reel update.');
+    });
+
+    bioPreviewBtn.addEventListener('click', async () => {
+      const shortBio = shortBioInput.value.trim();
+      if (!shortBio) {
+        setStatus('Enter a short bio first.');
+        return;
+      }
+      await runDiscretePreview('update_short_bio', { shortBio }, 'Could not prepare bio update.');
     });
 
     previewBtn.addEventListener('click', async () => {
@@ -862,6 +1632,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           content: String(c.content ?? ''),
           commitMessage: String(c.commitMessage || ''),
           summary: c.summary ? String(c.summary) : undefined,
+          livePath: c.livePath ? String(c.livePath) : undefined,
+          preview: c.preview,
         }));
         provisionalPhotoPath =
           typeof data.provisionalPhotoPath === 'string' ? data.provisionalPhotoPath : null;
@@ -877,7 +1649,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         trackException(err, { operation: 'studioDraft' });
         flush();
       } finally {
-        if (!studioApp.classList.contains('hidden') && !composeStep.classList.contains('hidden')) {
+        if (!studioApp.classList.contains('hidden') && isTaskEditVisible()) {
           setComposeBusy(false);
         } else if (!studioApp.classList.contains('hidden')) {
           setBusy(false);
@@ -892,15 +1664,24 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     });
 
     publishBtn.addEventListener('click', async () => {
-      const changes = readEditedChanges();
+      setPreviewBusy(true);
+      setStatus('Preparing…');
+      let changes: ContentChange[];
+      try {
+        changes = await readEditedChanges();
+      } catch (err) {
+        setPreviewBusy(false);
+        setStatus(err instanceof Error ? err.message : 'Could not prepare that update.');
+        return;
+      }
       if (!changes.length) {
+        setPreviewBusy(false);
         setStatus('Nothing to publish.');
         return;
       }
 
       publishClickedAt = Date.now();
       prodLatencyEmitted = false;
-      setPreviewBusy(true);
       setStatus('Publishing…');
 
       try {
@@ -964,7 +1745,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     anotherBtn.addEventListener('click', () => {
       stopPolling();
       resetComposeForm();
-      showCompose();
+      showHub();
       setComposeBusy(false);
       setStatus('');
     });

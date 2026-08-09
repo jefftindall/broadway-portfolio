@@ -7,7 +7,7 @@ import {
   unauthorized,
 } from '../lib/auth.js';
 import { commitFile } from '../lib/github.js';
-import { applyContentChanges, runContentAgent } from '../lib/gemini.js';
+import { applyContentChanges, buildContentChange, runContentAgent } from '../lib/gemini.js';
 import { studioFailureResponse } from '../lib/httpErrors.js';
 import { flush, trackEvent, trackException } from '../lib/telemetry.js';
 import slugify from 'slugify';
@@ -73,12 +73,37 @@ app.http('updateContent', {
       return { status: 400, jsonBody: { error: 'Invalid JSON body' } };
     }
 
-    const mode = String(body.mode || 'publish').toLowerCase() === 'draft' ? 'draft' : 'publish';
+    const modeRaw = String(body.mode || 'publish').toLowerCase();
+    const mode =
+      modeRaw === 'draft' ? 'draft' : modeRaw === 'compose' ? 'compose' : 'publish';
     const correlationId = newCorrelationId();
     const hasPhoto = Boolean(body.photo?.dataBase64);
-    const operation = mode === 'draft' ? 'draftContent' : 'updateContent';
+    const operation =
+      mode === 'draft' ? 'draftContent' : mode === 'compose' ? 'composeContent' : 'updateContent';
 
     try {
+      if (mode === 'compose') {
+        const tool = String(body.tool || '').trim();
+        const args = body.args && typeof body.args === 'object' ? body.args : {};
+        if (!tool) {
+          return { status: 400, jsonBody: { error: 'tool is required for compose' } };
+        }
+        trackEvent('StudioComposeRequested', {
+          userId: principal?.userId || 'local',
+          tool,
+          correlationId,
+        });
+        const change = await buildContentChange(tool, args, undefined);
+        return {
+          status: 200,
+          jsonBody: {
+            reply: change.summary,
+            changes: [change],
+            correlationId,
+          },
+        };
+      }
+
       if (mode === 'draft') {
         const message = String(body.message || '').trim();
         if (!message) {
@@ -159,7 +184,9 @@ app.http('updateContent', {
       const failure = studioFailureResponse(err, correlationId, {
         operation,
       });
-      context.error(mode === 'draft' ? 'Studio draft failed' : 'Studio publish failed', {
+      context.error(
+        mode === 'draft' ? 'Studio draft failed' : mode === 'compose' ? 'Studio compose failed' : 'Studio publish failed',
+        {
         correlationId,
         errorKind: failure.errorKind,
         message: err instanceof Error ? err.message : String(err),
@@ -169,7 +196,13 @@ app.http('updateContent', {
         correlationId,
         errorKind: failure.errorKind,
       });
-      trackEvent(mode === 'draft' ? 'StudioDraftFailed' : 'StudioPublishFailed', {
+      trackEvent(
+        mode === 'draft'
+          ? 'StudioDraftFailed'
+          : mode === 'compose'
+            ? 'StudioComposeFailed'
+            : 'StudioPublishFailed',
+        {
         correlationId,
         operation,
         errorKind: failure.errorKind,

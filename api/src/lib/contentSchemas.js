@@ -2,10 +2,21 @@ import { z } from 'zod';
 
 export const showCategory = z.enum(['musical', 'play', 'cabaret', 'film']).default('musical');
 
+/** Stable lesson rate ids — Gemini cannot invent additional tiers. */
+export const LESSON_RATE_ID_VALUES = ['30min', '60min'];
+
+export const LESSON_RATE_DEFS = {
+  '30min': { id: '30min', label: '30-minute session' },
+  '60min': { id: '60min', label: '60-minute session' },
+};
+
+export const lessonRateIdSchema = z.enum(['30min', '60min']);
+
 export const lessonRateSchema = z.object({
+  id: lessonRateIdSchema,
   label: z.string().min(1),
   price: z.string().min(1),
-  priceAmount: z.number().optional(),
+  priceAmount: z.number().positive(),
 });
 
 export const showFrontmatterSchema = z.object({
@@ -53,9 +64,29 @@ export const pagesFrontmatterSchema = z.object({
   scheduling: z.string().optional(),
 });
 
-export const lessonsBookFrontmatterSchema = pagesFrontmatterSchema.extend({
-  rates: z.array(lessonRateSchema).min(1, 'At least one lesson rate is required'),
-});
+export const lessonsBookFrontmatterSchema = pagesFrontmatterSchema
+  .extend({
+    rates: z.array(lessonRateSchema).min(1, 'At least one lesson rate is required'),
+  })
+  .superRefine((data, ctx) => {
+    const ids = new Set(data.rates.map((rate) => rate.id));
+    for (const id of LESSON_RATE_ID_VALUES) {
+      if (!ids.has(id)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `Missing required rate id: ${id}`,
+          path: ['rates'],
+        });
+      }
+    }
+    if (data.rates.length !== LESSON_RATE_ID_VALUES.length) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Exactly two lesson rates (30-minute and 60-minute) are allowed',
+        path: ['rates'],
+      });
+    }
+  });
 
 export const castingFrontmatterSchema = z.object({
   keyword: z.string().min(1),
@@ -64,4 +95,30 @@ export const castingFrontmatterSchema = z.object({
   relatedSkills: z.array(z.string()).default([]),
   relatedShows: z.array(z.string()).default([]),
   cta: z.string().default('Request materials'),
+});
+
+export const performerSpecSchema = z.object({
+  vocalType: z.string().min(1),
+  vocalRange: z.string().min(1),
+  union: z.string().min(1),
+  availability: z.string().min(1),
+  playingAge: z.string().optional(),
+  ethnicity: z.string().optional(),
+  height: z.string().optional(),
+});
+
+export const PERFORMER_FACT_KEYS = [
+  'availability',
+  'vocalType',
+  'vocalRange',
+  'union',
+  'playingAge',
+  'ethnicity',
+  'height',
+];
+
+export const siteSettingsSchema = z.object({
+  reelUrl: z.string().url(),
+  shortBio: z.string().min(1).max(600),
+  performer: performerSpecSchema,
 });
