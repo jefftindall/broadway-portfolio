@@ -1,7 +1,7 @@
 # Plan: Google Search Console & Analytics
 
 **Artifact ID:** `ELYSE-SEARCH-001`  
-**Version:** 1.8  
+**Version:** 1.9  
 **Last updated:** 2026-08-09  
 **Audience:** Agents, implementers, operators  
 **Scope:** Google Search Console (GSC), Google Analytics 4 (GA4), and related technical SEO that makes those tools useful — not casting content strategy itself.
@@ -18,6 +18,7 @@ Example PR title: `SEARCH-P1-003: Add GA4 generate_lead on inquiry success`
 
 | Section | Purpose |
 |---------|---------|
+| [Status at a glance](#status-at-a-glance) | Done vs not done summary |
 | [Roles](#roles) | What App Insights vs GA4 vs GSC own |
 | [Current baseline](#current-baseline) | What the repo already has |
 | [Phased backlog](#phased-backlog) | Implementable work with IDs and acceptance criteria |
@@ -26,6 +27,18 @@ Example PR title: `SEARCH-P1-003: Add GA4 generate_lead on inquiry success`
 | [Out of scope](#out-of-scope) | Explicit non-goals |
 
 Implement **one phase (or one `SEARCH-*` item) per PR** when practical. Prefer linking this doc from the PR body over pasting the full plan into the description.
+
+---
+
+## Status at a glance
+
+| Phase / area | Status | Open residuals |
+|--------------|--------|----------------|
+| Phase 0 — Apex / GSC / GA4 property | `done` | `SEARCH-P0-004` request indexing (`planned`) |
+| Phase 1 — GA4 measurement | Mostly `done` | `SEARCH-P1-005` Admin checklist (`planned`); DebugView verify under `SEARCH-P1-003`; `SEARCH-P1-006` `wont_fix` |
+| Phase 2 — Technical SEO | `done` | — |
+| Phase 3 — Monthly GSC+GA loop | `done` (runbook) | Habit ACs unchecked; **automate** via Phase 4 |
+| Phase 4 — Automate monthly extract | `planned` | `SEARCH-P4-001`–`004` — **suggested next** |
 
 ---
 

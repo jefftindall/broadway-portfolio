@@ -1,7 +1,7 @@
 # Plan: Operational excellence
 
 **Artifact ID:** `ELYSE-OPS-001`  
-**Version:** 2.2  
+**Version:** 2.3  
 **Last updated:** 2026-08-09  
 **Audience:** Agents, implementers, operators  
 **Scope:** Reliability posture scorecard, committed SLOs, critical alerting (SMS/voice), monthly refresh loop, and **site performance / activity** (visits, updates, contacts, top pages) in that same monthly artifact. Calibrated for a lean personal portfolio — not enterprise multi-team SRE.
@@ -39,6 +39,7 @@ The **persisted scorecard** in `/docs` must also omit private emails/phones — 
 
 | Section | Purpose |
 |---------|---------|
+| [Status at a glance](#status-at-a-glance) | Done vs not done summary |
 | [Scorecard](#operational-excellence-scorecard) | Dimensions, rubric, baseline, persistence + monthly refresh |
 | [Site performance](#site-performance-monthly-activity) | Visits / updates / contacts / top pages — GA vs App Insights |
 | [Committed SLOs](#committed-slos) | Targets we intend to hold |
@@ -46,6 +47,23 @@ The **persisted scorecard** in `/docs` must also omit private emails/phones — 
 | [Critical alerting](#critical-alerting-plan) | SMS + phone beyond email |
 | [Phased backlog](#phased-backlog) | Implementable `OPS-*` work |
 | [Out of scope](#out-of-scope) | Explicit non-goals |
+
+---
+
+## Status at a glance
+
+| Phase / area | Status | Open residuals |
+|--------------|--------|----------------|
+| Phase 0 — Plan, scorecard, `ALERT-*` naming | `done` | Monthly run habit / first scheduled confirm under P0-004 / P5 |
+| Phase 1 — KV-backed email + SMS + voice | `done` | — |
+| Phase 2 — Materials + FCP SLIs | `done` | — |
+| Phase 3 — Studio cadence, CD Sev1, IR, inquiry SLI, KV purge | Mostly `done` | `OPS-P3-002` PagerDuty escalate-if-unacked (`planned` — **do not implement** until asked) |
+| Phase 4 — Subscription budget + ACS digest | `done` | — |
+| Phase 5 — Site performance in scorecard/digest | `done` (infra/code) | Populate live `GA-PROPERTY-ID` / `GA-DATA-API-SA-JSON` values; confirm first monthly Actions run |
+
+**Living scores SoT:** [`docs/ops/operational-excellence-scorecard.md`](../ops/operational-excellence-scorecard.md) (not the historical baseline table in this plan).
+
+**Suggested next:** Populate GA Data API KV secrets per [ga-data-api-access.md](../runbooks/ga-data-api-access.md); confirm the monthly scorecard workflow end-to-end. Only then consider `OPS-P3-002` if explicitly requested.
 
 ---
 
@@ -148,7 +166,7 @@ Initial SRE review — **not yet** the monthly persisted artifact (see [Scorecar
 - Never write inquiry names, emails, phones, preferred-contact values, correlation IDs, or GA client IDs into `scorecard-evaluation.json`, the markdown scorecard, or the ACS digest.
 - GA service-account JSON and keys live only in Key Vault (see setup below) — never in git, workflow `with:` inputs, or commit messages.
 
-### Proposed scorecard shape (`sitePerformance` in evaluation JSON)
+### Scorecard shape (`sitePerformance` in evaluation JSON)
 
 ```json
 {
@@ -215,8 +233,8 @@ Today the repo only has the **public Measurement ID** (`G-XEE29C0RRE` → `PUBLI
    az keyvault secret set --vault-name kv-elyse-shared --name GA-DATA-API-SA-JSON --file ./ga-scorecard-sa.json
    ```
 
-6. **Wire the monthly workflow** (implementation PR)  
-   After Azure login / existing KV fetch pattern: load the two secrets into env or `0600` temp files for `ops-scorecard-refresh.mjs` (or a small helper). Call Data API `runReport` for the previous month: metrics `sessions` + `activeUsers`; dimension `pagePath` (or `unifiedPagePathScreen`) limited to top 5–10; filter out `/studio` if any leaks. On auth/API failure → set `sitePerformance.status = "stale"` and continue (same soft-fail pattern as optional SLIs) — do **not** fail the whole scorecard job solely because GA is down.
+6. **Monthly workflow wiring** (`done` in repo)  
+   After Azure login / existing KV fetch pattern: load the two secrets into env or `0600` temp files for `ops-scorecard-refresh.mjs` via `scripts/fetch-ga-scorecard-secrets.sh`. Call Data API `runReport` for the previous month: metrics `sessions` + `activeUsers`; dimension `pagePath` (or `unifiedPagePathScreen`) limited to top 5–10; filter out `/studio` if any leaks. On auth/API failure → set `sitePerformance.status = "stale"` and continue (same soft-fail pattern as optional SLIs) — do **not** fail the whole scorecard job solely because GA is down. **Operator residual:** replace `REPLACE_ME` placeholders with real KV values so visits/top pages leave `stale`.
 
 7. **Local prove-out**  
    With KV secrets loaded: `node scripts/ops-scorecard-refresh.mjs --monthly --azure` (or a dedicated `--ga` flag if split) and confirm `sitePerformance` fills without printing the SA JSON.
@@ -245,7 +263,7 @@ Reuse prod App Insights (`appi-elyse-portfolio-prod`). Bound `timestamp` to the 
 - **Contacts:** count `ContactInquiryReceived`; summarize by `tostring(customDimensions.type)` (`casting` / `lesson`).
 - **Updates:** count `StudioPublishUiSuccess` (force-sampled at 100% today).
 
-Exact Kusto belongs in [observability.md](../runbooks/observability.md) when implementing `OPS-P5-004`.
+Exact Kusto for contacts/updates lives in [observability.md](../runbooks/observability.md) (`OPS-P5-004`).
 
 ---
 
@@ -357,13 +375,13 @@ Do **not** send ops alerts through ACS contact-form SMS (`ACS-SMS-FROM` + `SITE-
 | Action ID | Work | Acceptance criteria | Status |
 |-----------|------|---------------------|--------|
 | `OPS-P5-001` | Lock metric definitions + `sitePerformance` JSON/markdown/digest contract (this section) | Plan merged; privacy rules explicit; hybrid GA + App Insights decision recorded | `done` |
-| `OPS-P5-002` | GA Data API access: GCP SA + GA Viewer + KV secrets + rotate-secrets names | Operator checklist complete; `GA-PROPERTY-ID` + `GA-DATA-API-SA-JSON` in `kv-elyse-shared`; fetch script + workflow wired; never echoed in logs | `done` |
+| `OPS-P5-002` | GA Data API access: GCP SA + GA Viewer + KV secrets + rotate-secrets names | Placeholders + fetch script + workflow wired; never echoed in logs. **Residual:** operator populates real `GA-PROPERTY-ID` + `GA-DATA-API-SA-JSON` in `kv-elyse-shared` | `done` (infra/runbook) |
 | `OPS-P5-003` | Probe previous-month visits + top pages via GA Data API in `ops-scorecard-refresh.mjs` | Soft-fail → `stale`; paths only; plain-language labels; `/studio` excluded; no SA JSON in artifacts | `done` |
 | `OPS-P5-004` | Probe previous-month contacts + Studio publish counts via App Insights | Calendar-month Kusto; casting/lesson split; documented in observability runbook | `done` |
 | `OPS-P5-005` | Render Site performance in scorecard MD + ACS digest (“Last month on the site”) | Elyse-facing digest: section order (Worth a glance → activity → visitors → hosting); omit empty Worth a glance; Studio volume grading; homepage vs materials freshness SLOs; [monthly-site-check-in.md](../runbooks/monthly-site-check-in.md); no PII | `done` |
 
 <details>
-<summary><code>OPS-P5-*</code> — Phase 5 acceptance (this PR)</summary>
+<summary><code>OPS-P5-*</code> — Phase 5 acceptance</summary>
 
 - [x] `GA-PROPERTY-ID` / `GA-DATA-API-SA-JSON` placeholders in bootstrap shared KV + [ga-data-api-access.md](../runbooks/ga-data-api-access.md)
 - [x] `scripts/fetch-ga-scorecard-secrets.sh` + monthly workflow fetch (line-masked; temp SA file cleaned up)
@@ -372,11 +390,12 @@ Do **not** send ops alerts through ACS contact-form SMS (`ACS-SMS-FROM` + `SITE-
 - [x] Scorecard MD + ACS digest “Last month on the site” with plain-language page labels
 - [x] Digest format rule [ops-monthly-checkin-email.mdc](../../.cursor/rules/ops-monthly-checkin-email.mdc); Worth a glance omitted when empty
 - [x] Workflow failure → ACS email to `ALERT-EMAIL` only (`ops-scorecard-failure-email.mjs`)
+- [ ] Residual (`OPS-P5-002`): populate real GA KV secret values (not `REPLACE_ME`)
 - [ ] Residual: confirm first scheduled monthly run succeeds end-to-end in Actions (operator)
 
 </details>
 
-**Suggested PR order:** `OPS-P5-004` (App Insights only — unblocks contacts/updates with existing Azure OIDC) → `OPS-P5-002` (ops access) → `OPS-P5-003` → `OPS-P5-005` (or fold digest into the same PR as the probes). `OPS-P5-001` is the plan contract and does not need code.
+**Suggested next (post–Phase 5):** Populate GA Data API secrets → confirm monthly scorecard run → only then consider `OPS-P3-002` if explicitly requested. (Phase 5 code order is already shipped.)
 
 ---
 

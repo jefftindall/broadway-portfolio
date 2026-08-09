@@ -1,7 +1,7 @@
 # Casting discoverability — assessment & implementation backlog
 
 **Artifact ID:** `ELYSE-DISC-001`  
-**Version:** 1.3  
+**Version:** 1.4  
 **Last updated:** 2026-08-09  
 **Audience:** Agents, implementers, Elyse (content owner)  
 **Scope:** Public site discoverability for casting directors, representation, and answer engines — not voice-lesson marketing.
@@ -12,20 +12,37 @@ Use the **Action ID** column (`DISC-*`) to reference items in PRs, issues, Studi
 
 Example PR title: `DISC-P1-003: Add performer facts block to About`
 
+**Status values:** `planned` · `in_progress` · `blocked` · `done` · `wont_fix`  
+(Gap inventory also uses `partial` / `needed` — gap-only, not Action ID statuses.)
+
 ---
 
 ## How to use this document
 
 | Section | Purpose |
 |---------|---------|
+| [Status at a glance](#status-at-a-glance) | Done vs not done summary |
 | [Rubric](#rubric-disc-rub) | Scoring dimensions — reuse for future audits |
-| [Baseline scores](#baseline-scores-disc-score) | Snapshot as of 2026-08-02 (WordPress live vs Astro repo) |
+| [Baseline scores](#baseline-scores-disc-score) | Historical snapshot (2026-08-02) — not live SoT |
 | [Action backlog](#action-backlog) | Implementable work items with IDs, acceptance criteria, and file hints (Tiers 0–4) |
 | [Dependencies](#dependency-graph) | What blocks what |
 | [Channel playbooks](#channel-playbooks-disc-ch) | Mobile, desktop, and AI-specific requirements |
 | [Content inventory gaps](#content-inventory-gaps-disc-gap) | Facts and assets needed from Elyse before/during implementation |
 
-**Status values:** `planned` · `in_progress` · `blocked` · `done` · `wont_fix`
+---
+
+## Status at a glance
+
+| Tier / area | Status | Open residuals |
+|-------------|--------|----------------|
+| Tier 0 — Cutover / GSC / redirects | `done` | Spot-check / Bing / indexing residuals under P0 ACs; `SEARCH-P0-004` |
+| Tier 1 — Casting-first positioning | Mostly `done` | `DISC-P1-004` JSON-LD enrich; `DISC-P1-006` Tiffany King quote; `DISC-P1-007` sticky mobile Materials |
+| Tier 2 — New `/for/*` landers + linking | `planned` | `DISC-P2-001`–`009` |
+| Tier 3 — Cadence / AI readiness | Mixed | Most `planned`; `DISC-P3-006` `done` (runbook) |
+| Tier 4 — Automated lander pipeline | `planned` | `DISC-P4-001`–`006`; `DISC-P4-000` docs `done` (enforce residual) |
+| Gaps (`DISC-GAP-*`) | Mixed | Commercial headshot, demos, seeking-rep decision, external profile URLs |
+
+**Suggested next:** Finish Tier 1 leftovers (`DISC-P1-004`, `006`, `007`), then Tier 2 landers — do not skip open Tier 1 for Tier 4 automation.
 
 ---
 
@@ -56,9 +73,9 @@ Weighted score formula:
 
 ## Baseline scores (`DISC-SCORE`)
 
-Snapshot **2026-08-02**. Re-score after `DISC-P0-001` (cutover) and after each tier ships.
+Historical snapshot **2026-08-02** (pre-cutover assessment). **Not** the live SoT after Tier 0–1 shipped — apex now serves Astro (`DISC-P0-001` `done`), Materials + resume/headshot exist, casting-first hero shipped. Re-score deliberately after finishing remaining Tier 1 / Tier 2 work rather than treating these tables as current grades.
 
-### Live site — WordPress at `elysetindall.com` (`DISC-SCORE-LIVE`)
+### Live site — WordPress at `elysetindall.com` (`DISC-SCORE-LIVE`) — historical
 
 | ID | Channel | Weighted | Grade |
 |----|---------|----------|-------|
@@ -77,7 +94,9 @@ Snapshot **2026-08-02**. Re-score after `DISC-P0-001` (cutover) and after each t
 | `DISC-RUB-07` | 2.5 | Basic list; unprofessional stats widget |
 | `DISC-RUB-08` | 1.0 | No JSON-LD |
 
-### Repo site — Astro (not yet on apex domain) (`DISC-SCORE-REPO`)
+### Repo site — Astro pre-cutover (`DISC-SCORE-REPO`) — historical
+
+Scores below reflect the **2026-08-02** repo before apex cutover and before Materials / performer facts shipped. Several notes are obsolete (e.g. “not live on apex”, “no PDF resume”, “Book a Lesson” hero).
 
 | ID | Channel | Weighted | Grade |
 |----|---------|----------|-------|
@@ -85,14 +104,14 @@ Snapshot **2026-08-02**. Re-score after `DISC-P0-001` (cutover) and after each t
 | `DISC-SCORE-REPO-DSK` | Desktop search | 66% | Competitive |
 | `DISC-SCORE-REPO-AI` | AI search | 52% | Developing |
 
-| Rubric ID | Score (0–5) | Notes |
-|-----------|-------------|-------|
-| `DISC-RUB-01` | 4.5 | Sitemap, robots, canonicals, OG, JSON-LD — not live on apex |
+| Rubric ID | Score (0–5) | Notes (as of 2026-08-02) |
+|-----------|-------------|--------------------------|
+| `DISC-RUB-01` | 4.5 | Sitemap, robots, canonicals, OG, JSON-LD — not yet on apex at score time |
 | `DISC-RUB-02` | 3.5 | 16 `/for/*` pages; gaps on range, ethnicity, representation |
-| `DISC-RUB-03` | 2.5 | Reel embedded; no PDF resume or headshot download |
-| `DISC-RUB-04` | 2.0 | Narrative strong; no spec-sheet facts |
+| `DISC-RUB-03` | 2.5 | Reel embedded; no PDF resume or headshot download yet |
+| `DISC-RUB-04` | 2.0 | Narrative strong; no spec-sheet facts yet |
 | `DISC-RUB-05` | 3.5 | 6 shows, 2 news posts; thin vs competitive NYC book |
-| `DISC-RUB-06` | 3.0 | Hero CTA is “Book a Lesson”; lessons above performance |
+| `DISC-RUB-06` | 3.0 | Hero CTA was “Book a Lesson”; lessons above performance |
 | `DISC-RUB-07` | 4.0 | Clean credits, gallery, filters |
 | `DISC-RUB-08` | 3.0 | Person schema; `knowsAbout` coaching-heavy; Instagram-only `sameAs` |
 
@@ -247,8 +266,10 @@ Shipped facts in `site.performer`: playing age 15–28; vocal type (Mezzo-Sopran
 
 **Acceptance criteria**
 
-- [ ] “Materials” (or “Casting”) in primary nav or footer on all public pages
-- [ ] Link targets `/materials/`
+- [x] “Materials” (or “Casting”) in primary nav or footer on all public pages
+- [x] Link targets `/materials` (slashless; SWA treats trailing slash as duplicate)
+
+Shipped: `nav` in `src/lib/site.ts` + footer `CtaLink` to `/materials`.
 
 </details>
 
@@ -449,7 +470,7 @@ Same `GEMINI_API_KEY` may call both; CI draft jobs must read **`GEMINI_MODEL_SEA
 
 | ID | Title | Design | Status | Depends on | Primary refs |
 |----|-------|--------|--------|------------|--------------|
-| `DISC-P4-000` | Document + enforce Gemini rate-limit / draft-budget contract | Shared | `planned` | — | This section; [cost-and-quotas.md](../runbooks/cost-and-quotas.md); draft scripts |
+| `DISC-P4-000` | Document + enforce Gemini rate-limit / draft-budget contract | Shared | `done` (docs) | — | This section; [cost-and-quotas.md](../runbooks/cost-and-quotas.md); draft scripts |
 | `DISC-P4-001` | Curated intent catalog + template fill (closed queue) | **D** | `planned` | `DISC-P2-006`, `DISC-P2-007` preferred; `DISC-GAP-003` | `src/content/casting/` or `src/data/casting-intent-catalog.yaml`; `DISC-P2-001`–`005` |
 | `DISC-P4-002` | Credit-triggered lander draft PR | **C** | `planned` | `DISC-P4-000`; show upsert path | `DISC-P3-002`; Studio/`upsert_show` hook or post-merge workflow |
 | `DISC-P4-003` | Consume automated search signals (no Gemini) | Feeds **B** | `planned` | `SEARCH-P4-001`, `SEARCH-P4-002` | Signal artifact from search automation; slug gap vs `casting/*` |
@@ -460,12 +481,14 @@ Same `GEMINI_API_KEY` may call both; CI draft jobs must read **`GEMINI_MODEL_SEA
 <details>
 <summary><code>DISC-P4-000</code> — Gemini draft-budget contract</summary>
 
+**Status:** `done` (docs) — rate-limit / model-split contract is written. Enforce ACs stay open until draft workflows exist (`DISC-P4-001`+).
+
 **Acceptance criteria**
 
-- [ ] Rate limits per model (Studio 3.6 vs search-ops 3.5; 5 RPM / 20 RPD each unless console differs) documented in [cost-and-quotas.md](../runbooks/cost-and-quotas.md)
-- [ ] Draft automation uses `GEMINI_MODEL_SEARCH_OPS` only (never Studio `GEMINI_MODEL`)
-- [ ] Draft automation enforces monthly max body generations and 429 deferral
-- [ ] CI/workflow logs budget skips by **kind** only (never API key values)
+- [x] Rate limits per model (Studio 3.6 vs search-ops 3.5; 5 RPM / 20 RPD each unless console differs) documented in [cost-and-quotas.md](../runbooks/cost-and-quotas.md)
+- [ ] Draft automation uses `GEMINI_MODEL_SEARCH_OPS` only (never Studio `GEMINI_MODEL`) — residual until draft jobs ship
+- [ ] Draft automation enforces monthly max body generations and 429 deferral — residual until draft jobs ship
+- [ ] CI/workflow logs budget skips by **kind** only (never API key values) — residual until draft jobs ship
 
 </details>
 
@@ -545,17 +568,19 @@ Same `GEMINI_API_KEY` may call both; CI draft jobs must read **`GEMINI_MODEL_SEA
 #### Implementation order
 
 ```text
-Phase 0 (now): DISC-P2-001–004 by hand + DISC-P2-006/007 linking
-    + DISC-P4-000 (document quotas)
+Before Tier 4: finish Tier 1 leftovers (DISC-P1-004, 006, 007)
+    then hand-write DISC-P2-001–004 + DISC-P2-006/007 linking
+
+Tier 4 prep: DISC-P4-000 docs done — enforce when draft jobs ship
     + SEARCH-P4-001/002 (automate SEARCH-P3-001 extract — no Gemini)
 
-Phase 1: DISC-P4-005 guardrails
+Then: DISC-P4-005 guardrails
     + DISC-P4-001 catalog fill (D) — prefer templates; Gemini optional
     + DISC-P4-003 consume signals
     + DISC-P4-004 GSC draft PR (B) — ≤2–3 Gemini/mo
     + DISC-P4-002 credit-triggered (C) — 0–1 Gemini per new credit, defer on 429
 
-Phase 2 (optional): DISC-P4-006 public fit (E) — rule-based fit; Gemini only for winners
+Optional later: DISC-P4-006 public fit (E) — rule-based fit; Gemini only for winners
 ```
 
 ```mermaid
@@ -683,6 +708,7 @@ flowchart TD
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.4 | 2026-08-09 | Status at a glance; check `DISC-P1-005` ACs; label baseline scores historical; `DISC-P4-000` → `done` (docs) |
 | 1.3 | 2026-08-09 | ACS toll-free lease in expected cost; `GEMINI_MODEL_SEARCH_OPS` (3.5) vs Studio `GEMINI_MODEL` (3.6) independent quotas |
 | 1.2 | 2026-08-09 | Tier 4 automated `/for/` pipeline (`DISC-P4-*`: B+C+D+E); Gemini contract; depends on `SEARCH-P4-*` to automate `SEARCH-P3-001` |
 | 1.1 | 2026-08-09 | `DISC-P3-006` → `done` (runbook) with [search-ops-monthly.md](../runbooks/search-ops-monthly.md); monthly execution residual |
