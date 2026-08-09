@@ -619,6 +619,8 @@ jobs:
           # set as default, the *.azurestaticapps.net host 301s to it — including
           # /studio — so auth Location is never /.auth/login and smoke fails.
           # Matches availability synthetics (custom_domain when set).
+          # Note: JMESPath forbids ".(a || b)" after a dot (az --query fails to parse);
+          # pick with jq so flat CLI and nested ARM shapes both work.
           SWA_NAME="${{ vars.AZURE_STATIC_WEB_APP_NAME }}"
           SWA_RG="${{ vars.AZURE_RESOURCE_GROUP }}"
           DEFAULT=$(az staticwebapp show \
@@ -628,20 +630,18 @@ jobs:
           CUSTOM=$(az staticwebapp hostname list \
             --name "$SWA_NAME" \
             --resource-group "$SWA_RG" \
-            --query "[?status=='Ready' && isDefault].(domainName || name) | [0]" -o tsv)
-          if [ -z "$CUSTOM" ] || [ "$CUSTOM" = "None" ]; then
-            CUSTOM=$(az staticwebapp hostname list \
-              --name "$SWA_NAME" \
-              --resource-group "$SWA_RG" \
-              --query "[?status=='Ready' && !starts_with(domainName || name, 'www.')].(domainName || name) | [0]" -o tsv)
-          fi
-          if [ -z "$CUSTOM" ] || [ "$CUSTOM" = "None" ]; then
-            CUSTOM=$(az staticwebapp hostname list \
-              --name "$SWA_NAME" \
-              --resource-group "$SWA_RG" \
-              --query "[?status=='Ready'].(domainName || name) | [0]" -o tsv)
-          fi
-          if [ "$CUSTOM" = "None" ]; then
+            -o json | jq -r '
+              def domain: .domainName // .name // .properties.domainName // empty;
+              def ready_status: .status // .properties.status // empty;
+              def is_default: (.isDefault // .properties.isDefault // false) == true;
+              [ .[] | select(ready_status == "Ready") ] as $ready
+              | ($ready | map(select(is_default)) | .[0])
+                // ($ready | map(select((domain | ascii_downcase | startswith("www.") | not))) | .[0])
+                // $ready[0]
+                // empty
+              | if . == null then empty else domain end
+            ')
+          if [ "$CUSTOM" = "null" ] || [ "$CUSTOM" = "None" ]; then
             CUSTOM=
           fi
           HOST=${CUSTOM:-$DEFAULT}
