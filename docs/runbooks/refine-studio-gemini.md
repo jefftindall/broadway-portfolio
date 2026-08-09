@@ -28,7 +28,7 @@ If drafts ignore existing shows/news, check GitHub App Contents access and that 
 2. Run the API locally (`func start` in `api/`) or deploy to staging.
 3. Open Studio → **Preview update** (`mode: draft`). This calls Gemini and returns proposed files **without** committing.
 4. Read the draft path, frontmatter, and body. Edit locally in Preview only to sanity-check; then refine the prompt/tools if Gemini should have produced better output.
-5. When drafts look right, **Publish to site** (prod) or **Publish to staging branch** (staging Studio). On staging, confirm the Done step shows the dated branch + pull request; use Actions → **Staging branch** to deploy that branch for smoke. On prod, confirm Done / live page as usual.
+5. When drafts look right, **Publish to site** (prod) or **Publish to staging branch** (staging Studio). Publish writes **one git commit** for all files in the update (e.g. gallery image + markdown together), so CD runs once. On staging, confirm the Done step shows the dated branch + pull request; use Actions → **Staging branch** to deploy that branch for smoke. On prod, confirm Done / live page as usual.
 6. Merge to `main` so staging and prod Functions pick up the API change (SWA deploy). Staging content PRs are separate from API code merges.
 
 Prefer small prompt edits over large rewrites so you can tell what fixed the behavior.

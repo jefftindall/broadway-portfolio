@@ -43,7 +43,9 @@ Reuse the same App for staging and prod (one installation covers the repo). Dele
 
 ## Allow direct commits to `main`
 
-**Production** Studio (`STUDIO_PUBLISH_MODE=direct`) writes via the Contents API to `GITHUB_BRANCH` (usually `main`). **Staging** Studio (`STUDIO_PUBLISH_MODE=pr`) commits to a dated `staging-studio-YYYYMMDD` branch and opens/updates a PR into `main` — that path does not need Protect-main bypass for the publish itself (only a human merge promotes to prod).
+**Production** Studio (`STUDIO_PUBLISH_MODE=direct`) writes via the Git Data API (blobs → tree → commit → ref update) to `GITHUB_BRANCH` (usually `main`). **Staging** Studio (`STUDIO_PUBLISH_MODE=pr`) commits to a dated `staging-studio-YYYYMMDD` branch and opens/updates a PR into `main` — that path does not need Protect-main bypass for the publish itself (only a human merge promotes to prod).
+
+Each Studio publish (including gallery photo + markdown) lands as **one commit** with all files, so CD runs once. Transient GitHub/network errors and branch tip races are retried inside the API before the publish fails to the UI.
 
 The monthly ops scorecard workflow checks out with `persist-credentials: false`, mints an installation token via [`scripts/mint-github-app-token.sh`](../../scripts/mint-github-app-token.sh) (PEM never logged), configures git `http.extraheader` with that token, and pushes to `main` as `elyse-portfolio-studio[bot]`. The **Protect main** ruleset must list the App as a bypass actor, or prod Studio publishes / scorecard commits fail with “Cannot update this protected ref.”
 

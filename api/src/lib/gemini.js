@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import matter from 'gray-matter';
 import { trackEvent } from './telemetry.js';
 import slugify from 'slugify';
-import { commitFile, listRepoFiles, readRepoTextFile, toFrontmatter } from './github.js';
+import { commitFiles, listRepoFiles, readRepoTextFile, toFrontmatter } from './github.js';
 import { validateContentFile } from './contentValidate.js';
 import {
   LESSON_RATE_DEFS,
@@ -744,9 +744,38 @@ export function publicUrlForContentPath(path) {
 }
 
 /**
- * Commit approved content changes to GitHub.
+ * Build one commit message for a multi-file Studio publish.
+ * @param {Array<{ path?: string, commitMessage?: string, message?: string }>} changes
+ * @param {Array<{ path?: string }>} [extraFiles]
+ */
+export function buildPublishCommitMessage(changes, extraFiles = []) {
+  const messages = (Array.isArray(changes) ? changes : [])
+    .map((c) => String(c.commitMessage || c.message || '').trim())
+    .filter(Boolean);
+  const unique = [...new Set(messages)];
+  let message =
+    unique.length === 0
+      ? 'content: studio update'
+      : unique.length === 1
+        ? unique[0]
+        : unique.join('; ');
+  const mediaCount = Array.isArray(extraFiles) ? extraFiles.length : 0;
+  if (mediaCount > 0 && !/\b(media|image|photo)\b/i.test(message)) {
+    message = `${message} (+ image)`;
+  }
+  // GitHub commit subject soft limit; keep message readable in history.
+  if (message.length > 180) message = `${message.slice(0, 177)}...`;
+  return message;
+}
+
+/**
+ * Commit approved content changes (and optional media) to GitHub in **one** commit.
  * @param {Array<{ path: string, content: string, commitMessage?: string, message?: string, tool?: string, summary?: string }>} changes
- * @param {{ branch?: string, publishMode?: 'pr'|'direct' }} [opts]
+ * @param {{
+ *   branch?: string,
+ *   publishMode?: 'pr'|'direct',
+ *   extraFiles?: Array<{ path: string, content: string | Buffer, binary?: boolean }>,
+ * }} [opts]
  */
 export async function applyContentChanges(changes, opts = {}) {
   if (!Array.isArray(changes) || changes.length === 0) {
@@ -755,8 +784,11 @@ export async function applyContentChanges(changes, opts = {}) {
 
   const branch = opts.branch || undefined;
   const publishMode = opts.publishMode || 'direct';
+  const extraFiles = Array.isArray(opts.extraFiles) ? opts.extraFiles : [];
+  /** @type {Array<{ path: string, content: string | Buffer, binary?: boolean }>} */
+  const files = [];
   const actions = [];
-  let commitSha = '';
+
   for (const change of changes) {
     const path = String(change.path || '').replace(/\\/g, '/');
     if (!isAllowedContentPath(path)) {
@@ -764,9 +796,7 @@ export async function applyContentChanges(changes, opts = {}) {
     }
     const content = String(change.content ?? '');
     validateContentFile(path, content);
-    const commitMessage = String(change.commitMessage || change.message || `content: update ${path}`);
-    const committed = await commitFile({ path, content, message: commitMessage, branch });
-    if (committed.commitSha) commitSha = committed.commitSha;
+    files.push({ path, content, binary: false });
     const summary = change.summary || `Updated ${path}.`;
     trackEvent('StudioToolExecuted', { tool: change.tool || 'publish' });
     actions.push({
@@ -774,8 +804,26 @@ export async function applyContentChanges(changes, opts = {}) {
       summary,
       path,
       url: publicUrlForContentPath(path),
-      commitSha: committed.commitSha || undefined,
     });
+  }
+
+  for (const media of extraFiles) {
+    const path = String(media.path || '').replace(/\\/g, '/');
+    if (!isAllowedContentPath(path)) {
+      throw new Error(`Disallowed media path: ${path}`);
+    }
+    files.push({
+      path,
+      content: media.content,
+      binary: media.binary !== false,
+    });
+  }
+
+  const commitMessage = buildPublishCommitMessage(changes, extraFiles);
+  const committed = await commitFiles({ files, message: commitMessage, branch });
+  const commitSha = committed.commitSha || undefined;
+  for (const action of actions) {
+    action.commitSha = commitSha;
   }
 
   const summaryText = actions.map((a) => a.summary).join(' ');
@@ -784,7 +832,7 @@ export async function applyContentChanges(changes, opts = {}) {
       ? `${summaryText} Saved on a staging branch — not live on production until the pull request is merged. Use Actions → Staging branch to test on the staging site.`
       : `${summaryText} The site will rebuild and go live within a few minutes.`;
 
-  return { reply, actions, commitSha: commitSha || undefined };
+  return { reply, actions, commitSha };
 }
 
 const CONTENT_DIRS = [

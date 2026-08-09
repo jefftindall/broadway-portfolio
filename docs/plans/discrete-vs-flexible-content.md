@@ -1,10 +1,10 @@
 # Plan: Discrete site variables vs flexible Studio content
 
 **Artifact ID:** `ELYSE-FLEX-001`  
-**Version:** 1.8  
+**Version:** 1.9  
 **Last updated:** 2026-08-09  
 **Audience:** Agents, implementers, Studio publishers  
-**Scope:** Which Studio/Gemini tools may rewrite which content, and how **discrete** fields (rates, later site settings) stay consistent across UI + SEO — not casting SEO strategy itself (`DISC-*`) or GA/GSC (`SEARCH-*`). Includes staging publish isolation (`FLEX-P5-001`).
+**Scope:** Which Studio/Gemini tools may rewrite which content, and how **discrete** fields (rates, later site settings) stay consistent across UI + SEO — not casting SEO strategy itself (`DISC-*`) or GA/GSC (`SEARCH-*`). Includes staging publish isolation (`FLEX-P5-001`) and single-commit multi-file publishes (`FLEX-P5-002`).
 
 Use the **Action ID** column (`FLEX-*`) to reference items in PRs, issues, and commits.
 
@@ -50,6 +50,7 @@ Implement **one phase (or one `FLEX-*` item) per PR** when practical. Prefer lin
 | Tool ↔ path pair enforcement at publish | `planned` | Phase 4 residual (`FLEX-P4-002`) |
 | Dedupe `DEFAULT_SITE_SETTINGS` bootstrap vs JSON | `planned` | `FLEX-P4-004` — avoid seed drift |
 | Staging Studio PR publish (dated branches) | `done` | `FLEX-P5-001` — `staging-studio-YYYYMMDD` + PR; 28d cleanup |
+| Single-commit multi-file Studio publish | `done` | `FLEX-P5-002` — Git Data API + transient retry; gallery photo+md one CD |
 | Extend discrete registry (reel, performer facts, bio, press quote, …) | `done` | Strong P3 shipped (incl. `update_press_quote`); medium candidates still on-demand |
 | Studio hub: Gallery photo compose flow | `done` | `FLEX-P3-002` — structured hub UX for Tier A `add_gallery_photo` |
 
@@ -61,7 +62,7 @@ Implement **one phase (or one `FLEX-*` item) per PR** when practical. Prefer lin
 | **Phase 2** — Discrete rates pipeline | Safe Studio updates for prices only | **Done** (P2-004/005/007; rates on book page) |
 | **Phase 3** — Extend discrete registry | More allowlisted fields as needed | **Strong done**; gallery hub UX `done`; medium still `planned` on demand |
 | **Phase 4** — Preview & guardrails polish | Structured diffs; tool/path mismatch reject | **Partial** — `FLEX-P4-001` `done`; P4-002/003/004 `planned` |
-| **Phase 5** — Staging publish isolation | Staging Studio → dated branch + PR; prod stays direct | **Done** (`FLEX-P5-001`) |
+| **Phase 5** — Staging publish isolation | Staging Studio → dated branch + PR; prod stays direct; atomic multi-file commits | **Done** (`FLEX-P5-001`, `FLEX-P5-002`) |
 
 ---
 
@@ -332,6 +333,7 @@ Out of scope for P3 (stay PR/ops): site email (`SITE_CONTACT_EMAIL` / Key Vault)
 | ID | Title | Status | Depends on | Primary refs |
 |----|-------|--------|------------|--------------|
 | `FLEX-P5-001` | Staging Studio commits to `staging-studio-YYYYMMDD` + PR into `main` | `done` | — | `api/src/lib/studioPublish.js`, `github.js`, Studio UI, cleanup workflow |
+| `FLEX-P5-002` | Single-commit multi-file Studio publish (gallery photo + metadata) | `done` | `FLEX-P5-001` | `api/src/lib/github.js` (`commitFiles`), `updateContent.js`, `gemini.js` |
 
 <details>
 <summary><code>FLEX-P5-001</code> — Staging PR publish</summary>
@@ -345,6 +347,20 @@ Out of scope for P3 (stay PR/ops): site email (`SITE_CONTACT_EMAIL` / Key Vault)
 - [x] Daily cleanup deletes dated branches older than 28 days
 - [x] GitHub App runbook requires Pull requests: write; Studio help / deploy / AGENTS updated
 - [ ] Operator grants Pull requests: write on the installed App and applies staging Terraform so `STUDIO_PUBLISH_MODE` is live (out-of-band)
+
+</details>
+
+<details>
+<summary><code>FLEX-P5-002</code> — Single-commit multi-file publish</summary>
+
+**Acceptance criteria**
+
+- [x] Gallery publish (image + markdown) creates **one** git commit (Git Data API blobs/tree/commit/ref), so CD runs once
+- [x] `applyContentChanges` batches all approved content files (plus optional media) into that same commit
+- [x] Transient GitHub/network errors and tip races retry server-side before failing the Studio UI (`GitHubCommitRetry`)
+- [x] Partial blob/tree work is never visible on the branch until the final ref update succeeds
+- [x] Unit coverage for retry classification + commit message builder (`npm run test:api-github-commit`)
+- [x] GitHub App / observability runbooks mention Git Data API single-commit publishes
 
 </details>
 
@@ -393,4 +409,4 @@ Infra/Terraform: none expected for Phases 1–2 residual.
 1. ~~Finish Phase 1 residual~~ `done`
 2. ~~Harden rates + catalog + flex tests~~ `done`
 3. ~~Strong Phase 3 + structured Preview (`FLEX-P4-001`)~~ `done`
-4. Remaining: medium P3 on demand; `FLEX-P4-002` / `FLEX-P4-003` polish; `FLEX-P4-004` single-source settings bootstrap. Gallery hub compose (`FLEX-P3-002`) `done`. Staging PR publish (`FLEX-P5-001`) `done` (operator: grant App Pull requests write + apply staging TF).
+4. Remaining: medium P3 on demand; `FLEX-P4-002` / `FLEX-P4-003` polish; `FLEX-P4-004` single-source settings bootstrap. Gallery hub compose (`FLEX-P3-002`) `done`. Staging PR publish (`FLEX-P5-001`) `done` (operator: grant App Pull requests write + apply staging TF). Single-commit multi-file publish (`FLEX-P5-002`) `done`.
