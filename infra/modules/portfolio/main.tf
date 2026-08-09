@@ -31,6 +31,11 @@ locals {
   kv_name  = "kv-elyse-${local.name_suffix}"
   swa_name = "swa-elyse-portfolio-${local.name_suffix}"
 
+  # Staging Studio isolates publishes on dated branches + PRs; prod commits to github_branch.
+  studio_publish_mode = var.studio_publish_mode != "" ? var.studio_publish_mode : (
+    var.environment == "staging" ? "pr" : "direct"
+  )
+
   tags = merge(var.tags, {
     environment = var.environment
     project     = "elyse-tindall-portfolio"
@@ -182,6 +187,7 @@ resource "azurerm_static_web_app" "main" {
     GITHUB_OWNER                          = var.github_owner
     GITHUB_REPO                           = var.github_repo
     GITHUB_BRANCH                         = var.github_branch
+    STUDIO_PUBLISH_MODE                   = local.studio_publish_mode
     APPLICATIONINSIGHTS_CONNECTION_STRING = azurerm_application_insights.main.connection_string
     # Contact inquiry API (shared ACS; SMS when ACS_SMS_FROM is a real E.164 number)
     ACS_CONNECTION_STRING = data.azurerm_key_vault_secret.acs_connection_string.value

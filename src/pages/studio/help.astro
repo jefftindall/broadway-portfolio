@@ -258,9 +258,13 @@ import { studioCapabilities, studioVoiceNotes } from '../../lib/studioHelp';
           for credits and news can still be adjusted in Preview.
         </li>
         <li>
-          <span class="text-spotlight">Publish to site</span> commits the change. The live site updates
-          after the rebuild finishes (usually a few minutes). Studio shows pipeline status and links to
-          affected pages.
+          <span class="text-spotlight">Publish to site</span> (production Studio) commits the change.
+          The live site updates after the rebuild (usually a few minutes). On
+          <span class="text-spotlight">staging</span>, the button reads
+          <span class="text-spotlight">Publish to staging branch</span> — updates go to a dated branch
+          and a pull request (not production). Test with Actions →
+          <span class="text-spotlight">Staging branch</span>; merge the PR to promote. Studio shows
+          pipeline status on production publishes, and branch/PR links on staging.
         </li>
         <li>Use <span class="text-spotlight">Start another update</span> when you are ready for the next change.</li>
       </ol>

@@ -746,12 +746,15 @@ export function publicUrlForContentPath(path) {
 /**
  * Commit approved content changes to GitHub.
  * @param {Array<{ path: string, content: string, commitMessage?: string, message?: string, tool?: string, summary?: string }>} changes
+ * @param {{ branch?: string, publishMode?: 'pr'|'direct' }} [opts]
  */
-export async function applyContentChanges(changes) {
+export async function applyContentChanges(changes, opts = {}) {
   if (!Array.isArray(changes) || changes.length === 0) {
     throw new Error('No content changes to publish.');
   }
 
+  const branch = opts.branch || undefined;
+  const publishMode = opts.publishMode || 'direct';
   const actions = [];
   let commitSha = '';
   for (const change of changes) {
@@ -762,7 +765,7 @@ export async function applyContentChanges(changes) {
     const content = String(change.content ?? '');
     validateContentFile(path, content);
     const commitMessage = String(change.commitMessage || change.message || `content: update ${path}`);
-    const committed = await commitFile({ path, content, message: commitMessage });
+    const committed = await commitFile({ path, content, message: commitMessage, branch });
     if (committed.commitSha) commitSha = committed.commitSha;
     const summary = change.summary || `Updated ${path}.`;
     trackEvent('StudioToolExecuted', { tool: change.tool || 'publish' });
@@ -775,9 +778,11 @@ export async function applyContentChanges(changes) {
     });
   }
 
+  const summaryText = actions.map((a) => a.summary).join(' ');
   const reply =
-    actions.map((a) => a.summary).join(' ') +
-    ' The site will rebuild and go live within a few minutes.';
+    publishMode === 'pr'
+      ? `${summaryText} Saved on a staging branch — not live on production until the pull request is merged. Use Actions → Staging branch to test on the staging site.`
+      : `${summaryText} The site will rebuild and go live within a few minutes.`;
 
   return { reply, actions, commitSha: commitSha || undefined };
 }

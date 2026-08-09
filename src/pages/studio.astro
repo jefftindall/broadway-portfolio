@@ -664,11 +664,21 @@ const imageHashIndex = buildPublicImageHashIndex();
           <p class="text-sm font-semibold text-spotlight">Update accepted</p>
           <p id="done-reply" class="text-sm text-gel"></p>
           <p id="done-sha" class="text-xs text-muted"></p>
+          <p id="done-branch" class="hidden text-xs text-muted"></p>
+          <p id="done-pr" class="hidden text-sm"></p>
         </div>
 
-        <div class="space-y-2">
+        <div id="pipeline-section" class="space-y-2">
           <p class="text-xs uppercase tracking-[0.15em] text-muted">Publishing pipeline</p>
           <ul id="pipeline-list" class="space-y-2 text-sm text-muted"></ul>
+        </div>
+
+        <div id="staging-test-section" class="hidden space-y-2">
+          <p class="text-xs uppercase tracking-[0.15em] text-muted">Test on staging</p>
+          <p class="text-sm text-gel">
+            GitHub → Actions → <span class="text-spotlight">Staging branch</span> → Run workflow on
+            this branch. Prod stays unchanged until the pull request merges.
+          </p>
         </div>
 
         <div class="space-y-2">
@@ -819,8 +829,20 @@ const imageHashIndex = buildPublicImageHashIndex();
     const previewReply = document.getElementById('preview-reply')!;
     const doneReply = document.getElementById('done-reply')!;
     const doneSha = document.getElementById('done-sha')!;
+    const doneBranch = document.getElementById('done-branch')!;
+    const donePr = document.getElementById('done-pr')!;
+    const pipelineSection = document.getElementById('pipeline-section')!;
+    const stagingTestSection = document.getElementById('staging-test-section')!;
     const pipelineList = document.getElementById('pipeline-list')!;
     const pageLinks = document.getElementById('page-links')!;
+
+    function applyPublishModeUi(mode: 'pr' | 'direct') {
+      const label = mode === 'pr' ? 'Publish to staging branch' : 'Publish to site';
+      publishBtn.dataset.label = label;
+      if (!publishBtn.disabled || publishBtn.textContent !== 'Publishing…') {
+        publishBtn.textContent = label;
+      }
+    }
     const stepCompose = document.getElementById('step-indicator-compose')!;
     const stepPreview = document.getElementById('step-indicator-preview')!;
     const stepDone = document.getElementById('step-indicator-done')!;
@@ -1522,10 +1544,36 @@ const imageHashIndex = buildPublicImageHashIndex();
       }, POLL_MS);
     }
 
-    function startProgressTracking(sha: string | undefined, actions: PublishAction[]) {
+    function startProgressTracking(
+      sha: string | undefined,
+      actions: PublishAction[],
+      meta?: { publishMode?: string; branch?: string; prUrl?: string },
+    ) {
+      const mode = meta?.publishMode === 'pr' ? 'pr' : 'direct';
       prodLatencyEmitted = false;
-      renderPipeline({ status: 'queued', jobs: [] });
       renderPageLinks(actions);
+
+      if (mode === 'pr') {
+        pipelineSection.classList.add('hidden');
+        stagingTestSection.classList.remove('hidden');
+        pipelineList.replaceChildren();
+        // Page links on this host may still be yesterday's build — don't poll for "live".
+        for (const link of Array.from(pageLinks.querySelectorAll('a'))) {
+          const a = link as HTMLAnchorElement;
+          a.textContent = 'After staging deploy / merge';
+          a.className = 'pointer-events-none text-xs text-muted opacity-50';
+        }
+        setStatus(
+          meta?.prUrl
+            ? 'Saved on a staging branch. Open the pull request, or run Staging branch to test.'
+            : 'Saved on a staging branch. Run Actions → Staging branch to test.',
+        );
+        return;
+      }
+
+      pipelineSection.classList.remove('hidden');
+      stagingTestSection.classList.add('hidden');
+      renderPipeline({ status: 'queued', jobs: [] });
       void refreshLiveLinks();
 
       if (!sha) {
@@ -1542,14 +1590,17 @@ const imageHashIndex = buildPublicImageHashIndex();
       authorized: boolean;
       correlationId?: string;
       apiUnavailable?: boolean;
+      publishMode?: 'pr' | 'direct';
     }> {
       try {
         const res = await fetch('/api/publisherStatus');
         if (!res.ok) return { authorized: false, apiUnavailable: true };
         const data = await res.json();
+        const mode = data?.publishMode === 'pr' ? 'pr' : 'direct';
         return {
           authorized: Boolean(data?.authorized),
           correlationId: typeof data?.correlationId === 'string' ? data.correlationId : undefined,
+          publishMode: mode,
         };
       } catch {
         return { authorized: false, apiUnavailable: true };
@@ -1576,7 +1627,12 @@ const imageHashIndex = buildPublicImageHashIndex();
       authUserName.textContent = displayNameFromPrincipal(clientPrincipal);
       authUser.classList.remove('hidden');
 
-      let status: { authorized: boolean; correlationId?: string; apiUnavailable?: boolean } = {
+      let status: {
+        authorized: boolean;
+        correlationId?: string;
+        apiUnavailable?: boolean;
+        publishMode?: 'pr' | 'direct';
+      } = {
         authorized: false,
       };
       try {
@@ -1590,6 +1646,7 @@ const imageHashIndex = buildPublicImageHashIndex();
         return false;
       }
 
+      applyPublishModeUi(status.publishMode === 'pr' ? 'pr' : 'direct');
       showStudioApp();
       return true;
     }
@@ -2170,6 +2227,12 @@ const imageHashIndex = buildPublicImageHashIndex();
       previewReply.textContent = '';
       doneReply.textContent = '';
       doneSha.textContent = '';
+      doneBranch.textContent = '';
+      doneBranch.classList.add('hidden');
+      donePr.replaceChildren();
+      donePr.classList.add('hidden');
+      pipelineSection.classList.remove('hidden');
+      stagingTestSection.classList.add('hidden');
       pipelineList.replaceChildren();
       pageLinks.replaceChildren();
     }
@@ -2609,16 +2672,44 @@ const imageHashIndex = buildPublicImageHashIndex();
 
         const actions = Array.isArray(data.actions) ? (data.actions as PublishAction[]) : [];
         const commitSha = typeof data.commitSha === 'string' ? data.commitSha : undefined;
+        const publishMode = data.publishMode === 'pr' ? 'pr' : 'direct';
+        const branch = typeof data.branch === 'string' ? data.branch : undefined;
+        const prUrl = typeof data.prUrl === 'string' ? data.prUrl : undefined;
         doneReply.textContent =
           typeof data.reply === 'string' && data.reply.trim()
             ? data.reply.trim()
-            : 'Your update was committed. The site will rebuild shortly.';
+            : publishMode === 'pr'
+              ? 'Your update was saved on a staging branch.'
+              : 'Your update was committed. The site will rebuild shortly.';
         doneSha.textContent = commitSha ? `Commit ${commitSha.slice(0, 7)}` : '';
+        if (publishMode === 'pr' && branch) {
+          doneBranch.textContent = `Branch ${branch}`;
+          doneBranch.classList.remove('hidden');
+        } else {
+          doneBranch.textContent = '';
+          doneBranch.classList.add('hidden');
+        }
+        donePr.replaceChildren();
+        if (publishMode === 'pr' && prUrl) {
+          const a = document.createElement('a');
+          a.href = prUrl;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.className = 'text-gel underline-offset-2 hover:text-gold hover:underline';
+          a.textContent =
+            typeof data.prNumber === 'number' ? `Open pull request #${data.prNumber}` : 'Open pull request';
+          donePr.appendChild(a);
+          donePr.classList.remove('hidden');
+        } else {
+          donePr.classList.add('hidden');
+        }
         showDone();
         syncLiveDefaultsFromPublishedChanges(changes);
-        startProgressTracking(commitSha, actions);
+        startProgressTracking(commitSha, actions, { publishMode, branch, prUrl });
         trackEvent('StudioPublishUiSuccess', {
+          publishMode,
           ...(commitSha ? { commitSha } : {}),
+          ...(branch ? { branch } : {}),
         });
         flush();
       } catch (err) {

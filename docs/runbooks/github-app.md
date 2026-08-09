@@ -12,11 +12,12 @@ GitHub does not allow Terraform to create Apps. Create one App and install it on
    - **Contents**: Read and write
    - **Metadata**: Read-only
    - **Actions**: Read-only (Studio polls deploy progress after publish)
+   - **Pull requests**: Read and write (staging Studio opens/updates `staging-studio-YYYYMMDD` PRs into `main`)
 6. Where can this App be installed? **Only on this account**
 7. Create the App, then **Generate a private key** (download the `.pem`)
 8. Note the **App ID** on the App settings page
 
-If the App already exists without Actions read: App settings → **Permissions & events** → set **Actions** to **Read-only** → Save → accept the new permission on the installation.
+If the App already exists without Actions read or Pull requests write: App settings → **Permissions & events** → set **Actions** to **Read-only** and **Pull requests** to **Read and write** → Save → accept the new permission on the installation.
 
 ## Install on the repo
 
@@ -42,7 +43,9 @@ Reuse the same App for staging and prod (one installation covers the repo). Dele
 
 ## Allow direct commits to `main`
 
-Studio writes via the Contents API (not PRs). The monthly ops scorecard workflow checks out with `persist-credentials: false`, mints an installation token via [`scripts/mint-github-app-token.sh`](../../scripts/mint-github-app-token.sh) (PEM never logged), configures git `http.extraheader` with that token, and pushes to `main` as `elyse-portfolio-studio[bot]`. The **Protect main** ruleset must list the App as a bypass actor, or publishes / scorecard commits fail with “Cannot update this protected ref.”
+**Production** Studio (`STUDIO_PUBLISH_MODE=direct`) writes via the Contents API to `GITHUB_BRANCH` (usually `main`). **Staging** Studio (`STUDIO_PUBLISH_MODE=pr`) commits to a dated `staging-studio-YYYYMMDD` branch and opens/updates a PR into `main` — that path does not need Protect-main bypass for the publish itself (only a human merge promotes to prod).
+
+The monthly ops scorecard workflow checks out with `persist-credentials: false`, mints an installation token via [`scripts/mint-github-app-token.sh`](../../scripts/mint-github-app-token.sh) (PEM never logged), configures git `http.extraheader` with that token, and pushes to `main` as `elyse-portfolio-studio[bot]`. The **Protect main** ruleset must list the App as a bypass actor, or prod Studio publishes / scorecard commits fail with “Cannot update this protected ref.”
 
 1. Repo → **Settings → Rules → Rulesets → Protect main**
 2. **Bypass list** → **Add bypass** → choose the Studio GitHub App (`elyse-portfolio-studio`) → bypass mode **Always**
@@ -50,9 +53,22 @@ Studio writes via the Contents API (not PRs). The monthly ops scorecard workflow
 
 The App’s numeric ID (Key Vault `GITHUB-APP-ID`) is the Integration `actor_id` on the ruleset. Keep any existing User bypasses when editing.
 
+## Staging Studio publish (PR mode)
+
+Staging SWA sets `STUDIO_PUBLISH_MODE=pr` (Terraform). Each UTC day reuses one branch `staging-studio-YYYYMMDD`:
+
+1. Publish from staging `/studio` → commits land on that branch (and merge latest `main` in so prod updates flow into staging).
+2. The App opens or updates a PR into `main`.
+3. Test: Actions → **Staging branch** → run on that branch (staging SWA only; no prod).
+4. Promote: merge the PR → normal CD (`main` → staging verify → prod).
+5. Daily workflow **Cleanup staging Studio branches** deletes `staging-studio-*` branches older than **28 days** (UTC).
+
+Local API: set `STUDIO_PUBLISH_MODE=pr` in `api/local.settings.json` to exercise the same path.
+
 ## Verify
 
-Publish a harmless Studio update and confirm a commit authored by the GitHub App appears on `main`.
+- **Prod:** Publish a harmless Studio update and confirm a commit authored by the GitHub App appears on `main`.
+- **Staging:** Publish from the staging hostname and confirm a `staging-studio-YYYYMMDD` branch + open PR (not a direct `main` commit).
 
 ### Local mint dry-run (no push)
 

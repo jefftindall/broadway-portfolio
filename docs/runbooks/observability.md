@@ -79,7 +79,9 @@ User-facing messages stay short and non-technical. Full provider/SDK detail is o
 | `StudioAccessDenied` | `api` publisherStatus (signed in, not allowlisted; includes `correlationId`) |
 | `StudioPublishDenied` | `api` updateContent / uploadMedia (allowlist deny; includes `correlationId`) |
 | `StudioDraftRequested` / `StudioDraftFailed` | `api` updateContent `mode=draft` (Gemini preview; includes `correlationId`) |
-| `StudioPublishRequested` | `api` updateContent `mode=publish` (after allowlist; includes `correlationId`) |
+| `StudioPublishRequested` | `api` updateContent `mode=publish` (after allowlist; includes `correlationId`, `publishMode`, `branch`) |
+| `StudioStagingBranchCreated` / `StudioStagingBranchMergedBase` | `api` dated staging branch create / merge-from-main |
+| `StudioStagingPrCreated` / `StudioStagingPrReused` | `api` open or reuse PR for staging-studio branch |
 | `StudioPublishFailed` | `api` updateContent / uploadMedia catch path (`correlationId`, `errorKind`, `operation`) |
 | `StudioToolExecuted` | Gemini tool loop |
 | `GitHubCommitSucceeded` / `GitHubCommitFailed` | Contents API commits |

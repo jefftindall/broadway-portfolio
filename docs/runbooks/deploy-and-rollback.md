@@ -30,6 +30,10 @@ Use this for async smoke tests of infra and/or app changes without merging:
 2. **Run workflow** → select the branch → Run
 3. The workflow applies staging Terraform from that branch, builds and deploys the staging Static Web App, then runs the same **Smoke Staging** Playwright suite (does not promote to prod)
 
+### Studio content on a dated staging branch
+
+Staging Studio publishes to `staging-studio-YYYYMMDD` (UTC) and opens a PR into `main` — see [github-app.md](github-app.md#staging-studio-publish-pr-mode). To preview those commits on the staging SWA before merge, run **Staging branch** against that dated branch. Merging the PR is what promotes content to production (via normal `main` CD). A daily cleanup job deletes dated branches older than 28 days.
+
 ## Redeploy without code changes
 
 GitHub → Actions → **Azure Static Web Apps CI/CD** → **Run workflow** and select the **`main`** branch to run every CD stage regardless of path filters.
