@@ -194,6 +194,11 @@ const tools = [
             image: { type: 'STRING', description: 'Path like /images/photos/foo.jpg or src path served as public' },
             tags: { type: 'ARRAY', items: { type: 'STRING' } },
             order: { type: 'NUMBER' },
+            focus: {
+              type: 'STRING',
+              description:
+                'CSS object-position for the gallery tile (e.g. "center", "50% 35%"). Defaults to center.',
+            },
           },
           required: ['image'],
         },
@@ -557,12 +562,21 @@ export async function buildContentChange(name, args, photoPath) {
             ?.replace(/\.[^.]+$/, '') ||
           'gallery-photo',
       );
+      const tags = Array.isArray(args.tags)
+        ? args.tags.map((t) => String(t || '').trim()).filter(Boolean)
+        : [];
+      const orderRaw = args.order;
+      const order =
+        orderRaw === undefined || orderRaw === null || orderRaw === ''
+          ? undefined
+          : Number(orderRaw);
+      const focus = String(args.focus || '').trim() || undefined;
       const content =
         toFrontmatter({
-          caption: '',
           image,
-          tags: args.tags || [],
-          order: args.order,
+          tags: tags.length ? tags : undefined,
+          order: Number.isFinite(order) ? order : undefined,
+          focus,
         }) + '\n';
       change = {
         tool: name,
@@ -571,6 +585,14 @@ export async function buildContentChange(name, args, photoPath) {
         commitMessage: `content: gallery ${slug}`,
         summary: `Added gallery photo (${slug}).`,
         livePath: '/gallery',
+        preview: {
+          kind: 'gallery',
+          slug,
+          image,
+          tags,
+          focus: focus || 'center',
+          order: Number.isFinite(order) ? order : undefined,
+        },
       };
       break;
     }
