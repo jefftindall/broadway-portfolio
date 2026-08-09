@@ -77,6 +77,10 @@ test('validateContentFile accepts site-settings JSON', () => {
     {
       reelUrl: 'https://youtu.be/41jdPTkN_Sw',
       shortBio: 'A short bio for About.',
+      pressQuote: {
+        quote: 'The funniest actor you’ve never seen.',
+        attribution: 'Tiffany King',
+      },
       performer: {
         vocalType: 'Mezzo',
         vocalRange: 'D3-G6',

@@ -16,6 +16,7 @@ const bookScheduling = book?.data.scheduling ?? '';
 const performer = site.performer;
 const reelUrl = site.reelUrl;
 const shortBio = site.shortBio;
+const pressQuote = site.pressQuote;
 const siteLocation = site.location;
 const siteAge = String(site.age);
 ---
@@ -171,6 +172,14 @@ const siteAge = String(site.age);
             >
               <span class="block text-sm font-semibold text-spotlight">Short bio</span>
               <span class="mt-1 block text-xs text-muted">About lead</span>
+            </button>
+            <button
+              type="button"
+              data-hub-task="quote"
+              class="hub-tile rounded-sm border border-line bg-panel/40 px-3 py-4 text-left transition hover:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            >
+              <span class="block text-sm font-semibold text-spotlight">Press quote</span>
+              <span class="mt-1 block text-xs text-muted">Homepage quote</span>
             </button>
           </div>
           <div class="pt-1">
@@ -461,6 +470,49 @@ const siteAge = String(site.age);
         </div>
       </div>
 
+      <div id="compose-quote" class="hidden space-y-4">
+        <p class="text-sm text-muted">
+          Homepage press quote under the hero. Keep it short — quotation marks are added by the
+          layout.
+        </p>
+        <label class="block text-sm text-muted">
+          Quote
+          <textarea
+            id="press-quote-text"
+            rows="3"
+            maxlength="280"
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          >{pressQuote.quote}</textarea>
+        </label>
+        <label class="block text-sm text-muted">
+          Attribution
+          <input
+            id="press-quote-attribution"
+            type="text"
+            maxlength="120"
+            value={pressQuote.attribution}
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <div class="flex flex-wrap gap-3">
+          <button
+            id="quote-preview-btn"
+            type="button"
+            data-label="Preview quote update"
+            class="w-full rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 sm:w-auto"
+          >
+            Preview quote update
+          </button>
+          <button
+            id="quote-reset-btn"
+            type="button"
+            class="rounded-sm border border-line px-4 py-3 text-sm text-spotlight hover:border-gold disabled:cursor-wait disabled:opacity-60"
+          >
+            Reset to live
+          </button>
+        </div>
+      </div>
+
       <div id="preview-step" class="hidden space-y-4">
         <p id="preview-reply" class="text-sm text-gel"></p>
         <div id="changes-editor" class="space-y-4"></div>
@@ -524,6 +576,7 @@ const siteAge = String(site.age);
         }
       | { kind: 'reel'; reelUrl: string }
       | { kind: 'shortBio'; shortBio: string }
+      | { kind: 'pressQuote'; quote: string; attribution: string }
       | {
           kind: 'performer';
           performer: Record<string, string>;
@@ -560,6 +613,7 @@ const siteAge = String(site.age);
       'update_reel_url',
       'update_performer_facts',
       'update_short_bio',
+      'update_press_quote',
       'update_casting_fields',
     ]);
 
@@ -587,6 +641,8 @@ const siteAge = String(site.age);
     const reelResetBtn = document.getElementById('reel-reset-btn') as HTMLButtonElement;
     const bioPreviewBtn = document.getElementById('bio-preview-btn') as HTMLButtonElement;
     const bioResetBtn = document.getElementById('bio-reset-btn') as HTMLButtonElement;
+    const quotePreviewBtn = document.getElementById('quote-preview-btn') as HTMLButtonElement;
+    const quoteResetBtn = document.getElementById('quote-reset-btn') as HTMLButtonElement;
     const factAvailability = document.getElementById('fact-availability') as HTMLInputElement;
     const factVocalType = document.getElementById('fact-vocalType') as HTMLInputElement;
     const factVocalRange = document.getElementById('fact-vocalRange') as HTMLInputElement;
@@ -596,6 +652,10 @@ const siteAge = String(site.age);
     const factEthnicity = document.getElementById('fact-ethnicity') as HTMLTextAreaElement;
     const reelUrlInput = document.getElementById('reel-url') as HTMLInputElement;
     const shortBioInput = document.getElementById('short-bio') as HTMLTextAreaElement;
+    const pressQuoteInput = document.getElementById('press-quote-text') as HTMLTextAreaElement;
+    const pressAttributionInput = document.getElementById(
+      'press-quote-attribution',
+    ) as HTMLInputElement;
     const statusEl = document.getElementById('status')!;
     const hubStep = document.getElementById('hub-step')!;
     const taskChrome = document.getElementById('task-chrome')!;
@@ -605,6 +665,7 @@ const siteAge = String(site.age);
     const composeFacts = document.getElementById('compose-facts')!;
     const composeReel = document.getElementById('compose-reel')!;
     const composeBio = document.getElementById('compose-bio')!;
+    const composeQuote = document.getElementById('compose-quote')!;
     const previewStep = document.getElementById('preview-step')!;
     const doneStep = document.getElementById('done-step')!;
     const changesEditor = document.getElementById('changes-editor')!;
@@ -626,7 +687,7 @@ const siteAge = String(site.age);
     const authUserName = document.getElementById('auth-user-name')!;
     const studioApp = document.getElementById('studio-app')!;
 
-    type HubTask = 'ask' | 'rates' | 'facts' | 'reel' | 'bio';
+    type HubTask = 'ask' | 'rates' | 'facts' | 'reel' | 'bio' | 'quote';
     let activeTask: HubTask = 'ask';
 
     type LiveDiscreteDefaults = {
@@ -641,6 +702,8 @@ const siteAge = String(site.age);
       ethnicity: string;
       reelUrl: string;
       shortBio: string;
+      pressQuote: string;
+      pressAttribution: string;
     };
 
     /** Snapshot of current live values for “Reset to live” on discrete forms. */
@@ -656,6 +719,8 @@ const siteAge = String(site.age);
       ethnicity: factEthnicity.value,
       reelUrl: reelUrlInput.value,
       shortBio: shortBioInput.value,
+      pressQuote: pressQuoteInput.value,
+      pressAttribution: pressAttributionInput.value,
     };
 
     function captureLiveDiscreteDefaultsFromForm() {
@@ -671,6 +736,8 @@ const siteAge = String(site.age);
         ethnicity: factEthnicity.value,
         reelUrl: reelUrlInput.value,
         shortBio: shortBioInput.value,
+        pressQuote: pressQuoteInput.value,
+        pressAttribution: pressAttributionInput.value,
       };
     }
 
@@ -697,6 +764,11 @@ const siteAge = String(site.age);
       }
       if (task === 'bio') {
         shortBioInput.value = live.shortBio;
+        return;
+      }
+      if (task === 'quote') {
+        pressQuoteInput.value = live.pressQuote;
+        pressAttributionInput.value = live.pressAttribution;
       }
     }
 
@@ -735,6 +807,11 @@ const siteAge = String(site.age);
           shortBioInput.value = preview.shortBio || '';
           touched = true;
         }
+        if (change.tool === 'update_press_quote' && preview?.kind === 'pressQuote') {
+          pressQuoteInput.value = preview.quote || '';
+          pressAttributionInput.value = preview.attribution || '';
+          touched = true;
+        }
       }
       if (touched) captureLiveDiscreteDefaultsFromForm();
     }
@@ -745,6 +822,7 @@ const siteAge = String(site.age);
       facts: 'Performer facts',
       reel: 'Reel link',
       bio: 'Short bio',
+      quote: 'Press quote',
     };
 
     let draftPhoto: PhotoPayload | undefined;
@@ -809,7 +887,9 @@ const siteAge = String(site.age);
               ? reelPreviewBtn
               : activeTask === 'bio'
                 ? bioPreviewBtn
-                : previewBtn;
+                : activeTask === 'quote'
+                  ? quotePreviewBtn
+                  : previewBtn;
       setBusy(busy, primary, 'Preparing preview…');
       previewBtn.disabled = busy;
       quickRatesBtn.disabled = busy;
@@ -820,6 +900,8 @@ const siteAge = String(site.age);
       reelResetBtn.disabled = busy;
       bioPreviewBtn.disabled = busy;
       bioResetBtn.disabled = busy;
+      quotePreviewBtn.disabled = busy;
+      quoteResetBtn.disabled = busy;
       messageEl.disabled = busy;
       photoEl.disabled = busy;
       micBtn.disabled = busy || !micSupported;
@@ -834,6 +916,8 @@ const siteAge = String(site.age);
       factEthnicity.disabled = busy;
       reelUrlInput.disabled = busy;
       shortBioInput.disabled = busy;
+      pressQuoteInput.disabled = busy;
+      pressAttributionInput.disabled = busy;
       hubBackBtn.disabled = busy;
       document.querySelectorAll<HTMLButtonElement>('.hub-tile').forEach((el) => {
         el.disabled = busy;
@@ -921,6 +1005,7 @@ const siteAge = String(site.age);
       composeFacts.classList.add('hidden');
       composeReel.classList.add('hidden');
       composeBio.classList.add('hidden');
+      composeQuote.classList.add('hidden');
       previewStep.classList.add('hidden');
       doneStep.classList.add('hidden');
     }
@@ -958,8 +1043,10 @@ const siteAge = String(site.age);
         composeFacts.classList.remove('hidden');
       } else if (task === 'reel') {
         composeReel.classList.remove('hidden');
-      } else {
+      } else if (task === 'bio') {
         composeBio.classList.remove('hidden');
+      } else if (task === 'quote') {
+        composeQuote.classList.remove('hidden');
       }
       setStepIndicators('compose');
     }
@@ -1356,6 +1443,10 @@ const siteAge = String(site.age);
           return path
             ? `If you publish, the About lead on ${path} will look like this:`
             : 'If you publish, the About lead will look like this:';
+        case 'update_press_quote':
+          return path
+            ? `If you publish, the press quote on ${path} will look like this:`
+            : 'If you publish, the homepage press quote will look like this:';
         case 'update_performer_facts':
           return path
             ? `If you publish, Performer facts on ${path} will look like this:`
@@ -1520,6 +1611,19 @@ const siteAge = String(site.age);
       wrap.appendChild(p);
     }
 
+    function renderPressQuoteSitePreview(wrap: HTMLElement, quote: string, attribution: string) {
+      const figure = document.createElement('figure');
+      figure.className = 'border-l-2 border-l-gold pl-6';
+      const blockquote = document.createElement('blockquote');
+      blockquote.className = 'font-display text-2xl leading-snug text-spotlight md:text-3xl';
+      blockquote.textContent = `“${quote}”`;
+      const figcaption = document.createElement('figcaption');
+      figcaption.className = 'mt-3 text-sm uppercase tracking-[0.2em] text-muted';
+      figcaption.textContent = `— ${attribution}`;
+      figure.append(blockquote, figcaption);
+      wrap.appendChild(figure);
+    }
+
     function renderDiscretePreview(wrap: HTMLElement, change: ContentChange) {
       const preview = change.preview;
       const tool = change.tool || '';
@@ -1546,6 +1650,13 @@ const siteAge = String(site.age);
       if (tool === 'update_short_bio' || preview?.kind === 'shortBio') {
         const bio = preview && preview.kind === 'shortBio' ? preview.shortBio : '';
         renderShortBioSitePreview(wrap, bio);
+        return;
+      }
+
+      if (tool === 'update_press_quote' || preview?.kind === 'pressQuote') {
+        const quote = preview && preview.kind === 'pressQuote' ? preview.quote : '';
+        const attribution = preview && preview.kind === 'pressQuote' ? preview.attribution : '';
+        renderPressQuoteSitePreview(wrap, quote, attribution);
         return;
       }
 
@@ -1726,6 +1837,13 @@ const siteAge = String(site.age);
         if (typeof data.shortBio === 'string' && data.shortBio) {
           shortBioInput.value = data.shortBio;
         }
+        const press = data.pressQuote && typeof data.pressQuote === 'object' ? data.pressQuote : null;
+        if (press) {
+          if (typeof press.quote === 'string') pressQuoteInput.value = press.quote;
+          if (typeof press.attribution === 'string') {
+            pressAttributionInput.value = press.attribution;
+          }
+        }
         captureLiveDiscreteDefaultsFromForm();
       } catch {
         /* non-fatal */
@@ -1885,6 +2003,24 @@ const siteAge = String(site.age);
 
     bioResetBtn.addEventListener('click', () => {
       resetDiscreteFormToLive('bio');
+    });
+
+    quotePreviewBtn.addEventListener('click', async () => {
+      const quote = pressQuoteInput.value.trim();
+      const attribution = pressAttributionInput.value.trim();
+      if (!quote || !attribution) {
+        setStatus('Enter both the quote and attribution.');
+        return;
+      }
+      await runDiscretePreview(
+        'update_press_quote',
+        { quote, attribution },
+        'Could not prepare quote update.',
+      );
+    });
+
+    quoteResetBtn.addEventListener('click', () => {
+      resetDiscreteFormToLive('quote');
     });
 
     previewBtn.addEventListener('click', async () => {

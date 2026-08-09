@@ -1,7 +1,7 @@
 # Plan: Discrete site variables vs flexible Studio content
 
 **Artifact ID:** `ELYSE-FLEX-001`  
-**Version:** 1.4  
+**Version:** 1.5  
 **Last updated:** 2026-08-09  
 **Audience:** Agents, implementers, Studio publishers  
 **Scope:** Which Studio/Gemini tools may rewrite which content, and how **discrete** fields (rates, later site settings) stay consistent across UI + SEO — not casting SEO strategy itself (`DISC-*`) or GA/GSC (`SEARCH-*`).
@@ -44,12 +44,12 @@ Implement **one phase (or one `FLEX-*` item) per PR** when practical. Prefer lin
 | Remove / constrain `create_or_update_casting_page` | `done` | Full create/replace removed; `update_casting_fields` merges FM only |
 | Narrow publish path allowlist by kind | `done` | Kind-scoped + exact `site-settings.json`; `about.md` denied |
 | Stable rate `id`s + required `priceAmount` | `done` | Ids `30min` / `60min`; Zod + normalize enforce both |
-| `src/data/site-settings.json` registry | `done` | Reopened for P3 (reel, shortBio, performer); rates stay on book page |
+| `src/data/site-settings.json` registry | `done` | Reopened for P3 (reel, shortBio, pressQuote, performer); rates stay on book page |
 | Inject live rates into draft catalog context | `done` | Catalog includes live rates + settings snapshot |
 | Structured Preview for discrete fields | `done` | `FLEX-P4-001` — labeled Preview + Quick edit rates |
 | Tool ↔ path pair enforcement at publish | `planned` | Phase 4 residual (`FLEX-P4-002`) |
 | Dedupe `DEFAULT_SITE_SETTINGS` bootstrap vs JSON | `planned` | `FLEX-P4-004` — avoid seed drift |
-| Extend discrete registry (reel, performer facts, bio, …) | `done` | Strong P3 shipped; medium candidates still on-demand |
+| Extend discrete registry (reel, performer facts, bio, press quote, …) | `done` | Strong P3 shipped (incl. `update_press_quote`); medium candidates still on-demand |
 
 ### Phase rollup
 
@@ -244,6 +244,7 @@ Add allowlisted keys **only** when there is a clear Studio need, each with valid
 | Reel URL | `site-settings.json` → `site.reelUrl` | `update_reel_url` |
 | Performer facts | `site-settings.json` → `site.performer` | `update_performer_facts` |
 | About short bio | `site-settings.json` → `site.shortBio` | `update_short_bio`; About body PR-only |
+| Homepage press quote | `site-settings.json` → `site.pressQuote` | `update_press_quote` (quote + attribution); home hero band |
 | Casting template fields | casting `.md` frontmatter | `update_casting_fields` (existing only) |
 
 #### Medium (only if publishers ask)

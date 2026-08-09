@@ -243,6 +243,24 @@ const tools = [
         },
       },
       {
+        name: 'update_press_quote',
+        description:
+          'Update the homepage press quote (quote text + attribution). Start from Press quote (live) in the catalog; send only fields she wants changed, or both. Shown under the hero on the home page.',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            quote: {
+              type: 'STRING',
+              description: 'Quote text without surrounding quotation marks (max ~280 characters)',
+            },
+            attribution: {
+              type: 'STRING',
+              description: 'Attribution name or source (max ~120 characters)',
+            },
+          },
+        },
+      },
+      {
         name: 'update_casting_fields',
         description:
           'Update frontmatter fields on an existing casting lander at /for/[slug] (keyword, title, description, related shows/skills, CTA). Reuse the existing page from the catalog; only send fields she wants changed. Does not create new pages or rewrite body copy. Do not invent post-body CTAs — Related credits is the last lander section before the shared footer.',
@@ -613,6 +631,33 @@ export async function buildContentChange(name, args, photoPath) {
       };
       break;
     }
+    case 'update_press_quote': {
+      const pressQuote = {};
+      if (args.quote != null && String(args.quote).trim()) {
+        pressQuote.quote = String(args.quote).trim();
+      }
+      if (args.attribution != null && String(args.attribution).trim()) {
+        pressQuote.attribution = String(args.attribution).trim();
+      }
+      if (!Object.keys(pressQuote).length) {
+        throw new Error('update_press_quote requires quote and/or attribution.');
+      }
+      const merged = await mergeSiteSettings({ pressQuote });
+      change = {
+        tool: name,
+        path: merged.path,
+        content: merged.content,
+        commitMessage: 'content: update press quote',
+        summary: 'Updated the homepage press quote.',
+        livePath: '/',
+        preview: {
+          kind: 'pressQuote',
+          quote: merged.data.pressQuote.quote,
+          attribution: merged.data.pressQuote.attribution,
+        },
+      };
+      break;
+    }
     case 'update_casting_fields': {
       const slug = makeSlug(args.slug);
       if (!slug) throw new Error('update_casting_fields requires an existing casting slug.');
@@ -821,6 +866,9 @@ export async function buildProductionSiteContext() {
     const settings = await readSiteSettings();
     lines.push(`Reel URL (live): ${settings.reelUrl}`);
     lines.push(`Short bio (live): ${settings.shortBio}`);
+    lines.push(
+      `Press quote (live): “${settings.pressQuote.quote}” — ${settings.pressQuote.attribution}`,
+    );
     const p = settings.performer;
     lines.push(
       `Performer facts (live): availability=${p.availability}; vocalType=${p.vocalType}; vocalRange=${p.vocalRange}; union=${p.union}` +
@@ -867,12 +915,13 @@ Rules:
 - Prefer create_news_post for press and announcements.
 - Prefer update_casting_fields when she asks to change CTA, title, description, keyword, or related shows/skills on an existing /for/… casting page. Reuse the existing slug from the catalog. Do not create new casting pages — those are added by hand outside Studio. Casting landers end at the Related credits block in LandingLayout — never add CTAs, casting-index links, Materials links, or other content below Related credits (footer already has Materials / Contact / Lessons).
 - Prefer update_short_bio when she wants a short About lead update. Do not rewrite the full About page body (that is PR-only). Start from Short bio (live) in the catalog.
+- Prefer update_press_quote when she wants to change the homepage press quote or its attribution. Start from Press quote (live) in the catalog; send only fields she changes.
 - Prefer update_performer_facts when she asks to change availability, vocal range/type, union, playing age, height, or ethnicity. Read Performer facts (live) first; only send fields she wants changed.
 - Prefer update_reel_url when she wants to change the casting reel link. Start from Reel URL (live) unless she gives a full new URL.
 - Prefer update_lessons_copy when she asks to change lessons philosophy, approach, or teaching details at ${siteUrl}/lessons. Never include dollar amounts or rates in that copy.
 - Prefer update_lessons_seo only when she explicitly wants to change the Lessons page title or search description.
 - Prefer update_lesson_rates when she asks to change lesson prices or session rates. This updates ${siteUrl}/lessons/book only — always provide both rates with ids 30min and 60min and numeric priceAmount (use Lesson rates (live) from the catalog for any rate she does not change).
-- Discrete field rule (rates, reel, short bio, performer facts, casting field merges): always ground the tool call in the live values from the catalog. Never blank out a discrete field or invent a parallel value when the catalog already shows the current one. For partial changes, keep unchanged live values (rates: include both tiers; short bio/reel: revise the live string; performer facts: omit keys she did not mention).
+- Discrete field rule (rates, reel, short bio, press quote, performer facts, casting field merges): always ground the tool call in the live values from the catalog. Never blank out a discrete field or invent a parallel value when the catalog already shows the current one. For partial changes, keep unchanged live values (rates: include both tiers; short bio/reel: revise the live string; press quote: omit keys she did not mention; performer facts: omit keys she did not mention).
 - Prefer update_lesson_scheduling when she asks about lesson format (NYC/Zoom), how to book, scheduling, or what students should expect on the book page.
 - Prefer update_lesson_book_seo only when she explicitly wants to change the book-a-lesson page title or search description.
 - Never use lessons tools to change show credits, news, or gallery content.

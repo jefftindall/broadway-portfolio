@@ -117,8 +117,14 @@ export const PERFORMER_FACT_KEYS = [
   'height',
 ];
 
+export const pressQuoteSchema = z.object({
+  quote: z.string().min(1).max(280),
+  attribution: z.string().min(1).max(120),
+});
+
 export const siteSettingsSchema = z.object({
   reelUrl: z.string().url(),
   shortBio: z.string().min(1).max(600),
+  pressQuote: pressQuoteSchema,
   performer: performerSpecSchema,
 });

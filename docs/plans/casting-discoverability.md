@@ -282,6 +282,8 @@ Shipped: `nav` in `src/lib/site.ts` + footer `CtaLink` to `/materials`.
 - [x] Placed on homepage or About with appropriate editorial styling (no pill-stat strip per style guide)
 - [x] Visible on mobile without excessive scroll
 
+Shipped: homepage `PressQuote`; SoT moved to `site.pressQuote` / Studio `update_press_quote` (FLEX discrete registry).
+
 </details>
 
 <details>

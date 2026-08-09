@@ -38,6 +38,8 @@ export const site = {
   reelUrl: siteSettings.reelUrl,
   /** About lead paragraph — Studio-writable; SEO description stays locked below */
   shortBio: siteSettings.shortBio,
+  /** Homepage press quote — Studio-writable */
+  pressQuote: siteSettings.pressQuote as { quote: string; attribution: string },
   heroImage: '/images/photos/elyse-portrait.jpg',
   description:
     'Elyse Tindall is a musical theatre actress and vocal coach from Atlanta, now based in New York City — stage credits, private voice lessons rooted in vocal pedagogy and CCM, and casting materials.',
