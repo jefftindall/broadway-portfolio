@@ -293,14 +293,23 @@ const siteAge = String(site.age);
             />
           </label>
         </div>
-        <button
-          id="quick-rates-btn"
-          type="button"
-          data-label="Preview rate update"
-          class="w-full rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 sm:w-auto"
-        >
-          Preview rate update
-        </button>
+        <div class="flex flex-wrap gap-3">
+          <button
+            id="quick-rates-btn"
+            type="button"
+            data-label="Preview rate update"
+            class="w-full rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 sm:w-auto"
+          >
+            Preview rate update
+          </button>
+          <button
+            id="rates-reset-btn"
+            type="button"
+            class="rounded-sm border border-line px-4 py-3 text-sm text-spotlight hover:border-gold disabled:cursor-wait disabled:opacity-60"
+          >
+            Reset to live
+          </button>
+        </div>
       </div>
 
       <div id="compose-facts" class="hidden space-y-4">
@@ -367,14 +376,23 @@ const siteAge = String(site.age);
             class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
           >{performer.ethnicity ?? ''}</textarea>
         </label>
-        <button
-          id="facts-preview-btn"
-          type="button"
-          data-label="Preview facts update"
-          class="w-full rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 sm:w-auto"
-        >
-          Preview facts update
-        </button>
+        <div class="flex flex-wrap gap-3">
+          <button
+            id="facts-preview-btn"
+            type="button"
+            data-label="Preview facts update"
+            class="w-full rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 sm:w-auto"
+          >
+            Preview facts update
+          </button>
+          <button
+            id="facts-reset-btn"
+            type="button"
+            class="rounded-sm border border-line px-4 py-3 text-sm text-spotlight hover:border-gold disabled:cursor-wait disabled:opacity-60"
+          >
+            Reset to live
+          </button>
+        </div>
       </div>
 
       <div id="compose-reel" class="hidden space-y-4">
@@ -391,14 +409,23 @@ const siteAge = String(site.age);
             class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
           />
         </label>
-        <button
-          id="reel-preview-btn"
-          type="button"
-          data-label="Preview reel update"
-          class="w-full rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 sm:w-auto"
-        >
-          Preview reel update
-        </button>
+        <div class="flex flex-wrap gap-3">
+          <button
+            id="reel-preview-btn"
+            type="button"
+            data-label="Preview reel update"
+            class="w-full rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 sm:w-auto"
+          >
+            Preview reel update
+          </button>
+          <button
+            id="reel-reset-btn"
+            type="button"
+            class="rounded-sm border border-line px-4 py-3 text-sm text-spotlight hover:border-gold disabled:cursor-wait disabled:opacity-60"
+          >
+            Reset to live
+          </button>
+        </div>
       </div>
 
       <div id="compose-bio" class="hidden space-y-4">
@@ -415,14 +442,23 @@ const siteAge = String(site.age);
             class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
           >{shortBio}</textarea>
         </label>
-        <button
-          id="bio-preview-btn"
-          type="button"
-          data-label="Preview bio update"
-          class="w-full rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 sm:w-auto"
-        >
-          Preview bio update
-        </button>
+        <div class="flex flex-wrap gap-3">
+          <button
+            id="bio-preview-btn"
+            type="button"
+            data-label="Preview bio update"
+            class="w-full rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 sm:w-auto"
+          >
+            Preview bio update
+          </button>
+          <button
+            id="bio-reset-btn"
+            type="button"
+            class="rounded-sm border border-line px-4 py-3 text-sm text-spotlight hover:border-gold disabled:cursor-wait disabled:opacity-60"
+          >
+            Reset to live
+          </button>
+        </div>
       </div>
 
       <div id="preview-step" class="hidden space-y-4">
@@ -542,11 +578,15 @@ const siteAge = String(site.age);
     const hubBackBtn = document.getElementById('hub-back-btn') as HTMLButtonElement;
     const micBtn = document.getElementById('mic') as HTMLButtonElement;
     const quickRatesBtn = document.getElementById('quick-rates-btn') as HTMLButtonElement;
+    const ratesResetBtn = document.getElementById('rates-reset-btn') as HTMLButtonElement;
     const quickRate30 = document.getElementById('quick-rate-30') as HTMLInputElement;
     const quickRate60 = document.getElementById('quick-rate-60') as HTMLInputElement;
     const factsPreviewBtn = document.getElementById('facts-preview-btn') as HTMLButtonElement;
+    const factsResetBtn = document.getElementById('facts-reset-btn') as HTMLButtonElement;
     const reelPreviewBtn = document.getElementById('reel-preview-btn') as HTMLButtonElement;
+    const reelResetBtn = document.getElementById('reel-reset-btn') as HTMLButtonElement;
     const bioPreviewBtn = document.getElementById('bio-preview-btn') as HTMLButtonElement;
+    const bioResetBtn = document.getElementById('bio-reset-btn') as HTMLButtonElement;
     const factAvailability = document.getElementById('fact-availability') as HTMLInputElement;
     const factVocalType = document.getElementById('fact-vocalType') as HTMLInputElement;
     const factVocalRange = document.getElementById('fact-vocalRange') as HTMLInputElement;
@@ -588,6 +628,116 @@ const siteAge = String(site.age);
 
     type HubTask = 'ask' | 'rates' | 'facts' | 'reel' | 'bio';
     let activeTask: HubTask = 'ask';
+
+    type LiveDiscreteDefaults = {
+      rate30: string;
+      rate60: string;
+      availability: string;
+      vocalType: string;
+      vocalRange: string;
+      union: string;
+      playingAge: string;
+      height: string;
+      ethnicity: string;
+      reelUrl: string;
+      shortBio: string;
+    };
+
+    /** Snapshot of current live values for “Reset to live” on discrete forms. */
+    let liveDiscreteDefaults: LiveDiscreteDefaults = {
+      rate30: quickRate30.value,
+      rate60: quickRate60.value,
+      availability: factAvailability.value,
+      vocalType: factVocalType.value,
+      vocalRange: factVocalRange.value,
+      union: factUnion.value,
+      playingAge: factPlayingAge.value,
+      height: factHeight.value,
+      ethnicity: factEthnicity.value,
+      reelUrl: reelUrlInput.value,
+      shortBio: shortBioInput.value,
+    };
+
+    function captureLiveDiscreteDefaultsFromForm() {
+      liveDiscreteDefaults = {
+        rate30: quickRate30.value,
+        rate60: quickRate60.value,
+        availability: factAvailability.value,
+        vocalType: factVocalType.value,
+        vocalRange: factVocalRange.value,
+        union: factUnion.value,
+        playingAge: factPlayingAge.value,
+        height: factHeight.value,
+        ethnicity: factEthnicity.value,
+        reelUrl: reelUrlInput.value,
+        shortBio: shortBioInput.value,
+      };
+    }
+
+    function applyLiveDiscreteDefaults(task: HubTask) {
+      const live = liveDiscreteDefaults;
+      if (task === 'rates') {
+        quickRate30.value = live.rate30;
+        quickRate60.value = live.rate60;
+        return;
+      }
+      if (task === 'facts') {
+        factAvailability.value = live.availability;
+        factVocalType.value = live.vocalType;
+        factVocalRange.value = live.vocalRange;
+        factUnion.value = live.union;
+        factPlayingAge.value = live.playingAge;
+        factHeight.value = live.height;
+        factEthnicity.value = live.ethnicity;
+        return;
+      }
+      if (task === 'reel') {
+        reelUrlInput.value = live.reelUrl;
+        return;
+      }
+      if (task === 'bio') {
+        shortBioInput.value = live.shortBio;
+      }
+    }
+
+    function resetDiscreteFormToLive(task: HubTask) {
+      applyLiveDiscreteDefaults(task);
+      setStatus('Restored current live values.');
+    }
+
+    function syncLiveDefaultsFromPublishedChanges(changes: ContentChange[]) {
+      let touched = false;
+      for (const change of changes) {
+        const preview = change.preview;
+        if (change.tool === 'update_lesson_rates' && preview?.kind === 'rates') {
+          for (const rate of preview.rates) {
+            if (rate.id === '30min') quickRate30.value = String(rate.priceAmount ?? '');
+            if (rate.id === '60min') quickRate60.value = String(rate.priceAmount ?? '');
+          }
+          touched = true;
+        }
+        if (change.tool === 'update_performer_facts' && preview?.kind === 'performer') {
+          const p = preview.performer;
+          factAvailability.value = String(p.availability || '');
+          factVocalType.value = String(p.vocalType || '');
+          factVocalRange.value = String(p.vocalRange || '');
+          factUnion.value = String(p.union || '');
+          factPlayingAge.value = String(p.playingAge || '');
+          factHeight.value = String(p.height || '');
+          factEthnicity.value = String(p.ethnicity || '');
+          touched = true;
+        }
+        if (change.tool === 'update_reel_url' && preview?.kind === 'reel') {
+          reelUrlInput.value = preview.reelUrl || '';
+          touched = true;
+        }
+        if (change.tool === 'update_short_bio' && preview?.kind === 'shortBio') {
+          shortBioInput.value = preview.shortBio || '';
+          touched = true;
+        }
+      }
+      if (touched) captureLiveDiscreteDefaultsFromForm();
+    }
 
     const TASK_TITLES: Record<HubTask, string> = {
       ask: 'Speak or type',
@@ -663,9 +813,13 @@ const siteAge = String(site.age);
       setBusy(busy, primary, 'Preparing preview…');
       previewBtn.disabled = busy;
       quickRatesBtn.disabled = busy;
+      ratesResetBtn.disabled = busy;
       factsPreviewBtn.disabled = busy;
+      factsResetBtn.disabled = busy;
       reelPreviewBtn.disabled = busy;
+      reelResetBtn.disabled = busy;
       bioPreviewBtn.disabled = busy;
+      bioResetBtn.disabled = busy;
       messageEl.disabled = busy;
       photoEl.disabled = busy;
       micBtn.disabled = busy || !micSupported;
@@ -1572,6 +1726,7 @@ const siteAge = String(site.age);
         if (typeof data.shortBio === 'string' && data.shortBio) {
           shortBioInput.value = data.shortBio;
         }
+        captureLiveDiscreteDefaultsFromForm();
       } catch {
         /* non-fatal */
       }
@@ -1681,6 +1836,10 @@ const siteAge = String(site.age);
       );
     });
 
+    ratesResetBtn.addEventListener('click', () => {
+      resetDiscreteFormToLive('rates');
+    });
+
     factsPreviewBtn.addEventListener('click', async () => {
       const performer = {
         availability: factAvailability.value.trim(),
@@ -1698,6 +1857,10 @@ const siteAge = String(site.age);
       await runDiscretePreview('update_performer_facts', performer, 'Could not prepare facts update.');
     });
 
+    factsResetBtn.addEventListener('click', () => {
+      resetDiscreteFormToLive('facts');
+    });
+
     reelPreviewBtn.addEventListener('click', async () => {
       const reelUrl = reelUrlInput.value.trim();
       if (!reelUrl) {
@@ -1707,6 +1870,10 @@ const siteAge = String(site.age);
       await runDiscretePreview('update_reel_url', { reelUrl }, 'Could not prepare reel update.');
     });
 
+    reelResetBtn.addEventListener('click', () => {
+      resetDiscreteFormToLive('reel');
+    });
+
     bioPreviewBtn.addEventListener('click', async () => {
       const shortBio = shortBioInput.value.trim();
       if (!shortBio) {
@@ -1714,6 +1881,10 @@ const siteAge = String(site.age);
         return;
       }
       await runDiscretePreview('update_short_bio', { shortBio }, 'Could not prepare bio update.');
+    });
+
+    bioResetBtn.addEventListener('click', () => {
+      resetDiscreteFormToLive('bio');
     });
 
     previewBtn.addEventListener('click', async () => {
@@ -1872,6 +2043,7 @@ const siteAge = String(site.age);
             : 'Your update was committed. The site will rebuild shortly.';
         doneSha.textContent = commitSha ? `Commit ${commitSha.slice(0, 7)}` : '';
         showDone();
+        syncLiveDefaultsFromPublishedChanges(changes);
         startProgressTracking(commitSha, actions);
         trackEvent('StudioPublishUiSuccess', {
           ...(commitSha ? { commitSha } : {}),
