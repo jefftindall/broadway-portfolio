@@ -4,6 +4,12 @@ import { trackEvent } from './telemetry.js';
 import slugify from 'slugify';
 import { commitFile, listRepoFiles, readRepoTextFile, toFrontmatter } from './github.js';
 import { validateContentFile } from './contentValidate.js';
+import {
+  LESSON_RATE_DEFS,
+  LESSON_RATE_ID_VALUES,
+  PERFORMER_FACT_KEYS,
+} from './contentSchemas.js';
+import { SITE_SETTINGS_PATH, mergeSiteSettings, readSiteSettings } from './siteSettings.js';
 
 const LESSONS_PAGE = 'src/content/pages/lessons.md';
 const LESSONS_BOOK_PAGE = 'src/content/pages/lessons-book.md';
@@ -11,11 +17,18 @@ const LESSONS_BOOK_PAGE = 'src/content/pages/lessons-book.md';
 const lessonRateSchema = {
   type: 'OBJECT',
   properties: {
+    id: {
+      type: 'STRING',
+      description: 'Stable rate id: exactly "30min" or "60min"',
+    },
     label: { type: 'STRING', description: 'Session label, e.g. 30-minute session' },
     price: { type: 'STRING', description: 'Display price, e.g. $60' },
-    priceAmount: { type: 'NUMBER', description: 'Numeric USD amount for structured data, e.g. 60' },
+    priceAmount: {
+      type: 'NUMBER',
+      description: 'Numeric USD amount (required), e.g. 60',
+    },
   },
-  required: ['label', 'price'],
+  required: ['id', 'label', 'price', 'priceAmount'],
 };
 
 const tools = [
@@ -88,20 +101,6 @@ const tools = [
         },
       },
       {
-        name: 'update_about',
-        description:
-          'Replace the About page markdown (background + philosophy). She is an actress/singer and vocal coach; if teaching is mentioned, frame it as private voice lessons (pedagogy, vocal health, CCM), not acting lessons.',
-        parameters: {
-          type: 'OBJECT',
-          properties: {
-            title: { type: 'STRING' },
-            description: { type: 'STRING' },
-            body: { type: 'STRING', description: 'Full markdown body including ## headings' },
-          },
-          required: ['body'],
-        },
-      },
-      {
         name: 'update_lessons_copy',
         description:
           'Update the Lessons page philosophy and details markdown at /lessons only. Private VOICE lessons (vocal pedagogy, vocal health, CCM). Never advertise acting, monologue, or scene-study lessons. Does not change rates or scheduling — use update_lesson_rates / update_lesson_scheduling for the book page.',
@@ -132,14 +131,15 @@ const tools = [
       {
         name: 'update_lesson_rates',
         description:
-          'Update lesson pricing on the book-a-lesson page at /lessons/book only. Does not change lessons philosophy or scheduling copy.',
+          'Update lesson pricing on the book-a-lesson page at /lessons/book only. Provide both rates with ids 30min and 60min and numeric priceAmount. Always start from Lesson rates (live) in the catalog for any rate she does not change. Does not change lessons philosophy or scheduling copy.',
         parameters: {
           type: 'OBJECT',
           properties: {
             rates: {
               type: 'ARRAY',
               items: lessonRateSchema,
-              description: 'Full list of session rates to display',
+              description:
+                'Full list of both session rates (30min and 60min), including unchanged live values',
             },
           },
           required: ['rates'],
@@ -199,28 +199,70 @@ const tools = [
         },
       },
       {
-        name: 'create_or_update_casting_page',
-        description: 'Create or update an SEO casting landing page under /for/[slug].',
+        name: 'update_reel_url',
+        description:
+          'Update the casting reel YouTube (or video) URL used on Materials, Shows, and home. Start from the live Reel URL in the catalog unless she provides a full replacement link.',
         parameters: {
           type: 'OBJECT',
           properties: {
-            slug: { type: 'STRING' },
+            reelUrl: { type: 'STRING', description: 'Full https URL to the reel video' },
+          },
+          required: ['reelUrl'],
+        },
+      },
+      {
+        name: 'update_performer_facts',
+        description:
+          'Patch casting-facing performer facts (availability, vocal type/range, union, playing age, height, ethnicity). Read live Performer facts from the catalog; only set fields she wants changed — omit unchanged fields.',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            availability: { type: 'STRING' },
+            vocalType: { type: 'STRING' },
+            vocalRange: { type: 'STRING' },
+            union: { type: 'STRING' },
+            playingAge: { type: 'STRING' },
+            height: { type: 'STRING' },
+            ethnicity: { type: 'STRING' },
+          },
+        },
+      },
+      {
+        name: 'update_short_bio',
+        description:
+          'Update the short About lead bio only (one or two sentences). Start from the live Short bio in the catalog and revise it; do not invent a blank bio. Does not rewrite the full About page body.',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            shortBio: {
+              type: 'STRING',
+              description: 'Short lead bio for the About page (max ~600 characters)',
+            },
+          },
+          required: ['shortBio'],
+        },
+      },
+      {
+        name: 'update_casting_fields',
+        description:
+          'Update frontmatter fields on an existing casting lander at /for/[slug] (keyword, title, description, related shows/skills, CTA). Reuse the existing page from the catalog; only send fields she wants changed. Does not create new pages or rewrite body copy.',
+        parameters: {
+          type: 'OBJECT',
+          properties: {
+            slug: { type: 'STRING', description: 'Existing casting page slug' },
             keyword: { type: 'STRING' },
             title: { type: 'STRING' },
             description: { type: 'STRING' },
-            body: { type: 'STRING' },
             relatedSkills: { type: 'ARRAY', items: { type: 'STRING' } },
             relatedShows: { type: 'ARRAY', items: { type: 'STRING' } },
             cta: { type: 'STRING' },
           },
-          required: ['keyword', 'title', 'description', 'body'],
+          required: ['slug'],
         },
       },
     ],
   },
 ];
-
-const ALLOWED_PATH_PREFIXES = ['src/content/', 'public/images/photos/'];
 
 function makeSlug(input, fallback) {
   const base = input || fallback || 'update';
@@ -232,24 +274,64 @@ function todayIsoDate() {
 }
 
 /**
- * @param {Array<{ label?: string, price?: string, priceAmount?: number }>} rates
+ * Resolve a rate row to a stable allowlisted id.
+ * @param {{ id?: string, label?: string }} rate
+ * @returns {'30min' | '60min' | null}
  */
-function normalizeLessonRates(rates) {
-  return (rates || [])
-    .map((rate) => {
-      const label = String(rate.label || '').trim();
-      const price = String(rate.price || '').trim();
-      if (!label || !price) return null;
-      const parsedAmount = Number.parseFloat(price.replace(/[^0-9.]/g, ''));
-      const priceAmount =
-        typeof rate.priceAmount === 'number' && !Number.isNaN(rate.priceAmount)
-          ? rate.priceAmount
-          : Number.isNaN(parsedAmount)
-            ? undefined
-            : parsedAmount;
-      return priceAmount === undefined ? { label, price } : { label, price, priceAmount };
-    })
-    .filter(Boolean);
+function resolveLessonRateId(rate) {
+  const rawId = String(rate?.id || '').trim();
+  if (rawId === '30min' || rawId === '60min') return rawId;
+  const label = String(rate?.label || '').toLowerCase();
+  if (label.includes('30')) return '30min';
+  if (label.includes('60')) return '60min';
+  return null;
+}
+
+/**
+ * Normalize lesson rates to allowlisted ids with required priceAmount.
+ * @param {Array<{ id?: string, label?: string, price?: string, priceAmount?: number }>} rates
+ * @returns {Array<{ id: string, label: string, price: string, priceAmount: number }>}
+ */
+export function normalizeLessonRates(rates) {
+  /** @type {Map<string, { id: string, label: string, price: string, priceAmount: number }>} */
+  const byId = new Map();
+
+  for (const rate of rates || []) {
+    const id = resolveLessonRateId(rate);
+    if (!id || !LESSON_RATE_DEFS[id]) {
+      throw new Error('Lesson rates only support 30-minute and 60-minute sessions.');
+    }
+    const def = LESSON_RATE_DEFS[id];
+    const priceRaw = String(rate.price || '').trim();
+    const parsedAmount = Number.parseFloat(priceRaw.replace(/[^0-9.]/g, ''));
+    const priceAmount =
+      typeof rate.priceAmount === 'number' && !Number.isNaN(rate.priceAmount)
+        ? rate.priceAmount
+        : parsedAmount;
+    if (!Number.isFinite(priceAmount) || priceAmount <= 0) {
+      throw new Error(`Rate ${id} needs a valid dollar amount.`);
+    }
+    const price = priceRaw.startsWith('$') ? priceRaw : `$${Math.round(priceAmount)}`;
+    byId.set(id, {
+      id,
+      label: def.label,
+      price,
+      priceAmount,
+    });
+  }
+
+  if (byId.size === 0) {
+    throw new Error('update_lesson_rates requires at least one rate.');
+  }
+
+  const missing = LESSON_RATE_ID_VALUES.filter((id) => !byId.has(id));
+  if (missing.length) {
+    throw new Error(
+      `Lesson rates must include both 30-minute and 60-minute sessions (missing: ${missing.join(', ')}).`,
+    );
+  }
+
+  return LESSON_RATE_ID_VALUES.map((id) => byId.get(id));
 }
 
 /**
@@ -259,7 +341,10 @@ function normalizeLessonRates(rates) {
  */
 async function mergeMarkdownPage(path, { data = {}, body } = {}) {
   const existing = await readRepoTextFile(path);
-  const parsed = existing ? matter(existing) : { data: {}, content: '' };
+  if (!existing) {
+    throw new Error(`Missing content file: ${path}`);
+  }
+  const parsed = matter(existing);
   const mergedData = { ...parsed.data, ...data, updated: todayIsoDate() };
   const mergedBody = body !== undefined ? body : parsed.content;
   const normalizedBody = String(mergedBody || '').trim();
@@ -267,7 +352,7 @@ async function mergeMarkdownPage(path, { data = {}, body } = {}) {
 }
 
 /**
- * @param {{ tool: string, path: string, content: string, commitMessage: string, summary: string }} change
+ * @param {{ tool: string, path: string, content: string, commitMessage: string, summary: string, preview?: Record<string, unknown>, livePath?: string }} change
  */
 function finalizeContentChange(change) {
   validateContentFile(change.path, change.content);
@@ -275,22 +360,30 @@ function finalizeContentChange(change) {
 }
 
 /**
+ * Kind-scoped publish allowlist (FLEX-P1-004).
  * @param {string} path
  * @returns {boolean}
  */
 export function isAllowedContentPath(path) {
   const p = String(path || '').replace(/\\/g, '/');
   if (!p || p.includes('..') || p.startsWith('/')) return false;
-  return ALLOWED_PATH_PREFIXES.some((prefix) => p.startsWith(prefix));
+  if (p === SITE_SETTINGS_PATH) return true;
+  if (p.startsWith('public/images/photos/')) return true;
+  if (/^src\/content\/shows\/[^/]+\.md$/.test(p)) return true;
+  if (/^src\/content\/news\/[^/]+\.md$/.test(p)) return true;
+  if (/^src\/content\/gallery\/[^/]+\.md$/.test(p)) return true;
+  if (p === LESSONS_PAGE || p === LESSONS_BOOK_PAGE) return true;
+  if (/^src\/content\/casting\/[^/]+\.md$/.test(p)) return true;
+  return false;
 }
 
 /**
  * Build a proposed file change from a Gemini tool call (no GitHub write).
- * @returns {Promise<{ tool: string, path: string, content: string, commitMessage: string, summary: string }>}
+ * @returns {Promise<{ tool: string, path: string, content: string, commitMessage: string, summary: string, preview?: Record<string, unknown>, livePath?: string }>}
  */
 export async function buildContentChange(name, args, photoPath) {
   const today = todayIsoDate();
-  /** @type {{ tool: string, path: string, content: string, commitMessage: string, summary: string }} */
+  /** @type {{ tool: string, path: string, content: string, commitMessage: string, summary: string, preview?: Record<string, unknown>, livePath?: string }} */
   let change;
 
   switch (name) {
@@ -318,6 +411,7 @@ export async function buildContentChange(name, args, photoPath) {
         content,
         commitMessage: `content: upsert show ${args.title}`,
         summary: `Updated show “${args.title}” at /shows.`,
+        livePath: '/shows',
       };
       break;
     }
@@ -340,24 +434,7 @@ export async function buildContentChange(name, args, photoPath) {
         content,
         commitMessage: `content: news ${args.title}`,
         summary: `Published news post “${args.title}” at /news/${slug}.`,
-      };
-      break;
-    }
-    case 'update_about': {
-      const content =
-        toFrontmatter({
-          title: args.title || 'About',
-          description: args.description || 'About Elyse Tindall',
-          updated: today,
-        }) +
-        args.body +
-        '\n';
-      change = {
-        tool: name,
-        path: 'src/content/pages/about.md',
-        content,
-        commitMessage: 'content: update about page',
-        summary: 'Updated the About page.',
+        livePath: `/news/${slug}`,
       };
       break;
     }
@@ -369,6 +446,7 @@ export async function buildContentChange(name, args, photoPath) {
         content,
         commitMessage: 'content: update lessons copy',
         summary: 'Updated lessons philosophy and details at /lessons.',
+        livePath: '/lessons',
       };
       break;
     }
@@ -386,12 +464,12 @@ export async function buildContentChange(name, args, photoPath) {
         content,
         commitMessage: 'content: update lessons seo',
         summary: 'Updated Lessons page title/description.',
+        livePath: '/lessons',
       };
       break;
     }
     case 'update_lesson_rates': {
       const rates = normalizeLessonRates(args.rates);
-      if (!rates.length) throw new Error('update_lesson_rates requires at least one rate.');
       const content = await mergeMarkdownPage(LESSONS_BOOK_PAGE, { data: { rates } });
       change = {
         tool: name,
@@ -399,6 +477,16 @@ export async function buildContentChange(name, args, photoPath) {
         content,
         commitMessage: 'content: update lesson rates',
         summary: 'Updated lesson rates at /lessons/book.',
+        livePath: '/lessons/book',
+        preview: {
+          kind: 'rates',
+          rates: rates.map((r) => ({
+            id: r.id,
+            label: r.label,
+            price: r.price,
+            priceAmount: r.priceAmount,
+          })),
+        },
       };
       break;
     }
@@ -418,6 +506,7 @@ export async function buildContentChange(name, args, photoPath) {
         content,
         commitMessage: 'content: update lesson scheduling',
         summary: 'Updated lesson scheduling details at /lessons/book.',
+        livePath: '/lessons/book',
       };
       break;
     }
@@ -435,6 +524,7 @@ export async function buildContentChange(name, args, photoPath) {
         content,
         commitMessage: 'content: update lesson book seo',
         summary: 'Updated book-a-lesson page title/description.',
+        livePath: '/lessons/book',
       };
       break;
     }
@@ -462,28 +552,105 @@ export async function buildContentChange(name, args, photoPath) {
         content,
         commitMessage: `content: gallery ${slug}`,
         summary: `Added gallery photo (${slug}).`,
+        livePath: '/gallery',
       };
       break;
     }
-    case 'create_or_update_casting_page': {
-      const slug = makeSlug(args.slug || args.keyword);
-      const content =
-        toFrontmatter({
-          keyword: args.keyword,
-          title: args.title,
-          description: args.description,
-          relatedSkills: args.relatedSkills || [],
-          relatedShows: args.relatedShows || [],
-          cta: args.cta || 'Request materials',
-        }) +
-        args.body +
-        '\n';
+    case 'update_reel_url': {
+      const reelUrl = String(args.reelUrl || '').trim();
+      if (!reelUrl) throw new Error('update_reel_url requires reelUrl.');
+      const merged = await mergeSiteSettings({ reelUrl });
       change = {
         tool: name,
-        path: `src/content/casting/${slug}.md`,
+        path: merged.path,
+        content: merged.content,
+        commitMessage: 'content: update reel url',
+        summary: 'Updated the casting reel link on Materials and related pages.',
+        livePath: '/materials',
+        preview: { kind: 'reel', reelUrl: merged.data.reelUrl },
+      };
+      break;
+    }
+    case 'update_performer_facts': {
+      /** @type {Record<string, string>} */
+      const performer = {};
+      for (const key of PERFORMER_FACT_KEYS) {
+        if (args[key] != null && String(args[key]).trim()) {
+          performer[key] = String(args[key]).trim();
+        }
+      }
+      if (!Object.keys(performer).length) {
+        throw new Error('update_performer_facts requires at least one fact field.');
+      }
+      const merged = await mergeSiteSettings({ performer });
+      change = {
+        tool: name,
+        path: merged.path,
+        content: merged.content,
+        commitMessage: 'content: update performer facts',
+        summary: 'Updated performer facts on About and Materials.',
+        livePath: '/materials',
+        preview: {
+          kind: 'performer',
+          performer: merged.data.performer,
+          patchedKeys: Object.keys(performer),
+        },
+      };
+      break;
+    }
+    case 'update_short_bio': {
+      const shortBio = String(args.shortBio || '').trim();
+      if (!shortBio) throw new Error('update_short_bio requires shortBio.');
+      const merged = await mergeSiteSettings({ shortBio });
+      change = {
+        tool: name,
+        path: merged.path,
+        content: merged.content,
+        commitMessage: 'content: update short bio',
+        summary: 'Updated the short bio on the About page.',
+        livePath: '/about',
+        preview: { kind: 'shortBio', shortBio: merged.data.shortBio },
+      };
+      break;
+    }
+    case 'update_casting_fields': {
+      const slug = makeSlug(args.slug);
+      if (!slug) throw new Error('update_casting_fields requires an existing casting slug.');
+      const path = `src/content/casting/${slug}.md`;
+      const existing = await readRepoTextFile(path);
+      if (!existing) {
+        throw new Error(
+          `Casting page “${slug}” does not exist yet. New casting pages are added by hand (see the casting runbook).`,
+        );
+      }
+      const data = {};
+      for (const key of ['keyword', 'title', 'description', 'cta']) {
+        if (args[key] != null && String(args[key]).trim()) data[key] = String(args[key]).trim();
+      }
+      if (Array.isArray(args.relatedShows)) data.relatedShows = args.relatedShows;
+      if (Array.isArray(args.relatedSkills)) data.relatedSkills = args.relatedSkills;
+      if (!Object.keys(data).length) {
+        throw new Error('update_casting_fields requires at least one field to update.');
+      }
+      const content = await mergeMarkdownPage(path, { data });
+      const parsed = matter(content);
+      change = {
+        tool: name,
+        path,
         content,
-        commitMessage: `content: casting page ${args.keyword}`,
-        summary: `Casting page ready at /for/${slug}.`,
+        commitMessage: `content: update casting fields ${slug}`,
+        summary: `Updated casting page fields at /for/${slug}.`,
+        livePath: `/for/${slug}`,
+        preview: {
+          kind: 'casting',
+          slug,
+          keyword: parsed.data.keyword,
+          title: parsed.data.title,
+          description: parsed.data.description,
+          cta: parsed.data.cta,
+          relatedShows: parsed.data.relatedShows || [],
+          relatedSkills: parsed.data.relatedSkills || [],
+        },
       };
       break;
     }
@@ -505,10 +672,11 @@ export function publicUrlForContentPath(path) {
   if ((m = /^src\/content\/news\/([^/]+)\.md$/.exec(p))) return `/news/${m[1]}`;
   if (/^src\/content\/shows\/[^/]+\.md$/.test(p)) return '/shows';
   if (p === 'src/content/pages/about.md') return '/about';
-  if (p === 'src/content/pages/lessons.md') return '/lessons';
-  if (p === 'src/content/pages/lessons-book.md') return '/lessons/book';
+  if (p === LESSONS_PAGE) return '/lessons';
+  if (p === LESSONS_BOOK_PAGE) return '/lessons/book';
   if (/^src\/content\/gallery\/[^/]+\.md$/.test(p)) return '/gallery';
   if ((m = /^src\/content\/casting\/([^/]+)\.md$/.exec(p))) return `/for/${m[1]}`;
+  if (p === SITE_SETTINGS_PATH) return '/materials';
   if ((m = /^public\/(images\/photos\/[^/]+)$/.exec(p))) return `/${m[1]}`;
   return null;
 }
@@ -577,6 +745,22 @@ function frontmatterField(text, key) {
 }
 
 /**
+ * Read live lesson rates for Studio Quick edit / catalog (non-fatal on failure).
+ * @returns {Promise<Array<{ id: string, label: string, priceAmount: number }> | null>}
+ */
+export async function readLiveLessonRates() {
+  try {
+    const text = await readRepoTextFile(LESSONS_BOOK_PAGE);
+    if (!text) return null;
+    const parsed = matter(text);
+    const rates = normalizeLessonRates(parsed.data?.rates || []);
+    return rates.map((r) => ({ id: r.id, label: r.label, priceAmount: r.priceAmount }));
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Build a compact catalog of live portfolio pages from the GitHub content branch.
  * Failures are non-fatal — Studio can still draft without the catalog.
  * @returns {Promise<string>}
@@ -599,28 +783,53 @@ export async function buildProductionSiteContext() {
 
     if (!paths.length) {
       lines.push('- (no markdown content found yet)');
-      return lines.join('\n');
+    } else {
+      const entries = await Promise.all(
+        paths.map(async (path) => {
+          const text = await readRepoTextFile(path);
+          const urlPath = publicUrlForContentPath(path);
+          const liveUrl = urlPath ? `${siteUrl}${urlPath}` : null;
+          const label =
+            frontmatterField(text, 'title') ||
+            frontmatterField(text, 'keyword') ||
+            frontmatterField(text, 'caption') ||
+            path.split('/').pop()?.replace(/\.md$/, '') ||
+            path;
+          return liveUrl ? `- ${label} — ${liveUrl} (${path})` : `- ${label} — ${path}`;
+        }),
+      );
+      lines.push(...entries);
     }
-
-    const entries = await Promise.all(
-      paths.map(async (path) => {
-        const text = await readRepoTextFile(path);
-        const urlPath = publicUrlForContentPath(path);
-        const liveUrl = urlPath ? `${siteUrl}${urlPath}` : null;
-        const label =
-          frontmatterField(text, 'title') ||
-          frontmatterField(text, 'keyword') ||
-          frontmatterField(text, 'caption') ||
-          path.split('/').pop()?.replace(/\.md$/, '') ||
-          path;
-        return liveUrl ? `- ${label} — ${liveUrl} (${path})` : `- ${label} — ${path}`;
-      }),
-    );
-    lines.push(...entries);
   } catch {
     lines.push(
       `- Catalog unavailable; still treat ${siteUrl} as the live site and avoid inventing credits.`,
     );
+  }
+
+  try {
+    const rates = await readLiveLessonRates();
+    if (rates?.length) {
+      lines.push(
+        `Lesson rates (live): ${rates.map((r) => `${r.id} $${r.priceAmount}`).join('; ')}`,
+      );
+    }
+  } catch {
+    /* non-fatal */
+  }
+
+  try {
+    const settings = await readSiteSettings();
+    lines.push(`Reel URL (live): ${settings.reelUrl}`);
+    lines.push(`Short bio (live): ${settings.shortBio}`);
+    const p = settings.performer;
+    lines.push(
+      `Performer facts (live): availability=${p.availability}; vocalType=${p.vocalType}; vocalRange=${p.vocalRange}; union=${p.union}` +
+        (p.playingAge ? `; playingAge=${p.playingAge}` : '') +
+        (p.height ? `; height=${p.height}` : '') +
+        (p.ethnicity ? `; ethnicity=${p.ethnicity}` : ''),
+    );
+  } catch {
+    /* non-fatal */
   }
 
   return lines.join('\n');
@@ -656,11 +865,14 @@ Rules:
 - Prefer upsert_show for new bookings/credits; when updating an existing show, reuse its slug from the catalog. Set featured true only for headline credits — the homepage auto-shows the three most recent featured shows by year, then order (lower order = newer within a year).
 - For show venue, always use "[Theater Name] - [City], [ST]" (examples: "Alliance Theatre - Atlanta, GA", "Georgia State University - Atlanta, GA"). Highlight only the theater/company and city/state. Put room names, galleries, festival/program tags, co-producers, and similar context in synopsis or body — never cram them into venue.
 - Prefer create_news_post for press and announcements.
-- Prefer create_or_update_casting_page for SEO/casting keyword pages (write real helpful copy, not thin spam); reuse existing casting slugs when she means an existing page.
-- Prefer update_about when she asks to change her biography or performer background at ${siteUrl}/about.
+- Prefer update_casting_fields when she asks to change CTA, title, description, keyword, or related shows/skills on an existing /for/… casting page. Reuse the existing slug from the catalog. Do not create new casting pages — those are added by hand outside Studio.
+- Prefer update_short_bio when she wants a short About lead update. Do not rewrite the full About page body (that is PR-only). Start from Short bio (live) in the catalog.
+- Prefer update_performer_facts when she asks to change availability, vocal range/type, union, playing age, height, or ethnicity. Read Performer facts (live) first; only send fields she wants changed.
+- Prefer update_reel_url when she wants to change the casting reel link. Start from Reel URL (live) unless she gives a full new URL.
 - Prefer update_lessons_copy when she asks to change lessons philosophy, approach, or teaching details at ${siteUrl}/lessons. Never include dollar amounts or rates in that copy.
 - Prefer update_lessons_seo only when she explicitly wants to change the Lessons page title or search description.
-- Prefer update_lesson_rates when she asks to change lesson prices or session rates. This updates ${siteUrl}/lessons/book only — provide the full rates list.
+- Prefer update_lesson_rates when she asks to change lesson prices or session rates. This updates ${siteUrl}/lessons/book only — always provide both rates with ids 30min and 60min and numeric priceAmount (use Lesson rates (live) from the catalog for any rate she does not change).
+- Discrete field rule (rates, reel, short bio, performer facts, casting field merges): always ground the tool call in the live values from the catalog. Never blank out a discrete field or invent a parallel value when the catalog already shows the current one. For partial changes, keep unchanged live values (rates: include both tiers; short bio/reel: revise the live string; performer facts: omit keys she did not mention).
 - Prefer update_lesson_scheduling when she asks about lesson format (NYC/Zoom), how to book, scheduling, or what students should expect on the book page.
 - Prefer update_lesson_book_seo only when she explicitly wants to change the book-a-lesson page title or search description.
 - Never use lessons tools to change show credits, news, or gallery content.

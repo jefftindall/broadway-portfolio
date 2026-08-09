@@ -52,7 +52,24 @@ Lessons content is split across two pages:
 | Philosophy & approach | `/lessons` | `update_lessons_copy`, `update_lessons_seo` |
 | Rates & scheduling | `/lessons/book` | `update_lesson_rates`, `update_lesson_scheduling`, `update_lesson_book_seo` |
 
-If rate changes land on `lessons.md`, tighten routing: prices belong on `/lessons/book` via `update_lesson_rates` only. Lesson copy builders **merge** into existing markdown (they do not replace unrelated frontmatter or body).
+If rate changes land on `lessons.md`, tighten routing: prices belong on `/lessons/book` via `update_lesson_rates` only. Lesson copy builders **merge** into existing markdown (they do not replace unrelated frontmatter or body). Rates require stable ids `30min` / `60min` and numeric `priceAmount`.
+
+### Discrete site settings (reel, bio, performer facts)
+
+Canonical values live in [`src/data/site-settings.json`](../../src/data/site-settings.json) (re-exported by `src/lib/site.ts`). Studio tools:
+
+| Tool | Updates |
+|------|---------|
+| `update_reel_url` | Reel link on Materials / Shows / home |
+| `update_performer_facts` | Casting facts on About + Materials |
+| `update_short_bio` | About lead paragraph only (full About body is PR-only) |
+| `update_casting_fields` | Frontmatter on an **existing** `/for/…` page (no create, no body rewrite) |
+
+Publish allowlist is kind-scoped: shows/news/gallery/lessons/book/casting + exact `site-settings.json`. `about.md` is not Studio-writable.
+
+**Current-values rule:** Discrete updates (rates, reel, short bio, performer facts) must ground tool args in live catalog lines (`Lesson rates (live)`, `Reel URL (live)`, `Short bio (live)`, `Performer facts (live)`). Never blank a field or invent a parallel value when the catalog already shows the current one. Studio hub editors prefill those live values; discrete Preview is a **read-only site-style confirmation** (reel embed, rates block, performer facts block — edit on the prior step, then publish).
+
+Studio Preview shows labeled fields for discrete tools (dollar inputs for rates). Publishers pick a hub destination (Speak or type, Rates, Facts, Reel, Short bio) instead of scrolling one long form.
 
 ## Brand facts for teaching copy
 
@@ -68,8 +85,9 @@ Keep these in `systemInstruction` (and the lessons tool descriptions):
 
 - Keep “professional, warm, accurate” (or replace with clearer brand language).
 - Keep **Do not invent fake credits** (and similar) as explicit rules.
-- If Gemini pads thin SEO pages, say so under `create_or_update_casting_page` (helpful copy, no keyword stuffing).
+- If Gemini pads thin SEO pages, say so under casting field tools (helpful copy, no keyword stuffing) — new landers are hand/PR only (`update_casting_fields` does not create pages).
 - If lessons drafts drift into acting-coach language, re-check the brand facts block in `systemInstruction`.
+- About full-page rewrites are removed; use `update_short_bio` for the lead only.
 
 ## Improving missing or wrong fields
 
@@ -95,11 +113,12 @@ Failed drafts/publishes emit `StudioDraftFailed` / `StudioPublishFailed` with `c
 
 ## Checklist before shipping a prompt change
 
-- [ ] Draft mode returns the expected tool and usable markdown
+- [ ] Draft mode returns the expected tool and usable markdown / settings
 - [ ] No secrets, HTTP rules, or support IDs in `systemInstruction`
 - [ ] **Studio help stays accurate** — update [`src/lib/studioHelp.ts`](../../src/lib/studioHelp.ts) (and `/studio/help` copy/screenshots if UX changed) so discrete prompts and capabilities match the tools you just edited
-- [ ] Staging Studio Preview + Publish smoke test
-- [ ] `npm run lint` before commit
+- [ ] Every new tool has **≥2 example prompts** in `studioHelp.ts` (performer facts: one prompt per editable field)
+- [ ] Staging Studio Preview + Publish smoke test (rates Quick edit + structured Preview)
+- [ ] `npm run lint` and `npm run test:api-flex` before commit
 
 ## User-facing Studio help
 

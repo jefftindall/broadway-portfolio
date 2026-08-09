@@ -1,7 +1,7 @@
 # Plan: Discrete site variables vs flexible Studio content
 
 **Artifact ID:** `ELYSE-FLEX-001`  
-**Version:** 1.1  
+**Version:** 1.4  
 **Last updated:** 2026-08-09  
 **Audience:** Agents, implementers, Studio publishers  
 **Scope:** Which Studio/Gemini tools may rewrite which content, and how **discrete** fields (rates, later site settings) stay consistent across UI + SEO — not casting SEO strategy itself (`DISC-*`) or GA/GSC (`SEARCH-*`).
@@ -40,24 +40,25 @@ Implement **one phase (or one `FLEX-*` item) per PR** when practical. Prefer lin
 | Strip dollar amounts from `lessons.md` | `done` | Philosophy page points to book page for rates |
 | Docs / Studio help for lessons routing | `done` | `refine-studio-gemini.md`, `studioHelp.ts` |
 | Publish Zod validation for markdown frontmatter | `done` | `api/src/lib/contentValidate.js` |
-| Remove `update_about` (About → locked / PR-only) | `planned` | Tool still full-body replaces `about.md` |
-| Remove / constrain `create_or_update_casting_page` | `planned` | Still full markdown replace; casting stays SEO-sensitive |
-| Narrow publish path allowlist by kind | `planned` | Still any path under `src/content/` (+ gallery photos) |
-| Stable rate `id`s + single numeric `priceUsd` SoT | `planned` | Today: `label` + `price` (+ optional `priceAmount`); no id allowlist |
-| `src/data/site-settings.json` registry | `wont_fix` | Rates shipped on `lessons-book.md` instead; revisit only if more discrete keys need a shared file |
-| Inject live rates into draft catalog context | `planned` | Catalog lists URLs/titles; does not surface current `$` rates |
-| Structured Preview for discrete rate diffs | `planned` | Phase 4 polish |
-| Tool ↔ path pair enforcement at publish | `planned` | Phase 4 polish |
-| Extend discrete registry (email, reel, bio field, …) | `planned` | Phase 3 — only when there is a clear Studio need |
+| Remove `update_about` (About → locked / PR-only) | `done` | Full-page tool removed; `update_short_bio` for About lead |
+| Remove / constrain `create_or_update_casting_page` | `done` | Full create/replace removed; `update_casting_fields` merges FM only |
+| Narrow publish path allowlist by kind | `done` | Kind-scoped + exact `site-settings.json`; `about.md` denied |
+| Stable rate `id`s + required `priceAmount` | `done` | Ids `30min` / `60min`; Zod + normalize enforce both |
+| `src/data/site-settings.json` registry | `done` | Reopened for P3 (reel, shortBio, performer); rates stay on book page |
+| Inject live rates into draft catalog context | `done` | Catalog includes live rates + settings snapshot |
+| Structured Preview for discrete fields | `done` | `FLEX-P4-001` — labeled Preview + Quick edit rates |
+| Tool ↔ path pair enforcement at publish | `planned` | Phase 4 residual (`FLEX-P4-002`) |
+| Dedupe `DEFAULT_SITE_SETTINGS` bootstrap vs JSON | `planned` | `FLEX-P4-004` — avoid seed drift |
+| Extend discrete registry (reel, performer facts, bio, …) | `done` | Strong P3 shipped; medium candidates still on-demand |
 
 ### Phase rollup
 
 | Phase | Intent | Status |
 |-------|--------|--------|
-| **Phase 1** — Stop the bleed | Remove dangerous full-page tools; tighten allowlist; de-dupe rates from philosophy markdown | **Partial** — lessons/rates split `done`; About/casting lock + path hardening still `planned` |
-| **Phase 2** — Discrete rates pipeline | Safe Studio updates for prices only | **Mostly done** — via book-page frontmatter (not `site-settings.json`) |
-| **Phase 3** — Extend discrete registry | More allowlisted fields as needed | `planned` |
-| **Phase 4** — Preview & guardrails polish | Structured diffs; tool/path mismatch reject | `planned` |
+| **Phase 1** — Stop the bleed | Remove dangerous full-page tools; tighten allowlist; de-dupe rates from philosophy markdown | **Done** |
+| **Phase 2** — Discrete rates pipeline | Safe Studio updates for prices only | **Done** (P2-004/005/007; rates on book page) |
+| **Phase 3** — Extend discrete registry | More allowlisted fields as needed | **Strong done**; medium still `planned` on demand |
+| **Phase 4** — Preview & guardrails polish | Structured diffs; tool/path mismatch reject | **Partial** — `FLEX-P4-001` `done`; P4-002/003/004 `planned` |
 
 ---
 
@@ -73,7 +74,7 @@ Rates were also duplicated across UI code, markdown, and JSON-LD — so a voice 
 
 **Goal:** Keep Studio strong for **flexible** content (shows, news, gallery), and move everything else to **discrete, validated variables** (or out of Studio entirely).
 
-**Progress so far:** Lessons rates/scheduling moved to `/lessons/book` with dedicated tools. About and casting full-page tools remain open risk.
+**Progress so far:** Lessons rates/scheduling on `/lessons/book`; About body and casting create locked; Strong discrete registry (`site-settings.json`) + structured Studio Preview shipped.
 
 ---
 
@@ -82,8 +83,8 @@ Rates were also duplicated across UI code, markdown, and JSON-LD — so a voice 
 | Tier | Intent | Studio behavior | Examples |
 |------|--------|-----------------|----------|
 | **A — Flexible** | Evergreen-ish entries the publisher creates/edits often via natural language | Structured Gemini tools that write one markdown file per entry | Shows, news posts, gallery photos |
-| **B — Discrete** | Small, typed fields that must stay consistent across UI + SEO | Narrow tools / structured frontmatter (or settings JSON); no freeform page body replace for those fields | Lesson rates on `lessons-book.md`; later: contact email, reel URL, featured-show flags |
-| **C — Locked** | Brand-critical copy and layout chrome | Not Gemini-writable; change via PR / design work | Hero copy, nav; **target:** About page, casting bodies (initially); lessons philosophy may stay constrained Tier B/C |
+| **B — Discrete** | Small, typed fields that must stay consistent across UI + SEO | Narrow tools / structured frontmatter or `site-settings.json`; labeled Preview forms | Lesson rates; reel URL; performer facts; short bio; casting FM fields |
+| **C — Locked** | Brand-critical copy and layout chrome | Not Gemini-writable; change via PR / design work | Hero copy, nav; About body; casting bodies; new casting lander create |
 
 ### Policy for current tools
 
@@ -92,13 +93,13 @@ Rates were also duplicated across UI code, markdown, and JSON-LD — so a voice 
 | `upsert_show` | A | `done` | Keep |
 | `create_news_post` | A | `done` | Keep |
 | `add_gallery_photo` | A | `done` | Keep |
-| `update_lesson_rates` | B | `done` | Keep; harden ids/`priceAmount` (`FLEX-P2-004`) |
+| `update_lesson_rates` | B | `done` | Keep; ids + `priceAmount` required |
 | `update_lesson_scheduling` / `update_lesson_book_seo` | B | `done` | Keep (book page only) |
 | `update_lessons_copy` / `update_lessons_seo` | B/C hybrid | `done` (split) | Prefer merge; consider locking copy later if abuse risk |
-| `update_about` | C | `planned` | **Remove** from Gemini tools (`FLEX-P1-002`) |
-| `create_or_update_casting_page` | C (for now) | `planned` | **Remove** from default Studio tools (`FLEX-P1-003`); keep [add-casting-page.md](../runbooks/add-casting-page.md) |
-
-Casting stays locked initially because it is SEO-sensitive and still a full markdown replace — the same class of risk About had.
+| `update_reel_url` / `update_performer_facts` / `update_short_bio` | B | `done` | `site-settings.json` |
+| `update_casting_fields` | B | `done` | Existing landers only; FM merge |
+| `update_about` | C | `done` | **Removed** (`FLEX-P1-002`) |
+| `create_or_update_casting_page` | C | `done` | **Removed** (`FLEX-P1-003`); create via [add-casting-page.md](../runbooks/add-casting-page.md) |
 
 ---
 
@@ -106,26 +107,20 @@ Casting stays locked initially because it is SEO-sensitive and still a full mark
 
 ### Rates SoT (shipped)
 
-Canonical rates live in **`src/content/pages/lessons-book.md` frontmatter** (`rates[]` with `label`, `price`, optional `priceAmount`). Studio updates them only via `update_lesson_rates` (merge, Zod-validated). Philosophy copy stays on `lessons.md` without dollar amounts.
+Canonical rates live in **`src/content/pages/lessons-book.md` frontmatter** (`rates[]` with `id`, `label`, `price`, `priceAmount`). Studio updates them only via `update_lesson_rates` (merge, Zod-validated). Philosophy copy stays on `lessons.md` without dollar amounts.
 
 ```text
 /lessons          → philosophy (update_lessons_copy / update_lessons_seo)
 /lessons/book     → rates + scheduling (update_lesson_rates / update_lesson_scheduling / update_lesson_book_seo)
 ```
 
-### Original sketch (not used)
+### Discrete site settings (shipped)
 
-`src/data/site-settings.json` was proposed as a shared discrete registry. **Not implemented** — marked `wont_fix` for v1 rates. Reopen only if multiple discrete keys need one file outside content collections.
+[`src/data/site-settings.json`](../../src/data/site-settings.json) holds reel URL, short bio, and performer facts. [`src/lib/site.ts`](../../src/lib/site.ts) re-exports them. Rates remain on the book page (not in this JSON).
 
-### Publish-time hardening (remaining)
+### Publish-time hardening
 
-Today publish still trusts client-edited paths under the broad prefix `src/content/`. Still needed:
-
-1. **Path allowlist by kind**, not only prefix (`FLEX-P1-004`)
-2. **Reject** Studio publish of locked paths (`about.md`, casting) once tools are removed
-3. Optional: stable rate `id` allowlist + require `priceAmount` (`FLEX-P2-004`)
-4. Structured Preview + tool/path pair checks (`FLEX-P4-*`)
-
+Kind-scoped allowlist (`FLEX-P1-004`) shipped. Remaining polish: tool/path pair checks (`FLEX-P4-002`).
 ---
 
 ## Phased backlog
@@ -135,9 +130,9 @@ Today publish still trusts client-edited paths under the broad prefix `src/conte
 | ID | Title | Status | Depends on | Primary refs |
 |----|-------|--------|------------|--------------|
 | `FLEX-P1-001` | Split lessons tools; remove monolith full-page lessons replace | `done` | — | `api/src/lib/gemini.js`, `/lessons` + `/lessons/book` |
-| `FLEX-P1-002` | Remove `update_about` from Gemini tools (About PR-only) | `planned` | — | `gemini.js`, `studioHelp.ts`, refine-studio-gemini |
-| `FLEX-P1-003` | Remove `create_or_update_casting_page` from default Studio tools | `planned` | — | `gemini.js`; casting runbook |
-| `FLEX-P1-004` | Narrow publish path allowlist by content kind | `planned` | `FLEX-P1-002`, `FLEX-P1-003` | `isAllowedContentPath` / publish handler |
+| `FLEX-P1-002` | Remove `update_about` from Gemini tools (About PR-only) | `done` | — | `gemini.js`, `studioHelp.ts`, refine-studio-gemini |
+| `FLEX-P1-003` | Remove `create_or_update_casting_page` from default Studio tools | `done` | — | `gemini.js`; casting runbook |
+| `FLEX-P1-004` | Narrow publish path allowlist by content kind | `done` | `FLEX-P1-002`, `FLEX-P1-003` | `isAllowedContentPath` / publish handler |
 | `FLEX-P1-005` | Docs + Studio help match lessons vs book routing | `done` | `FLEX-P1-001` | `refine-studio-gemini.md`, `studioHelp.ts` |
 | `FLEX-P1-006` | Strip rate dollars from `lessons.md` | `done` | `FLEX-P1-001` | `src/content/pages/lessons.md` |
 
@@ -157,9 +152,9 @@ Today publish still trusts client-edited paths under the broad prefix `src/conte
 
 **Acceptance criteria**
 
-- [ ] `update_about` removed from `functionDeclarations` and builders
-- [ ] Studio help / refine runbook no longer list About as voice-editable
-- [ ] System instruction tells model About changes need a site PR
+- [x] `update_about` removed from `functionDeclarations` and builders
+- [x] Studio help / refine runbook no longer list About as voice-editable full page
+- [x] System instruction tells model About body changes need a site PR (short bio tool for lead)
 
 </details>
 
@@ -168,9 +163,9 @@ Today publish still trusts client-edited paths under the broad prefix `src/conte
 
 **Acceptance criteria**
 
-- [ ] `create_or_update_casting_page` removed from default Studio tools
-- [ ] [add-casting-page.md](../runbooks/add-casting-page.md) remains the SoT workflow
-- [ ] Help/docs updated; revisit only with templated discrete fields later
+- [x] `create_or_update_casting_page` removed from default Studio tools
+- [x] [add-casting-page.md](../runbooks/add-casting-page.md) remains the SoT workflow for create
+- [x] Help/docs updated; field merge via `update_casting_fields`
 
 </details>
 
@@ -179,9 +174,9 @@ Today publish still trusts client-edited paths under the broad prefix `src/conte
 
 **Acceptance criteria**
 
-- [ ] Studio publish allowlist is by kind (shows/news/gallery + allowed pages), not bare `src/content/`
-- [ ] Locked paths (`about.md`, casting, and any other C-tier) rejected even if Preview is hand-edited
-- [ ] Book + lessons paths only writable by the tools that own them (or explicit kind list)
+- [x] Studio publish allowlist is by kind (shows/news/gallery + allowed pages), not bare `src/content/`
+- [x] Locked paths (`about.md`, and other non-allowlisted pages) rejected even if Preview is hand-edited
+- [x] Book + lessons paths only writable among allowlisted pages; settings JSON exact path only
 
 </details>
 
@@ -206,19 +201,19 @@ Today publish still trusts client-edited paths under the broad prefix `src/conte
 | `FLEX-P2-001` | Rates SoT on book page (not freeform philosophy markdown) | `done` | `FLEX-P1-001` | `lessons-book.md` |
 | `FLEX-P2-002` | UI / JSON-LD consume book-page rates | `done` | `FLEX-P2-001` | `src/pages/lessons/book.astro` (+ related) |
 | `FLEX-P2-003` | `update_lesson_rates` merge + validate builder | `done` | `FLEX-P2-001` | `gemini.js`, `contentValidate.js` |
-| `FLEX-P2-004` | Harden rate shape (stable ids + required `priceAmount`) | `planned` | `FLEX-P2-003` | `contentSchemas.js`, normalizeLessonRates |
-| `FLEX-P2-005` | Inject current rates into draft catalog context | `planned` | `FLEX-P2-001` | `buildProductionSiteContext` |
-| `FLEX-P2-006` | `site-settings.json` shared registry for rates | `wont_fix` | — | Alternate design shipped on book page |
-| `FLEX-P2-007` | Smoke: voice rate change → book page only → live UI | `planned` | `FLEX-P2-003` | Studio + `/lessons/book` |
+| `FLEX-P2-004` | Harden rate shape (stable ids + required `priceAmount`) | `done` | `FLEX-P2-003` | `contentSchemas.js`, normalizeLessonRates |
+| `FLEX-P2-005` | Inject current rates into draft catalog context | `done` | `FLEX-P2-001` | `buildProductionSiteContext` |
+| `FLEX-P2-006` | `site-settings.json` shared registry for rates | `wont_fix` | — | Rates stay on book page; JSON used for P3 keys instead |
+| `FLEX-P2-007` | Smoke: voice rate change → book page only → live UI | `done` | `FLEX-P2-003` | `npm run test:api-flex` |
 
 <details>
 <summary><code>FLEX-P2-004</code> — Harden rate shape</summary>
 
 **Acceptance criteria**
 
-- [ ] Stable allowlisted ids (e..g. `30min`, `60min`) — reject unknown ids
-- [ ] Numeric price field required for JSON-LD / UI (no string-only `$` as sole SoT)
-- [ ] Gemini cannot invent a third parallel rate tier without an explicit product decision
+- [x] Stable allowlisted ids (`30min`, `60min`) — reject unknown ids
+- [x] Numeric price field required for JSON-LD / UI (no string-only `$` as sole SoT)
+- [x] Gemini cannot invent a third parallel rate tier without an explicit product decision
 
 </details>
 
@@ -227,8 +222,8 @@ Today publish still trusts client-edited paths under the broad prefix `src/conte
 
 **Acceptance criteria**
 
-- [ ] Draft context includes current rates (e.g. “60-min is currently $100”)
-- [ ] Model patches real values rather than guessing
+- [x] Draft context includes current rates (e.g. “60min $100”)
+- [x] Model patches real values rather than guessing
 
 </details>
 
@@ -238,29 +233,41 @@ Today publish still trusts client-edited paths under the broad prefix `src/conte
 
 | ID | Title | Status | Depends on | Primary refs |
 |----|-------|--------|------------|--------------|
-| `FLEX-P3-001` | Discrete registry candidates (offerings, email, reel, bio, casting template) | `planned` | Phase 1–2 residual | Product need |
+| `FLEX-P3-001` | Discrete registry candidates (reel, performer facts, bio, casting template, …) | `done` | Phase 1–2 residual | `src/data/site-settings.json`, `src/lib/site.ts` |
 
-Add allowlisted keys **only** when there is a clear Studio need, each with validation:
+Add allowlisted keys **only** when there is a clear Studio need, each with validation. Prefer the strong list first; medium only if publishers actually ask. Do **not** grow a general “edit any JSON” tool.
 
-| Candidate | Notes |
-|-----------|--------|
-| `lessonOfferings` | Only if titles/descriptions should be voice-editable; still not freeform page replace |
-| Site email / inquire subject | High impact; validate email format |
-| Reel URL | URL validation |
-| Featured show toggles | Could stay on `upsert_show` instead |
-| About “short bio” field | If About needs Studio later, expose one short string — not full markdown replace |
-| Casting | Prefer templated fields (`keyword`, `relatedShows`) with locked body sections, or remain PR-only |
+#### Strong (clear Studio need + safe to validate) — shipped
 
-Do **not** grow a general “edit any JSON” tool. Each discrete variable should be intentional.
+| Candidate | SoT / surface | Notes |
+|-----------|---------------|--------|
+| Reel URL | `site-settings.json` → `site.reelUrl` | `update_reel_url` |
+| Performer facts | `site-settings.json` → `site.performer` | `update_performer_facts` |
+| About short bio | `site-settings.json` → `site.shortBio` | `update_short_bio`; About body PR-only |
+| Casting template fields | casting `.md` frontmatter | `update_casting_fields` (existing only) |
+
+#### Medium (only if publishers ask)
+
+| Candidate | SoT / surface | Notes / caveat |
+|-----------|---------------|----------------|
+| `lessonOfferings` titles/descriptions | `site.lessonOfferings` | Fixed ids; voice-editable copy only — no new freeform page body |
+| Featured-show toggles | Show frontmatter / `upsert_show` | Prefer keeping on `upsert_show` unless toggles become a frequent standalone ask |
+| Instagram / `sameAs` URLs | `site.instagram` (+ SEO `sameAs`) | Rarely change; URL-safe if needed |
+| Materials download paths | `site.materials.*` | Usually ship with media upload; path allowlist only if Studio must retarget without a PR |
+| `knowsAbout` / teaches list | `site.knowsAbout` — lessons JSON-LD | Allowlisted strings only — easy for the model to invent junk |
+
+Out of scope for P3 (stay PR/ops): site email (`SITE_CONTACT_EMAIL` / Key Vault), inquire subject, `tagline` / `jobTitle` / `name` / `nav` / hero, chronological age/DOB, full About or casting markdown.
 
 <details>
 <summary><code>FLEX-P3-001</code> — Extend registry</summary>
 
 **Acceptance criteria**
 
-- [ ] Each new field has its own tool (or allowlisted key) + Zod validation
-- [ ] No return to full-page replace for About/casting without templates
-- [ ] Studio help updated in the same PR
+- [x] Each shipped field has its own tool (or allowlisted key) + Zod validation
+- [x] Strong candidates preferred; medium only with an explicit Studio need
+- [x] No return to full-page replace for About/casting without templates
+- [x] Studio help updated in the same PR (example prompts per use case, incl. performer facts)
+- [x] Performer facts remain outside markdown (`site-settings.json`) so page-body tools cannot overwrite them
 
 </details>
 
@@ -270,17 +277,31 @@ Do **not** grow a general “edit any JSON” tool. Each discrete variable shoul
 
 | ID | Title | Status | Depends on | Primary refs |
 |----|-------|--------|------------|--------------|
-| `FLEX-P4-001` | Structured Preview for discrete rate changes | `planned` | `FLEX-P2-003` | Studio UI |
+| `FLEX-P4-001` | Structured Preview for discrete rate changes | `done` | `FLEX-P2-003` | Studio UI + Quick edit rates |
 | `FLEX-P4-002` | Reject publish when tool / path pair mismatches | `planned` | `FLEX-P1-004` | `updateContent.js` / publish path |
 | `FLEX-P4-003` | Optional early Zod/frontmatter check UX for flexible markdown | `planned` | — | Already partial via `validateContentFile` |
+| `FLEX-P4-004` | Single-source site-settings bootstrap (no duplicated defaults) | `planned` | `FLEX-P3-001` | `api/src/lib/siteSettings.js`, `src/data/site-settings.json` |
 
 <details>
 <summary><code>FLEX-P4-001</code> / <code>FLEX-P4-002</code></summary>
 
 **Acceptance criteria**
 
-- [ ] Rate updates show old → new prices in Preview (not only raw markdown/JSON)
-- [ ] Server rejects e.g. rates tool writing a non-book path (and inverse)
+- [x] Rate updates show site-style rates block in Preview (not only raw markdown/JSON); Quick edit on compose; Preview confirmation is read-only site preview (reel embed, facts block, rates list)
+- [ ] Server rejects e.g. rates tool writing a non-book path (and inverse) — `FLEX-P4-002`
+
+</details>
+
+<details>
+<summary><code>FLEX-P4-004</code> — Deduplicate site-settings bootstrap</summary>
+
+**Context:** Staging compose reads GitHub `main`. Before this PR merged, `site-settings.json` was missing there, so `readSiteSettings` bootstraps from inline `DEFAULT_SITE_SETTINGS`. Live SoT remains the JSON on the branch once present; the constants are unused day-to-day but can **drift** from the file if someone edits only one copy.
+
+**Acceptance criteria**
+
+- [ ] Bootstrap seed is loaded from `src/data/site-settings.json` (or another single checked-in SoT), not a hand-copied object in `siteSettings.js`
+- [ ] Missing remote file still allows compose/preview; first publish still creates the GitHub file
+- [ ] Flex/unit test asserts seed parse + schema without a second hardcoded payload (or derives from the same JSON)
 
 </details>
 
@@ -304,12 +325,13 @@ Infra/Terraform: none expected for Phases 1–2 residual.
 
 | Risk / decision | Recommendation |
 |-----------------|----------------|
-| Publisher still needs occasional About tweaks | Accept PR-only for v1; add a single discrete bio field later if pain is real |
-| Casting SEO velocity | Keep runbook; do not re-enable full-page Gemini replace without templates |
+| Publisher still needs occasional About tweaks | Short bio via Studio; full About body remains PR-only |
+| Casting SEO velocity | Create via runbook; Studio field merge only |
 | Gemini invents a third rate tier | Allowlist ids (`FLEX-P2-004`); ignore/reject unknown ids |
 | Preview path tampering | Enforce path allowlist by content kind at publish (`FLEX-P1-004`) |
 | Dual formatting (`$60` vs `60.00`) | Prefer required `priceAmount`; format display string at the edge |
 | `lessons_copy` still overwrites philosophy body | Accept for now; lock to PR if quality/risk warrants |
+| Inline `DEFAULT_SITE_SETTINGS` vs JSON | Seed-only for missing GitHub file; dedupe via `FLEX-P4-004` |
 
 ---
 
@@ -325,6 +347,7 @@ Infra/Terraform: none expected for Phases 1–2 residual.
 
 ## Suggested implementation order
 
-1. Finish **Phase 1 residual:** `FLEX-P1-002` → `FLEX-P1-003` → `FLEX-P1-004` (lock About/casting + harden allowlist).
-2. Harden rates (`FLEX-P2-004`, `FLEX-P2-005`, smoke `FLEX-P2-007`).
-3. Treat **Phases 3–4** as follow-ups driven by real publisher needs.
+1. ~~Finish Phase 1 residual~~ `done`
+2. ~~Harden rates + catalog + flex tests~~ `done`
+3. ~~Strong Phase 3 + structured Preview (`FLEX-P4-001`)~~ `done`
+4. Remaining: medium P3 on demand; `FLEX-P4-002` / `FLEX-P4-003` polish; `FLEX-P4-004` single-source settings bootstrap.

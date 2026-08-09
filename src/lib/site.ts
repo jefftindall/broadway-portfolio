@@ -1,4 +1,5 @@
 import { ageInYears } from './age';
+import siteSettings from '../data/site-settings.json';
 
 function requiredSiteEnv(name: 'SITE_CONTACT_EMAIL', fromMeta: string | undefined): string {
   const value = String(process.env[name] ?? fromMeta ?? '').trim();
@@ -28,7 +29,10 @@ export const site = {
   url: 'https://elysetindall.com',
   email: requiredSiteEnv('SITE_CONTACT_EMAIL', import.meta.env.SITE_CONTACT_EMAIL),
   instagram: 'https://www.instagram.com/elyse.tindall/',
-  reelUrl: 'https://youtu.be/41jdPTkN_Sw',
+  /** Studio-writable via site-settings.json */
+  reelUrl: siteSettings.reelUrl,
+  /** About lead paragraph — Studio-writable; SEO description stays locked below */
+  shortBio: siteSettings.shortBio,
   heroImage: '/images/photos/elyse-portrait.jpg',
   description:
     'Elyse Tindall is a musical theatre actress and vocal coach from Atlanta, now based in New York City — stage credits, private voice lessons rooted in vocal pedagogy and CCM, and casting materials.',
@@ -37,16 +41,7 @@ export const site = {
   get age() {
     return ageInYears();
   },
-  performer: {
-    playingAge: '15–28',
-    vocalType: 'Mezzo-Soprano with an extended range',
-    vocalRange: 'D3-G6 (Belt: G5)',
-    ethnicity:
-      'White; olive skin presents as Middle Eastern, Hispanic, Latina, Latin, Italian, Greek, Mediterranean, ethnically ambiguous',
-    height: '5\'3" (160 cm)',
-    union: 'Non-union',
-    availability: 'Available',
-  } as PerformerSpec,
+  performer: siteSettings.performer as PerformerSpec,
   materials: {
     resumePdf: '/downloads/elyse-tindall-resume.pdf',
     headshotTheatrical: '/downloads/elyse-tindall-headshot-theatrical.jpg',

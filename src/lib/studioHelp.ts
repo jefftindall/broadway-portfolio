@@ -53,13 +53,42 @@ export const studioCapabilities: StudioCapability[] = [
     ],
   },
   {
-    tool: 'update_about',
-    title: 'About page',
-    summary: 'Rewrite your biography and performer background on the About page.',
+    tool: 'update_short_bio',
+    title: 'Short bio (About)',
+    summary:
+      'Update the short lead paragraph at the top of About. Edit in the Studio hub (or by voice), then confirm in read-only Preview before publishing. Longer About sections stay PR-only.',
     livePath: '/about',
     examplePrompts: [
-      'Refresh my About page to emphasize Atlanta roots and New York musical theatre work.',
-      'Update my bio to mention private voice lessons and CCM coaching.',
+      'Update my short bio on About to: Elyse Tindall is a musical theatre actress and vocal coach from Atlanta, now based in New York City.',
+      'Change my About short bio to emphasize Atlanta roots and New York musical theatre work.',
+    ],
+  },
+  {
+    tool: 'update_performer_facts',
+    title: 'Performer facts',
+    summary:
+      'Update casting facts shown on About and Materials (availability, vocal type/range, union, playing age, height, ethnicity). Edit in the Studio hub (or by voice), then confirm in a site-style Performer facts Preview before publishing.',
+    livePath: '/materials',
+    examplePrompts: [
+      'Mark me unavailable until September.',
+      'Set availability to Available.',
+      'Update my vocal range to D3-G6 (Belt: G5).',
+      'Change my vocal type to Mezzo-Soprano with an extended range.',
+      'Set my union status to Non-union.',
+      'Update my playing age to 15–28.',
+      'Set my height to 5\'3" (160 cm).',
+      'Update my ethnicity line to White; olive skin presents as Mediterranean and ethnically ambiguous.',
+    ],
+  },
+  {
+    tool: 'update_reel_url',
+    title: 'Reel link',
+    summary:
+      'Change the casting reel video link used on Materials, Shows, and home. Edit in the Studio hub (or by voice), then confirm with an embedded video Preview before publishing.',
+    livePath: '/materials',
+    examplePrompts: [
+      'Update my reel to this YouTube link: https://youtu.be/41jdPTkN_Sw',
+      'Change the reel on Materials to my newest Stage Kiss video.',
     ],
   },
   {
@@ -80,16 +109,18 @@ export const studioCapabilities: StudioCapability[] = [
     livePath: '/lessons',
     examplePrompts: [
       'Change the Lessons page search title to Private Voice Lessons in NYC.',
+      'Update the Lessons page meta description for vocal coaching in New York.',
     ],
   },
   {
     tool: 'update_lesson_rates',
     title: 'Lesson rates',
-    summary: 'Update session prices on the book-a-lesson page. Provide the full rate list.',
+    summary:
+      'Update session prices on the book-a-lesson page. From the Studio hub, open Lesson rates and enter dollar amounts — or say a prompt under Speak or type. Preview shows the rates block as it will appear on the book page.',
     livePath: '/lessons/book',
     examplePrompts: [
-      'Set my lesson rates to $60 for 30 minutes and $100 for 60 minutes.',
       'Raise my 60-minute rate to $120 and keep the 30-minute rate at $60.',
+      'Set 30 minutes to $65 and 60 minutes to $110.',
     ],
   },
   {
@@ -110,17 +141,18 @@ export const studioCapabilities: StudioCapability[] = [
     livePath: '/lessons/book',
     examplePrompts: [
       'Update the book page meta description for NYC private voice lessons.',
+      'Change the book-a-lesson page title to Book a Voice Lesson in NYC.',
     ],
   },
   {
-    tool: 'create_or_update_casting_page',
-    title: 'Casting / “for” pages',
+    tool: 'update_casting_fields',
+    title: 'Casting page fields',
     summary:
-      'Create or refresh an SEO casting landing page under /for/… with helpful copy (not thin keyword spam).',
+      'Update title, description, CTA, keyword, or related shows/skills on an existing /for/… page. New casting pages are added by hand (see the casting runbook) — Studio does not create them.',
     livePath: '/for',
     examplePrompts: [
-      'Create a casting page for musical theatre actress in New York.',
-      'Update my Broadway actress casting page with current credits and a clear CTA.',
+      'Change the CTA on my musical theatre actress page to Request materials.',
+      'Add Anastasia to related shows on my musical theatre actress casting page.',
     ],
   },
 ];
@@ -131,5 +163,6 @@ export const studioVoiceNotes = {
     'Press and hold Hold to speak while you talk. Lift your finger when you finish. Your words appear in the Message box — same as typing.',
   replacesNotAppends:
     'Each hold-to-speak pass replaces the Message box. If you need to edit, type after speaking, or speak again with the full request.',
-  fallback: 'If voice is unavailable, type your request — Preview update works the same either way.',
+  fallback:
+    'If voice is unavailable, type your request — or open Lesson rates / Performer facts from the Studio hub. Preview works the same either way.',
 };
