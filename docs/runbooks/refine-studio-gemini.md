@@ -39,7 +39,7 @@ If announcements become show credits (or the reverse), tighten the preference ru
 
 - Prefer `create_news_post` for press, appearances, and one-off announcements.
 - Prefer `upsert_show` only for booking/role/venue credits.
-- Prefer `add_gallery_photo` when a photo is attached and she wants the gallery.
+- Prefer `add_gallery_photo` when a photo is attached and she wants the gallery (or use the Studio hub **Gallery photo** form — same tool, no Gemini draft).
 
 Also update the matching tool `description` so it restates when to use that tool.
 
@@ -70,7 +70,7 @@ Publish allowlist is kind-scoped: shows/news/gallery/lessons/book/casting + exac
 
 **Current-values rule:** Discrete updates (rates, reel, short bio, press quote, performer facts) must ground tool args in live catalog lines (`Lesson rates (live)`, `Reel URL (live)`, `Short bio (live)`, `Press quote (live)`, `Performer facts (live)`). Never blank a field or invent a parallel value when the catalog already shows the current one. Studio hub editors prefill those live values; discrete Preview is a **read-only site-style confirmation** (reel embed, rates block, performer facts block, press quote — edit on the prior step, then publish).
 
-Studio Preview shows labeled fields for discrete tools (dollar inputs for rates). Publishers pick a hub destination (Speak or type, Rates, Facts, Reel, Short bio, Press quote) instead of scrolling one long form.
+Studio Preview shows labeled fields for discrete tools (dollar inputs for rates). Publishers pick a hub destination (Speak or type, Gallery photo, Rates, Facts, Reel, Short bio, Press quote) instead of scrolling one long form. **Gallery photo** is a structured hub flow for Tier A `add_gallery_photo` (required image + tags/focus/order) with a tile Preview; Speak or type + attach still works for the same tool. Selecting a photo whose SHA-256 matches an existing file under `public/images/gallery/` or `public/images/photos/` shows a warn-only duplicate banner (and a confirm before Preview).
 
 ## Brand facts for teaching copy
 

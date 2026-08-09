@@ -21,7 +21,7 @@ When you change Studio capabilities, update the help catalog in the same change:
 | Change voice UX (hold-to-speak, mic copy, browser support) | Voice section in `src/pages/studio/help.astro` + `studioVoiceNotes` in `studioHelp.ts` |
 | Change compose / preview / publish flow | Getting started + Preview & publish sections on the help page |
 | Change sign-in vs publish gates | Access section on the help page + publisher-gate copy on `studio.astro` |
-| Replace help screenshots | `public/images/studio-help/*.jpg` — reference device is **iPhone 17 · Safari** |
+| Replace help screenshots | `public/images/studio-help/*.jpg` — reference device is **iPhone 17 · Safari**. Current set: hub, gallery, rates, hold-to-speak, mic permission, preview, done. |
 
 Do not invent Studio features in help that Gemini cannot perform. Example prompts must match real tools and brand rules (voice lessons only — no acting-lesson marketing).
 

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { isAllowedContentPath, normalizeLessonRates } from './gemini.js';
+import { buildContentChange, isAllowedContentPath, normalizeLessonRates } from './gemini.js';
 import { validateContentFile, StudioContentValidationError } from './contentValidate.js';
 import { DEFAULT_SITE_SETTINGS, SITE_SETTINGS_PATH } from './siteSettings.js';
 import { siteSettingsSchema } from './contentSchemas.js';
@@ -135,4 +135,39 @@ rates:
 Body
 `;
   assert.doesNotThrow(() => validateContentFile('src/content/pages/lessons-book.md', good));
+});
+
+test('buildContentChange add_gallery_photo writes gallery markdown + preview', async () => {
+  const change = await buildContentChange(
+    'add_gallery_photo',
+    {
+      slug: 'nyc-winter-headshot',
+      image: '/images/photos/pending-headshot.jpg',
+      tags: ['headshot', 'portrait'],
+      order: 52,
+      focus: '50% 28%',
+    },
+    undefined,
+  );
+  assert.equal(change.tool, 'add_gallery_photo');
+  assert.equal(change.path, 'src/content/gallery/nyc-winter-headshot.md');
+  assert.equal(change.livePath, '/gallery');
+  assert.equal(change.preview?.kind, 'gallery');
+  assert.equal(change.preview?.focus, '50% 28%');
+  assert.deepEqual(change.preview?.tags, ['headshot', 'portrait']);
+  assert.doesNotThrow(() => validateContentFile(change.path, change.content));
+  assert.match(change.content, /image: "\/images\/photos\/pending-headshot\.jpg"/);
+  assert.match(change.content, /focus: "50% 28%"/);
+  assert.doesNotMatch(change.content, /caption:/);
+});
+
+test('buildContentChange add_gallery_photo uses attached photoPath when image omitted', async () => {
+  const change = await buildContentChange(
+    'add_gallery_photo',
+    { tags: ['performance'] },
+    '/images/photos/pending-show.jpg',
+  );
+  assert.equal(change.path, 'src/content/gallery/pending-show.md');
+  assert.equal(change.preview?.image, '/images/photos/pending-show.jpg');
+  assert.doesNotThrow(() => validateContentFile(change.path, change.content));
 });

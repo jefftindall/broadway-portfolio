@@ -91,14 +91,18 @@ app.http('updateContent', {
         trackEvent('StudioComposeRequested', {
           userId: principal?.userId || 'local',
           tool,
+          hasPhoto,
           correlationId,
         });
-        const change = await buildContentChange(tool, args, undefined);
+        // Optional attached photo → provisional path (same as draft); binary commits on publish.
+        const photoPath = hasPhoto ? provisionalPhotoPath(body.photo?.name) : undefined;
+        const change = await buildContentChange(tool, args, photoPath);
         return {
           status: 200,
           jsonBody: {
             reply: change.summary,
             changes: [change],
+            provisionalPhotoPath: photoPath || null,
             correlationId,
           },
         };

@@ -1,7 +1,8 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getEntry } from 'astro:content';
+import { getCollection, getEntry } from 'astro:content';
 import { site } from '../lib/site';
+import { buildPublicImageHashIndex } from '../lib/imageContentHashes';
 
 const book = await getEntry('pages', 'lessons-book');
 const bookRates = book?.data.rates ?? [];
@@ -19,6 +20,13 @@ const shortBio = site.shortBio;
 const pressQuote = site.pressQuote;
 const siteLocation = site.location;
 const siteAge = String(site.age);
+
+const galleryEntries = await getCollection('gallery');
+const galleryTagOptions = [...new Set(galleryEntries.flatMap((e) => e.data.tags || []))].sort();
+const nextGalleryOrder =
+  Math.max(0, ...galleryEntries.map((e) => (typeof e.data.order === 'number' ? e.data.order : 0))) +
+  1;
+const imageHashIndex = buildPublicImageHashIndex();
 ---
 
 <BaseLayout
@@ -126,6 +134,7 @@ const siteAge = String(site.age);
       data-site-age={siteAge}
       data-book-format={bookFormat}
       data-book-scheduling={bookScheduling}
+      data-image-hashes={JSON.stringify(imageHashIndex)}
     >
       <div id="hub-step" class="space-y-4">
         <p class="text-sm text-muted">What do you want to update?</p>
@@ -137,10 +146,18 @@ const siteAge = String(site.age);
           >
             <span class="block font-display text-2xl text-spotlight">Speak or type an update</span>
             <span class="mt-1 block text-sm text-muted"
-              >Credits, news, gallery, lessons copy — say it or type it.</span
+              >Credits, news, lessons copy — say it or type it.</span
             >
           </button>
           <div class="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              data-hub-task="gallery"
+              class="hub-tile rounded-sm border border-line bg-panel/40 px-3 py-4 text-left transition hover:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            >
+              <span class="block text-sm font-semibold text-spotlight">Gallery photo</span>
+              <span class="mt-1 block text-xs text-muted">Add an image</span>
+            </button>
             <button
               type="button"
               data-hub-task="rates"
@@ -265,6 +282,11 @@ const siteAge = String(site.age);
             class="max-h-40 rounded-sm border border-line object-cover"
           />
         </div>
+        <p
+          id="photo-dup-warn"
+          class="hidden rounded-sm border border-gold/40 bg-gold/10 px-3 py-2 text-sm text-spotlight"
+          role="status"
+        ></p>
 
         <button
           id="preview-btn"
@@ -274,6 +296,123 @@ const siteAge = String(site.age);
         >
           Preview update
         </button>
+      </div>
+
+      <div id="compose-gallery" class="hidden space-y-4">
+        <p class="text-sm text-muted">
+          Choose a photo and tags. Captions stay empty — the public gallery does not show them.
+        </p>
+        <label class="block text-sm text-muted">
+          Photo
+          <input
+            id="gallery-photo"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            class="mt-2 block w-full text-sm text-muted file:mr-3 file:rounded-sm file:border-0 file:bg-stage file:px-3 file:py-2 file:text-spotlight"
+          />
+        </label>
+        <div id="gallery-photo-preview-wrap" class="hidden">
+          <img
+            id="gallery-photo-preview"
+            alt="Selected gallery photo preview"
+            class="max-h-48 w-full rounded-sm border border-line object-cover"
+            style="object-position: center"
+          />
+        </div>
+        <p
+          id="gallery-dup-warn"
+          class="hidden rounded-sm border border-gold/40 bg-gold/10 px-3 py-2 text-sm text-spotlight"
+          role="status"
+        ></p>
+        <fieldset>
+          <legend class="text-sm text-muted">Tags</legend>
+          <div id="gallery-tag-chips" class="mt-2 flex flex-wrap gap-2">
+            {
+              galleryTagOptions.map((tag) => (
+                <label class="inline-flex cursor-pointer items-center gap-2 rounded-sm border border-line px-3 py-2 text-sm text-spotlight has-[:checked]:border-gold has-[:checked]:bg-gold/15">
+                  <input
+                    type="checkbox"
+                    name="gallery-tag"
+                    value={tag}
+                    class="accent-gold"
+                  />
+                  <span class="capitalize">{tag}</span>
+                </label>
+              ))
+            }
+          </div>
+          <label class="mt-3 block text-sm text-muted">
+            Extra tags (comma-separated)
+            <input
+              id="gallery-tags-extra"
+              type="text"
+              placeholder="e.g. rehearsal, portrait"
+              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+            />
+          </label>
+        </fieldset>
+        <label class="block text-sm text-muted">
+          Crop focus
+          <select
+            id="gallery-focus"
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          >
+            <option value="center">Center</option>
+            <option value="center top">Center top (faces higher)</option>
+            <option value="50% 35%">Mid-upper (50% 35%)</option>
+            <option value="50% 55%">Lower (50% 55%)</option>
+            <option value="center bottom">Center bottom</option>
+            <option value="custom">Custom…</option>
+          </select>
+        </label>
+        <label id="gallery-focus-custom-wrap" class="hidden block text-sm text-muted">
+          Custom object-position
+          <input
+            id="gallery-focus-custom"
+            type="text"
+            placeholder='e.g. 50% 28%'
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <label class="block text-sm text-muted">
+            Sort order
+            <input
+              id="gallery-order"
+              type="number"
+              min="1"
+              step="1"
+              value={String(nextGalleryOrder)}
+              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+            />
+          </label>
+          <label class="block text-sm text-muted">
+            Filename slug (optional)
+            <input
+              id="gallery-slug"
+              type="text"
+              placeholder="auto from photo name"
+              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+            />
+          </label>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <button
+            id="gallery-preview-btn"
+            type="button"
+            data-label="Preview gallery photo"
+            class="w-full rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 sm:w-auto"
+          >
+            Preview gallery photo
+          </button>
+          <button
+            id="gallery-reset-btn"
+            type="button"
+            class="rounded-sm border border-line px-4 py-3 text-sm text-spotlight hover:border-gold disabled:cursor-wait disabled:opacity-60"
+          >
+            Clear form
+          </button>
+        </div>
       </div>
 
       <div id="compose-rates" class="hidden space-y-4">
@@ -591,6 +730,14 @@ const siteAge = String(site.age);
           cta?: string;
           relatedShows?: string[];
           relatedSkills?: string[];
+        }
+      | {
+          kind: 'gallery';
+          slug: string;
+          image: string;
+          tags: string[];
+          focus?: string;
+          order?: number;
         };
     type ContentChange = {
       tool?: string;
@@ -609,6 +756,7 @@ const siteAge = String(site.age);
     };
 
     const DISCRETE_TOOLS = new Set([
+      'add_gallery_photo',
       'update_lesson_rates',
       'update_reel_url',
       'update_performer_facts',
@@ -625,6 +773,7 @@ const siteAge = String(site.age);
     const photoEl = document.getElementById('photo') as HTMLInputElement;
     const photoPreviewWrap = document.getElementById('photo-preview-wrap')!;
     const photoPreview = document.getElementById('photo-preview') as HTMLImageElement;
+    const photoDupWarn = document.getElementById('photo-dup-warn')!;
     const previewBtn = document.getElementById('preview-btn') as HTMLButtonElement;
     const publishBtn = document.getElementById('publish-btn') as HTMLButtonElement;
     const backBtn = document.getElementById('back-btn') as HTMLButtonElement;
@@ -643,6 +792,20 @@ const siteAge = String(site.age);
     const bioResetBtn = document.getElementById('bio-reset-btn') as HTMLButtonElement;
     const quotePreviewBtn = document.getElementById('quote-preview-btn') as HTMLButtonElement;
     const quoteResetBtn = document.getElementById('quote-reset-btn') as HTMLButtonElement;
+    const galleryPreviewBtn = document.getElementById('gallery-preview-btn') as HTMLButtonElement;
+    const galleryResetBtn = document.getElementById('gallery-reset-btn') as HTMLButtonElement;
+    const galleryPhotoEl = document.getElementById('gallery-photo') as HTMLInputElement;
+    const galleryPhotoPreviewWrap = document.getElementById('gallery-photo-preview-wrap')!;
+    const galleryPhotoPreview = document.getElementById(
+      'gallery-photo-preview',
+    ) as HTMLImageElement;
+    const galleryDupWarn = document.getElementById('gallery-dup-warn')!;
+    const galleryTagsExtra = document.getElementById('gallery-tags-extra') as HTMLInputElement;
+    const galleryFocusSelect = document.getElementById('gallery-focus') as HTMLSelectElement;
+    const galleryFocusCustomWrap = document.getElementById('gallery-focus-custom-wrap')!;
+    const galleryFocusCustom = document.getElementById('gallery-focus-custom') as HTMLInputElement;
+    const galleryOrderInput = document.getElementById('gallery-order') as HTMLInputElement;
+    const gallerySlugInput = document.getElementById('gallery-slug') as HTMLInputElement;
     const factAvailability = document.getElementById('fact-availability') as HTMLInputElement;
     const factVocalType = document.getElementById('fact-vocalType') as HTMLInputElement;
     const factVocalRange = document.getElementById('fact-vocalRange') as HTMLInputElement;
@@ -661,6 +824,7 @@ const siteAge = String(site.age);
     const taskChrome = document.getElementById('task-chrome')!;
     const taskTitle = document.getElementById('task-title')!;
     const composeStep = document.getElementById('compose-step')!;
+    const composeGallery = document.getElementById('compose-gallery')!;
     const composeRates = document.getElementById('compose-rates')!;
     const composeFacts = document.getElementById('compose-facts')!;
     const composeReel = document.getElementById('compose-reel')!;
@@ -687,8 +851,10 @@ const siteAge = String(site.age);
     const authUserName = document.getElementById('auth-user-name')!;
     const studioApp = document.getElementById('studio-app')!;
 
-    type HubTask = 'ask' | 'rates' | 'facts' | 'reel' | 'bio' | 'quote';
+    type HubTask = 'ask' | 'gallery' | 'rates' | 'facts' | 'reel' | 'bio' | 'quote';
     let activeTask: HubTask = 'ask';
+
+    const defaultGalleryOrder = galleryOrderInput.value;
 
     type LiveDiscreteDefaults = {
       rate30: string;
@@ -743,6 +909,10 @@ const siteAge = String(site.age);
 
     function applyLiveDiscreteDefaults(task: HubTask) {
       const live = liveDiscreteDefaults;
+      if (task === 'gallery') {
+        resetGalleryForm();
+        return;
+      }
       if (task === 'rates') {
         quickRate30.value = live.rate30;
         quickRate60.value = live.rate60;
@@ -770,6 +940,70 @@ const siteAge = String(site.age);
         pressQuoteInput.value = live.pressQuote;
         pressAttributionInput.value = live.pressAttribution;
       }
+    }
+
+    function resetGalleryForm() {
+      galleryPhotoEl.value = '';
+      galleryPhotoPreviewWrap.classList.add('hidden');
+      galleryPhotoPreview.removeAttribute('src');
+      galleryPhotoPreview.style.objectPosition = 'center';
+      clearDuplicateWarning(galleryDupWarn);
+      galleryPhotoDuplicatePath = null;
+      galleryTagsExtra.value = '';
+      galleryFocusSelect.value = 'center';
+      galleryFocusCustom.value = '';
+      galleryFocusCustomWrap.classList.add('hidden');
+      galleryOrderInput.value = defaultGalleryOrder;
+      gallerySlugInput.value = '';
+      document.querySelectorAll<HTMLInputElement>('input[name="gallery-tag"]').forEach((el) => {
+        el.checked = false;
+      });
+    }
+
+    function parseImageHashIndex(): Record<string, string> {
+      try {
+        const raw = studioApp.dataset.imageHashes || '{}';
+        const parsed = JSON.parse(raw) as unknown;
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+        return parsed as Record<string, string>;
+      } catch {
+        return {};
+      }
+    }
+
+    const imageHashes = parseImageHashIndex();
+
+    async function sha256Hex(buffer: ArrayBuffer): Promise<string> {
+      const digest = await crypto.subtle.digest('SHA-256', buffer);
+      return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function clearDuplicateWarning(el: HTMLElement) {
+      el.classList.add('hidden');
+      el.textContent = '';
+    }
+
+    function showDuplicateWarning(el: HTMLElement, existingPath: string) {
+      el.textContent = `This exact photo is already on the site (${existingPath}). Publishing again will create a duplicate. Choose a different file, or continue if you mean to.`;
+      el.classList.remove('hidden');
+    }
+
+    async function checkPhotoDuplicate(file: File): Promise<string | null> {
+      if (!Object.keys(imageHashes).length) return null;
+      try {
+        const hash = await sha256Hex(await file.arrayBuffer());
+        const hit = imageHashes[hash];
+        return typeof hit === 'string' && hit ? hit : null;
+      } catch {
+        return null;
+      }
+    }
+
+    function confirmIfDuplicate(existingPath: string | null): boolean {
+      if (!existingPath) return true;
+      return window.confirm(
+        `This exact photo is already on the site (${existingPath}). Publish a duplicate anyway?`,
+      );
     }
 
     function resetDiscreteFormToLive(task: HubTask) {
@@ -818,6 +1052,7 @@ const siteAge = String(site.age);
 
     const TASK_TITLES: Record<HubTask, string> = {
       ask: 'Speak or type',
+      gallery: 'Gallery photo',
       rates: 'Lesson rates',
       facts: 'Performer facts',
       reel: 'Reel link',
@@ -828,6 +1063,9 @@ const siteAge = String(site.age);
     let draftPhoto: PhotoPayload | undefined;
     let provisionalPhotoPath: string | null = null;
     let draftChanges: ContentChange[] = [];
+    /** Exact content-hash match against live gallery/photos (warn-only). */
+    let askPhotoDuplicatePath: string | null = null;
+    let galleryPhotoDuplicatePath: string | null = null;
     let pollTimer: number | null = null;
     let pollStartedAt = 0;
     let publishClickedAt = 0;
@@ -879,19 +1117,23 @@ const siteAge = String(site.age);
 
     function setComposeBusy(busy: boolean) {
       const primary =
-        activeTask === 'rates'
-          ? quickRatesBtn
-          : activeTask === 'facts'
-            ? factsPreviewBtn
-            : activeTask === 'reel'
-              ? reelPreviewBtn
-              : activeTask === 'bio'
-                ? bioPreviewBtn
-                : activeTask === 'quote'
-                  ? quotePreviewBtn
-                  : previewBtn;
+        activeTask === 'gallery'
+          ? galleryPreviewBtn
+          : activeTask === 'rates'
+            ? quickRatesBtn
+            : activeTask === 'facts'
+              ? factsPreviewBtn
+              : activeTask === 'reel'
+                ? reelPreviewBtn
+                : activeTask === 'bio'
+                  ? bioPreviewBtn
+                  : activeTask === 'quote'
+                    ? quotePreviewBtn
+                    : previewBtn;
       setBusy(busy, primary, 'Preparing preview…');
       previewBtn.disabled = busy;
+      galleryPreviewBtn.disabled = busy;
+      galleryResetBtn.disabled = busy;
       quickRatesBtn.disabled = busy;
       ratesResetBtn.disabled = busy;
       factsPreviewBtn.disabled = busy;
@@ -904,6 +1146,15 @@ const siteAge = String(site.age);
       quoteResetBtn.disabled = busy;
       messageEl.disabled = busy;
       photoEl.disabled = busy;
+      galleryPhotoEl.disabled = busy;
+      galleryTagsExtra.disabled = busy;
+      galleryFocusSelect.disabled = busy;
+      galleryFocusCustom.disabled = busy;
+      galleryOrderInput.disabled = busy;
+      gallerySlugInput.disabled = busy;
+      document.querySelectorAll<HTMLInputElement>('input[name="gallery-tag"]').forEach((el) => {
+        el.disabled = busy;
+      });
       micBtn.disabled = busy || !micSupported;
       quickRate30.disabled = busy;
       quickRate60.disabled = busy;
@@ -1001,6 +1252,7 @@ const siteAge = String(site.age);
 
     function hideAllTaskPanels() {
       composeStep.classList.add('hidden');
+      composeGallery.classList.add('hidden');
       composeRates.classList.add('hidden');
       composeFacts.classList.add('hidden');
       composeReel.classList.add('hidden');
@@ -1037,6 +1289,8 @@ const siteAge = String(site.age);
           messageEl.placeholder =
             'e.g. "I just booked Lily in Anastasia at the Strand, July 2025"';
         }
+      } else if (task === 'gallery') {
+        composeGallery.classList.remove('hidden');
       } else if (task === 'rates') {
         composeRates.classList.remove('hidden');
       } else if (task === 'facts') {
@@ -1431,6 +1685,10 @@ const siteAge = String(site.age);
     function discreteWillPublishCopy(change: ContentChange): string {
       const path = change.livePath || '';
       switch (change.tool) {
+        case 'add_gallery_photo':
+          return path
+            ? `If you publish, this photo will appear on ${path}:`
+            : 'If you publish, this photo will appear in the gallery:';
         case 'update_lesson_rates':
           return path
             ? `If you publish, the rates block on ${path} will look like this:`
@@ -1624,10 +1882,74 @@ const siteAge = String(site.age);
       wrap.appendChild(figure);
     }
 
+    function photoPayloadToObjectUrl(photo: PhotoPayload): string {
+      const binary = atob(photo.dataBase64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)!;
+      return URL.createObjectURL(new Blob([bytes], { type: photo.contentType || 'image/jpeg' }));
+    }
+
+    function renderGallerySitePreview(
+      wrap: HTMLElement,
+      preview: {
+        image: string;
+        tags: string[];
+        focus?: string;
+        order?: number;
+        slug?: string;
+      },
+    ) {
+      const focus = preview.focus || 'center';
+      const src =
+        draftPhoto && (preview.image.startsWith('/images/photos/pending-') || !preview.image)
+          ? photoPayloadToObjectUrl(draftPhoto)
+          : preview.image;
+
+      const tile = document.createElement('figure');
+      tile.className = 'overflow-hidden rounded-sm border border-line';
+      const frame = document.createElement('div');
+      frame.className = 'relative aspect-[3/4] overflow-hidden bg-panel';
+      const img = document.createElement('img');
+      img.src = src;
+      img.alt = preview.slug ? `Gallery preview (${preview.slug})` : 'Gallery photo preview';
+      img.className = 'h-full w-full object-cover';
+      img.style.objectPosition = focus;
+      img.loading = 'lazy';
+      frame.appendChild(img);
+      tile.appendChild(frame);
+      wrap.appendChild(tile);
+
+      const meta = document.createElement('div');
+      meta.className = 'mt-3 space-y-2 text-sm text-muted';
+      if (preview.tags?.length) {
+        const tagsLine = document.createElement('p');
+        tagsLine.textContent = `Tags: ${preview.tags.join(', ')}`;
+        meta.appendChild(tagsLine);
+      }
+      const focusLine = document.createElement('p');
+      focusLine.textContent = `Focus: ${focus}`;
+      meta.appendChild(focusLine);
+      if (preview.order != null) {
+        const orderLine = document.createElement('p');
+        orderLine.textContent = `Sort order: ${preview.order}`;
+        meta.appendChild(orderLine);
+      }
+      wrap.appendChild(meta);
+    }
+
     function renderDiscretePreview(wrap: HTMLElement, change: ContentChange) {
       const preview = change.preview;
       const tool = change.tool || '';
       const ro = { readOnly: true as const };
+
+      if (tool === 'add_gallery_photo' || preview?.kind === 'gallery') {
+        const gallery =
+          preview && preview.kind === 'gallery'
+            ? preview
+            : { image: '', tags: [] as string[], focus: 'center' };
+        renderGallerySitePreview(wrap, gallery);
+        return;
+      }
 
       if (tool === 'update_lesson_rates' || preview?.kind === 'rates') {
         const rates =
@@ -1754,11 +2076,15 @@ const siteAge = String(site.age);
       });
     }
 
-    async function composeDiscrete(tool: string, args: Record<string, unknown>): Promise<ContentChange[]> {
+    async function composeDiscrete(
+      tool: string,
+      args: Record<string, unknown>,
+      photo?: PhotoPayload,
+    ): Promise<{ changes: ContentChange[]; provisionalPhotoPath: string | null }> {
       const res = await fetch('/api/updateContent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: 'compose', tool, args }),
+        body: JSON.stringify({ mode: 'compose', tool, args, photo }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -1768,15 +2094,19 @@ const siteAge = String(site.age);
       if (!changes.length) {
         throw new Error('No website update was prepared.');
       }
-      return changes.map((c) => ({
-        tool: c.tool,
-        path: c.path,
-        content: c.content,
-        commitMessage: c.commitMessage,
-        summary: c.summary,
-        livePath: c.livePath,
-        preview: c.preview,
-      }));
+      return {
+        changes: changes.map((c) => ({
+          tool: c.tool,
+          path: c.path,
+          content: c.content,
+          commitMessage: c.commitMessage,
+          summary: c.summary,
+          livePath: c.livePath,
+          preview: c.preview,
+        })),
+        provisionalPhotoPath:
+          typeof data.provisionalPhotoPath === 'string' ? data.provisionalPhotoPath : null,
+      };
     }
 
     async function readEditedChanges(): Promise<ContentChange[]> {
@@ -1856,8 +2186,13 @@ const siteAge = String(site.age);
       draftPhoto = undefined;
       provisionalPhotoPath = null;
       draftChanges = [];
+      askPhotoDuplicatePath = null;
+      galleryPhotoDuplicatePath = null;
       photoPreviewWrap.classList.add('hidden');
       photoPreview.removeAttribute('src');
+      clearDuplicateWarning(photoDupWarn);
+      clearDuplicateWarning(galleryDupWarn);
+      resetGalleryForm();
       changesEditor.replaceChildren();
       previewReply.textContent = '';
       doneReply.textContent = '';
@@ -1866,8 +2201,38 @@ const siteAge = String(site.age);
       pageLinks.replaceChildren();
     }
 
+    function readGalleryFocus(): string {
+      if (galleryFocusSelect.value === 'custom') {
+        return galleryFocusCustom.value.trim() || 'center';
+      }
+      return galleryFocusSelect.value || 'center';
+    }
+
+    function readGalleryTags(): string[] {
+      const fromChips = Array.from(
+        document.querySelectorAll<HTMLInputElement>('input[name="gallery-tag"]:checked'),
+      ).map((el) => el.value.trim());
+      const fromExtra = galleryTagsExtra.value
+        .split(',')
+        .map((t) => t.trim().toLowerCase().replace(/\s+/g, '-'))
+        .filter(Boolean);
+      return [...new Set([...fromChips, ...fromExtra])];
+    }
+
+    function syncGalleryFocusPreview() {
+      const focus = readGalleryFocus();
+      galleryPhotoPreview.style.objectPosition = focus;
+      if (galleryFocusSelect.value === 'custom') {
+        galleryFocusCustomWrap.classList.remove('hidden');
+      } else {
+        galleryFocusCustomWrap.classList.add('hidden');
+      }
+    }
+
     photoEl.addEventListener('change', () => {
       const file = photoEl.files?.[0];
+      askPhotoDuplicatePath = null;
+      clearDuplicateWarning(photoDupWarn);
       if (!file) {
         photoPreviewWrap.classList.add('hidden');
         photoPreview.removeAttribute('src');
@@ -1876,19 +2241,63 @@ const siteAge = String(site.age);
       const url = URL.createObjectURL(file);
       photoPreview.src = url;
       photoPreviewWrap.classList.remove('hidden');
+      void checkPhotoDuplicate(file).then((hit) => {
+        if (photoEl.files?.[0] !== file) return;
+        askPhotoDuplicatePath = hit;
+        if (hit) {
+          showDuplicateWarning(photoDupWarn, hit);
+          setStatus(`Duplicate photo warning — already on the site as ${hit}.`);
+        }
+      });
+    });
+
+    galleryPhotoEl.addEventListener('change', () => {
+      const file = galleryPhotoEl.files?.[0];
+      galleryPhotoDuplicatePath = null;
+      clearDuplicateWarning(galleryDupWarn);
+      if (!file) {
+        galleryPhotoPreviewWrap.classList.add('hidden');
+        galleryPhotoPreview.removeAttribute('src');
+        return;
+      }
+      const url = URL.createObjectURL(file);
+      galleryPhotoPreview.src = url;
+      galleryPhotoPreviewWrap.classList.remove('hidden');
+      syncGalleryFocusPreview();
+      void checkPhotoDuplicate(file).then((hit) => {
+        if (galleryPhotoEl.files?.[0] !== file) return;
+        galleryPhotoDuplicatePath = hit;
+        if (hit) {
+          showDuplicateWarning(galleryDupWarn, hit);
+          setStatus(`Duplicate photo warning — already on the site as ${hit}.`);
+        }
+      });
+    });
+
+    galleryFocusSelect.addEventListener('change', () => {
+      syncGalleryFocusPreview();
+    });
+    galleryFocusCustom.addEventListener('input', () => {
+      syncGalleryFocusPreview();
     });
 
     async function runDiscretePreview(
       tool: string,
       args: Record<string, unknown>,
       emptyMessage: string,
+      photo?: PhotoPayload,
     ) {
       setComposeBusy(true);
       setStatus('Preparing preview…');
       try {
-        const changes = await composeDiscrete(tool, args);
+        const { changes, provisionalPhotoPath: provisional } = await composeDiscrete(
+          tool,
+          args,
+          photo,
+        );
         draftChanges = changes;
-        provisionalPhotoPath = null;
+        draftPhoto = photo;
+        provisionalPhotoPath = provisional;
         previewReply.textContent = 'Confirm the values below, then publish to the site.';
         renderChangesEditor(draftChanges);
         showPreview();
@@ -1923,6 +2332,50 @@ const siteAge = String(site.age);
       unlockStudioUi();
       showHub();
       setStatus('');
+    });
+
+    galleryPreviewBtn.addEventListener('click', async () => {
+      const file = galleryPhotoEl.files?.[0];
+      if (!file) {
+        setStatus('Choose a photo first.');
+        return;
+      }
+      if (!galleryPhotoDuplicatePath) {
+        galleryPhotoDuplicatePath = await checkPhotoDuplicate(file);
+        if (galleryPhotoDuplicatePath) {
+          showDuplicateWarning(galleryDupWarn, galleryPhotoDuplicatePath);
+        }
+      }
+      if (!confirmIfDuplicate(galleryPhotoDuplicatePath)) {
+        setStatus('Choose a different photo, or confirm when ready to publish a duplicate.');
+        return;
+      }
+      const resized = await resizeImage(file);
+      if (!resized) {
+        setStatus('Could not read that photo. Try a JPEG, PNG, or WebP.');
+        return;
+      }
+      const tags = readGalleryTags();
+      const focus = readGalleryFocus();
+      const orderRaw = Number(galleryOrderInput.value);
+      const slug = gallerySlugInput.value.trim();
+      const args: Record<string, unknown> = {
+        tags,
+        focus,
+      };
+      if (Number.isFinite(orderRaw) && orderRaw > 0) args.order = Math.round(orderRaw);
+      if (slug) args.slug = slug;
+      await runDiscretePreview(
+        'add_gallery_photo',
+        args,
+        'Could not prepare gallery photo.',
+        resized,
+      );
+    });
+
+    galleryResetBtn.addEventListener('click', () => {
+      resetGalleryForm();
+      setStatus('Cleared gallery form.');
     });
 
     quickRatesBtn.addEventListener('click', async () => {
@@ -2028,6 +2481,18 @@ const siteAge = String(site.age);
       if (!message) {
         setStatus('Write a message first.');
         return;
+      }
+      if (photoEl.files?.[0]) {
+        if (!askPhotoDuplicatePath) {
+          askPhotoDuplicatePath = await checkPhotoDuplicate(photoEl.files[0]);
+          if (askPhotoDuplicatePath) {
+            showDuplicateWarning(photoDupWarn, askPhotoDuplicatePath);
+          }
+        }
+        if (!confirmIfDuplicate(askPhotoDuplicatePath)) {
+          setStatus('Choose a different photo, or confirm when ready to publish a duplicate.');
+          return;
+        }
       }
 
       setComposeBusy(true);

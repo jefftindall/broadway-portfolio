@@ -45,11 +45,11 @@ export const studioCapabilities: StudioCapability[] = [
     tool: 'add_gallery_photo',
     title: 'Gallery photos',
     summary:
-      'Attach a JPEG, PNG, or WebP photo and ask to add it to the gallery. Captions stay empty — the public gallery does not show them.',
+      'From the Studio hub, open Gallery photo — attach a JPEG, PNG, or WebP, pick tags and crop focus, then confirm a site-style tile Preview before publishing. You can still attach a photo under Speak or type and ask to add it. Captions stay empty — the public gallery does not show them. If the exact file is already on the site, Studio warns before preview so you can avoid duplicates.',
     livePath: '/gallery',
     examplePrompts: [
       'Add this photo to my gallery.',
-      'Put this headshot in the gallery.',
+      'Put this headshot in the gallery with tags headshot and portrait.',
     ],
   },
   {
@@ -175,5 +175,5 @@ export const studioVoiceNotes = {
   replacesNotAppends:
     'Each hold-to-speak pass replaces the Message box. If you need to edit, type after speaking, or speak again with the full request.',
   fallback:
-    'If voice is unavailable, type your request — or open Lesson rates / Performer facts from the Studio hub. Preview works the same either way.',
+    'If voice is unavailable, type your request — or open Gallery photo / Lesson rates / Performer facts from the Studio hub. Preview works the same either way.',
 };

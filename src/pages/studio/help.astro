@@ -31,6 +31,7 @@ import { studioCapabilities, studioVoiceNotes } from '../../lib/studioHelp';
       aria-label="Help sections"
     >
       <a href="#getting-started" class="hover:text-gold">Getting started</a>
+      <a href="#hub-flows" class="hover:text-gold">Hub flows</a>
       <a href="#voice" class="hover:text-gold">Voice</a>
       <a href="#prompts" class="hover:text-gold">What you can say</a>
       <a href="#preview-publish" class="hover:text-gold">Preview &amp; publish</a>
@@ -43,23 +44,95 @@ import { studioCapabilities, studioVoiceNotes } from '../../lib/studioHelp';
         <li>Open <a href="/studio" class="text-gel hover:text-gold">Studio</a> and sign in.</li>
         <li>
           On the hub, choose what to update — <span class="text-spotlight">Speak or type</span>,{' '}
+          <span class="text-spotlight">Gallery photo</span>,{' '}
           <span class="text-spotlight">Lesson rates</span>,{' '}
           <span class="text-spotlight">Performer facts</span>,{' '}
-          <span class="text-spotlight">Reel</span>, or <span class="text-spotlight">Short bio</span>.
+          <span class="text-spotlight">Reel</span>,{' '}
+          <span class="text-spotlight">Short bio</span>, or{' '}
+          <span class="text-spotlight">Press quote</span>.
         </li>
         <li>
-          For voice updates, hold <span class="text-spotlight">Hold to speak</span> (or type). For rates
-          and facts, edit the fields directly.
+          For voice updates, hold <span class="text-spotlight">Hold to speak</span> (or type). For
+          gallery, rates, and facts, edit the fields (and attach a photo for gallery) directly.
         </li>
         <li>
           Tap preview, review (or tweak the fields), then <span class="text-spotlight">Publish to site</span>.
         </li>
         <li>Wait a few minutes for the site rebuild; Studio shows progress when publishing is allowed.</li>
       </ol>
+      <figure class="space-y-3 pt-2">
+        <img
+          src="/images/studio-help/studio-help-hub.jpg"
+          alt="iPhone 17 Safari showing the Studio hub with Speak or type and tiles for Gallery photo, Lesson rates, and other updates."
+          class="w-full max-w-sm mx-auto rounded-sm border border-line"
+          width="720"
+          height="1080"
+          loading="lazy"
+        />
+        <figcaption class="text-xs text-muted text-center">
+          Start on the hub — pick a job, then edit → preview → publish.
+        </figcaption>
+      </figure>
       <p class="text-sm text-muted">
         You can read this help guide whenever you are signed in — even before publisher access is
         turned on.
       </p>
+    </section>
+
+    <section id="hub-flows" class="mt-12 space-y-8">
+      <h2 class="font-display text-3xl text-spotlight">Hub flows</h2>
+      <p class="text-sm text-muted">
+        Discrete hub tiles skip voice and open a short form. Same Preview and Publish steps as Speak
+        or type.
+      </p>
+
+      <div class="space-y-4">
+        <h3 class="font-display text-2xl text-spotlight">Gallery photo</h3>
+        <ol class="list-decimal space-y-2 pl-5 text-sm text-muted">
+          <li>Open <span class="text-spotlight">Gallery photo</span> from the hub.</li>
+          <li>Choose a JPEG, PNG, or WebP. Pick tags and crop focus if you want.</li>
+          <li>
+            If Studio warns that the photo is already on the site, pick a different file — or confirm
+            only if you mean to publish a duplicate.
+          </li>
+          <li>Preview the tile, then publish. Captions stay empty on the public gallery.</li>
+        </ol>
+        <figure class="space-y-3">
+          <img
+            src="/images/studio-help/studio-help-gallery.jpg"
+            alt="iPhone 17 Safari showing the Gallery photo editor with a selected headshot, tags, crop focus, and Preview gallery photo."
+            class="w-full max-w-sm mx-auto rounded-sm border border-line"
+            width="720"
+            height="1080"
+            loading="lazy"
+          />
+          <figcaption class="text-xs text-muted text-center">
+            Attach a photo, set tags and focus, then preview the gallery tile.
+          </figcaption>
+        </figure>
+      </div>
+
+      <div class="space-y-4">
+        <h3 class="font-display text-2xl text-spotlight">Lesson rates (and other forms)</h3>
+        <ol class="list-decimal space-y-2 pl-5 text-sm text-muted">
+          <li>Open <span class="text-spotlight">Lesson rates</span> (or Facts, Reel, Short bio, Press quote).</li>
+          <li>Edit the fields shown — rates prefill from the live book page.</li>
+          <li>Preview shows a read-only site-style confirmation, then publish.</li>
+        </ol>
+        <figure class="space-y-3">
+          <img
+            src="/images/studio-help/studio-help-rates.jpg"
+            alt="iPhone 17 Safari showing Lesson rates with 30- and 60-minute dollar fields and Preview rate update."
+            class="w-full max-w-sm mx-auto rounded-sm border border-line"
+            width="720"
+            height="1080"
+            loading="lazy"
+          />
+          <figcaption class="text-xs text-muted text-center">
+            Dollar amounts for 30- and 60-minute sessions — Reset to live restores current prices.
+          </figcaption>
+        </figure>
+      </div>
     </section>
 
     <section id="voice" class="mt-12 space-y-6">
@@ -74,8 +147,8 @@ import { studioCapabilities, studioVoiceNotes } from '../../lib/studioHelp';
           src="/images/studio-help/studio-help-hold-to-speak.jpg"
           alt="iPhone 17 Safari showing Studio with a finger holding the Hold to speak button while a booking message appears in the Message field."
           class="w-full max-w-sm mx-auto rounded-sm border border-line"
-          width="1080"
-          height="1920"
+          width="720"
+          height="1080"
           loading="lazy"
         />
         <figcaption class="text-xs text-muted text-center">
@@ -103,8 +176,8 @@ import { studioCapabilities, studioVoiceNotes } from '../../lib/studioHelp';
             src="/images/studio-help/studio-help-safari-mic.jpg"
             alt="iPhone 17 Safari system alert: elysetindall.com would like to access the microphone, with Don’t Allow and Allow."
             class="w-full max-w-sm mx-auto rounded-sm border border-line"
-            width="1080"
-            height="1920"
+            width="720"
+            height="1080"
             loading="lazy"
           />
           <figcaption class="text-xs text-muted text-center">
@@ -172,12 +245,12 @@ import { studioCapabilities, studioVoiceNotes } from '../../lib/studioHelp';
       </div>
     </section>
 
-    <section id="preview-publish" class="mt-12 space-y-4">
+    <section id="preview-publish" class="mt-12 space-y-6">
       <h2 class="font-display text-3xl text-spotlight">Preview &amp; publish</h2>
       <ol class="list-decimal space-y-2 pl-5 text-sm text-muted">
         <li>
-          <span class="text-spotlight">Preview</span> drafts the change without going live. For rates,
-          reel, bio, and facts, Preview is a <span class="text-spotlight">read-only site preview</span>
+          <span class="text-spotlight">Preview</span> drafts the change without going live. For gallery,
+          rates, reel, bio, quote, and facts, Preview is a <span class="text-spotlight">read-only site preview</span>
           (how it will look on the page) — go Back to edit if something looks wrong. Speak-or-type drafts
           for credits and news can still be adjusted in Preview.
         </li>
@@ -188,6 +261,34 @@ import { studioCapabilities, studioVoiceNotes } from '../../lib/studioHelp';
         </li>
         <li>Use <span class="text-spotlight">Start another update</span> when you are ready for the next change.</li>
       </ol>
+      <div class="grid gap-6 sm:grid-cols-2">
+        <figure class="space-y-3">
+          <img
+            src="/images/studio-help/studio-help-preview.jpg"
+            alt="iPhone 17 Safari showing Studio Preview with a gallery tile confirmation and Publish to site."
+            class="w-full max-w-sm mx-auto rounded-sm border border-line"
+            width="720"
+            height="1080"
+            loading="lazy"
+          />
+          <figcaption class="text-xs text-muted text-center">
+            Confirm the Preview, then publish — or go Back to edit.
+          </figcaption>
+        </figure>
+        <figure class="space-y-3">
+          <img
+            src="/images/studio-help/studio-help-done.jpg"
+            alt="iPhone 17 Safari showing Studio Done with update accepted, publishing pipeline, and Start another update."
+            class="w-full max-w-sm mx-auto rounded-sm border border-line"
+            width="720"
+            height="1080"
+            loading="lazy"
+          />
+          <figcaption class="text-xs text-muted text-center">
+            After publish, watch the rebuild and open the page when ready.
+          </figcaption>
+        </figure>
+      </div>
       <p class="text-sm text-muted">
         Choose a job from the Studio hub, edit the values (or speak/type), then confirm in Preview and
         publish. You don’t edit website files.

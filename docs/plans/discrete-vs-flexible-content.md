@@ -1,7 +1,7 @@
 # Plan: Discrete site variables vs flexible Studio content
 
 **Artifact ID:** `ELYSE-FLEX-001`  
-**Version:** 1.5  
+**Version:** 1.6  
 **Last updated:** 2026-08-09  
 **Audience:** Agents, implementers, Studio publishers  
 **Scope:** Which Studio/Gemini tools may rewrite which content, and how **discrete** fields (rates, later site settings) stay consistent across UI + SEO — not casting SEO strategy itself (`DISC-*`) or GA/GSC (`SEARCH-*`).
@@ -50,6 +50,7 @@ Implement **one phase (or one `FLEX-*` item) per PR** when practical. Prefer lin
 | Tool ↔ path pair enforcement at publish | `planned` | Phase 4 residual (`FLEX-P4-002`) |
 | Dedupe `DEFAULT_SITE_SETTINGS` bootstrap vs JSON | `planned` | `FLEX-P4-004` — avoid seed drift |
 | Extend discrete registry (reel, performer facts, bio, press quote, …) | `done` | Strong P3 shipped (incl. `update_press_quote`); medium candidates still on-demand |
+| Studio hub: Gallery photo compose flow | `done` | `FLEX-P3-002` — structured hub UX for Tier A `add_gallery_photo` |
 
 ### Phase rollup
 
@@ -57,7 +58,7 @@ Implement **one phase (or one `FLEX-*` item) per PR** when practical. Prefer lin
 |-------|--------|--------|
 | **Phase 1** — Stop the bleed | Remove dangerous full-page tools; tighten allowlist; de-dupe rates from philosophy markdown | **Done** |
 | **Phase 2** — Discrete rates pipeline | Safe Studio updates for prices only | **Done** (P2-004/005/007; rates on book page) |
-| **Phase 3** — Extend discrete registry | More allowlisted fields as needed | **Strong done**; medium still `planned` on demand |
+| **Phase 3** — Extend discrete registry | More allowlisted fields as needed | **Strong done**; gallery hub UX `done`; medium still `planned` on demand |
 | **Phase 4** — Preview & guardrails polish | Structured diffs; tool/path mismatch reject | **Partial** — `FLEX-P4-001` `done`; P4-002/003/004 `planned` |
 
 ---
@@ -92,7 +93,7 @@ Rates were also duplicated across UI code, markdown, and JSON-LD — so a voice 
 |------------|---------------|--------|--------|
 | `upsert_show` | A | `done` | Keep |
 | `create_news_post` | A | `done` | Keep |
-| `add_gallery_photo` | A | `done` | Keep |
+| `add_gallery_photo` | A | `done` | Keep; Studio hub **Gallery photo** is a discrete compose UX over the same tool |
 | `update_lesson_rates` | B | `done` | Keep; ids + `priceAmount` required |
 | `update_lesson_scheduling` / `update_lesson_book_seo` | B | `done` | Keep (book page only) |
 | `update_lessons_copy` / `update_lessons_seo` | B/C hybrid | `done` (split) | Prefer merge; consider locking copy later if abuse risk |
@@ -234,6 +235,7 @@ Kind-scoped allowlist (`FLEX-P1-004`) shipped. Remaining polish: tool/path pair 
 | ID | Title | Status | Depends on | Primary refs |
 |----|-------|--------|------------|--------------|
 | `FLEX-P3-001` | Discrete registry candidates (reel, performer facts, bio, casting template, …) | `done` | Phase 1–2 residual | `src/data/site-settings.json`, `src/lib/site.ts` |
+| `FLEX-P3-002` | Studio hub Gallery photo compose flow | `done` | `add_gallery_photo` | `studio.astro`, `updateContent` compose+photo, `studioHelp.ts` |
 
 Add allowlisted keys **only** when there is a clear Studio need, each with validation. Prefer the strong list first; medium only if publishers actually ask. Do **not** grow a general “edit any JSON” tool.
 
@@ -269,6 +271,20 @@ Out of scope for P3 (stay PR/ops): site email (`SITE_CONTACT_EMAIL` / Key Vault)
 - [x] No return to full-page replace for About/casting without templates
 - [x] Studio help updated in the same PR (example prompts per use case, incl. performer facts)
 - [x] Performer facts remain outside markdown (`site-settings.json`) so page-body tools cannot overwrite them
+
+</details>
+
+<details>
+<summary><code>FLEX-P3-002</code> — Gallery photo hub flow</summary>
+
+**Acceptance criteria**
+
+- [x] Studio hub tile **Gallery photo** with compose form (required photo, tags, focus, optional order/slug)
+- [x] Preview uses `mode: 'compose'` + `add_gallery_photo` (no Gemini) with read-only gallery tile Preview
+- [x] Publish still defers binary upload via `draftPhoto` + provisional path rewrite (same as Speak or type + attach)
+- [x] Tool accepts optional `focus`; `preview.kind = 'gallery'` for structured Preview
+- [x] Studio help + refine runbook mention the hub flow; Speak or type + attach still documented
+- [x] SHA-256 content-hash warning when the selected file already exists under gallery/photos (warn + confirm; does not block)
 
 </details>
 
@@ -351,4 +367,4 @@ Infra/Terraform: none expected for Phases 1–2 residual.
 1. ~~Finish Phase 1 residual~~ `done`
 2. ~~Harden rates + catalog + flex tests~~ `done`
 3. ~~Strong Phase 3 + structured Preview (`FLEX-P4-001`)~~ `done`
-4. Remaining: medium P3 on demand; `FLEX-P4-002` / `FLEX-P4-003` polish; `FLEX-P4-004` single-source settings bootstrap.
+4. Remaining: medium P3 on demand; `FLEX-P4-002` / `FLEX-P4-003` polish; `FLEX-P4-004` single-source settings bootstrap. Gallery hub compose (`FLEX-P3-002`) `done`.
