@@ -283,6 +283,8 @@ Out of scope for P3 (stay PR/ops): site email (`SITE_CONTACT_EMAIL` / Key Vault)
 **Acceptance criteria**
 
 - [x] Studio hub tile **Gallery photo** with compose form (required photo, tags, focus, optional slug; sort order automatic / newest first)
+- [x] Gallery tags are a **fixed allowlist** (no freeform / “extra tags” field); unknown tags are dropped server-side
+- [x] Optional gallery file name explains why it matters; validates characters; adds `.md` when omitted; surfaces inline validation errors
 - [x] Preview uses `mode: 'compose'` + `add_gallery_photo` (no Gemini) with read-only gallery tile Preview
 - [x] Publish still defers binary upload via `draftPhoto` + provisional path rewrite (same as Speak or type + attach)
 - [x] Tool accepts optional `focus`; `preview.kind = 'gallery'` for structured Preview

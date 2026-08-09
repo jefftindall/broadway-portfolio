@@ -3,12 +3,17 @@ import matter from 'gray-matter';
 import { trackEvent } from './telemetry.js';
 import slugify from 'slugify';
 import { commitFiles, listRepoFiles, readRepoTextFile, toFrontmatter } from './github.js';
-import { validateContentFile } from './contentValidate.js';
+import { validateContentFile, StudioContentValidationError } from './contentValidate.js';
 import {
   LESSON_RATE_DEFS,
   LESSON_RATE_ID_VALUES,
   PERFORMER_FACT_KEYS,
 } from './contentSchemas.js';
+import {
+  GALLERY_TAG_VALUES,
+  normalizeGalleryTags,
+  validateGallerySlug,
+} from './galleryMeta.js';
 import { SITE_SETTINGS_PATH, mergeSiteSettings, readSiteSettings } from './siteSettings.js';
 
 const LESSONS_PAGE = 'src/content/pages/lessons.md';
@@ -182,17 +187,28 @@ const tools = [
       {
         name: 'add_gallery_photo',
         description:
-          'Add a gallery entry referencing an already-uploaded image path. Do not invent captions — leave caption empty; the public gallery does not display captions. New photos always appear first in the gallery (sort order is automatic).',
+          'Add a gallery entry referencing an already-uploaded image path. Do not invent captions — leave caption empty; the public gallery does not display captions. New photos always appear first in the gallery (sort order is automatic). Tags must be chosen only from the fixed allowlist (never invent new tags).',
         parameters: {
           type: 'OBJECT',
           properties: {
-            slug: { type: 'STRING', description: 'URL-safe id for the markdown filename' },
+            slug: {
+              type: 'STRING',
+              description:
+                'Optional markdown basename for src/content/gallery/<slug>.md — lowercase letters, numbers, and hyphens only. Omit .md (it is added automatically). Leave empty to derive from the image name.',
+            },
             caption: {
               type: 'STRING',
               description: 'Optional; prefer empty string. Gallery UI does not show captions.',
             },
             image: { type: 'STRING', description: 'Path like /images/photos/foo.jpg or src path served as public' },
-            tags: { type: 'ARRAY', items: { type: 'STRING' } },
+            tags: {
+              type: 'ARRAY',
+              items: {
+                type: 'STRING',
+                description: `One of: ${GALLERY_TAG_VALUES.join(', ')}`,
+              },
+              description: `Zero or more tags from the fixed allowlist only: ${GALLERY_TAG_VALUES.join(', ')}. Do not invent tags.`,
+            },
             focus: {
               type: 'STRING',
               description:
@@ -586,17 +602,33 @@ export async function buildContentChange(name, args, photoPath) {
     case 'add_gallery_photo': {
       const image = args.image || photoPath;
       if (!image) throw new Error('Gallery photo requires an image path or upload.');
-      const slug = makeSlug(
-        args.slug ||
+
+      const slugRaw = args.slug != null && String(args.slug).trim() ? String(args.slug).trim() : '';
+      let slug;
+      if (slugRaw) {
+        const slugCheck = validateGallerySlug(slugRaw);
+        if (!slugCheck.ok) {
+          throw new StudioContentValidationError(
+            slugCheck.error || 'Gallery filename is invalid.',
+            { path: 'src/content/gallery/' },
+          );
+        }
+        slug = slugCheck.slug;
+      } else {
+        slug = makeSlug(
           String(image)
             .split('/')
             .pop()
-            ?.replace(/\.[^.]+$/, '') ||
-          'gallery-photo',
-      );
-      const tags = Array.isArray(args.tags)
-        ? args.tags.map((t) => String(t || '').trim()).filter(Boolean)
-        : [];
+            ?.replace(/\.[^.]+$/, '') || 'gallery-photo',
+        );
+      }
+      if (!slug) {
+        throw new StudioContentValidationError('Gallery filename could not be derived.', {
+          path: 'src/content/gallery/',
+        });
+      }
+
+      const { tags } = normalizeGalleryTags(args.tags);
       // Newest first on /gallery (ascending sort). Ignore any client-supplied order.
       const order = -Date.now();
       const focus = String(args.focus || '').trim() || undefined;
@@ -1287,7 +1319,7 @@ Rules:
 - Prefer update_lesson_book_seo only when she explicitly wants to change the book-a-lesson page title or search description.
 - Never use lessons tools to change show credits, news, or gallery content.
 - When drafting lessons copy, keep it vocal-coach accurate (pedagogy, vocal health, CCM); never add acting-lesson offerings.
-- Prefer add_gallery_photo when she attaches a photo for the gallery (image path will be provided). Leave caption empty — the public gallery does not display captions. Do not set sort order; new photos always appear first.
+- Prefer add_gallery_photo when she attaches a photo for the gallery (image path will be provided). Leave caption empty — the public gallery does not display captions. Do not set sort order; new photos always appear first. Tags must be from the fixed allowlist only (${GALLERY_TAG_VALUES.join(', ')}) — never invent new tags.
 - Keep tone professional, warm, and accurate. Do not invent fake credits; align facts with the catalog and production site.
 - Content is expected to be evergreen unless otherwise specified. Avoid relative terms like today, this week, this month, etc which would not make sense in the future.
 - Never mention technical terms like "YAML," "Azure," or "Astro" to her—keep her user experience purely creative and effortless.

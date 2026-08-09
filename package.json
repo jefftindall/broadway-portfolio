@@ -16,6 +16,7 @@
     "test:api-flex": "node --test api/src/lib/gemini-flex.test.js",
     "test:api-studio-publish": "node --test api/src/lib/studioPublish.test.js",
     "test:api-github-commit": "node --test api/src/lib/github-commit.test.js",
+    "test:api-gallery-meta": "node --test api/src/lib/gallery-meta.test.js",
     "lint:actions-secrets": "node scripts/check-actions-secret-safety.mjs",
     "test:github-app-token": "bash scripts/test-github-app-token.sh",
     "lint:terraform": "node scripts/lint-terraform.mjs",
