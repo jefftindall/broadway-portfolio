@@ -20,7 +20,7 @@ Living reliability posture for the Elyse Tindall portfolio. Rubric, SLOs, and ba
 | Secrets & config | 0.9 | 4.0 | Strong | Env + shared KV; sync workflow; rotate-secrets | Functions need explicit secret sync | ok |
 | Observability | 1.2 | 4.2 | Strong | Per-env AI; Studio correlation + events; GA4 public; HomepageFcpMs; contact inquiry events + SLI docs | No Workbooks as code | ok |
 | Test automation | 1.1 | 4.0 | Strong | Staging smoke + journeys; homepage + materials synthetics; soft lab FCP | No unit tests; Studio E2E OOS | ok |
-| Cost & capacity | 0.7 | 4.0 | Strong | Subscription budget $31/mo (OPS-P4-001); Subscription ActualCost 2026-07: $2.10 (6.7% of $31 budget). MoM unavailable (no prior-month rows). | Gemini/Google console budget alert still manual | ok: Subscription ActualCost 2026-07: $2.10 (6.7% of $31 budget). MoM unavailable (no prior-month rows). Re-probe skipped: Cost Management spend probe failed: Cost Management returned 429 (rate limited); retry later. |
+| Cost & capacity | 0.7 | 4.0 | Strong | Subscription budget $34/mo (OPS-P4-001); Subscription ActualCost 2026-07: $2.10 (6.2% of $34 budget). MoM unavailable (no prior-month rows). | Gemini/Google console budget alert still manual | ok: Subscription ActualCost 2026-07: $2.10 (6.2% of $34 budget). MoM unavailable (no prior-month rows). Re-probe skipped: Cost Management spend probe failed: Cost Management returned 429 (rate limited); retry later. |
 | Alerting & on-call | 1.1 | 4.3 | Strong | KV ALERT-* → notify/critical/watch AGs; homepage+materials Sev1; DeployFailed Sev1 (OPS-P3-003); FCP Sev3 | Optional vendor escalate-if-unacked still OPS-P3-002; operator must keep ALERT-* real | ok |
 | Resilience & DR | 0.9 | 2.0 | Thin | Git rollback; env isolation; East US 2 only | Single region; shared ACS/Turnstile coupling | ok |
 | SLOs & error budget | 0.8 | 3.8 | Solid | Field/synthetic SLIs: Materials availability avg 100% over 12 probe(s) (target 99.8% / 7d). | Windows need traffic before met/missed; inquiry not yet a committed SLO | ok: App Insights returned no availability datapoints for the last 7 days (Homepage). Materials availability avg 100% over 12 probe(s) (target 99.8% / 7d). No HomepageFcpMs samples in the last 7 days (field pipeline pending deploy traffic). No Studio publish UI events in the last 28 days; SLO-2 left stale. No StudioPublishToProdDurationMs samples in the last 28 days; SLO-3 left stale. No inquiry events in the last 28 days (excluding bots/validation); left stale. App Insights 2026-07: 0 contact(s), 0 Studio publish(es). GA Data API credentials not loaded (GA-PROPERTY-ID / GA-DATA-API-SA-JSON); visits/top pages left stale. |
@@ -45,7 +45,7 @@ Living reliability posture for the Elyse Tindall portfolio. Rubric, SLOs, and ba
 
 | Field | Value |
 |-------|-------|
-| **Budget** | $31 / month |
+| **Budget** | $34 / month |
 | **Last month (2026-07)** | $2.10 (6.7% of budget) |
 | **Prior month (2026-06)** | n/a |
 | **MoM** | n/a |

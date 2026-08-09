@@ -43,7 +43,7 @@ Created by **bootstrap** Terraform (`infra/bootstrap/shared_kv.tf`). One Astro b
 | `TURNSTILE-SECRET-KEY` | `TURNSTILE_SECRET` | Synced into Functions (both envs) |
 | `ACS-CONNECTION-STRING` | `ACS_CONNECTION_STRING` | Terraform-managed from `acs-elyse-shared` |
 | `ACS-EMAIL-SENDER` | `ACS_EMAIL_SENDER` | Terraform-managed Azure-managed MailFrom |
-| `ACS-SMS-FROM` | `ACS_SMS_FROM` | Manual E.164; leave `REPLACE_ME` until toll-free is verified |
+| `ACS-SMS-FROM` | `ACS_SMS_FROM` | Manual E.164 toll-free; may be set in KV while verification is pending (~5 weeks). SMS sends only once ACS accepts the number |
 
 ```bash
 # Apply bootstrap once so kv-elyse-shared exists, then:
@@ -112,7 +112,7 @@ After bootstrap (or MailFrom change), sync both environments if apply did not al
 
 ### Shared SMS (manual toll-free)
 
-Both staging and prod set `CONTACT_SMS_ENABLED=true`. The API sends SMS only when `ACS-SMS-FROM` is a real E.164 number (not `REPLACE_ME`).
+Both staging and prod set `CONTACT_SMS_ENABLED=true`. The API sends SMS only when `ACS-SMS-FROM` is a real E.164 number (not `REPLACE_ME`) **and** ACS has accepted the number for SMS (after toll-free verification).
 
 ```bash
 az keyvault secret set --vault-name kv-elyse-shared --name ACS-SMS-FROM --value "+1XXXXXXXXXX"
@@ -120,7 +120,7 @@ az keyvault secret set --vault-name kv-elyse-shared --name ACS-SMS-FROM --value 
 ./scripts/sync-swa-api-secrets.sh prod
 ```
 
-Portal: Communication Service **`acs-elyse-shared`** → purchase toll-free + [toll-free verification](https://learn.microsoft.com/azure/communication-services/quickstarts/sms/apply-for-toll-free-verification). Leave `ACS-SMS-FROM` as `REPLACE_ME` until verified — email still works.
+Portal: Communication Service **`acs-elyse-shared`** → purchase toll-free + [toll-free verification](https://learn.microsoft.com/azure/communication-services/quickstarts/sms/apply-for-toll-free-verification). **Lease cost is ~$2/mo from purchase** (see [cost-and-quotas.md](cost-and-quotas.md)). Verification often takes **~5 weeks**; storing the E.164 in Key Vault during that wait is expected. Until SMS works end-to-end, inquiry **email** still delivers. You may keep `REPLACE_ME` instead if you prefer not to sync the number until verified.
 
 For the verification program brief, use the public SMS policy URL:
 

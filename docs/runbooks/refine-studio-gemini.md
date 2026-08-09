@@ -9,7 +9,8 @@ Studio turns natural-language updates into portfolio markdown via Gemini tool ca
 | System instruction | `systemInstruction` in `runContentAgent()` | Tone, routing preferences, hard rules (“don’t invent credits”), production site URL |
 | Production catalog | Built each draft via `buildProductionSiteContext()` from the GitHub content branch | Live URLs + repo paths so updates reuse existing pages instead of starting blank |
 | Tool catalog | `tools` → `functionDeclarations` | Which updates exist and which fields Gemini must fill |
-| Model ID | `GEMINI_MODEL` (default `gemini-3.6-flash`) | Capability / cost tradeoff |
+| Model ID (Studio) | `GEMINI_MODEL` (default `gemini-3.6-flash`) | Capability / cost tradeoff |
+| Model ID (search ops) | `GEMINI_MODEL_SEARCH_OPS` (default `gemini-3.5-flash`) | Independent RPM/RPD from Studio; lander drafts only |
 | Site URL | `SITE_URL` or `PUBLIC_SITE_URL` (default `https://elysetindall.com`) | Canonical production reference in prompts |
 | User-facing HTTP errors | [`api/src/lib/httpErrors.js`](../../api/src/lib/httpErrors.js) + Studio UI | Friendly copy + `correlationId` — **not** for the model prompt |
 
@@ -86,7 +87,7 @@ Builders in `buildContentChange()` still apply deterministic defaults (slugs, to
 
 ## Model changes
 
-Set `GEMINI_MODEL` in SWA app settings (via Key Vault sync / Terraform) if you need a different Google model. Do not reinstate shut-down IDs such as `gemini-2.0-flash`. After changing the model, re-run the draft loop above — tool-calling behavior can shift.
+Set `GEMINI_MODEL` in SWA app settings (via Key Vault sync / Terraform) if you need a different Google model for **Studio**. Search-ops / `/for/` draft automation must use **`GEMINI_MODEL_SEARCH_OPS`** (default `gemini-3.5-flash`) so quotas stay independent of Studio’s 3.6 Flash pool — see [cost-and-quotas.md](cost-and-quotas.md). Do not reinstate shut-down IDs such as `gemini-2.0-flash`. After changing the Studio model, re-run the draft loop above — tool-calling behavior can shift.
 
 ## Observability
 

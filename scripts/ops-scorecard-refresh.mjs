@@ -49,7 +49,7 @@ const HOMEPAGE_FRESH_STALE_DAYS = 60;
 const MATERIALS_FRESH_WATCH_DAYS = 183; // ~6 months
 const MATERIALS_FRESH_STALE_DAYS = 365; // ~12 months
 /** Keep in sync with infra/bootstrap/budget.tf + docs/runbooks/cost-and-quotas.md (ceil(expected × 1.25)). */
-const SUBSCRIPTION_BUDGET_USD = 31;
+const SUBSCRIPTION_BUDGET_USD = 34;
 
 const MATURITY = [
   { min: 4.0, label: "Strong" },

@@ -228,7 +228,7 @@ Today the repo only has the **public Measurement ID** (`G-XEE29C0RRE` → `PUBLI
 
 - Measurement ID in Terraform / GitHub Environments / client loader (`SEARCH-P1-001` / `002`) — **done**.
 - Public events including `generate_lead` (`SEARCH-P1-003`) — **done** (optional cross-check only).
-- Manual GA/GSC review loop remains [search-and-analytics.md](search-and-analytics.md) Phase 3; Phase 5 **automates a thin slice** into the ops scorecard and does not replace the GSC query review (`SEARCH-P3-001` / `DISC-P3-006`).
+- Manual GA/GSC review loop runbook remains [search-and-analytics.md](search-and-analytics.md) Phase 3; **automate** via `SEARCH-P4-*` (manual habit will not stick). Phase 5 scorecard **automates a thin slice** into the ops digest and does not replace GSC query/CTR extraction (`SEARCH-P3-001` / `DISC-P3-006` → `SEARCH-P4` / `DISC-P4`).
 
 #### Blocked until setup?
 

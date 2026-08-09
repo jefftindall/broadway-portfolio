@@ -1,8 +1,8 @@
 # Casting discoverability — assessment & implementation backlog
 
 **Artifact ID:** `ELYSE-DISC-001`  
-**Version:** 1.0  
-**Last updated:** 2026-08-02  
+**Version:** 1.3  
+**Last updated:** 2026-08-09  
 **Audience:** Agents, implementers, Elyse (content owner)  
 **Scope:** Public site discoverability for casting directors, representation, and answer engines — not voice-lesson marketing.
 
@@ -20,7 +20,7 @@ Example PR title: `DISC-P1-003: Add performer facts block to About`
 |---------|---------|
 | [Rubric](#rubric-disc-rub) | Scoring dimensions — reuse for future audits |
 | [Baseline scores](#baseline-scores-disc-score) | Snapshot as of 2026-08-02 (WordPress live vs Astro repo) |
-| [Action backlog](#action-backlog) | Implementable work items with IDs, acceptance criteria, and file hints |
+| [Action backlog](#action-backlog) | Implementable work items with IDs, acceptance criteria, and file hints (Tiers 0–4) |
 | [Dependencies](#dependency-graph) | What blocks what |
 | [Channel playbooks](#channel-playbooks-disc-ch) | Mobile, desktop, and AI-specific requirements |
 | [Content inventory gaps](#content-inventory-gaps-disc-gap) | Facts and assets needed from Elyse before/during implementation |
@@ -367,11 +367,11 @@ Shipped facts in `site.performer`: playing age 15–28; vocal type (Mezzo-Sopran
 | ID | Title | Status | Cadence | Primary files / runbooks |
 |----|-------|--------|---------|--------------------------|
 | `DISC-P3-001` | News post after every credit or milestone | `planned` | Within 48h of event | `src/content/news/`, Studio |
-| `DISC-P3-002` | New casting page when a credit opens a lane | `planned` | Per project | [add-casting-page.md](../runbooks/add-casting-page.md) |
+| `DISC-P3-002` | New casting page when a credit opens a lane | `planned` | Per project | [add-casting-page.md](../runbooks/add-casting-page.md); automate via `DISC-P4-002` |
 | `DISC-P3-003` | Gallery refresh: headshot tags + alt text | `planned` | Quarterly | `src/content/gallery/`, `src/pages/gallery.astro` |
 | `DISC-P3-004` | Maintain `public/llms.txt` with structured facts | `planned` | On credit/fact change | `public/llms.txt` |
 | `DISC-P3-005` | External profile consistency (IMDb, Backstage, etc.) | `planned` | Ongoing | Off-site profiles |
-| `DISC-P3-006` | Monthly Search Console query review → new/refined `/for/*` | `done` (runbook) | Monthly | Search Console, casting content; joint GSC+GA checklist in [search-ops-monthly.md](../runbooks/search-ops-monthly.md) (`SEARCH-P3-001` / `SEARCH-P3-002`); residual: execute monthly |
+| `DISC-P3-006` | Monthly Search Console query review → new/refined `/for/*` | `done` (runbook) | Monthly | [search-ops-monthly.md](../runbooks/search-ops-monthly.md) (`SEARCH-P3-001` / `SEARCH-P3-002`); **automation required** via `SEARCH-P4-*` → `DISC-P4-004` (manual habit will not stick) |
 | `DISC-P3-007` | Re-run rubric scoring (`DISC-SCORE`) | `planned` | Quarterly or post-tier | This document |
 
 <details>
@@ -404,6 +404,187 @@ Contact: elyse.tindall@gmail.com
 ```
 
 </details>
+
+---
+
+### Tier 4 — Automated `/for/` pipeline (designs B + C + D + E)
+
+Evaluation artifact: Cursor canvas `casting-for-page-automation` (alternatives A–F). **Ship B+C+D+E**; reject F (full auto scrape→publish) and S3 board scraping without a licensed API.
+
+**Publish gate (Phases 0–2):** draft → **PR → human merge** (`G-PR`). Aligns with proposed Studio Tier C lock for casting ([discrete-vs-flexible-content.md](discrete-vs-flexible-content.md)). Do not auto-merge landers. Revisit Studio-assisted approve only after a constrained casting template exists.
+
+**Why automate `SEARCH-P3-001`:** The monthly GSC+GA checklist runbook alone will not run reliably. Measurement extraction must be a scheduled workflow (`SEARCH-P4-*`); this tier consumes those signals for lander drafts (`DISC-P4-004`).
+
+#### Gemini / AI credit contract (`DISC-P4-000`)
+
+**Separate models (required):** Studio and search-ops / lander drafts must **not** share a model ID. Google applies **independent** RPM/RPD to **`gemini-3.6-flash`** vs **`gemini-3.5-flash`**.
+
+| Path | Env var | Default model | Typical limits to plan against |
+|------|---------|---------------|--------------------------------|
+| Studio publish | `GEMINI_MODEL` | `gemini-3.6-flash` | 5 RPM / 20 RPD (confirm in console) |
+| Search ops / `/for/` drafts | `GEMINI_MODEL_SEARCH_OPS` | `gemini-3.5-flash` | 5 RPM / 20 RPD (independent of Studio) |
+
+Same `GEMINI_API_KEY` may call both; CI draft jobs must read **`GEMINI_MODEL_SEARCH_OPS` only**. Confirm limits in Google AI Studio / Cloud for the live key’s project; paid upgrade is an explicit dependency if either path outgrows its quota.
+
+| Rule | Why |
+|------|-----|
+| Prefer **zero-Gemini** for ranking/filtering candidates (GSC/GA math, slug gap, catalog priority, rule-based fit) | Saves the search-ops daily budget for copy that needs a model |
+| Cap **new lander body drafts** at **≤2–3 Gemini calls per calendar month** on `GEMINI_MODEL_SEARCH_OPS` (configurable) | Leaves headroom on the 3.5 Flash daily budget |
+| **One generate call per draft page** (or one batched call that emits ≤N pages) — no multi-turn agent loops in CI | Avoids burning RPM on a single lander |
+| On **429 / resource exhausted**: exponential backoff, then **defer** remaining drafts to the next day (or next month) and open a PR/issue with the unevaluated candidate list | Resilience without silent drop |
+| Do not invent credits; require `relatedShows` and/or performer-fact evidence in the draft | Quality bar ([add-casting-page.md](../runbooks/add-casting-page.md)) |
+| Never point draft automation at `GEMINI_MODEL` / 3.6 Flash | Protects Studio’s independent quota |
+
+**AI credit dependencies (call out in PRs):**
+
+| Dependency | Blocks | Notes |
+|------------|--------|-------|
+| Live `GEMINI_API_KEY` (Functions + optional CI for draft job) | All Gemini draft steps | Shared key OK; **separate model IDs** required |
+| `GEMINI_MODEL_SEARCH_OPS` set to `gemini-3.5-flash` (or current search-ops choice) | Draft workflows | Documented in [cost-and-quotas.md](../runbooks/cost-and-quotas.md) |
+| Confirmed RPM/RPD **per model** | Quotas in workflows | Do not assume Studio and search-ops share one pool |
+| Optional: paid Gemini / higher quota on search-ops model | Parallel multi-draft days | Not required if monthly draft cap ≤3 |
+| Studio Tier C / casting tool policy | Whether CI drafts vs Studio proposes | Prefer CI → PR; avoid freeform overwrite of high-traffic slugs |
+
+#### Action IDs
+
+| ID | Title | Design | Status | Depends on | Primary refs |
+|----|-------|--------|--------|------------|--------------|
+| `DISC-P4-000` | Document + enforce Gemini rate-limit / draft-budget contract | Shared | `planned` | — | This section; [cost-and-quotas.md](../runbooks/cost-and-quotas.md); draft scripts |
+| `DISC-P4-001` | Curated intent catalog + template fill (closed queue) | **D** | `planned` | `DISC-P2-006`, `DISC-P2-007` preferred; `DISC-GAP-003` | `src/content/casting/` or `src/data/casting-intent-catalog.yaml`; `DISC-P2-001`–`005` |
+| `DISC-P4-002` | Credit-triggered lander draft PR | **C** | `planned` | `DISC-P4-000`; show upsert path | `DISC-P3-002`; Studio/`upsert_show` hook or post-merge workflow |
+| `DISC-P4-003` | Consume automated search signals (no Gemini) | Feeds **B** | `planned` | `SEARCH-P4-001`, `SEARCH-P4-002` | Signal artifact from search automation; slug gap vs `casting/*` |
+| `DISC-P4-004` | GSC/GA → draft casting PR (≤2–3 bodies/mo) | **B** | `planned` | `DISC-P4-000`, `DISC-P4-003`, `SEARCH-P4-002` | GitHub App PR (same mint pattern as ops-scorecard); evidence table in PR body |
+| `DISC-P4-005` | Shared lander guardrails (dupe, evidence, evergreen, G-PR) | Shared | `planned` | Ship with `DISC-P4-001` / `004` | Validation in draft script; checklist in PR template |
+| `DISC-P4-006` | Public citeable signals → evergreen fit → draft PR | **E** | `planned` | `DISC-P4-000`, `DISC-P4-001`, `DISC-P4-005` | Allowlisted RSS/domains; rule-based fit first; Gemini only for winning copy |
+
+<details>
+<summary><code>DISC-P4-000</code> — Gemini draft-budget contract</summary>
+
+**Acceptance criteria**
+
+- [ ] Rate limits per model (Studio 3.6 vs search-ops 3.5; 5 RPM / 20 RPD each unless console differs) documented in [cost-and-quotas.md](../runbooks/cost-and-quotas.md)
+- [ ] Draft automation uses `GEMINI_MODEL_SEARCH_OPS` only (never Studio `GEMINI_MODEL`)
+- [ ] Draft automation enforces monthly max body generations and 429 deferral
+- [ ] CI/workflow logs budget skips by **kind** only (never API key values)
+
+</details>
+
+<details>
+<summary><code>DISC-P4-001</code> — Curated catalog (D)</summary>
+
+**Acceptance criteria**
+
+- [ ] Closed catalog lists target keywords/slugs for `DISC-P2-001`–`004` (`005` only after `DISC-GAP-005`)
+- [ ] Fill path uses site facts + `relatedShows`; **zero or one** Gemini call per page, spread across days if needed
+- [ ] Prefer deterministic template paragraphs when facts are sufficient; Gemini optional for polish
+- [ ] Output is a **draft PR**, not direct `main` publish
+- [ ] Catalog items that already exist as slugs are skipped (update path is separate, human-gated)
+
+</details>
+
+<details>
+<summary><code>DISC-P4-002</code> — Credit-triggered drafts (C)</summary>
+
+**Acceptance criteria**
+
+- [ ] After a new/updated show credit ships, system proposes at most one credit-specific and/or type lander if missing
+- [ ] Never invent credits; body cites the real show only
+- [ ] If Gemini budget exhausted → open PR/issue with stub frontmatter + “needs copy” label (no silent fail)
+- [ ] Human merges via G-PR; satisfies ongoing `DISC-P3-002` habit when used
+
+</details>
+
+<details>
+<summary><code>DISC-P4-003</code> — Consume search signals</summary>
+
+**Acceptance criteria**
+
+- [ ] Reads monthly artifact from `SEARCH-P4-002` (queries, CTR gaps, organic landings, existing `/for/*` performance)
+- [ ] Computes ranked **candidate intents** with **no Gemini**
+- [ ] Filters near-duplicate keywords/slugs against `src/content/casting/`
+- [ ] Writes a small candidate list (themes/paths only — no PII, no full query dumps in git)
+
+</details>
+
+<details>
+<summary><code>DISC-P4-004</code> — GSC/GA draft PR pipeline (B)</summary>
+
+**Acceptance criteria**
+
+- [ ] Monthly (or on-demand) workflow: top candidates from `DISC-P4-003` → ≤2–3 Gemini bodies → PR with evidence table (query theme, impressions/CTR band, proposed slug)
+- [ ] Uses GitHub App installation token for PR (`scripts/mint-github-app-token.sh`); no PEM `with:` inputs; secret-safe logging
+- [ ] Respects `DISC-P4-000` budgets; defers overflow
+- [ ] CD/scorecard ignore rules: do not treat draft-only branches as prod content until merge
+
+</details>
+
+<details>
+<summary><code>DISC-P4-005</code> — Guardrails</summary>
+
+**Acceptance criteria**
+
+- [ ] Reject thin/duplicate doorway proposals (similarity vs existing keywords)
+- [ ] Require `relatedShows` or performer-fact anchors
+- [ ] Enforce evergreen tone (no “this week’s casting” in body)
+- [ ] PR checklist mirrors [add-casting-page.md](../runbooks/add-casting-page.md) quality bar
+
+</details>
+
+<details>
+<summary><code>DISC-P4-006</code> — Public fit pipeline (E)</summary>
+
+**Acceptance criteria**
+
+- [ ] Allowlisted public sources only; respect robots/ToS; no casting-board scrape (S3)
+- [ ] Map ephemeral headlines → **evergreen catalog intents** (extend `DISC-P4-001`), not one-off show-title spam pages
+- [ ] Rule-based fit score vs performer facts before any Gemini call
+- [ ] Draft PR still G-PR; cite source class in PR body without pasting proprietary breakdowns
+
+</details>
+
+#### Implementation order
+
+```text
+Phase 0 (now): DISC-P2-001–004 by hand + DISC-P2-006/007 linking
+    + DISC-P4-000 (document quotas)
+    + SEARCH-P4-001/002 (automate SEARCH-P3-001 extract — no Gemini)
+
+Phase 1: DISC-P4-005 guardrails
+    + DISC-P4-001 catalog fill (D) — prefer templates; Gemini optional
+    + DISC-P4-003 consume signals
+    + DISC-P4-004 GSC draft PR (B) — ≤2–3 Gemini/mo
+    + DISC-P4-002 credit-triggered (C) — 0–1 Gemini per new credit, defer on 429
+
+Phase 2 (optional): DISC-P4-006 public fit (E) — rule-based fit; Gemini only for winners
+```
+
+```mermaid
+flowchart TD
+  searchP4[SEARCH-P4 GSC_GA_extract]
+  p4000[DISC-P4-000 Gemini_budget]
+  p4001[DISC-P4-001 Catalog_D]
+  p4002[DISC-P4-002 Credit_C]
+  p4003[DISC-P4-003 Consume_signals]
+  p4004[DISC-P4-004 Draft_PR_B]
+  p4005[DISC-P4-005 Guardrails]
+  p4006[DISC-P4-006 Public_E]
+  prGate[Human_PR_merge]
+
+  searchP4 --> p4003
+  p4000 --> p4001
+  p4000 --> p4002
+  p4000 --> p4004
+  p4000 --> p4006
+  p4005 --> p4001
+  p4005 --> p4004
+  p4005 --> p4006
+  p4003 --> p4004
+  p4001 --> p4006
+  p4001 --> prGate
+  p4002 --> prGate
+  p4004 --> prGate
+  p4006 --> prGate
+```
 
 ---
 
@@ -447,6 +628,11 @@ flowchart TD
   P1003[DISC-P1-003 Performer facts]
   P1004[DISC-P1-004 JSON-LD enrich]
   P2001[DISC-P2-001 Ethnically ambiguous page]
+  P2006[DISC-P2-006 Internal linking]
+  P2007[DISC-P2-007 For index]
+  SP4[SEARCH-P4 Automate GSC_GA]
+  P4000[DISC-P4-000 Gemini budget]
+  P4004[DISC-P4-004 GSC draft PR]
 
   P0001 --> P0002
   P0001 --> P0003
@@ -457,6 +643,11 @@ flowchart TD
   P1003 --> P2001
   P1002 --> P1005[DISC-P1-005 Nav link]
   P1002 --> P1007[DISC-P1-007 Mobile sticky]
+  P2001 --> P2006
+  P2006 --> P2007
+  P2007 --> P4004
+  SP4 --> P4004
+  P4000 --> P4004
 ```
 
 ---
@@ -492,5 +683,7 @@ flowchart TD
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.3 | 2026-08-09 | ACS toll-free lease in expected cost; `GEMINI_MODEL_SEARCH_OPS` (3.5) vs Studio `GEMINI_MODEL` (3.6) independent quotas |
+| 1.2 | 2026-08-09 | Tier 4 automated `/for/` pipeline (`DISC-P4-*`: B+C+D+E); Gemini contract; depends on `SEARCH-P4-*` to automate `SEARCH-P3-001` |
 | 1.1 | 2026-08-09 | `DISC-P3-006` → `done` (runbook) with [search-ops-monthly.md](../runbooks/search-ops-monthly.md); monthly execution residual |
 | 1.0 | 2026-08-02 | Initial artifact from discoverability assessment |

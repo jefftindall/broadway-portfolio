@@ -16,8 +16,8 @@ locals {
   )
   # Fixed start (first of month). Do not roll this forward — recreating the budget resets history.
   budget_start_date = "2026-08-01T00:00:00Z"
-  # Expected ~$24.54/mo (eastus2 retail, 2026-08-08) → ceil(24.54 * 1.25) = 31
-  subscription_budget_usd = 31
+  # Expected ~$26.54/mo (eastus2 retail, 2026-08-09; includes ACS toll-free lease) → ceil(26.54 * 1.25) = 34
+  subscription_budget_usd = 34
 }
 
 resource "azurerm_consumption_budget_subscription" "monthly" {

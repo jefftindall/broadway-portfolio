@@ -9,7 +9,7 @@ This guide provisions Azure with Terraform (bootstrap + staging/prod), connects 
 - Terraform >= 1.5
 - Ability to register these Resource Providers on the subscription (or have an Owner do it once): `Microsoft.Resources`, `Microsoft.Storage`, `Microsoft.KeyVault`, `Microsoft.Web`, `Microsoft.Authorization`
 - GitHub repo for this project
-- Gemini API key ([Google AI Studio](https://aistudio.google.com/apikey)). Studio defaults to model `gemini-3.6-flash` (`GEMINI_MODEL`); do not use shut-down IDs such as `gemini-2.0-flash`.
+- Gemini API key ([Google AI Studio](https://aistudio.google.com/apikey)). Studio defaults to `gemini-3.6-flash` (`GEMINI_MODEL`); search-ops / lander drafts use `GEMINI_MODEL_SEARCH_OPS` (default `gemini-3.5-flash`) with independent quotas. Do not use shut-down IDs such as `gemini-2.0-flash`.
 - Permission to create a GitHub App on the account that owns this repo (Studio writes via App installation tokens — see [github-app.md](runbooks/github-app.md))
 - `gh` CLI authenticated (so Terraform can set Actions environment variables via `GH_TOKEN`)
 - Access to DNS for `elysetindall.com`

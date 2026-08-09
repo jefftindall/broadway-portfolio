@@ -39,9 +39,11 @@ Phased work and action IDs live in [docs/plans/search-and-analytics.md](docs/pla
 ## Phase 3 — Operating loop
 
 - Monthly GSC + GA review checklist: [search-ops-monthly.md](docs/runbooks/search-ops-monthly.md) (`SEARCH-P3-001`–`003`).
+- **Automate** the checklist via `SEARCH-P4-*` (manual habit will not stick); hand off to casting Tier 4 (`DISC-P4-*`).
 - Feed findings into `DISC-*` / content PRs — do not paste PII or full query exports into git.
 - Re-check GSC Experience/CWV after major hero/reel visual changes.
-- Ops scorecard visits/contacts (`OPS-P5-*`) do **not** replace this GSC query review.
+- Ops scorecard visits/contacts (`OPS-P5-*`) do **not** replace GSC query/CTR extraction.
+- Search extract jobs: **no Gemini**. Lander body drafts use **`GEMINI_MODEL_SEARCH_OPS`** (`gemini-3.5-flash`), not Studio `GEMINI_MODEL` (`gemini-3.6-flash`) — independent per-model limits (5 RPM / 20 RPD each) — see `DISC-P4-000` / [cost-and-quotas.md](docs/runbooks/cost-and-quotas.md).
 
 ## Keep docs in sync
 
@@ -54,6 +56,7 @@ When you change the surfaces in this rule’s globs (or GA events / SEO contract
 | Person JSON-LD merge or page schemas | Plan Phase 2 + `docs/style-guide.md` SEO notes |
 | robots.txt / OG default / slashless URLs | Plan Phase 2 statuses/ACs |
 | SEO journey/smoke coverage | Plan `SEARCH-P2-007` + `ux-release-testing-strategy.md` (`J-SEO-01`) |
-| Monthly GSC/GA review process | Plan Phase 3 + [search-ops-monthly.md](docs/runbooks/search-ops-monthly.md) |
+| Monthly GSC/GA review process | Plan Phase 3–4 + [search-ops-monthly.md](docs/runbooks/search-ops-monthly.md) |
+| Casting lander draft automation | [casting-discoverability.md](docs/plans/casting-discoverability.md) Tier 4 + Gemini budget in cost-and-quotas |
 
 Prefer linking the plan from PR bodies over pasting the full backlog.

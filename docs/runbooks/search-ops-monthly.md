@@ -1,14 +1,25 @@
 # Runbook: Monthly Search Console + Analytics review
 
 **Action IDs:** `SEARCH-P3-001`, `SEARCH-P3-002`, `SEARCH-P3-003`  
-**Related:** `DISC-P3-006` (casting landers from query review)  
+**Automation track (required):** `SEARCH-P4-001`–`004` → casting `DISC-P4-003` / `DISC-P4-004`  
+**Related:** `DISC-P3-006` (casting landers from query review); [casting-discoverability.md](../plans/casting-discoverability.md) Tier 4  
 **Audience:** Jeff (operator); outcomes may create casting/content backlog for Elyse
 
-This is the **manual** measurement feedback loop. It is **not** replaced by the monthly ops scorecard’s automated visits / contacts / Studio counts (`OPS-P5-*`). App Insights answers “is Studio/prod healthy?”; GSC + GA4 answer “who finds us in search, where do they land, and do they inquire or download materials?”
+## Manual vs automated
 
-Cadence: roughly the **1st of each month**, aligned with the ops scorecard ACS digest and [casting-discoverability.md](../plans/casting-discoverability.md) `DISC-P3-006`.
+| Mode | Status | Notes |
+|------|--------|-------|
+| **Automated extract** (`SEARCH-P4-002`) | **Required SoT** once shipped | GSC queries/CTR + GA landings → signal artifact; **no Gemini** |
+| **Manual checklist below** | Fallback only | Will not happen reliably — do not plan ops around monthly clicking |
+| Ops scorecard visits/contacts (`OPS-P5-*`) | Separate | Thin activity glance; does **not** include GSC queries/CTR |
+
+App Insights answers “is Studio/prod healthy?”; GSC + GA4 answer “who finds us in search, where do they land, and do they inquire or download materials?”
+
+Cadence: roughly the **1st of each month**, aligned with the ops scorecard ACS digest and `DISC-P3-006`.
 
 **Privacy:** Do not commit inquiry PII, raw export dumps with emails, or screenshots that include private contacts. Backlog notes in git stay high-level (paths, query themes, CTR gaps).
+
+**AI credits:** Search extract jobs must not call Gemini. Lander **body** drafts use **`GEMINI_MODEL_SEARCH_OPS`** (default `gemini-3.5-flash`), separate from Studio’s `GEMINI_MODEL` (`gemini-3.6-flash`) — per-model **5 RPM / 20 RPD**. See [cost-and-quotas.md](cost-and-quotas.md) and `DISC-P4-000`.
 
 ---
 
@@ -20,18 +31,19 @@ Cadence: roughly the **1st of each month**, aligned with the ops scorecard ACS d
 | GA4 property / Measurement ID `G-XEE29C0RRE` | [Analytics](https://analytics.google.com/) |
 | Preferred host still apex | `www` → apex 301 ([dns-and-domain.md](dns-and-domain.md)) |
 | Optional: last month’s scorecard activity | ACS digest / [`operational-excellence-scorecard.md`](../ops/operational-excellence-scorecard.md) § Site performance |
+| When Phase 4 exists | Prefer the monthly signal artifact / digest over re-clicking this table |
 
 Residual one-time ops (not required every month): request indexing (`SEARCH-P0-004`), measurement-only GA Admin (`SEARCH-P1-005`), DebugView event verify.
 
 ---
 
-## Monthly checklist (`SEARCH-P3-001`)
+## Monthly checklist (`SEARCH-P3-001`) — fallback
 
-Work the previous **calendar month** (same window as the ops cost / site-performance probes).
+Work the previous **calendar month** (same window as the ops cost / site-performance probes). **Skip this table when `SEARCH-P4-002` has already produced the month’s artifact.**
 
 | # | Source | Look at | Healthy if… | If not… |
 |---|--------|---------|-------------|---------|
-| 1 | **GSC → Performance** | Queries, CTR, impressions on `/for/*`, `/lessons`, brand vs non-brand | Brand queries healthy; non-brand landers not collapsing | Refine titles/descriptions or plan a new/refined lander (`DISC-P3-002`) |
+| 1 | **GSC → Performance** | Queries, CTR, impressions on `/for/*`, `/lessons`, brand vs non-brand | Brand queries healthy; non-brand landers not collapsing | Refine titles/descriptions or plan a new/refined lander (`DISC-P3-002` / `DISC-P4-004`) |
 | 2 | **GSC → Pages** (indexing) | Coverage errors; unexpected URLs (`/studio`, old WP paths) | No soft-404 / redirect loops; `/studio` not indexed | One-hop 301s / `noIndex` / sitemap filter ([staticwebapp.config.json](../../public/staticwebapp.config.json)) |
 | 3 | **GA4 → Acquisition → Organic Search** | Landing pages, engagement | Money pages (`/`, `/materials`, `/shows`, `/for/*`) appear | Fix weak landers; promote strong ones in nav/home |
 | 4 | **GA4 → Events** | `generate_lead`, `file_download`, `select_content` by landing page | Inquiries/downloads attach to intended landers | Prioritize content refresh on pages with traffic but no conversion |
@@ -39,7 +51,7 @@ Work the previous **calendar month** (same window as the ops cost / site-perform
 | 6 | **GSC → Experience / CWV** | LCP on hero/reel-heavy pages (mobile) | No new “poor” regressions after ship | Perf follow-up (`SEARCH-P3-003`) |
 | 7 | **GSC → Enhancements** | Person, VideoObject, EducationalOrganization, Offer | No new critical schema errors | Rich Results Test before/after; schema in `Seo.astro` / page JSON-LD |
 
-Mark `SEARCH-P3-001` done in [search-and-analytics.md](../plans/search-and-analytics.md) only after the checklist has been run at least once as a documented habit (then keep running monthly without flipping status back).
+Automation coverage target: rows **1–5** via `SEARCH-P4-002`; rows **6–7** may stay manual or thin API later.
 
 ---
 
@@ -47,15 +59,16 @@ Mark `SEARCH-P3-001` done in [search-and-analytics.md](../plans/search-and-analy
 
 For each meaningful finding, either:
 
-1. **Open or update a `DISC-*` item** in [casting-discoverability.md](../plans/casting-discoverability.md) (Tier 2–3 landers, title/description tweaks, Person facts), **or**
-2. **Ship a small content PR** (new `/for/*` lander, copy fix) and reference the review month in the PR body.
+1. **Open or update a `DISC-*` item** in [casting-discoverability.md](../plans/casting-discoverability.md) (Tier 2–4 landers, title/description tweaks, Person facts), **or**
+2. **Ship a small content PR** (new `/for/*` lander, copy fix) and reference the review month in the PR body, **or**
+3. **When Tier 4 exists:** let `DISC-P4-003`/`004` turn the `SEARCH-P4-002` artifact into a **draft PR** (human merge; Gemini ≤2–3 bodies/month).
 
 Rules of thumb:
 
 | Finding | Typical backlog action |
 |---------|------------------------|
 | High impressions, low CTR on a `/for/*` URL | Rewrite title/meta; keep bare title contract ([add-casting-page.md](add-casting-page.md)) |
-| Query cluster with no lander | New casting page (`DISC-P3-002`) |
+| Query cluster with no lander | New casting page (`DISC-P3-002` / catalog `DISC-P4-001`) |
 | Traffic to weak page, no `generate_lead` / downloads | Content or CTA refresh — not a new GA event |
 | `/studio` or legacy WP URL in GSC | Technical fix (301 / robots) — not a DISC content item |
 
@@ -78,7 +91,7 @@ You do not need to wait for the monthly calendar to run this after a visual ship
 
 ## What the ops scorecard already covers
 
-The monthly ACS digest / scorecard may include **visits, top paths, inquiry counts, Studio publishes** (`OPS-P5-*`). Use that as a thin activity glance. It does **not** include GSC queries, CTR, or indexing coverage — those stay in this runbook.
+The monthly ACS digest / scorecard may include **visits, top paths, inquiry counts, Studio publishes** (`OPS-P5-*`). Use that as a thin activity glance. It does **not** include GSC queries, CTR, or indexing coverage — those stay in this runbook / `SEARCH-P4-*`.
 
 ---
 
@@ -86,8 +99,9 @@ The monthly ACS digest / scorecard may include **visits, top paths, inquiry coun
 
 | Doc | Role |
 |-----|------|
-| [search-and-analytics.md](../plans/search-and-analytics.md) | `SEARCH-*` backlog + monthly loop table |
-| [casting-discoverability.md](../plans/casting-discoverability.md) | `DISC-*` content backlog (`DISC-P3-006`) |
+| [search-and-analytics.md](../plans/search-and-analytics.md) | `SEARCH-*` backlog + Phase 4 automation |
+| [casting-discoverability.md](../plans/casting-discoverability.md) | `DISC-*` content backlog + Tier 4 pipeline |
 | [monthly-site-check-in.md](monthly-site-check-in.md) | How Elyse reads the ACS digest (not this GSC review) |
 | [ga-data-api-access.md](ga-data-api-access.md) | Automating GA visits into the scorecard (ops) |
+| [cost-and-quotas.md](cost-and-quotas.md) | Gemini RPM/RPD shared with Studio |
 | [observability.md](observability.md) | App Insights vs GA4 |
