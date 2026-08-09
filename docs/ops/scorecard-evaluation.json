@@ -64,10 +64,10 @@
       "name": "Cost & capacity",
       "weight": 0.7,
       "score": 4,
-      "evidence": "Subscription budget $31/mo (OPS-P4-001); Subscription ActualCost 2026-07: $2.10 (6.7% of $31 budget). MoM unavailable (no prior-month rows).",
+      "evidence": "Subscription budget $34/mo (OPS-P4-001); Subscription ActualCost 2026-07: $2.10 (6.2% of $34 budget). MoM unavailable (no prior-month rows).",
       "gap": "Gemini/Google console budget alert still manual",
       "sliStatus": "ok",
-      "sliNote": "Subscription ActualCost 2026-07: $2.10 (6.7% of $31 budget). MoM unavailable (no prior-month rows). Re-probe skipped: Cost Management spend probe failed: Cost Management returned 429 (rate limited); retry later."
+      "sliNote": "Subscription ActualCost 2026-07: $2.10 (6.2% of $34 budget). MoM unavailable (no prior-month rows). Re-probe skipped: Cost Management spend probe failed: Cost Management returned 429 (rate limited); retry later."
     },
     {
       "id": "alerting",
@@ -152,11 +152,11 @@
     "momDeltaUsd": null,
     "momDeltaPct": null,
     "trend": "flat",
-    "budgetUsd": 31,
-    "budgetUsedPct": 6.7,
+    "budgetUsd": 34,
+    "budgetUsedPct": 6.2,
     "underBudget": true,
     "status": "ok",
-    "note": "Subscription ActualCost 2026-07: $2.10 (6.7% of $31 budget). MoM unavailable (no prior-month rows). Re-probe skipped: Cost Management spend probe failed: Cost Management returned 429 (rate limited); retry later."
+    "note": "Subscription ActualCost 2026-07: $2.10 (6.2% of $34 budget). MoM unavailable (no prior-month rows). Re-probe skipped: Cost Management returned 429 (rate limited); retry later."
   },
   "contentFreshness": {
     "homepage": {

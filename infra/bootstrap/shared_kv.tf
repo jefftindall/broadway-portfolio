@@ -135,6 +135,7 @@ resource "azurerm_key_vault_secret" "alert_voice_phone" {
 # GA4 Data API for monthly scorecard visits / top pages (OPS-P5-002). Not used by
 # SWA or Astro — monthly workflow + ops-scorecard-refresh.mjs only. Measurement ID
 # (G-…) stays public via Terraform/GitHub env; these are report-read credentials.
+# ignore tags: `az keyvault secret set --file` / Portal often adds file-encoding=utf-8.
 resource "azurerm_key_vault_secret" "ga_property_id" {
   name         = "GA-PROPERTY-ID"
   value        = "REPLACE_ME"
@@ -142,7 +143,7 @@ resource "azurerm_key_vault_secret" "ga_property_id" {
   depends_on   = [azurerm_role_assignment.shared_kv_admin]
 
   lifecycle {
-    ignore_changes = [value]
+    ignore_changes = [value, tags]
   }
 }
 
@@ -153,7 +154,7 @@ resource "azurerm_key_vault_secret" "ga_data_api_sa_json" {
   depends_on   = [azurerm_role_assignment.shared_kv_admin]
 
   lifecycle {
-    ignore_changes = [value]
+    ignore_changes = [value, tags]
   }
 }
 

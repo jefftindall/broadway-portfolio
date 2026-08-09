@@ -12,7 +12,7 @@
 #   Container:         tfstate
 #   Shared RG/vault:   rg-elyse-shared / kv-elyse-shared (SITE-*, Turnstile, ACS, ALERT-*, GA-*)
 #   Shared ACS:        acs-elyse-shared + email-elyse-shared (one MailFrom / SMS number)
-#   Subscription budget: budget-elyse-portfolio-monthly (ceil(expected×1.25), currently $31/mo; ALERT-EMAIL at 80%/100%)
+#   Subscription budget: budget-elyse-portfolio-monthly (ceil(expected×1.25), currently $34/mo; ALERT-EMAIL at 80%/100%)
 #   Region:            eastus2
 #   Subscription:      e601e59a-c7f4-41f0-8178-b59740fb1974
 #   Entra app:         elyse-portfolio-gha-terraform (OIDC for plan/apply)

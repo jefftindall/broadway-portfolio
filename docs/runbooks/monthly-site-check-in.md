@@ -33,7 +33,7 @@ Agents editing the digest must follow [`.cursor/rules/ops-monthly-checkin-email.
 | **3** | Worth a glance | Your short action list | Appears only when something needs attention. If the section is missing, you are done after the green banner. |
 | **4** | Last month on the site | Visits, casting vs lesson inquiries, Studio updates, numbered top pages | Visits / inquiries are informational. **Studio updates** show a green/amber/red pill. |
 | **5** | For visitors & casting | Homepage, resume, headshot, page speed, Studio publish success | Read the **status pill** and short note. Red on a materials link usually means “act.” |
-| **6** | Hosting cost | What Azure charged last month vs the monthly budget (~$31) | Bar / **% of budget used**, or **Over budget** → message Jeff. Small dollar swings are normal. |
+| **6** | Hosting cost | What Azure charged last month vs the monthly budget (~$34) | Bar / **% of budget used**, or **Over budget** → message Jeff. Small dollar swings are normal. |
 | **7** | Detailed scorecard link | Full technical write-up | Optional — for Jeff. You can ignore it. |
 
 Numbers and dollar amounts in the picture are **examples**. Your real email will show that month’s actual figures.
