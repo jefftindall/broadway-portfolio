@@ -182,7 +182,7 @@ const tools = [
       {
         name: 'add_gallery_photo',
         description:
-          'Add a gallery entry referencing an already-uploaded image path. Do not invent captions — leave caption empty; the public gallery does not display captions.',
+          'Add a gallery entry referencing an already-uploaded image path. Do not invent captions — leave caption empty; the public gallery does not display captions. New photos always appear first in the gallery (sort order is automatic).',
         parameters: {
           type: 'OBJECT',
           properties: {
@@ -193,7 +193,6 @@ const tools = [
             },
             image: { type: 'STRING', description: 'Path like /images/photos/foo.jpg or src path served as public' },
             tags: { type: 'ARRAY', items: { type: 'STRING' } },
-            order: { type: 'NUMBER' },
             focus: {
               type: 'STRING',
               description:
@@ -565,17 +564,14 @@ export async function buildContentChange(name, args, photoPath) {
       const tags = Array.isArray(args.tags)
         ? args.tags.map((t) => String(t || '').trim()).filter(Boolean)
         : [];
-      const orderRaw = args.order;
-      const order =
-        orderRaw === undefined || orderRaw === null || orderRaw === ''
-          ? undefined
-          : Number(orderRaw);
+      // Newest first on /gallery (ascending sort). Ignore any client-supplied order.
+      const order = -Date.now();
       const focus = String(args.focus || '').trim() || undefined;
       const content =
         toFrontmatter({
           image,
           tags: tags.length ? tags : undefined,
-          order: Number.isFinite(order) ? order : undefined,
+          order,
           focus,
         }) + '\n';
       change = {
@@ -591,7 +587,6 @@ export async function buildContentChange(name, args, photoPath) {
           image,
           tags,
           focus: focus || 'center',
-          order: Number.isFinite(order) ? order : undefined,
         },
       };
       break;
@@ -948,7 +943,7 @@ Rules:
 - Prefer update_lesson_book_seo only when she explicitly wants to change the book-a-lesson page title or search description.
 - Never use lessons tools to change show credits, news, or gallery content.
 - When drafting lessons copy, keep it vocal-coach accurate (pedagogy, vocal health, CCM); never add acting-lesson offerings.
-- Prefer add_gallery_photo when she attaches a photo for the gallery (image path will be provided). Leave caption empty — the public gallery does not display captions.
+- Prefer add_gallery_photo when she attaches a photo for the gallery (image path will be provided). Leave caption empty — the public gallery does not display captions. Do not set sort order; new photos always appear first.
 - Keep tone professional, warm, and accurate. Do not invent fake credits; align facts with the catalog and production site.
 - Content is expected to be evergreen unless otherwise specified. Avoid relative terms like today, this week, this month, etc which would not make sense in the future.
 - Never mention technical terms like "YAML," "Azure," or "Astro" to her—keep her user experience purely creative and effortless.
