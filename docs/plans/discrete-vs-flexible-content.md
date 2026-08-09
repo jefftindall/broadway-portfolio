@@ -1,7 +1,7 @@
 # Plan: Discrete site variables vs flexible Studio content
 
 **Artifact ID:** `ELYSE-FLEX-001`  
-**Version:** 1.6  
+**Version:** 1.7  
 **Last updated:** 2026-08-09  
 **Audience:** Agents, implementers, Studio publishers  
 **Scope:** Which Studio/Gemini tools may rewrite which content, and how **discrete** fields (rates, later site settings) stay consistent across UI + SEO — not casting SEO strategy itself (`DISC-*`) or GA/GSC (`SEARCH-*`).
@@ -279,12 +279,13 @@ Out of scope for P3 (stay PR/ops): site email (`SITE_CONTACT_EMAIL` / Key Vault)
 
 **Acceptance criteria**
 
-- [x] Studio hub tile **Gallery photo** with compose form (required photo, tags, focus, optional order/slug)
+- [x] Studio hub tile **Gallery photo** with compose form (required photo, tags, focus, optional slug; sort order automatic / newest first)
 - [x] Preview uses `mode: 'compose'` + `add_gallery_photo` (no Gemini) with read-only gallery tile Preview
 - [x] Publish still defers binary upload via `draftPhoto` + provisional path rewrite (same as Speak or type + attach)
 - [x] Tool accepts optional `focus`; `preview.kind = 'gallery'` for structured Preview
 - [x] Studio help + refine runbook mention the hub flow; Speak or type + attach still documented
 - [x] SHA-256 content-hash warning when the selected file already exists under gallery/photos (warn + confirm; does not block)
+- [x] Gallery upload does not expose sort order; new photos auto-sort newest-first on `/gallery`
 
 </details>
 

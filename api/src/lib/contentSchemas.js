@@ -50,6 +50,7 @@ export const galleryFrontmatterSchema = z.object({
   caption: z.string().default(''),
   image: z.string().min(1),
   tags: z.array(z.string()).default([]),
+  /** Gallery grid sort; lower = newer / first. Studio auto-assigns on upload. */
   order: z.number().optional(),
   /** CSS object-position for gallery tiles (e.g. "50% 18%", "center top") */
   focus: z.string().default('center'),

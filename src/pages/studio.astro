@@ -23,9 +23,6 @@ const siteAge = String(site.age);
 
 const galleryEntries = await getCollection('gallery');
 const galleryTagOptions = [...new Set(galleryEntries.flatMap((e) => e.data.tags || []))].sort();
-const nextGalleryOrder =
-  Math.max(0, ...galleryEntries.map((e) => (typeof e.data.order === 'number' ? e.data.order : 0))) +
-  1;
 const imageHashIndex = buildPublicImageHashIndex();
 ---
 
@@ -300,7 +297,8 @@ const imageHashIndex = buildPublicImageHashIndex();
 
       <div id="compose-gallery" class="hidden space-y-4">
         <p class="text-sm text-muted">
-          Choose a photo and tags. Captions stay empty — the public gallery does not show them.
+          Choose a photo and tags. New photos appear first in the gallery. Captions stay empty — the
+          public gallery does not show them.
         </p>
         <label class="block text-sm text-muted">
           Photo
@@ -374,28 +372,15 @@ const imageHashIndex = buildPublicImageHashIndex();
             class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
           />
         </label>
-        <div class="grid gap-3 sm:grid-cols-2">
-          <label class="block text-sm text-muted">
-            Sort order
-            <input
-              id="gallery-order"
-              type="number"
-              min="1"
-              step="1"
-              value={String(nextGalleryOrder)}
-              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
-            />
-          </label>
-          <label class="block text-sm text-muted">
-            Filename slug (optional)
-            <input
-              id="gallery-slug"
-              type="text"
-              placeholder="auto from photo name"
-              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
-            />
-          </label>
-        </div>
+        <label class="block text-sm text-muted">
+          Filename slug (optional)
+          <input
+            id="gallery-slug"
+            type="text"
+            placeholder="auto from photo name"
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          />
+        </label>
         <div class="flex flex-wrap gap-3">
           <button
             id="gallery-preview-btn"
@@ -737,7 +722,6 @@ const imageHashIndex = buildPublicImageHashIndex();
           image: string;
           tags: string[];
           focus?: string;
-          order?: number;
         };
     type ContentChange = {
       tool?: string;
@@ -804,7 +788,6 @@ const imageHashIndex = buildPublicImageHashIndex();
     const galleryFocusSelect = document.getElementById('gallery-focus') as HTMLSelectElement;
     const galleryFocusCustomWrap = document.getElementById('gallery-focus-custom-wrap')!;
     const galleryFocusCustom = document.getElementById('gallery-focus-custom') as HTMLInputElement;
-    const galleryOrderInput = document.getElementById('gallery-order') as HTMLInputElement;
     const gallerySlugInput = document.getElementById('gallery-slug') as HTMLInputElement;
     const factAvailability = document.getElementById('fact-availability') as HTMLInputElement;
     const factVocalType = document.getElementById('fact-vocalType') as HTMLInputElement;
@@ -853,8 +836,6 @@ const imageHashIndex = buildPublicImageHashIndex();
 
     type HubTask = 'ask' | 'gallery' | 'rates' | 'facts' | 'reel' | 'bio' | 'quote';
     let activeTask: HubTask = 'ask';
-
-    const defaultGalleryOrder = galleryOrderInput.value;
 
     type LiveDiscreteDefaults = {
       rate30: string;
@@ -953,7 +934,6 @@ const imageHashIndex = buildPublicImageHashIndex();
       galleryFocusSelect.value = 'center';
       galleryFocusCustom.value = '';
       galleryFocusCustomWrap.classList.add('hidden');
-      galleryOrderInput.value = defaultGalleryOrder;
       gallerySlugInput.value = '';
       document.querySelectorAll<HTMLInputElement>('input[name="gallery-tag"]').forEach((el) => {
         el.checked = false;
@@ -1150,7 +1130,6 @@ const imageHashIndex = buildPublicImageHashIndex();
       galleryTagsExtra.disabled = busy;
       galleryFocusSelect.disabled = busy;
       galleryFocusCustom.disabled = busy;
-      galleryOrderInput.disabled = busy;
       gallerySlugInput.disabled = busy;
       document.querySelectorAll<HTMLInputElement>('input[name="gallery-tag"]').forEach((el) => {
         el.disabled = busy;
@@ -1895,7 +1874,6 @@ const imageHashIndex = buildPublicImageHashIndex();
         image: string;
         tags: string[];
         focus?: string;
-        order?: number;
         slug?: string;
       },
     ) {
@@ -1929,11 +1907,6 @@ const imageHashIndex = buildPublicImageHashIndex();
       const focusLine = document.createElement('p');
       focusLine.textContent = `Focus: ${focus}`;
       meta.appendChild(focusLine);
-      if (preview.order != null) {
-        const orderLine = document.createElement('p');
-        orderLine.textContent = `Sort order: ${preview.order}`;
-        meta.appendChild(orderLine);
-      }
       wrap.appendChild(meta);
     }
 
@@ -2357,13 +2330,11 @@ const imageHashIndex = buildPublicImageHashIndex();
       }
       const tags = readGalleryTags();
       const focus = readGalleryFocus();
-      const orderRaw = Number(galleryOrderInput.value);
       const slug = gallerySlugInput.value.trim();
       const args: Record<string, unknown> = {
         tags,
         focus,
       };
-      if (Number.isFinite(orderRaw) && orderRaw > 0) args.order = Math.round(orderRaw);
       if (slug) args.slug = slug;
       await runDiscretePreview(
         'add_gallery_photo',

@@ -138,6 +138,7 @@ Body
 });
 
 test('buildContentChange add_gallery_photo writes gallery markdown + preview', async () => {
+  const before = Date.now();
   const change = await buildContentChange(
     'add_gallery_photo',
     {
@@ -149,16 +150,23 @@ test('buildContentChange add_gallery_photo writes gallery markdown + preview', a
     },
     undefined,
   );
+  const after = Date.now();
   assert.equal(change.tool, 'add_gallery_photo');
   assert.equal(change.path, 'src/content/gallery/nyc-winter-headshot.md');
   assert.equal(change.livePath, '/gallery');
   assert.equal(change.preview?.kind, 'gallery');
   assert.equal(change.preview?.focus, '50% 28%');
+  assert.equal(change.preview?.order, undefined);
   assert.deepEqual(change.preview?.tags, ['headshot', 'portrait']);
   assert.doesNotThrow(() => validateContentFile(change.path, change.content));
   assert.match(change.content, /image: "\/images\/photos\/pending-headshot\.jpg"/);
   assert.match(change.content, /focus: "50% 28%"/);
   assert.doesNotMatch(change.content, /caption:/);
+  const orderMatch = change.content.match(/^order:\s*(-?\d+)$/m);
+  assert.ok(orderMatch, 'auto order should be written');
+  const order = Number(orderMatch[1]);
+  assert.ok(order <= -before && order >= -after, `order ${order} should be -Date.now()`);
+  assert.doesNotMatch(change.content, /^order:\s*52$/m);
 });
 
 test('buildContentChange add_gallery_photo uses attached photoPath when image omitted', async () => {
