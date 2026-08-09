@@ -16,10 +16,22 @@ const { hideCta = false } = Astro.props;
         <p class="mx-auto mt-3 max-w-xl text-muted">
           Casting inquiries, lesson questions, or press — reach out anytime.
         </p>
-        <div class="mt-8 flex flex-wrap justify-center gap-4">
-          <CtaLink href="/materials">Materials</CtaLink>
-          <CtaLink href="/contact" variant="secondary">Contact</CtaLink>
-          <CtaLink href="/lessons" variant="secondary">
+        <div class="mt-8 flex flex-nowrap justify-center gap-2 sm:gap-4">
+          <CtaLink class="shrink-0 whitespace-nowrap !px-3 sm:!px-6" href="/materials">
+            Materials
+          </CtaLink>
+          <CtaLink
+            class="shrink-0 whitespace-nowrap !px-3 sm:!px-6"
+            href="/contact"
+            variant="secondary"
+          >
+            Contact
+          </CtaLink>
+          <CtaLink
+            class="shrink-0 whitespace-nowrap !px-3 sm:!px-6"
+            href="/lessons"
+            variant="secondary"
+          >
             Lessons
           </CtaLink>
         </div>

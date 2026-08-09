@@ -8,7 +8,6 @@ interface Props {
   keyword: string;
   relatedSkills?: string[];
   relatedShows?: string[];
-  cta?: string;
   canonicalPath: string;
 }
 
@@ -18,7 +17,6 @@ const {
   keyword,
   relatedSkills = [],
   relatedShows = [],
-  cta = 'Request materials',
   canonicalPath,
 } = Astro.props;
 
@@ -63,23 +61,5 @@ const jsonLd = {
         </aside>
       )
     }
-
-    <div class="mt-10 flex flex-nowrap gap-3">
-      <a
-        href="/contact#casting-inquiry"
-        class="inline-flex shrink-0 items-center rounded-sm bg-gold px-4 py-3 text-sm font-semibold text-ink transition hover:brightness-110 sm:px-5"
-        data-ga-event="select_content"
-        data-ga-content-type="materials"
-        data-ga-content-id="casting-request"
-      >
-        {cta}
-      </a>
-      <a
-        href="/about"
-        class="inline-flex shrink-0 items-center rounded-sm border border-line px-4 py-3 text-sm text-spotlight transition hover:border-gold sm:px-5"
-      >
-        About Elyse
-      </a>
-    </div>
   </article>
 </BaseLayout>
