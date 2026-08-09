@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getCollection, getEntry } from 'astro:content';
 import { site } from '../lib/site';
+import { buildPublicImageHashIndex } from '../lib/imageContentHashes';
 
 const book = await getEntry('pages', 'lessons-book');
 const bookRates = book?.data.rates ?? [];
@@ -25,6 +26,7 @@ const galleryTagOptions = [...new Set(galleryEntries.flatMap((e) => e.data.tags 
 const nextGalleryOrder =
   Math.max(0, ...galleryEntries.map((e) => (typeof e.data.order === 'number' ? e.data.order : 0))) +
   1;
+const imageHashIndex = buildPublicImageHashIndex();
 ---
 
 <BaseLayout
@@ -132,6 +134,7 @@ const nextGalleryOrder =
       data-site-age={siteAge}
       data-book-format={bookFormat}
       data-book-scheduling={bookScheduling}
+      data-image-hashes={JSON.stringify(imageHashIndex)}
     >
       <div id="hub-step" class="space-y-4">
         <p class="text-sm text-muted">What do you want to update?</p>
@@ -279,6 +282,11 @@ const nextGalleryOrder =
             class="max-h-40 rounded-sm border border-line object-cover"
           />
         </div>
+        <p
+          id="photo-dup-warn"
+          class="hidden rounded-sm border border-gold/40 bg-gold/10 px-3 py-2 text-sm text-spotlight"
+          role="status"
+        ></p>
 
         <button
           id="preview-btn"
@@ -311,6 +319,11 @@ const nextGalleryOrder =
             style="object-position: center"
           />
         </div>
+        <p
+          id="gallery-dup-warn"
+          class="hidden rounded-sm border border-gold/40 bg-gold/10 px-3 py-2 text-sm text-spotlight"
+          role="status"
+        ></p>
         <fieldset>
           <legend class="text-sm text-muted">Tags</legend>
           <div id="gallery-tag-chips" class="mt-2 flex flex-wrap gap-2">
@@ -760,6 +773,7 @@ const nextGalleryOrder =
     const photoEl = document.getElementById('photo') as HTMLInputElement;
     const photoPreviewWrap = document.getElementById('photo-preview-wrap')!;
     const photoPreview = document.getElementById('photo-preview') as HTMLImageElement;
+    const photoDupWarn = document.getElementById('photo-dup-warn')!;
     const previewBtn = document.getElementById('preview-btn') as HTMLButtonElement;
     const publishBtn = document.getElementById('publish-btn') as HTMLButtonElement;
     const backBtn = document.getElementById('back-btn') as HTMLButtonElement;
@@ -785,6 +799,7 @@ const nextGalleryOrder =
     const galleryPhotoPreview = document.getElementById(
       'gallery-photo-preview',
     ) as HTMLImageElement;
+    const galleryDupWarn = document.getElementById('gallery-dup-warn')!;
     const galleryTagsExtra = document.getElementById('gallery-tags-extra') as HTMLInputElement;
     const galleryFocusSelect = document.getElementById('gallery-focus') as HTMLSelectElement;
     const galleryFocusCustomWrap = document.getElementById('gallery-focus-custom-wrap')!;
@@ -932,6 +947,8 @@ const nextGalleryOrder =
       galleryPhotoPreviewWrap.classList.add('hidden');
       galleryPhotoPreview.removeAttribute('src');
       galleryPhotoPreview.style.objectPosition = 'center';
+      clearDuplicateWarning(galleryDupWarn);
+      galleryPhotoDuplicatePath = null;
       galleryTagsExtra.value = '';
       galleryFocusSelect.value = 'center';
       galleryFocusCustom.value = '';
@@ -941,6 +958,52 @@ const nextGalleryOrder =
       document.querySelectorAll<HTMLInputElement>('input[name="gallery-tag"]').forEach((el) => {
         el.checked = false;
       });
+    }
+
+    function parseImageHashIndex(): Record<string, string> {
+      try {
+        const raw = studioApp.dataset.imageHashes || '{}';
+        const parsed = JSON.parse(raw) as unknown;
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+        return parsed as Record<string, string>;
+      } catch {
+        return {};
+      }
+    }
+
+    const imageHashes = parseImageHashIndex();
+
+    async function sha256Hex(buffer: ArrayBuffer): Promise<string> {
+      const digest = await crypto.subtle.digest('SHA-256', buffer);
+      return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function clearDuplicateWarning(el: HTMLElement) {
+      el.classList.add('hidden');
+      el.textContent = '';
+    }
+
+    function showDuplicateWarning(el: HTMLElement, existingPath: string) {
+      el.textContent = `This exact photo is already on the site (${existingPath}). Publishing again will create a duplicate. Choose a different file, or continue if you mean to.`;
+      el.classList.remove('hidden');
+    }
+
+    async function checkPhotoDuplicate(file: File): Promise<string | null> {
+      if (!Object.keys(imageHashes).length) return null;
+      try {
+        const hash = await sha256Hex(await file.arrayBuffer());
+        const hit = imageHashes[hash];
+        return typeof hit === 'string' && hit ? hit : null;
+      } catch {
+        return null;
+      }
+    }
+
+    function confirmIfDuplicate(existingPath: string | null): boolean {
+      if (!existingPath) return true;
+      return window.confirm(
+        `This exact photo is already on the site (${existingPath}). Publish a duplicate anyway?`,
+      );
     }
 
     function resetDiscreteFormToLive(task: HubTask) {
@@ -1000,6 +1063,9 @@ const nextGalleryOrder =
     let draftPhoto: PhotoPayload | undefined;
     let provisionalPhotoPath: string | null = null;
     let draftChanges: ContentChange[] = [];
+    /** Exact content-hash match against live gallery/photos (warn-only). */
+    let askPhotoDuplicatePath: string | null = null;
+    let galleryPhotoDuplicatePath: string | null = null;
     let pollTimer: number | null = null;
     let pollStartedAt = 0;
     let publishClickedAt = 0;
@@ -2120,8 +2186,12 @@ const nextGalleryOrder =
       draftPhoto = undefined;
       provisionalPhotoPath = null;
       draftChanges = [];
+      askPhotoDuplicatePath = null;
+      galleryPhotoDuplicatePath = null;
       photoPreviewWrap.classList.add('hidden');
       photoPreview.removeAttribute('src');
+      clearDuplicateWarning(photoDupWarn);
+      clearDuplicateWarning(galleryDupWarn);
       resetGalleryForm();
       changesEditor.replaceChildren();
       previewReply.textContent = '';
@@ -2161,6 +2231,8 @@ const nextGalleryOrder =
 
     photoEl.addEventListener('change', () => {
       const file = photoEl.files?.[0];
+      askPhotoDuplicatePath = null;
+      clearDuplicateWarning(photoDupWarn);
       if (!file) {
         photoPreviewWrap.classList.add('hidden');
         photoPreview.removeAttribute('src');
@@ -2169,10 +2241,20 @@ const nextGalleryOrder =
       const url = URL.createObjectURL(file);
       photoPreview.src = url;
       photoPreviewWrap.classList.remove('hidden');
+      void checkPhotoDuplicate(file).then((hit) => {
+        if (photoEl.files?.[0] !== file) return;
+        askPhotoDuplicatePath = hit;
+        if (hit) {
+          showDuplicateWarning(photoDupWarn, hit);
+          setStatus(`Duplicate photo warning — already on the site as ${hit}.`);
+        }
+      });
     });
 
     galleryPhotoEl.addEventListener('change', () => {
       const file = galleryPhotoEl.files?.[0];
+      galleryPhotoDuplicatePath = null;
+      clearDuplicateWarning(galleryDupWarn);
       if (!file) {
         galleryPhotoPreviewWrap.classList.add('hidden');
         galleryPhotoPreview.removeAttribute('src');
@@ -2182,6 +2264,14 @@ const nextGalleryOrder =
       galleryPhotoPreview.src = url;
       galleryPhotoPreviewWrap.classList.remove('hidden');
       syncGalleryFocusPreview();
+      void checkPhotoDuplicate(file).then((hit) => {
+        if (galleryPhotoEl.files?.[0] !== file) return;
+        galleryPhotoDuplicatePath = hit;
+        if (hit) {
+          showDuplicateWarning(galleryDupWarn, hit);
+          setStatus(`Duplicate photo warning — already on the site as ${hit}.`);
+        }
+      });
     });
 
     galleryFocusSelect.addEventListener('change', () => {
@@ -2248,6 +2338,16 @@ const nextGalleryOrder =
       const file = galleryPhotoEl.files?.[0];
       if (!file) {
         setStatus('Choose a photo first.');
+        return;
+      }
+      if (!galleryPhotoDuplicatePath) {
+        galleryPhotoDuplicatePath = await checkPhotoDuplicate(file);
+        if (galleryPhotoDuplicatePath) {
+          showDuplicateWarning(galleryDupWarn, galleryPhotoDuplicatePath);
+        }
+      }
+      if (!confirmIfDuplicate(galleryPhotoDuplicatePath)) {
+        setStatus('Choose a different photo, or confirm when ready to publish a duplicate.');
         return;
       }
       const resized = await resizeImage(file);
@@ -2381,6 +2481,18 @@ const nextGalleryOrder =
       if (!message) {
         setStatus('Write a message first.');
         return;
+      }
+      if (photoEl.files?.[0]) {
+        if (!askPhotoDuplicatePath) {
+          askPhotoDuplicatePath = await checkPhotoDuplicate(photoEl.files[0]);
+          if (askPhotoDuplicatePath) {
+            showDuplicateWarning(photoDupWarn, askPhotoDuplicatePath);
+          }
+        }
+        if (!confirmIfDuplicate(askPhotoDuplicatePath)) {
+          setStatus('Choose a different photo, or confirm when ready to publish a duplicate.');
+          return;
+        }
       }
 
       setComposeBusy(true);

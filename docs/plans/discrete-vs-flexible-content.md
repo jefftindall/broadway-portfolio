@@ -284,6 +284,7 @@ Out of scope for P3 (stay PR/ops): site email (`SITE_CONTACT_EMAIL` / Key Vault)
 - [x] Publish still defers binary upload via `draftPhoto` + provisional path rewrite (same as Speak or type + attach)
 - [x] Tool accepts optional `focus`; `preview.kind = 'gallery'` for structured Preview
 - [x] Studio help + refine runbook mention the hub flow; Speak or type + attach still documented
+- [x] SHA-256 content-hash warning when the selected file already exists under gallery/photos (warn + confirm; does not block)
 
 </details>
 
