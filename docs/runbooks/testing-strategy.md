@@ -25,7 +25,7 @@ This document defines how we validate user experience before production deploys.
 | **Smoke** | After staging deploy | `npm run test:smoke` — job **Smoke Staging** | Route availability, SEO shell, downloads, anonymous `/studio` redirect (desktop + mobile) |
 | **Lab FCP** | After smoke (soft) | `npm run test:lab-fcp` | Homepage median FCP vs 1.5s policy (`OPS-P2-003`); warn-only unless `LAB_FCP_HARD=1` |
 | **Journeys** | After smoke (profile-dependent) | `npm run test:journey` or `test:journey:content` | Persona flows; scope depends on what changed (see below) |
-| **Smoke Production** | After prod deploy | `npm run test:smoke` — job **Smoke Production** (`TEST-D-003`) | Same Tier A suite against prod hostname; failure → Sev1 SMS+voice (`SmokeFailed`); **no** auto-rollback |
+| **Smoke Production** | After prod deploy | `npm run test:smoke` — job **Smoke Production** (`TEST-D-003`) | Same Tier A suite against the public prod host (Ready custom domain when set, else default SWA hostname); failure → Sev1 SMS+voice (`SmokeFailed`); **no** auto-rollback |
 | Prod availability | Continuous | App Insights synthetics (prod) | Homepage + resume PDF + theatrical headshot every 10 minutes |
 
 Production deploy (`deploy_prod`) reuses the **same build artifact** verified on staging — no second site build. **Smoke Production** is a post-release canary (does not block the deploy that already finished); when it fails, CD emits `SmokeFailed` and the critical Action Group pages email + SMS + voice.
@@ -40,7 +40,7 @@ The CD workflow sets a `test_profile` from path filters:
 | **content** | Only `src/content/**` and `public/**` (non-config) | `@content`-tagged journeys (`casting`, `visitor`) via `npm run test:journey:content` |
 | **smoke** | Only `api/**` | Smoke only (studio redirect covered there) |
 
-Smoke always runs after staging deploy regardless of profile. After a successful **Deploy Production**, **Smoke Production** re-runs the same smoke suite against the live prod hostname.
+Smoke always runs after staging deploy regardless of profile. After a successful **Deploy Production**, **Smoke Production** re-runs the same smoke suite against the live public prod host (prefers the Portal **default** custom domain such as `elysetindall.com`; the `*.azurestaticapps.net` hostname 301s there when a default custom domain is set, which would otherwise break the anonymous `/studio` → `/.auth/login` assertion).
 
 ---
 

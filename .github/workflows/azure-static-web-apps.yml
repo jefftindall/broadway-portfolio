@@ -615,16 +615,42 @@ jobs:
       - name: Resolve production hostname
         id: host
         run: |
-          HOST=$(az staticwebapp show \
-            --name "${{ vars.AZURE_STATIC_WEB_APP_NAME }}" \
-            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+          # Prefer the Portal "default" custom domain (apex). When a custom domain is
+          # set as default, the *.azurestaticapps.net host 301s to it — including
+          # /studio — so auth Location is never /.auth/login and smoke fails.
+          # Matches availability synthetics (custom_domain when set).
+          SWA_NAME="${{ vars.AZURE_STATIC_WEB_APP_NAME }}"
+          SWA_RG="${{ vars.AZURE_RESOURCE_GROUP }}"
+          DEFAULT=$(az staticwebapp show \
+            --name "$SWA_NAME" \
+            --resource-group "$SWA_RG" \
             --query defaultHostname -o tsv)
+          CUSTOM=$(az staticwebapp hostname list \
+            --name "$SWA_NAME" \
+            --resource-group "$SWA_RG" \
+            --query "[?status=='Ready' && isDefault].(domainName || name) | [0]" -o tsv)
+          if [ -z "$CUSTOM" ] || [ "$CUSTOM" = "None" ]; then
+            CUSTOM=$(az staticwebapp hostname list \
+              --name "$SWA_NAME" \
+              --resource-group "$SWA_RG" \
+              --query "[?status=='Ready' && !starts_with(domainName || name, 'www.')].(domainName || name) | [0]" -o tsv)
+          fi
+          if [ -z "$CUSTOM" ] || [ "$CUSTOM" = "None" ]; then
+            CUSTOM=$(az staticwebapp hostname list \
+              --name "$SWA_NAME" \
+              --resource-group "$SWA_RG" \
+              --query "[?status=='Ready'].(domainName || name) | [0]" -o tsv)
+          fi
+          if [ "$CUSTOM" = "None" ]; then
+            CUSTOM=
+          fi
+          HOST=${CUSTOM:-$DEFAULT}
           if [ -z "$HOST" ]; then
             echo "::error::Could not resolve production Static Web App hostname"
             exit 1
           fi
           echo "hostname=$HOST" >> "$GITHUB_OUTPUT"
-          echo "Production URL: https://$HOST"
+          echo "Production URL: https://$HOST (defaultHostname=$DEFAULT)"
 
       - name: Install dependencies
         run: npm ci

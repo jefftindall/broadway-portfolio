@@ -14,7 +14,7 @@ CD workflows share concurrency group `portfolio-cd` (`cancel-in-progress: false`
 
 **Smoke Staging** runs Playwright against the live staging hostname and **blocks** production. Journey scope depends on what changed: full suite for UI/infra changes, `@content` journeys for markdown-only updates, smoke-only for API-only changes. See [testing-strategy.md](testing-strategy.md). Production deploys the **same build artifact** that passed staging verification.
 
-**Smoke Production** (`TEST-D-003`) re-runs the same Playwright smoke suite against the live prod hostname after **Deploy Production** succeeds. It does **not** auto-rollback. On failure, CD emits `SmokeFailed` → `ag-elyse-critical-prod` (email + SMS + voice).
+**Smoke Production** (`TEST-D-003`) re-runs the same Playwright smoke suite against the live public prod host after **Deploy Production** succeeds (Ready custom domain when configured — not only `*.azurestaticapps.net`, which 301s to the default custom domain). It does **not** auto-rollback. On failure, CD emits `SmokeFailed` → `ag-elyse-critical-prod` (email + SMS + voice).
 
 Optional: add required reviewers on the GitHub Environment **prod** for a manual approval gate after smoke.
 
