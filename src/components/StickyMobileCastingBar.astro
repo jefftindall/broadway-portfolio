@@ -1,0 +1,68 @@
+---
+/**
+ * Persistent mobile Materials / Reel shortcut (DISC-P1-007).
+ * Hidden on Studio and lesson booking; fades when a reel embed is in view so
+ * YouTube controls stay tappable.
+ */
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const hide =
+  path === '/studio' ||
+  path.startsWith('/studio/') ||
+  path === '/lessons/book';
+---
+
+{
+  !hide && (
+    <nav
+      class="casting-mobile-bar fixed inset-x-0 bottom-0 z-40 border-t border-line bg-ink/90 backdrop-blur-md md:hidden"
+      data-casting-mobile-bar
+      aria-label="Casting shortcuts"
+    >
+      <div class="mx-auto flex max-w-6xl gap-2 px-4 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
+        <a
+          href="/materials"
+          class="inline-flex min-h-11 flex-1 items-center justify-center rounded-sm bg-gold px-3 text-sm font-semibold text-ink transition hover:brightness-110"
+          data-ga-event="select_content"
+          data-ga-content-type="materials"
+          data-ga-content-id="mobile-sticky-materials"
+        >
+          Materials
+        </a>
+        <a
+          href="/materials#reel"
+          class="inline-flex min-h-11 flex-1 items-center justify-center rounded-sm border border-line px-3 text-sm text-spotlight transition hover:border-gold"
+          data-ga-event="select_content"
+          data-ga-content-type="reel"
+          data-ga-content-id="mobile-sticky-reel"
+        >
+          Reel
+        </a>
+      </div>
+    </nav>
+    <script>
+      function initCastingMobileBar() {
+        const bar = document.querySelector<HTMLElement>('[data-casting-mobile-bar]');
+        if (!bar) return;
+
+        document.body.classList.add('has-casting-mobile-bar');
+
+        const reelTargets = document.querySelectorAll('#reel, iframe[src*="youtube"], iframe[src*="youtu.be"]');
+        if (!reelTargets.length) return;
+
+        const observer = new IntersectionObserver(
+          (entries) => {
+            const reelInView = entries.some((e) => e.isIntersecting);
+            bar.classList.toggle('casting-mobile-bar--hide', reelInView);
+            bar.setAttribute('aria-hidden', reelInView ? 'true' : 'false');
+          },
+          { threshold: 0.15, rootMargin: '0px 0px -12% 0px' },
+        );
+
+        reelTargets.forEach((el) => observer.observe(el));
+      }
+
+      initCastingMobileBar();
+      document.addEventListener('astro:page-load', initCastingMobileBar);
+    </script>
+  )
+}

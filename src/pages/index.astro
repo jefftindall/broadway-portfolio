@@ -10,7 +10,9 @@ import PostCard from '../components/PostCard.astro';
 import VideoEmbed from '../components/VideoEmbed.astro';
 import GlassPanel from '../components/GlassPanel.astro';
 import { site } from '../lib/site';
+import { buildPersonJsonLd } from '../lib/personSchema';
 import { getFeaturedShowsForHome } from '../lib/shows';
+import PressQuote from '../components/PressQuote.astro';
 
 const shows = await getCollection('shows');
 const featured = getFeaturedShowsForHome(shows);
@@ -19,27 +21,15 @@ const news = (await getCollection('news'))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
   .slice(0, 2);
 
+const person = buildPersonJsonLd({
+  '@id': `${site.url}/#person`,
+});
+delete person['@context'];
+
 const jsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
-    {
-      '@type': 'Person',
-      '@id': `${site.url}/#person`,
-      name: site.name,
-      url: site.url,
-      jobTitle: site.jobTitle,
-      description: site.description,
-      image: new URL(site.heroImage, site.url).href,
-      sameAs: [site.instagram],
-      knowsAbout: site.knowsAbout,
-      homeLocation: { '@type': 'Place', name: 'New York, NY' },
-      address: {
-        '@type': 'PostalAddress',
-        addressLocality: 'New York',
-        addressRegion: 'NY',
-        addressCountry: 'US',
-      },
-    },
+    person,
     {
       '@type': 'WebSite',
       '@id': `${site.url}/#website`,
@@ -68,6 +58,15 @@ const jsonLd = {
   hideFooterCta
 >
   <Hero />
+
+  <section class="border-b border-line" aria-label="Press quote">
+    <div class="mx-auto max-w-6xl px-6 py-10 md:py-12">
+      <PressQuote
+        quote="The funniest actor you’ve never seen."
+        attribution="Tiffany King"
+      />
+    </div>
+  </section>
 
   <section class="section-y" aria-labelledby="performance-heading">
     <div class="mx-auto max-w-6xl px-6">

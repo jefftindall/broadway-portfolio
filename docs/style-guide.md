@@ -118,7 +118,7 @@ Use sparingly for presence:
 ## SEO / schema notes
 
 - **Titles:** Pass bare page titles; `BaseLayout` appends ` · Elyse Tindall` (do not embed `| Elyse Tindall` in casting frontmatter)
-- Default `Person` in `Seo.astro` (jobTitle, knowsAbout, sameAs Instagram) — prepended when custom `jsonLd` has no top-level / `@graph` Person
+- Default `Person` in `Seo.astro` via `buildPersonJsonLd` (`src/lib/personSchema.ts`) — jobTitle, performance + coaching `knowsAbout`, `sameAs` (Instagram + YouTube), `alumniOf`, performer `additionalProperty` / height — prepended when custom `jsonLd` has no top-level / `@graph` Person
 - Home: `Person` + `WebSite` (+ `VideoObject` for reel) via `@graph` (already includes Person — no duplicate default)
 - Lessons: `EducationalOrganization` + `Offer`s (+ default Person prepended)
 - Shows: `VideoObject` for cabaret reel (+ default Person prepended)

@@ -1,6 +1,7 @@
 ---
 import BaseLayout from './BaseLayout.astro';
 import { site } from '../lib/site';
+import { buildPersonJsonLd } from '../lib/personSchema';
 
 interface Props {
   title: string;
@@ -23,16 +24,10 @@ const {
 /** BaseLayout appends ` · ${site.name}`; strip legacy `| Name` from frontmatter. */
 const displayTitle = title.replace(new RegExp(`\\s*\\|\\s*${site.name}$`), '').trim();
 
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'Person',
-  name: site.name,
-  url: site.url,
-  jobTitle: site.jobTitle,
-  sameAs: [site.instagram],
-  knowsAbout: [keyword, ...relatedSkills, ...site.knowsAbout],
+const jsonLd = buildPersonJsonLd({
   description,
-};
+  knowsAbout: [keyword, ...relatedSkills, ...site.knowsAbout],
+});
 ---
 
 <BaseLayout title={displayTitle} description={description} canonicalPath={canonicalPath} jsonLd={jsonLd}>
@@ -61,5 +56,15 @@ const jsonLd = {
         </aside>
       )
     }
+
+    <p class="mt-10 text-sm text-muted">
+      <a href="/for" class="text-gel underline underline-offset-4 hover:text-spotlight">
+        Browse all casting pages
+      </a>
+      {' · '}
+      <a href="/materials" class="text-gel underline underline-offset-4 hover:text-spotlight">
+        Materials
+      </a>
+    </p>
   </article>
 </BaseLayout>

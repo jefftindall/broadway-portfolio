@@ -1,5 +1,6 @@
 ---
 import { site } from '../lib/site';
+import { buildPersonJsonLd } from '../lib/personSchema';
 
 interface Props {
   title: string;
@@ -25,27 +26,7 @@ const DEFAULT_OG_WIDTH = 1200;
 const DEFAULT_OG_HEIGHT = 630;
 const ogImageAlt = `${site.name} — ${site.jobTitle}`;
 
-const defaultPerson = {
-  '@context': 'https://schema.org',
-  '@type': 'Person',
-  name: site.name,
-  url: site.url,
-  jobTitle: site.jobTitle,
-  description: site.description,
-  image: new URL(site.heroImage, site.url).href,
-  sameAs: [site.instagram],
-  knowsAbout: site.knowsAbout,
-  homeLocation: {
-    '@type': 'Place',
-    name: 'New York, NY',
-  },
-  address: {
-    '@type': 'PostalAddress',
-    addressLocality: 'New York',
-    addressRegion: 'NY',
-    addressCountry: 'US',
-  },
-};
+const defaultPerson = buildPersonJsonLd();
 
 function isPersonType(type: unknown): boolean {
   if (type === 'Person') return true;
