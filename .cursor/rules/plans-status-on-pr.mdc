@@ -1,0 +1,43 @@
+---
+description: Keep docs/plans Action IDs, checklists, and statuses current when shipping planned phases
+globs:
+  - docs/plans/**
+alwaysApply: true
+---
+
+# Plan backlog status (docs/plans)
+
+When you **implement**, **open**, or **update a PR** for work tracked in [`docs/plans/`](docs/plans/) (`OPS-*`, `SEARCH-*`, `DISC-*`, etc.), update the matching plan file(s) **in that same PR**. Do not leave statuses/`[ ]` checkboxes stale after the code ships.
+
+## What to update
+
+1. **Action ID status** in the phase tables — use the plan’s vocabulary (`planned` · `in_progress` · `blocked` · `done` · `wont_fix`).
+2. **Acceptance-criteria checklists** (`- [ ]` / `- [x]`) under each Action ID — check only what this PR (or already-merged work) actually delivered.
+3. **Dependency graphs / phase summaries / “Suggested next”** lines that still say `planned` or “not started” for finished IDs.
+4. **Cross-plan links** when one plan’s ID completes another’s prerequisite (e.g. `SEARCH-P3-*` ↔ `DISC-P3-006`).
+5. **Last updated** (and revision notes if the plan has them) when statuses change.
+
+## Status rules
+
+| Situation | Status |
+|-----------|--------|
+| Repo deliverable complete (code, runbook, workflow, TF placeholders) | `done` — or `done` (runbook) when only docs/ops habit remains |
+| Partial delivery; more commits expected on the same ID | `in_progress` |
+| Waiting on operator/Elyse/out-of-band work | `blocked` (note the blocker) or leave residual `- [ ]` under a `done` (runbook) ID |
+| Recurring habit (monthly review execution) | Keep a residual unchecked AC; do **not** leave the whole ID `planned` if the runbook/automation already shipped |
+| Explicitly abandoned | `wont_fix` |
+
+Never mark `done` for work that is only designed in chat or only listed in a PR description.
+
+## PR / commit checklist
+
+Before opening or updating the PR:
+
+- [ ] Every Action ID this PR claims is reflected in `docs/plans/*.md` with the right status
+- [ ] Matching `- [x]` ACs are checked; undelivered ACs stay `- [ ]` with a short residual note if needed
+- [ ] Commit message or PR body cites the Action IDs (`OPS-P5-003`, `SEARCH-P3-001`, …)
+- [ ] No private emails/phones/secrets written into plan files
+
+## Related
+
+Plans are the backlog SoT. Living ops scores stay in `docs/ops/` (scorecard), not in plan status tables.

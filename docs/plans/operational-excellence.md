@@ -2,7 +2,7 @@
 
 **Artifact ID:** `ELYSE-OPS-001`  
 **Version:** 2.2  
-**Last updated:** 2026-08-08  
+**Last updated:** 2026-08-09  
 **Audience:** Agents, implementers, operators  
 **Scope:** Reliability posture scorecard, committed SLOs, critical alerting (SMS/voice), monthly refresh loop, and **site performance / activity** (visits, updates, contacts, top pages) in that same monthly artifact. Calibrated for a lean personal portfolio — not enterprise multi-team SRE.
 
@@ -316,7 +316,7 @@ Do **not** send ops alerts through ACS contact-form SMS (`ACS-SMS-FROM` + `SITE-
 | `OPS-P0-001` | Operational excellence plan + agent rule; privacy (no contacts in git) | Plan + AGENTS + cursor rule; no real contacts in repo | `done` |
 | `OPS-P0-002` | Define `ALERT-*` secret names + bootstrap placeholders in `kv-elyse-shared` | Runbook lists names/set commands; TF creates `REPLACE_ME` secrets; no real values | `done` |
 | `OPS-P0-003` | Persist initial scorecard under `docs/ops/operational-excellence-scorecard.md` | File exists; baseline scores copied from this plan; no private contacts | `done` |
-| `OPS-P0-004` | Monthly GitHub Actions workflow to re-evaluate scorecard + commit to `main` | `schedule` + `workflow_dispatch`; updates scorecard doc; Studio GitHub App push to `main`; CD `paths-ignore` for scorecard-only commits | `done` |
+| `OPS-P0-004` | Monthly GitHub Actions workflow to re-evaluate scorecard + commit to `main` | `schedule` + `workflow_dispatch`; updates scorecard doc; Studio GitHub App push to `main`; CD `paths-ignore` for scorecard-only commits; **on job failure**, ACS email to `ALERT-EMAIL` only ([`ops-scorecard-failure-email.mjs`](../../scripts/ops-scorecard-failure-email.mjs)) | `done` |
 
 ### Phase 1 — Key Vault–backed email + SMS + voice
 
@@ -350,17 +350,31 @@ Do **not** send ops alerts through ACS contact-form SMS (`ACS-SMS-FROM` + `SITE-
 | Action ID | Work | Acceptance criteria | Status |
 |-----------|------|---------------------|--------|
 | `OPS-P4-001` | Subscription Azure Budget = **ceil(expected retail × 1.25)** in bootstrap | `budget-elyse-portfolio-monthly`; keep `cost-and-quotas.md` breakdown current; **80%**/100% Actual → `ALERT-EMAIL` (Owners fallback if REPLACE_ME) | `done` |
-| `OPS-P4-002` | Monthly scorecard ACS digest + Cost Management spend/MoM | Digests to `ALERT-EMAIL` + `SITE-CONTACT-EMAIL`; body scores + USD only; spend in scorecard `costProbe` | `done` |
+| `OPS-P4-002` | Monthly scorecard ACS digest + Cost Management spend/MoM | Digests to `ALERT-EMAIL` + `SITE-CONTACT-EMAIL`; body scores + USD + site activity; spend in scorecard `costProbe`; digest format SoT [ops-monthly-checkin-email.mdc](../../.cursor/rules/ops-monthly-checkin-email.mdc) | `done` |
 
 ### Phase 5 — Site performance in the monthly scorecard
 
 | Action ID | Work | Acceptance criteria | Status |
 |-----------|------|---------------------|--------|
-| `OPS-P5-001` | Lock metric definitions + `sitePerformance` JSON/markdown/digest contract (this section) | Plan merged; privacy rules explicit; hybrid GA + App Insights decision recorded | `done` (this revision) |
-| `OPS-P5-002` | GA Data API access: GCP SA + GA Viewer + KV secrets + rotate-secrets names | Operator checklist complete; `GA-PROPERTY-ID` + `GA-DATA-API-SA-JSON` in `kv-elyse-shared`; never echoed in logs | `done` |
-| `OPS-P5-003` | Probe previous-month visits + top pages via GA Data API in `ops-scorecard-refresh.mjs` | Soft-fail → `stale`; paths only; `/studio` excluded; no SA JSON in artifacts | `done` |
+| `OPS-P5-001` | Lock metric definitions + `sitePerformance` JSON/markdown/digest contract (this section) | Plan merged; privacy rules explicit; hybrid GA + App Insights decision recorded | `done` |
+| `OPS-P5-002` | GA Data API access: GCP SA + GA Viewer + KV secrets + rotate-secrets names | Operator checklist complete; `GA-PROPERTY-ID` + `GA-DATA-API-SA-JSON` in `kv-elyse-shared`; fetch script + workflow wired; never echoed in logs | `done` |
+| `OPS-P5-003` | Probe previous-month visits + top pages via GA Data API in `ops-scorecard-refresh.mjs` | Soft-fail → `stale`; paths only; plain-language labels; `/studio` excluded; no SA JSON in artifacts | `done` |
 | `OPS-P5-004` | Probe previous-month contacts + Studio publish counts via App Insights | Calendar-month Kusto; casting/lesson split; documented in observability runbook | `done` |
-| `OPS-P5-005` | Render Site performance in scorecard MD + ACS digest (“Last month on the site”) | Elyse-friendly counts; update [monthly-site-check-in.md](../runbooks/monthly-site-check-in.md); no PII | `done` |
+| `OPS-P5-005` | Render Site performance in scorecard MD + ACS digest (“Last month on the site”) | Elyse-facing digest: section order (Worth a glance → activity → visitors → hosting); omit empty Worth a glance; Studio volume grading; homepage vs materials freshness SLOs; [monthly-site-check-in.md](../runbooks/monthly-site-check-in.md); no PII | `done` |
+
+<details>
+<summary><code>OPS-P5-*</code> — Phase 5 acceptance (this PR)</summary>
+
+- [x] `GA-PROPERTY-ID` / `GA-DATA-API-SA-JSON` placeholders in bootstrap shared KV + [ga-data-api-access.md](../runbooks/ga-data-api-access.md)
+- [x] `scripts/fetch-ga-scorecard-secrets.sh` + monthly workflow fetch (line-masked; temp SA file cleaned up)
+- [x] App Insights calendar-month contacts (casting/lesson) + Studio publishes in `sitePerformance`
+- [x] GA4 visits + top pages soft-fail to `stale` when creds missing
+- [x] Scorecard MD + ACS digest “Last month on the site” with plain-language page labels
+- [x] Digest format rule [ops-monthly-checkin-email.mdc](../../.cursor/rules/ops-monthly-checkin-email.mdc); Worth a glance omitted when empty
+- [x] Workflow failure → ACS email to `ALERT-EMAIL` only (`ops-scorecard-failure-email.mjs`)
+- [ ] Residual: confirm first scheduled monthly run succeeds end-to-end in Actions (operator)
+
+</details>
 
 **Suggested PR order:** `OPS-P5-004` (App Insights only — unblocks contacts/updates with existing Azure OIDC) → `OPS-P5-002` (ops access) → `OPS-P5-003` → `OPS-P5-005` (or fold digest into the same PR as the probes). `OPS-P5-001` is the plan contract and does not need code.
 
@@ -382,7 +396,7 @@ OPS-P0-001 (this plan / AI guidance) [done]
     │               └── OPS-P4-002 (ACS digest + spend/MoM) [done]
     │                       └── OPS-P5-001 (site performance contract) [done]
     │                               ├── OPS-P5-004 (contacts + updates via App Insights) [done]
-    │                               ├── OPS-P5-002 (GA Data API + KV) [done in repo; operator populate]
+    │                               ├── OPS-P5-002 (GA Data API + KV) [done]
     │                               │       └── OPS-P5-003 (visits + top pages via GA) [done]
     │                               └── OPS-P5-005 (scorecard + digest UI) [done]
     ├── OPS-P3-001 / OPS-P3-005 (Studio cadence + IR stub) [done]

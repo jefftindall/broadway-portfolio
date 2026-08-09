@@ -21,3 +21,4 @@ That runs Terraform fmt/TFLint/validate, `astro check`, and API `node --check` (
 - CI job names to keep green on PRs: **Terraform lint**, **Site check**, **API syntax**, **Actions secret-safety**. When `infra/` changes, **Plan staging** / **Plan prod** run only after those succeed.
 - When changing `.github/workflows/**` (or other Actions), also check for **Node.js 20** action runtimes and upgrade them before commit — see [`.cursor/rules/github-actions-node.mdc`](github-actions-node.mdc). Run `npm run lint:actions-secrets` (included in `npm run lint`) so multiline `::add-mask::` / PEM `with:` anti-patterns cannot land.
 - **Never echo secrets** in pipelines or scripts — see [`.cursor/rules/never-echo-secrets.mdc`](never-echo-secrets.mdc).
+- When the PR implements a planned phase / Action ID, update `docs/plans/*` statuses and checklists in the same PR — see [`.cursor/rules/plans-status-on-pr.mdc`](plans-status-on-pr.mdc).

@@ -24,6 +24,10 @@ This mirrors the PR gate workflow [`.github/workflows/static-analysis.yml`](.git
 
 Requirements for Terraform lint: Terraform >= 1.5 and [TFLint](https://github.com/terraform-linters/tflint) on `PATH` (`tflint --init` uses [`infra/.tflint.hcl`](infra/.tflint.hcl)). On Cursor Cloud these come from the environment snapshot; if they are missing, install them before committing rather than skipping the gate. Do not commit if lint fails; do not skip these checks.
 
+### Plan backlog status (required on phase PRs)
+
+When a PR implements work from [`docs/plans/`](docs/plans/) (`OPS-*`, `SEARCH-*`, `DISC-*`, …), update Action ID statuses and acceptance checklists **in that same PR**. See [`.cursor/rules/plans-status-on-pr.mdc`](.cursor/rules/plans-status-on-pr.mdc).
+
 ### Never echo secrets (pipelines + scripts)
 
 **Never** print secret values (`echo` / `printf` / `console.log` / traces / action `with:` dumps) in workflows or scripts. Mask line-by-line; prefer temp files; on errors log names only. Full rules: [`.cursor/rules/never-echo-secrets.mdc`](.cursor/rules/never-echo-secrets.mdc). GitHub App minting: [`scripts/mint-github-app-token.sh`](scripts/mint-github-app-token.sh). If leaked, rotate immediately ([rotate-secrets.md](docs/runbooks/rotate-secrets.md)).

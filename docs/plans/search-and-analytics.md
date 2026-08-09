@@ -1,8 +1,8 @@
 # Plan: Google Search Console & Analytics
 
 **Artifact ID:** `ELYSE-SEARCH-001`  
-**Version:** 1.5  
-**Last updated:** 2026-08-08  
+**Version:** 1.6  
+**Last updated:** 2026-08-09  
 **Audience:** Agents, implementers, operators  
 **Scope:** Google Search Console (GSC), Google Analytics 4 (GA4), and related technical SEO that makes those tools useful — not casting content strategy itself.
 
@@ -322,6 +322,8 @@ Asset: 1200×630 JPEG at `/images/og-default.jpg`. Width/height metas only for t
 | `SEARCH-P3-001` | Monthly GSC + GA joint review | `done` (runbook) | `SEARCH-P1-003` (events make the loop more useful) | [search-ops-monthly.md](../runbooks/search-ops-monthly.md); extends `DISC-P3-006` |
 | `SEARCH-P3-002` | Feed review outcomes into casting/content backlog | `done` (runbook) | `SEARCH-P3-001` | Same runbook; [casting-discoverability.md](casting-discoverability.md) Tier 2–3 |
 | `SEARCH-P3-003` | Re-check CWV / Experience in GSC after major visual changes | `done` (runbook) | — | Same runbook; hero/reel pages especially |
+
+**Phase 3 repo delivery (this PR track):** runbook + cross-links shipped; residual habit ACs under each ID stay unchecked until operators execute the monthly loop.
 
 <details>
 <summary><code>SEARCH-P3-001</code> — Monthly GSC + GA joint review</summary>
