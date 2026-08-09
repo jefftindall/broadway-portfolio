@@ -483,6 +483,7 @@ export async function buildContentChange(name, args, photoPath) {
           rates: rates.map((r) => ({
             id: r.id,
             label: r.label,
+            price: r.price,
             priceAmount: r.priceAmount,
           })),
         },

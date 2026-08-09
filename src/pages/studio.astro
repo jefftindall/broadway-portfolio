@@ -11,9 +11,13 @@ const rate30 =
 const rate60 =
   bookRates.find((r) => r.id === '60min')?.priceAmount ??
   bookRates.find((r) => /60/.test(r.label || ''))?.priceAmount;
+const bookFormat = book?.data.format ?? '';
+const bookScheduling = book?.data.scheduling ?? '';
 const performer = site.performer;
 const reelUrl = site.reelUrl;
 const shortBio = site.shortBio;
+const siteLocation = site.location;
+const siteAge = String(site.age);
 ---
 
 <BaseLayout
@@ -114,7 +118,14 @@ const shortBio = site.shortBio;
       </p>
     </div>
 
-    <div id="studio-app" class="mt-6 hidden space-y-5">
+    <div
+      id="studio-app"
+      class="mt-6 hidden space-y-5"
+      data-site-location={siteLocation}
+      data-site-age={siteAge}
+      data-book-format={bookFormat}
+      data-book-scheduling={bookScheduling}
+    >
       <div id="hub-step" class="space-y-4">
         <p class="text-sm text-muted">What do you want to update?</p>
         <div class="grid gap-3">
@@ -473,7 +484,7 @@ const shortBio = site.shortBio;
     type DiscretePreview =
       | {
           kind: 'rates';
-          rates: Array<{ id: string; label: string; priceAmount: number }>;
+          rates: Array<{ id: string; label: string; price?: string; priceAmount: number }>;
         }
       | { kind: 'reel'; reelUrl: string }
       | { kind: 'shortBio'; shortBio: string }
@@ -515,16 +526,6 @@ const shortBio = site.shortBio;
       'update_short_bio',
       'update_casting_fields',
     ]);
-
-    const PERFORMER_FIELD_LABELS: Record<string, string> = {
-      availability: 'Availability',
-      vocalType: 'Vocal type',
-      vocalRange: 'Vocal range',
-      union: 'Union',
-      playingAge: 'Playing age',
-      height: 'Height',
-      ethnicity: 'Ethnicity',
-    };
 
     const BUSY_CLASS = 'opacity-60';
     const POLL_MS = 5000;
@@ -1191,20 +1192,20 @@ const shortBio = site.shortBio;
       switch (change.tool) {
         case 'update_lesson_rates':
           return path
-            ? `If you publish, lesson rates on ${path} will become:`
-            : 'If you publish, lesson rates will become:';
+            ? `If you publish, the rates block on ${path} will look like this:`
+            : 'If you publish, the rates block will look like this:';
         case 'update_reel_url':
           return path
-            ? `If you publish, the reel link on ${path} will become:`
-            : 'If you publish, the reel link will become:';
+            ? `If you publish, the reel on ${path} will look like this:`
+            : 'If you publish, the reel will look like this:';
         case 'update_short_bio':
           return path
-            ? `If you publish, the short bio on ${path} will become:`
-            : 'If you publish, the short bio will become:';
+            ? `If you publish, the About lead on ${path} will look like this:`
+            : 'If you publish, the About lead will look like this:';
         case 'update_performer_facts':
           return path
-            ? `If you publish, performer facts on ${path} will become:`
-            : 'If you publish, performer facts will become:';
+            ? `If you publish, Performer facts on ${path} will look like this:`
+            : 'If you publish, Performer facts will look like this:';
         case 'update_casting_fields':
           return path
             ? `If you publish, casting fields on ${path} will become:`
@@ -1214,6 +1215,155 @@ const shortBio = site.shortBio;
             ? `If you publish, this will update ${path}:`
             : 'If you publish, this will update the site:';
       }
+    }
+
+    function youtubeOrVimeoEmbed(raw: string): string | null {
+      try {
+        const u = new URL(raw);
+        if (u.hostname.includes('youtu.be')) {
+          return `https://www.youtube.com/embed/${u.pathname.slice(1)}`;
+        }
+        if (u.hostname.includes('youtube.com')) {
+          const id = u.searchParams.get('v');
+          return id ? `https://www.youtube.com/embed/${id}` : null;
+        }
+        if (u.hostname.includes('vimeo.com')) {
+          const id = u.pathname.split('/').filter(Boolean).pop();
+          return id ? `https://player.vimeo.com/video/${id}` : null;
+        }
+      } catch {
+        return null;
+      }
+      return null;
+    }
+
+    function formatRatePrice(rate: { price?: string; priceAmount: number }): string {
+      if (rate.price && String(rate.price).trim()) return String(rate.price).trim();
+      return `$${Math.round(Number(rate.priceAmount) || 0)}`;
+    }
+
+    function renderRatesSitePreview(
+      wrap: HTMLElement,
+      rates: Array<{ id: string; label: string; price?: string; priceAmount: number }>,
+    ) {
+      const panel = document.createElement('div');
+      panel.className = 'rounded-sm border border-line bg-panel/60 p-5';
+      const title = document.createElement('h3');
+      title.className = 'font-display text-2xl text-spotlight';
+      title.textContent = 'Rates';
+      panel.appendChild(title);
+
+      const list = document.createElement('ul');
+      list.className = 'mt-5 space-y-4';
+      for (const rate of rates) {
+        const li = document.createElement('li');
+        li.className = 'flex items-baseline justify-between gap-4 border-b border-line pb-3';
+        const label = document.createElement('span');
+        label.className = 'text-muted';
+        label.textContent = rate.label || rate.id;
+        const price = document.createElement('span');
+        price.className = 'font-display text-2xl text-gold';
+        price.textContent = formatRatePrice(rate);
+        li.append(label, price);
+        list.appendChild(li);
+      }
+      panel.appendChild(list);
+
+      const format = studioApp.dataset.bookFormat || '';
+      const scheduling = studioApp.dataset.bookScheduling || '';
+      if (format) {
+        const p = document.createElement('p');
+        p.className = 'mt-5 text-sm text-muted';
+        p.textContent = format;
+        panel.appendChild(p);
+      }
+      if (scheduling) {
+        const p = document.createElement('p');
+        p.className = 'mt-3 text-sm text-muted';
+        p.textContent = scheduling;
+        panel.appendChild(p);
+      }
+      wrap.appendChild(panel);
+    }
+
+    function renderReelSitePreview(wrap: HTMLElement, url: string) {
+      const embed = youtubeOrVimeoEmbed(url);
+      if (embed) {
+        const frameWrap = document.createElement('div');
+        frameWrap.className = 'aspect-video overflow-hidden rounded-sm border border-line bg-panel';
+        const iframe = document.createElement('iframe');
+        iframe.src = embed;
+        iframe.title = 'Casting reel preview';
+        iframe.className = 'h-full w-full';
+        iframe.loading = 'lazy';
+        iframe.allow =
+          'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+        iframe.setAttribute('allowfullscreen', '');
+        frameWrap.appendChild(iframe);
+        wrap.appendChild(frameWrap);
+      } else {
+        const p = document.createElement('p');
+        p.className = 'text-sm text-muted';
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.className = 'text-gel underline';
+        a.textContent = url || 'Watch video';
+        p.appendChild(a);
+        wrap.appendChild(p);
+      }
+    }
+
+    function renderPerformerFactsSitePreview(wrap: HTMLElement, performer: Record<string, string>) {
+      const aside = document.createElement('aside');
+      aside.className = 'rounded-sm border border-line p-5';
+      aside.setAttribute('aria-label', 'Performer facts preview');
+
+      const heading = document.createElement('h3');
+      heading.className = 'font-display text-2xl text-spotlight';
+      heading.textContent = 'Performer facts';
+      aside.appendChild(heading);
+
+      const dl = document.createElement('dl');
+      dl.className = 'mt-5 grid gap-3 sm:grid-cols-[11rem_1fr] sm:gap-x-4 sm:gap-y-2';
+
+      type FactRow = { label: string; value: string };
+      const rows: FactRow[] = [];
+      if (performer.playingAge) rows.push({ label: 'Playing age', value: performer.playingAge });
+      if (performer.vocalType) rows.push({ label: 'Type', value: performer.vocalType });
+      if (performer.vocalRange) rows.push({ label: 'Vocal range', value: performer.vocalRange });
+      if (performer.ethnicity) {
+        rows.push({ label: 'Ethnicity / presenting', value: performer.ethnicity });
+      }
+      if (performer.union) rows.push({ label: 'Union', value: performer.union });
+      const location = studioApp.dataset.siteLocation || '';
+      if (location) rows.push({ label: 'Based in', value: location });
+      const age = studioApp.dataset.siteAge || '';
+      if (age) rows.push({ label: 'Age', value: age });
+      if (performer.height) rows.push({ label: 'Height', value: performer.height });
+      if (performer.availability) {
+        rows.push({ label: 'Availability', value: performer.availability });
+      }
+
+      for (const row of rows) {
+        const dt = document.createElement('dt');
+        dt.className = 'text-sm uppercase tracking-[0.12em] text-gel';
+        dt.textContent = row.label;
+        const dd = document.createElement('dd');
+        dd.className = 'text-spotlight';
+        dd.textContent = row.value;
+        dl.append(dt, dd);
+      }
+      aside.appendChild(dl);
+      wrap.appendChild(aside);
+    }
+
+    function renderShortBioSitePreview(wrap: HTMLElement, bio: string) {
+      const p = document.createElement('p');
+      p.className = 'text-lg text-spotlight/90';
+      p.textContent = bio;
+      wrap.appendChild(p);
     }
 
     function renderDiscretePreview(wrap: HTMLElement, change: ContentChange) {
@@ -1229,46 +1379,26 @@ const shortBio = site.shortBio;
                 { id: '30min', label: '30-minute session', priceAmount: 0 },
                 { id: '60min', label: '60-minute session', priceAmount: 0 },
               ];
-        for (const rate of rates) {
-          appendLabeledInput(
-            wrap,
-            `${rate.label || rate.id} ($)`,
-            `rate:${rate.id}`,
-            String(rate.priceAmount ?? ''),
-            { ...ro },
-          );
-        }
+        renderRatesSitePreview(wrap, rates);
         return;
       }
 
       if (tool === 'update_reel_url' || preview?.kind === 'reel') {
         const url = preview && preview.kind === 'reel' ? preview.reelUrl : '';
-        appendLabeledInput(wrap, 'Reel link', 'reelUrl', url, { ...ro });
+        renderReelSitePreview(wrap, url);
         return;
       }
 
       if (tool === 'update_short_bio' || preview?.kind === 'shortBio') {
         const bio = preview && preview.kind === 'shortBio' ? preview.shortBio : '';
-        appendLabeledInput(wrap, 'Short bio', 'shortBio', bio, { rows: 4, ...ro });
+        renderShortBioSitePreview(wrap, bio);
         return;
       }
 
       if (tool === 'update_performer_facts' || preview?.kind === 'performer') {
         const performer =
           preview && preview.kind === 'performer' ? preview.performer : ({} as Record<string, string>);
-        const keys =
-          preview && preview.kind === 'performer' && preview.patchedKeys?.length
-            ? preview.patchedKeys
-            : Object.keys(PERFORMER_FIELD_LABELS);
-        for (const key of keys) {
-          appendLabeledInput(
-            wrap,
-            PERFORMER_FIELD_LABELS[key] || key,
-            `performer:${key}`,
-            String(performer[key] || ''),
-            { ...ro },
-          );
-        }
+        renderPerformerFactsSitePreview(wrap, performer);
         return;
       }
 

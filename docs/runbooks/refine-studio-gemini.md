@@ -67,7 +67,7 @@ Canonical values live in [`src/data/site-settings.json`](../../src/data/site-set
 
 Publish allowlist is kind-scoped: shows/news/gallery/lessons/book/casting + exact `site-settings.json`. `about.md` is not Studio-writable.
 
-**Current-values rule:** Discrete updates (rates, reel, short bio, performer facts) must ground tool args in live catalog lines (`Lesson rates (live)`, `Reel URL (live)`, `Short bio (live)`, `Performer facts (live)`). Never blank a field or invent a parallel value when the catalog already shows the current one. Studio hub editors prefill those live values; discrete Preview is a **read-only confirmation** (edit on the prior step, then publish).
+**Current-values rule:** Discrete updates (rates, reel, short bio, performer facts) must ground tool args in live catalog lines (`Lesson rates (live)`, `Reel URL (live)`, `Short bio (live)`, `Performer facts (live)`). Never blank a field or invent a parallel value when the catalog already shows the current one. Studio hub editors prefill those live values; discrete Preview is a **read-only site-style confirmation** (reel embed, rates block, performer facts block — edit on the prior step, then publish).
 
 Studio Preview shows labeled fields for discrete tools (dollar inputs for rates). Publishers pick a hub destination (Speak or type, Rates, Facts, Reel, Short bio) instead of scrolling one long form.
 

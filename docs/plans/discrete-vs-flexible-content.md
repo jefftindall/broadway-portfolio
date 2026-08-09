@@ -287,7 +287,7 @@ Out of scope for P3 (stay PR/ops): site email (`SITE_CONTACT_EMAIL` / Key Vault)
 
 **Acceptance criteria**
 
-- [x] Rate updates show dollar fields in Preview (not only raw markdown/JSON); Quick edit on compose; Preview confirmation is read-only
+- [x] Rate updates show site-style rates block in Preview (not only raw markdown/JSON); Quick edit on compose; Preview confirmation is read-only site preview (reel embed, facts block, rates list)
 - [ ] Server rejects e.g. rates tool writing a non-book path (and inverse) — `FLEX-P4-002`
 
 </details>
