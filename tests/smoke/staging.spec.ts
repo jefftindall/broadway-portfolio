@@ -5,7 +5,7 @@ import { waitForOk, waitForRequestOk, isStaticWebAppHost } from '../helpers/prop
 const castingSlug = sampleCastingSlug();
 const showTitle = sampleShowTitle();
 
-test.describe('public staging smoke', () => {
+test.describe('public smoke', () => {
   test('home shows brand and Stage & reel', async ({ page }) => {
     await waitForOk(page, '/');
     await expect(page.getByRole('heading', { name: /Elyse Tindall/i }).first()).toBeVisible();

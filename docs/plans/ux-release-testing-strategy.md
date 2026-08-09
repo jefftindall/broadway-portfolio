@@ -1,7 +1,7 @@
 # Plan: UX release testing strategy
 
 **Artifact ID:** `ELYSE-TEST-001`  
-**Version:** 1.1  
+**Version:** 1.2  
 **Last updated:** 2026-08-09  
 **Audience:** Agents, implementers  
 **Scope:** Playwright smoke + journey coverage, PR shift-left, Studio/API safety nets — not ops synthetics (`OPS-*`) or SEO content strategy (`DISC-*` / `SEARCH-*`).
@@ -35,7 +35,7 @@ Living “what runs today” SoT: [testing-strategy.md](../runbooks/testing-stra
 | Phase A — Staging gate with real journeys | Mostly `done` | Smoke + journeys on CD; helpers + dynamic content; docs runbook |
 | Phase B — Shift left on PRs | `in_progress` | `playwright.journey.config.ts` + `test:journey` exist; **not** wired as a PR-required job yet |
 | Phase C — Studio & API safety net | Partial | Unauth `/studio` in smoke (`done`); API unit tests + publisher auth schedule still `planned` |
-| Phase D — Observability loop | Partial | Release artifact upload exists; Playwright **trace/video on failure** + prod canary still `planned` |
+| Phase D — Observability loop | Partial | **Smoke Production** + Sev1 on failure (`TEST-D-003` `done`); Playwright **trace/video on failure** still `planned` |
 
 | Journey ID | Status | Where |
 |------------|--------|-------|
@@ -104,12 +104,12 @@ Today’s release stack (see runbook for detail):
 │ L4  Studio & ops checks — partial                           │
 │     Unauth redirect done; publisher path planned            │
 ├─────────────────────────────────────────────────────────────┤
-│ L5  Prod signals — done (synthetics); canary planned        │
-│     Availability · optional synthetic journeys / alerts     │
+│ L5  Prod signals — done                                     │
+│     Availability synthetics · Smoke Production + Sev1 alert │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-L3 remains the hard gate for production. L1/L2 catch regressions earlier. L4 must not flake the main CD path until auth is deterministic.
+L3 remains the hard gate for production. L5 smoke is a post-release canary (no auto-rollback). L1/L2 catch regressions earlier. L4 must not flake the main CD path until auth is deterministic.
 
 ---
 
@@ -290,7 +290,17 @@ Do **not** call live Gemini on every `main` deploy until cost, rate limits, and 
 |----|------|--------|--------------|
 | `TEST-D-001` | On Playwright failure: upload trace/video artifacts | `planned` | Workflow `actions/upload-artifact` (release artifact already exists — not test traces) |
 | `TEST-D-002` | Map failures to App Insights / correlation IDs | `planned` | [observability.md](../runbooks/observability.md) |
-| `TEST-D-003` | Optional prod synthetic subset + alert | `planned` | No auto-rollback |
+| `TEST-D-003` | Post-release prod smoke + Sev1 alert (SMS+voice) | `done` | **Smoke Production** after deploy; `SmokeFailed` → critical AG; no auto-rollback |
+
+<details>
+<summary><code>TEST-D-003</code> acceptance</summary>
+
+- [x] CD runs Playwright smoke against prod hostname after **Deploy Production** succeeds
+- [x] Failure emits `SmokeFailed` → `ag-elyse-critical-prod` (email + SMS + voice; same alert rule as `DeployFailed`)
+- [x] No automatic rollback on smoke failure
+- [x] Runbooks + severity docs cite the path ([testing-strategy.md](../runbooks/testing-strategy.md), [deploy-and-rollback.md](../runbooks/deploy-and-rollback.md))
+
+</details>
 
 ---
 

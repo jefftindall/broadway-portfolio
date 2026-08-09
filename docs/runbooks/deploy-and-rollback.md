@@ -6,13 +6,15 @@
 2. Review the plan (when present) and merge when ready.
 3. On merge to `main`, **Azure Static Web Apps CI/CD** runs when app or infra paths changed (not on docs-only updates):
    - **Build release** once (in parallel with staging Terraform when infra changed)
-   - If `infra/` changed: **Terraform apply staging**, then **Deploy Staging** (from artifact), then **Smoke Staging**, then **Terraform apply prod**, then **Deploy Production** (same artifact)
-   - If only app paths changed: **Deploy Staging** → **Smoke Staging** → **Deploy Production** (Terraform apply jobs skipped)
+   - If `infra/` changed: **Terraform apply staging**, then **Deploy Staging** (from artifact), then **Smoke Staging**, then **Terraform apply prod**, then **Deploy Production** (same artifact), then **Smoke Production**
+   - If only app paths changed: **Deploy Staging** → **Smoke Staging** → **Deploy Production** → **Smoke Production** (Terraform apply jobs skipped)
    - If neither changed (e.g. `docs/` only): CD jobs are skipped; **Static analysis** still runs on the push
 
 CD workflows share concurrency group `portfolio-cd` (`cancel-in-progress: false`), so main CD and **Staging branch** never deploy at the same time. A second CD run waits; if more arrive while one is pending, GitHub keeps only the latest pending run. Static analysis is unconstrained and may run in parallel across PRs.
 
-**Smoke Staging** runs Playwright against the live staging hostname. Journey scope depends on what changed: full suite for UI/infra changes, `@content` journeys for markdown-only updates, smoke-only for API-only changes. See [testing-strategy.md](testing-strategy.md). Production deploys the **same build artifact** that passed staging verification.
+**Smoke Staging** runs Playwright against the live staging hostname and **blocks** production. Journey scope depends on what changed: full suite for UI/infra changes, `@content` journeys for markdown-only updates, smoke-only for API-only changes. See [testing-strategy.md](testing-strategy.md). Production deploys the **same build artifact** that passed staging verification.
+
+**Smoke Production** (`TEST-D-003`) re-runs the same Playwright smoke suite against the live prod hostname after **Deploy Production** succeeds. It does **not** auto-rollback. On failure, CD emits `SmokeFailed` → `ag-elyse-critical-prod` (email + SMS + voice).
 
 Optional: add required reviewers on the GitHub Environment **prod** for a manual approval gate after smoke.
 
@@ -54,14 +56,14 @@ Or restore a previous file version and commit. Prefer `revert` over force-push. 
 
 ## Rollback application code
 
-Same as above on the commit that broke the build/UI. Confirm **Deploy Staging**, **Smoke Staging**, and **Deploy Production** are green before announcing recovery.
+Same as above on the commit that broke the build/UI. Confirm **Deploy Staging**, **Smoke Staging**, **Deploy Production**, and **Smoke Production** are green before announcing recovery.
 
-## Deploy Production failure (Sev1)
+## Deploy Production / Smoke Production failure (Sev1)
 
-When the **Deploy Production** job fails, CD emits `DeployFailed` to prod App Insights (`OPS-P3-003`). A scheduled-query alert pages `ag-elyse-critical-prod` (email + SMS + voice via `ALERT-*`). Staging deploy failures are **not** Sev1.
+When **Deploy Production** fails, CD emits `DeployFailed` to prod App Insights (`OPS-P3-003`). When **Smoke Production** fails after a successful deploy, CD emits `SmokeFailed` (`TEST-D-003`). Either event pages `ag-elyse-critical-prod` (email + SMS + voice via `ALERT-*`). Staging deploy/smoke failures are **not** Sev1. There is **no** automatic rollback on smoke failure.
 
 1. Open the failed Actions run; fix or revert ([incident-response.md](incident-response.md)).
-2. Re-run CD from `main` (or merge a revert) so staging → smoke → prod succeeds.
+2. Re-run CD from `main` (or merge a revert) so staging → smoke → prod → prod smoke succeeds.
 3. Confirm homepage/materials synthetics and that the critical alert mitigated.
 
 ## Rollback infrastructure

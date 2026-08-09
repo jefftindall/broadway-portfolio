@@ -14,10 +14,10 @@ Channels (email / SMS / voice) are Key Vault `ALERT-*` → Action Groups only �
 
 ## Sev1 — first actions
 
-Examples: homepage or materials availability fail; **Deploy Production** failed (pages via `DeployFailed` → `ag-elyse-critical-prod`).
+Examples: homepage or materials availability fail; **Deploy Production** failed (`DeployFailed`); **Smoke Production** failed after release (`SmokeFailed`) — both page `ag-elyse-critical-prod`.
 
-1. **Confirm blast radius** — open prod App Insights availability / recent `DeployFailed` (queries in [observability.md](./observability.md)). Check whether the public site still serves `/` and materials downloads.
-2. **CD break** — GitHub Actions → failed **Deploy Production** run. Prefer [deploy-and-rollback.md](./deploy-and-rollback.md) (revert + re-promote through staging smoke) over hot-patching prod.
+1. **Confirm blast radius** — open prod App Insights availability / recent `DeployFailed` or `SmokeFailed` (queries in [observability.md](./observability.md)). Check whether the public site still serves `/` and materials downloads.
+2. **CD break** — GitHub Actions → failed **Deploy Production** or **Smoke Production** run. Prefer [deploy-and-rollback.md](./deploy-and-rollback.md) (revert + re-promote through staging smoke) over hot-patching prod. Prod smoke does **not** auto-rollback.
 3. **Availability break** — check SWA health, recent merges, DNS ([dns-and-domain.md](./dns-and-domain.md)). Use Portal **Test action group** only to verify contacts, not as a substitute for fixing the site.
 4. **Silence** — after recovery, confirm homepage/materials synthetics green and the critical alert has mitigated; note “receipt / recovery YYYY-MM-DD” in scorecard evidence without PII.
 
