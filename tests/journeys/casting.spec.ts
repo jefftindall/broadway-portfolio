@@ -8,7 +8,7 @@ import {
 import { waitForOk, waitForRequestOk } from '../helpers/propagation';
 
 const castingSlug = sampleCastingSlug();
-const { title: castingTitle, cta: castingCta } = castingPageExpectations(castingSlug);
+const { title: castingTitle } = castingPageExpectations(castingSlug);
 const musicalTitle = musicalShowTitle();
 const filmTitle = filmShowTitle();
 
@@ -54,18 +54,18 @@ test.describe('casting journeys', () => {
     await expect(filmCredit).toBeHidden();
   });
 
-  test('CAST-03 casting landing CTA and contact', { tag: '@content' }, async ({ page }) => {
+  test('CAST-03 casting landing footer CTA to contact', { tag: '@content' }, async ({ page }) => {
     await waitForOk(page, `/for/${castingSlug}`);
     await expect(page.getByRole('heading', { level: 1 })).toContainText(
       castingTitle.replace(/\s*[|·]\s*Elyse Tindall$/i, '').trim(),
     );
 
-    const cta = page.getByRole('link', { name: castingCta });
-    await expect(cta).toBeVisible();
-    await expect(cta).toHaveAttribute('href', /\/contact#casting-inquiry/);
+    const contact = page.locator('footer').getByRole('link', { name: 'Contact', exact: true });
+    await expect(contact).toBeVisible();
+    await expect(contact).toHaveAttribute('href', /\/contact\/?$/);
 
-    await cta.click();
-    await expect(page).toHaveURL(/\/contact\/?#casting-inquiry/);
+    await contact.click();
+    await expect(page).toHaveURL(/\/contact\/?$/);
     await expect(page.getByRole('heading', { name: 'Contact', level: 1 })).toBeVisible();
     await expect(page.locator('#casting-inquiry')).toBeVisible();
   });
