@@ -50,6 +50,7 @@ app.http('studioDiscrete', {
           rates: rates || [],
           reelUrl: settings?.reelUrl || null,
           shortBio: settings?.shortBio || null,
+          pressQuote: settings?.pressQuote || null,
           performer: settings?.performer || null,
           correlationId,
         },

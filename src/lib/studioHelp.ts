@@ -64,6 +64,17 @@ export const studioCapabilities: StudioCapability[] = [
     ],
   },
   {
+    tool: 'update_press_quote',
+    title: 'Press quote (Home)',
+    summary:
+      'Update the homepage press quote and attribution under the hero. Edit in the Studio hub (or by voice), then confirm with a site-style quote Preview before publishing.',
+    livePath: '/',
+    examplePrompts: [
+      'Change my homepage quote to: The funniest actor you’ve never seen. Attribution Tiffany King.',
+      'Update the press quote attribution to Tiffany King.',
+    ],
+  },
+  {
     tool: 'update_performer_facts',
     title: 'Performer facts',
     summary:
@@ -148,7 +159,7 @@ export const studioCapabilities: StudioCapability[] = [
     tool: 'update_casting_fields',
     title: 'Casting page fields',
     summary:
-      'Update title, description, CTA, keyword, or related shows/skills on an existing /for/… page. New casting pages are added by hand (see the casting runbook) — Studio does not create them.',
+      'Update title, description, CTA, keyword, or related shows/skills on an existing /for/… page. New casting pages are added by hand (see the casting runbook) — Studio does not create them. Do not add links or CTAs below Related credits; the footer already has Materials / Contact / Lessons.',
     livePath: '/for',
     examplePrompts: [
       'Change the CTA on my musical theatre actress page to Request materials.',

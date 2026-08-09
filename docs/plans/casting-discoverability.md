@@ -1,7 +1,7 @@
 # Casting discoverability — assessment & implementation backlog
 
 **Artifact ID:** `ELYSE-DISC-001`  
-**Version:** 1.4  
+**Version:** 1.5  
 **Last updated:** 2026-08-09  
 **Audience:** Agents, implementers, Elyse (content owner)  
 **Scope:** Public site discoverability for casting directors, representation, and answer engines — not voice-lesson marketing.
@@ -36,13 +36,13 @@ Example PR title: `DISC-P1-003: Add performer facts block to About`
 | Tier / area | Status | Open residuals |
 |-------------|--------|----------------|
 | Tier 0 — Cutover / GSC / redirects | `done` | Spot-check / Bing / indexing residuals under P0 ACs; `SEARCH-P0-004` |
-| Tier 1 — Casting-first positioning | Mostly `done` | `DISC-P1-004` JSON-LD enrich; `DISC-P1-006` Tiffany King quote; `DISC-P1-007` sticky mobile Materials |
-| Tier 2 — New `/for/*` landers + linking | `planned` | `DISC-P2-001`–`009` |
+| Tier 1 — Casting-first positioning | `done` | JSON-LD enrich, Tiffany King quote, sticky mobile Materials shipped |
+| Tier 2 — New `/for/*` landers + linking | Partial | `DISC-P2-001`–`004`, `006`, `007` `done`; `005` blocked on Elyse; `008`–`010` `planned` |
 | Tier 3 — Cadence / AI readiness | Mixed | Most `planned`; `DISC-P3-006` `done` (runbook) |
 | Tier 4 — Automated lander pipeline | `planned` | `DISC-P4-001`–`006`; `DISC-P4-000` docs `done` (enforce residual) |
-| Gaps (`DISC-GAP-*`) | Mixed | Commercial headshot, demos, seeking-rep decision, external profile URLs |
+| Gaps (`DISC-GAP-*`) | Mixed | Commercial headshot, demos, seeking-rep decision, external profile URLs (YouTube reel URL in `sameAs` until channel verified) |
 
-**Suggested next:** Finish Tier 1 leftovers (`DISC-P1-004`, `006`, `007`), then Tier 2 landers — do not skip open Tier 1 for Tier 4 automation.
+**Suggested next:** Optional `DISC-P2-008` show detail pages / `DISC-P2-009` demos (needs `DISC-GAP-004`); do not start Tier 4 until linking habits stick. `DISC-P2-005` only after `DISC-GAP-005`.
 
 ---
 
@@ -188,10 +188,10 @@ Scores below reflect the **2026-08-02** repo before apex cutover and before Mate
 | `DISC-P1-001` | Reorder homepage for casting (hero CTAs + section order) | `done` | `DISC-P0-001` | `src/pages/index.astro`, `src/components/Hero.astro` |
 | `DISC-P1-002` | Add `/materials` page with reel, downloads, and casting CTA | `done` | `DISC-P0-001`, `DISC-GAP-001`, `DISC-GAP-002` | New `src/pages/materials.astro`, `public/downloads/` |
 | `DISC-P1-003` | Add performer facts block (range, type, union, availability) | `done` | `DISC-GAP-003` | `src/lib/site.ts`, `src/components/PerformerFacts.astro`, `src/pages/about.astro`, `src/pages/materials.astro` |
-| `DISC-P1-004` | Enrich JSON-LD and `site.ts` for performer + AI discoverability | `planned` | `DISC-P1-003` | `src/lib/site.ts`, `src/components/Seo.astro`, `src/pages/index.astro` |
+| `DISC-P1-004` | Enrich JSON-LD and `site.ts` for performer + AI discoverability | `done` | `DISC-P1-003` | `src/lib/site.ts`, `src/lib/personSchema.ts`, `src/components/Seo.astro`, `src/pages/index.astro` |
 | `DISC-P1-005` | Add nav/footer link to Materials | `done` | `DISC-P1-002` | `src/lib/site.ts` (`nav`), `src/components/Footer.astro` |
-| `DISC-P1-006` | Surface Tiffany King quote on site | `planned` | — | `src/pages/index.astro` or `src/pages/about.astro` |
-| `DISC-P1-007` | Add sticky mobile “Materials” shortcut | `planned` | `DISC-P1-002` | `src/layouts/BaseLayout.astro` or new component |
+| `DISC-P1-006` | Surface Tiffany King quote on site | `done` | — | `src/pages/index.astro`, `src/components/PressQuote.astro` |
+| `DISC-P1-007` | Add sticky mobile “Materials” shortcut | `done` | `DISC-P1-002` | `src/components/StickyMobileCastingBar.astro`, `src/layouts/BaseLayout.astro` |
 
 <details>
 <summary><code>DISC-P1-001</code> — Reorder homepage for casting</summary>
@@ -253,11 +253,11 @@ Shipped facts in `site.performer`: playing age 15–28; vocal type (Mezzo-Sopran
 
 **Acceptance criteria**
 
-- [ ] `knowsAbout` includes performance types (not only vocal coaching)
-- [ ] `alumniOf` includes Broadway Artists Alliance and University of the Arts
-- [ ] `sameAs` includes YouTube (performer channel) and any verified casting profiles
-- [ ] Performer facts from `DISC-P1-003` reflected in Person schema where schema.org allows
-- [ ] Casting pages inherit updated defaults from `Seo.astro` / `site.ts`
+- [x] `knowsAbout` includes performance types (not only vocal coaching)
+- [x] `alumniOf` includes Broadway Artists Alliance and University of the Arts
+- [x] `sameAs` includes YouTube (Stage Kiss reel watch URL until verified channel via `DISC-GAP-007`) and Instagram; casting profiles still pending `DISC-GAP-007`
+- [x] Performer facts from `DISC-P1-003` reflected in Person schema where schema.org allows (`height` + `additionalProperty`)
+- [x] Casting pages inherit updated defaults from `Seo.astro` / `personSchema.ts` / `LandingLayout`
 
 </details>
 
@@ -278,9 +278,11 @@ Shipped: `nav` in `src/lib/site.ts` + footer `CtaLink` to `/materials`.
 
 **Acceptance criteria**
 
-- [ ] Quote attributed: Tiffany King — “The funniest actor you’ve never seen.”
-- [ ] Placed on homepage or About with appropriate editorial styling (no pill-stat strip per style guide)
-- [ ] Visible on mobile without excessive scroll
+- [x] Quote attributed: Tiffany King — “The funniest actor you’ve never seen.”
+- [x] Placed on homepage or About with appropriate editorial styling (no pill-stat strip per style guide)
+- [x] Visible on mobile without excessive scroll
+
+Shipped: homepage `PressQuote`; SoT moved to `site.pressQuote` / Studio `update_press_quote` (FLEX discrete registry).
 
 </details>
 
@@ -289,9 +291,9 @@ Shipped: `nav` in `src/lib/site.ts` + footer `CtaLink` to `/materials`.
 
 **Acceptance criteria**
 
-- [ ] On viewports &lt; `md`, persistent bottom or top bar with “Materials” / “Reel” actions
-- [ ] Does not obscure reel iframe controls
-- [ ] Hidden on `/studio` and `/lessons/book` if distracting
+- [x] On viewports &lt; `md`, persistent bottom or top bar with “Materials” / “Reel” actions
+- [x] Does not obscure reel iframe controls
+- [x] Hidden on `/studio` and `/lessons/book` if distracting
 
 </details>
 
@@ -301,13 +303,13 @@ Shipped: `nav` in `src/lib/site.ts` + footer `CtaLink` to `/materials`.
 
 | ID | Title | Status | Depends on | Primary files / runbooks |
 |----|-------|--------|------------|--------------------------|
-| `DISC-P2-001` | Casting page: ethnically ambiguous actress musical theatre | `planned` | `DISC-P1-003` | `src/content/casting/ethnically-ambiguous-actress.md` |
-| `DISC-P2-002` | Casting page: belt vocalist musical theatre | `planned` | `DISC-P1-003` | `src/content/casting/belt-vocalist-musical-theatre.md` |
-| `DISC-P2-003` | Casting page: mezzo-soprano musical theatre | `planned` | `DISC-P1-003` | `src/content/casting/mezzo-soprano-musical-theatre.md` |
-| `DISC-P2-004` | Casting page: triple threat actress NYC | `planned` | — | `src/content/casting/triple-threat-actress-nyc.md` |
+| `DISC-P2-001` | Casting page: ethnically ambiguous actress musical theatre | `done` | `DISC-P1-003` | `src/content/casting/ethnically-ambiguous-actress.md` |
+| `DISC-P2-002` | Casting page: belt vocalist musical theatre | `done` | `DISC-P1-003` | `src/content/casting/belt-vocalist-musical-theatre.md` |
+| `DISC-P2-003` | Casting page: mezzo-soprano musical theatre | `done` | `DISC-P1-003` | `src/content/casting/mezzo-soprano-musical-theatre.md` |
+| `DISC-P2-004` | Casting page: triple threat actress NYC | `done` | — | `src/content/casting/triple-threat-actress-nyc.md` |
 | `DISC-P2-005` | Casting page: seeking representation NYC | `planned` | Elyse approval | `src/content/casting/seeking-representation-nyc.md` |
-| `DISC-P2-006` | Internal linking for `/for/*` pages | `planned` | — | `src/components/Footer.astro`, `src/pages/shows.astro`, `src/pages/about.astro` |
-| `DISC-P2-007` | Casting index page listing all `/for/*` landers | `planned` | — | New `src/pages/for/index.astro` |
+| `DISC-P2-006` | Internal linking for `/for/*` pages | `done` | — | `src/components/Footer.astro`, `src/content/pages/about.md`, `src/components/ShowCredit.astro` |
+| `DISC-P2-007` | Casting index page listing all `/for/*` landers | `done` | — | `src/pages/for/index.astro` |
 | `DISC-P2-008` | Individual show detail pages | `planned` | — | `src/pages/shows/[slug].astro`, show markdown bodies |
 | `DISC-P2-009` | Add 2–3 vocal demo clips (16-bar song cuts) | `planned` | `DISC-GAP-004` | `src/pages/materials.astro`, `src/content/shows/*.md` or gallery |
 | `DISC-P2-010` | Cross-link show credits → relevant casting pages | `planned` | `DISC-P2-006`, `DISC-P2-008` | Show templates, casting frontmatter |
@@ -317,12 +319,12 @@ Shipped: `nav` in `src/lib/site.ts` + footer `CtaLink` to `/materials`.
 
 **Shared acceptance criteria** (per page)
 
-- [ ] File under `src/content/casting/<slug>.md` passes `castingFrontmatterSchema`
-- [ ] 2–4 paragraphs of unique copy tied to real credits (no thin doorway pages)
-- [ ] `keyword`, `title`, `description` match target search intent
-- [ ] `relatedShows` and `relatedSkills` populated
-- [ ] Live at `/for/<slug>/` and listed in sitemap
-- [ ] See [add-casting-page.md](../runbooks/add-casting-page.md)
+- [x] File under `src/content/casting/<slug>.md` passes `castingFrontmatterSchema` (`DISC-P2-001`–`004`; `005` still pending approval)
+- [x] 2–4 paragraphs of unique copy tied to real credits (no thin doorway pages)
+- [x] `keyword`, `title`, `description` match target search intent
+- [x] `relatedShows` and `relatedSkills` populated
+- [x] Live at `/for/<slug>/` and listed in sitemap
+- [x] See [add-casting-page.md](../runbooks/add-casting-page.md)
 
 **Page-specific keywords**
 
@@ -341,9 +343,9 @@ Shipped: `nav` in `src/lib/site.ts` + footer `CtaLink` to `/materials`.
 
 **Acceptance criteria**
 
-- [ ] Footer includes “For casting” → `/for/` index or curated list
-- [ ] About page links to 3+ relevant `/for/*` pages in prose
-- [ ] Shows page links to role-relevant casting pages (e.g. Anastasia → `anastasia-lily`)
+- [x] Footer includes “For casting” → `/for/` index or curated list
+- [x] About page links to 3+ relevant `/for/*` pages in prose
+- [x] Shows page links to role-relevant casting pages (e.g. Anastasia → `anastasia-lily`)
 
 </details>
 
@@ -352,9 +354,9 @@ Shipped: `nav` in `src/lib/site.ts` + footer `CtaLink` to `/materials`.
 
 **Acceptance criteria**
 
-- [ ] `/for/` lists all casting collection entries with title + one-line description
-- [ ] Included in sitemap
-- [ ] Not linked in main nav (footer is enough) unless usability testing says otherwise
+- [x] `/for/` lists all casting collection entries with title + one-line description
+- [x] Included in sitemap
+- [x] Not linked in main nav (footer is enough) unless usability testing says otherwise
 
 </details>
 
@@ -568,8 +570,8 @@ Same `GEMINI_API_KEY` may call both; CI draft jobs must read **`GEMINI_MODEL_SEA
 #### Implementation order
 
 ```text
-Before Tier 4: finish Tier 1 leftovers (DISC-P1-004, 006, 007)
-    then hand-write DISC-P2-001–004 + DISC-P2-006/007 linking
+Before Tier 4: Tier 1 leftovers done (DISC-P1-004, 006, 007);
+    DISC-P2-001–004 + DISC-P2-006/007 linking shipped (005 pending GAP-005)
 
 Tier 4 prep: DISC-P4-000 docs done — enforce when draft jobs ship
     + SEARCH-P4-001/002 (automate SEARCH-P3-001 extract — no Gemini)
@@ -635,7 +637,7 @@ Items Elyse (or representation) must supply before related actions can ship.
 | `DISC-GAP-004` | 2–3 vocal demo recordings (YouTube unlisted or public) | `DISC-P2-009` | `needed` |
 | `DISC-GAP-005` | Confirmation whether to publish “seeking representation” publicly | `DISC-P2-005` | `needed` |
 | `DISC-GAP-006` | Legacy WordPress URL inventory for redirects | `DISC-P0-003` | `done` (see [wordpress-to-azure-cutover.md](../runbooks/wordpress-to-azure-cutover.md) §2) |
-| `DISC-GAP-007` | Verified external profile URLs (Backstage, Actors Access, YouTube, etc.) | `DISC-P1-004`, `DISC-P3-005` | `needed` |
+| `DISC-GAP-007` | Verified external profile URLs (Backstage, Actors Access, YouTube channel, etc.) | `DISC-P1-004`, `DISC-P3-005` | `needed` (YouTube reel watch URL in `sameAs` until channel verified) |
 
 ---
 

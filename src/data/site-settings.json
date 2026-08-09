@@ -1,6 +1,10 @@
 {
   "reelUrl": "https://youtu.be/41jdPTkN_Sw",
   "shortBio": "Elyse Tindall is a musical theatre actress and vocal coach from Atlanta, Georgia, now based in New York City.",
+  "pressQuote": {
+    "quote": "The funniest actor you’ve never seen.",
+    "attribution": "Tiffany King"
+  },
   "performer": {
     "playingAge": "15–28",
     "vocalType": "Mezzo-Soprano with an extended range",

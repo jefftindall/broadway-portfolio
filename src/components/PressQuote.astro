@@ -1,0 +1,25 @@
+---
+/**
+ * Editorial press attribution (DISC-P1-006). Not a pill-stat strip.
+ */
+interface Props {
+  quote: string;
+  attribution: string;
+  class?: string;
+}
+
+const {
+  quote,
+  attribution,
+  class: className = '',
+} = Astro.props;
+---
+
+<figure class:list={['border-l-2 border-l-gold pl-6', className]}>
+  <blockquote class="font-display text-2xl leading-snug text-spotlight md:text-3xl">
+    “{quote}”
+  </blockquote>
+  <figcaption class="mt-3 text-sm uppercase tracking-[0.2em] text-muted">
+    — {attribution}
+  </figcaption>
+</figure>

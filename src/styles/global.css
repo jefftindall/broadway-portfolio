@@ -161,3 +161,18 @@ h3,
 .prose-site li + li {
   margin-top: 0.4rem;
 }
+
+/* DISC-P1-007 — keep content clear of the mobile casting shortcut bar */
+body.has-casting-mobile-bar {
+  padding-bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));
+}
+
+.casting-mobile-bar {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.casting-mobile-bar--hide {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(100%);
+}

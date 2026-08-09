@@ -29,10 +29,17 @@ export const site = {
   url: 'https://elysetindall.com',
   email: requiredSiteEnv('SITE_CONTACT_EMAIL', import.meta.env.SITE_CONTACT_EMAIL),
   instagram: 'https://www.instagram.com/elyse.tindall/',
+  /**
+   * YouTube presence for Person `sameAs` (DISC-P1-004).
+   * Stage Kiss reel until a verified channel URL lands via DISC-GAP-007.
+   */
+  youtube: 'https://www.youtube.com/watch?v=41jdPTkN_Sw',
   /** Studio-writable via site-settings.json */
   reelUrl: siteSettings.reelUrl,
   /** About lead paragraph — Studio-writable; SEO description stays locked below */
   shortBio: siteSettings.shortBio,
+  /** Homepage press quote — Studio-writable */
+  pressQuote: siteSettings.pressQuote as { quote: string; attribution: string },
   heroImage: '/images/photos/elyse-portrait.jpg',
   description:
     'Elyse Tindall is a musical theatre actress and vocal coach from Atlanta, now based in New York City — stage credits, private voice lessons rooted in vocal pedagogy and CCM, and casting materials.',
@@ -47,6 +54,12 @@ export const site = {
     headshotTheatrical: '/downloads/elyse-tindall-headshot-theatrical.jpg',
   },
   knowsAbout: [
+    'Musical theatre',
+    'Stage acting',
+    'Musical comedy',
+    'Cabaret',
+    'Mezzo-soprano',
+    'Belt singing',
     'Vocal pedagogy',
     'Vocal health',
     'Contemporary commercial music',

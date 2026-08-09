@@ -6,13 +6,17 @@ export const SITE_SETTINGS_PATH = 'src/data/site-settings.json';
 /**
  * Used when the file is not on the GitHub branch yet (e.g. pre-merge staging
  * while Studio still reads/writes GITHUB_BRANCH, usually main). First publish
- * of reel / short bio / performer facts creates the file.
+ * of reel / short bio / press quote / performer facts creates the file.
  * TODO(FLEX-P4-004): load seed from src/data/site-settings.json so this cannot drift.
  */
 export const DEFAULT_SITE_SETTINGS = siteSettingsSchema.parse({
   reelUrl: 'https://youtu.be/41jdPTkN_Sw',
   shortBio:
     'Elyse Tindall is a musical theatre actress and vocal coach from Atlanta, Georgia, now based in New York City.',
+  pressQuote: {
+    quote: 'The funniest actor you’ve never seen.',
+    attribution: 'Tiffany King',
+  },
   performer: {
     playingAge: '15–28',
     vocalType: 'Mezzo-Soprano with an extended range',
@@ -48,7 +52,12 @@ export async function readSiteSettings() {
 
 /**
  * Merge allowlisted top-level patches into site-settings.json.
- * @param {Partial<{ reelUrl: string, shortBio: string, performer: Record<string, string> }>} patch
+ * @param {Partial<{
+ *   reelUrl: string,
+ *   shortBio: string,
+ *   pressQuote: Partial<{ quote: string, attribution: string }>,
+ *   performer: Record<string, string>,
+ * }>} patch
  * @returns {Promise<{ path: string, content: string, data: import('zod').infer<typeof siteSettingsSchema> }>}
  */
 export async function mergeSiteSettings(patch) {
@@ -57,6 +66,10 @@ export async function mergeSiteSettings(patch) {
     ...current,
     ...('reelUrl' in patch && patch.reelUrl !== undefined ? { reelUrl: patch.reelUrl } : {}),
     ...('shortBio' in patch && patch.shortBio !== undefined ? { shortBio: patch.shortBio } : {}),
+    pressQuote:
+      patch.pressQuote && typeof patch.pressQuote === 'object'
+        ? { ...current.pressQuote, ...patch.pressQuote }
+        : current.pressQuote,
     performer:
       patch.performer && typeof patch.performer === 'object'
         ? { ...current.performer, ...patch.performer }

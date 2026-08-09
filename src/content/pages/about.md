@@ -10,6 +10,10 @@ Elyse Tindall is a musical theatre actress and vocal coach from Atlanta, Georgia
 
 Alongside her performance work, she teaches private voice lessons grounded in vocal pedagogy, with a strong emphasis on vocal health and contemporary commercial music (CCM). Special skills include piano, dance (jazz, tap, ballet), hand-to-hand stage combat, and certified scuba diving.
 
+## For casting
+
+Casting directors looking for type and role fit can start with these pages: [ethnically ambiguous actress](/for/ethnically-ambiguous-actress), [mezzo-soprano musical theatre](/for/mezzo-soprano-musical-theatre), [belt vocalist](/for/belt-vocalist-musical-theatre), and [triple threat actress NYC](/for/triple-threat-actress-nyc). Full materials — reel, resume, and headshot — live on [Materials](/materials). Browse the full [casting index](/for).
+
 ## Philosophy
 
 I believe theatre is about honesty under lights — finding the specific human truth in every scene, then sharing it generously with the audience. Whether I’m playing comedy or heartbreak, I work from curiosity, discipline, and joy. The goal is never to “perform at” people; it’s to invite them in.
