@@ -1,6 +1,6 @@
 # Search signals (`SEARCH-P4-002`)
 
-Machine-readable extract of GSC + GA organic signals **since the last run** (biweekly schedule; first run uses a 14-day lookback) for the operator checklist in [search-ops-monthly.md](../../runbooks/search-ops-monthly.md).
+Machine-readable extract of GSC + GA organic signals **since the last run** (semimonthly schedule, 1st + 15th; first run uses a 14-day lookback) for the operator checklist in [search-ops-monthly.md](../../runbooks/search-ops-monthly.md).
 
 | File | Role |
 |------|------|
@@ -35,7 +35,7 @@ npm run search:signals
 npm run search:signals:fixture
 ```
 
-Scheduled: `.github/workflows/search-ops-monthly.yml` (1st and 15th, 15:00 UTC — ~every two weeks). CD ignores commits under this directory.
+Scheduled: `.github/workflows/search-ops-semimonthly.yml` (1st and 15th, 15:00 UTC — twice a month). CD ignores commits under this directory.
 
 ## Schema notes for consumers
 

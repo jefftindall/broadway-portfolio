@@ -1,14 +1,14 @@
-name: SEARCH biweekly signals
+name: SEARCH semimonthly signals
 
-# SEARCH-P4-002 — Pull GSC queries/CTR + GA organic landings since the last run
-# into docs/ops/search-signals/{from}_{to}.{json,md} (+ latest.*). Commits via
-# Studio GitHub App. Zero Gemini calls. On job failure, email ALERT-EMAIL only
-# (not SITE-CONTACT-EMAIL). Signal-only pushes are paths-ignored in
-# azure-static-web-apps.yml.
+# SEARCH-P4-002 — Semimonthly (1st + 15th) extract of GSC queries/CTR + GA organic
+# landings since the last run into docs/ops/search-signals/{from}_{to}.{json,md}
+# (+ latest.*). Commits via Studio GitHub App. Zero Gemini calls. On job failure,
+# email ALERT-EMAIL only (not SITE-CONTACT-EMAIL). Signal-only pushes are
+# paths-ignored in azure-static-web-apps.yml.
 
 on:
   schedule:
-    # 1st and 15th at 15:00 UTC (~every two weeks; after OPS scorecard on the 1st)
+    # Twice a month: 1st and 15th at 15:00 UTC (after OPS scorecard on the 1st)
     - cron: "0 15 1,15 * *"
   workflow_dispatch:
 
@@ -17,7 +17,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: search-ops-monthly
+  group: search-ops-semimonthly
   cancel-in-progress: false
 
 jobs:
@@ -119,7 +119,7 @@ jobs:
           else
             stamp="$(date -u +%Y-%m-%d)"
             git add docs/ops/search-signals/
-            git commit -m "SEARCH: biweekly search signals (${stamp})"
+            git commit -m "SEARCH: semimonthly search signals (${stamp})"
             git push origin HEAD:main
             echo "Pushed search signals to main as elyse-portfolio-studio[bot] (${stamp})."
           fi
@@ -139,7 +139,7 @@ jobs:
           fi
 
   notify_failure:
-    name: Notify search-ops workflow failure
+    name: Notify semimonthly search-ops failure
     needs: [refresh]
     if: always() && !cancelled() && needs.refresh.result == 'failure'
     runs-on: ubuntu-latest
@@ -177,5 +177,5 @@ jobs:
       - name: Email ALERT-EMAIL failure notice
         env:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          WORKFLOW_NAME: SEARCH biweekly signals
+          WORKFLOW_NAME: SEARCH semimonthly signals
         run: node scripts/ops-scorecard-failure-email.mjs

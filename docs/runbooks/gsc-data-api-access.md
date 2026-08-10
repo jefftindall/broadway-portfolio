@@ -1,7 +1,7 @@
-# Runbook: GSC Search Analytics API access (monthly search signals)
+# Runbook: GSC Search Analytics API access (semimonthly search signals)
 
 **Action ID:** `SEARCH-P4-001`  
-**Audience:** Operators setting up monthly search-ops automation (`SEARCH-P4-002`)  
+**Audience:** Operators setting up semimonthly search-ops automation (`SEARCH-P4-002`)  
 **Vault:** `kv-elyse-shared` (bootstrap placeholders; real values via CLI only)
 
 Browser Search Console is enough for manual reviews — **not** enough for the monthly job to read reports. Automating **queries / CTR / page impressions** needs the [Search Console API](https://developers.google.com/webmaster-tools/v1/api_reference_index) (Search Analytics) plus a service account added as a user on the GSC property.
@@ -58,7 +58,7 @@ gcloud services enable searchconsole.googleapis.com --project="$GCP_PROJECT_ID"
 If `elyse-scorecard-ga@PROJECT.iam.gserviceaccount.com` already exists for GA Data API:
 
 1. Note `$SA_EMAIL` from [ga-data-api-access.md](ga-data-api-access.md).
-2. Skip creating a new key — the monthly search workflow falls back to `GA-DATA-API-SA-JSON`.
+2. Skip creating a new key — the semimonthly search workflow falls back to `GA-DATA-API-SA-JSON`.
 3. Still grant GSC access (next step).
 
 ### New SA (only if not reusing)
@@ -91,7 +91,7 @@ chmod 600 ./gsc-search-sa.json
 
 **Do not grant Owner** unless a future feature explicitly needs verified-owner APIs and you accept that blast radius. Prefer keeping one SA at **Full** for read + indexing helpers.
 
-**If API calls still 403 after Full:** confirm the grant is on the same property as `GSC-SITE-URL` (domain `sc-domain:…` vs URL-prefix `https://…/`), wait a minute for propagation, and re-run **SEARCH biweekly signals**.
+**If API calls still 403 after Full:** confirm the grant is on the same property as `GSC-SITE-URL` (domain `sc-domain:…` vs URL-prefix `https://…/`), wait a minute for propagation, and re-run **SEARCH semimonthly signals**.
 
 **UI gotchas:** wrong Google account; URL-prefix vs domain property (grant on the property that matches `GSC-SITE-URL`); “Users and permissions” hidden when you are not an Owner; rare “email not found” on a brand-new SA — open the SA once in Cloud Console and retry.
 
@@ -153,7 +153,7 @@ node scripts/search-ops-signals-refresh.mjs \
 
 Confirm `docs/ops/search-signals/latest.json` (or the dry-run out-dir) has `coverage` rows 1–5 and that job logs show theme ids / counts only. Soft-fail leaves GSC/GA sections `stale` and must **not** print SA JSON.
 
-Biweekly workflow: `.github/workflows/search-ops-monthly.yml` (`SEARCH-P4-002`; 1st and 15th).
+Semimonthly workflow (1st + 15th): `.github/workflows/search-ops-semimonthly.yml` (`SEARCH-P4-002`; 1st and 15th).
 
 ---
 
@@ -162,7 +162,7 @@ Biweekly workflow: `.github/workflows/search-ops-monthly.yml` (`SEARCH-P4-002`; 
 Rotate immediately if the JSON ever appears in Actions logs, chat, or git.
 
 - If reusing the GA SA: follow [ga-data-api-access.md](ga-data-api-access.md) § Rotate (updates `GA-DATA-API-SA-JSON`).
-- If using a dedicated GSC key: create a new key, `az keyvault secret set --name GSC-DATA-API-SA-JSON --file …`, delete the old GCP key, re-run **SEARCH biweekly signals**.
+- If using a dedicated GSC key: create a new key, `az keyvault secret set --name GSC-DATA-API-SA-JSON --file …`, delete the old GCP key, re-run **SEARCH semimonthly signals**.
 
 ---
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * SEARCH-P4-002 — Biweekly GSC + GA search signal artifact (no Gemini).
+ * SEARCH-P4-002 — Semimonthly GSC + GA search signal artifact (no Gemini).
  *
  * Pulls stats since the last successful artifact (else last N days): top query
  * themes, /for/* CTR/impression bands, indexing anomaly summary, GA organic
