@@ -40,7 +40,7 @@ Phased work and action IDs live in [docs/plans/search-and-analytics.md](docs/pla
 ## Phase 3–4 — Operating loop
 
 - Monthly GSC + GA review checklist: [search-ops-monthly.md](docs/runbooks/search-ops-monthly.md) (`SEARCH-P3-001`–`003`).
-- **SoT:** automated extract `SEARCH-P4-002` → [`docs/ops/search-signals/`](docs/ops/search-signals/) (workflow `.github/workflows/search-ops-semimonthly.yml`); GSC access runbook `SEARCH-P4-001`.
+- **SoT:** automated extract `SEARCH-P4-002` → [`docs/ops/search-signals/`](docs/ops/search-signals/) (workflow `.github/workflows/search-ops-monthly.yml`); GSC access runbook `SEARCH-P4-001`.
 - Hand off to casting Tier 4 (`DISC-P4-*`); digest/PR summary is `SEARCH-P4-003` (planned).
 - Feed findings into `DISC-*` / content PRs — do not paste PII or full query exports into git.
 - Re-check GSC Experience/CWV after major hero/reel visual changes.

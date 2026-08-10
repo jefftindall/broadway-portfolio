@@ -91,7 +91,7 @@ rm -f ./ga-scorecard-sa.json
 
 Never echo the JSON key; mask line-by-line in Actions; rotate the GCP key immediately if leaked. These secrets are **not** synced into SWA. Full operator checklist + rotate: [ga-data-api-access.md](ga-data-api-access.md).
 
-### GSC Search Analytics API (semimonthly search signals) — `SEARCH-P4-001`
+### GSC Search Analytics API (monthly search signals) — `SEARCH-P4-001`
 
 Automating GSC queries / CTR / page impressions for `SEARCH-P4-002` needs a Search Console property user (service account) plus the site URL string. Prefer **reusing** the GA scorecard SA after enabling `searchconsole.googleapis.com` and granting the SA on the GSC property.
 
@@ -109,7 +109,7 @@ az keyvault secret set --vault-name kv-elyse-shared --name GSC-SITE-URL --value 
 # rm -f ./gsc-search-sa.json
 ```
 
-Never echo the JSON key. These secrets are **not** synced into SWA. Workflow: `.github/workflows/search-ops-semimonthly.yml`.
+Never echo the JSON key. These secrets are **not** synced into SWA. Workflow: `.github/workflows/search-ops-monthly.yml`.
 
 ## Contact forms (ACS email / SMS + Cloudflare Turnstile)
 

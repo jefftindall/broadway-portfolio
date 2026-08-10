@@ -33,7 +33,7 @@ Rules:
 | [`staging-branch.yml`](../../.github/workflows/staging-branch.yml) | `CD: staging` | dispatch |
 | [`sync-swa-api-secrets.yml`](../../.github/workflows/sync-swa-api-secrets.yml) | `Ops: sync SWA secrets` | dispatch |
 | [`ops-scorecard-monthly.yml`](../../.github/workflows/ops-scorecard-monthly.yml) | `Ops: monthly scorecard` | cron 1st + dispatch |
-| [`search-ops-semimonthly.yml`](../../.github/workflows/search-ops-semimonthly.yml) | `Search: semimonthly signals` | cron 1st/15th + dispatch |
+| [`search-ops-monthly.yml`](../../.github/workflows/search-ops-monthly.yml) | `Search: monthly signals` | cron 1st + dispatch |
 | [`cleanup-staging-studio-branches.yml`](../../.github/workflows/cleanup-staging-studio-branches.yml) | `Maint: cleanup Studio branches` | daily cron + dispatch |
 
 ## Tech debt: rename files to match Scheme A
@@ -47,7 +47,7 @@ Display names already match Scheme A. **Filenames do not** — rename in a later
 | `staging-branch.yml` | `cd-staging.yml` | Studio PR body / UI strings already say **CD: staging** |
 | `sync-swa-api-secrets.yml` | `ops-sync-swa-secrets.yml` | Script name can stay |
 | `ops-scorecard-monthly.yml` | *(already aligned)* | Optional: leave as-is |
-| `search-ops-semimonthly.yml` | `search-signals-semimonthly.yml` | Align with display “signals” |
+| `search-ops-monthly.yml` | `search-signals-monthly.yml` | Align with display “signals” |
 | `cleanup-staging-studio-branches.yml` | `maint-cleanup-studio-branches.yml` | Script comment references path |
 
 Optional follow-ups in the same rename PR: align concurrency group ids with filenames; keep `portfolio-cd` shared by `CD: main` and `CD: staging` unless you intentionally split deploy locks.
@@ -69,7 +69,7 @@ Do **not** re-add `terraform.yml`.
 | Preview a branch on staging SWA | **CD: staging** |
 | After rotating API vault secrets | **Ops: sync SWA secrets** |
 | Re-run monthly scorecard / digest | **Ops: monthly scorecard** |
-| Re-run GSC/GA signal extract | **Search: semimonthly signals** |
+| Re-run GSC/GA signal extract | **Search: monthly signals** |
 | Force Studio branch cleanup | **Maint: cleanup Studio branches** |
 
 Related: [deploy-and-rollback.md](deploy-and-rollback.md), [setup.md](../setup.md), [rotate-secrets.md](rotate-secrets.md).

@@ -9,13 +9,13 @@
 
 | Mode | Status | Notes |
 |------|--------|-------|
-| **Automated extract** (`SEARCH-P4-002`) | **SoT** — `.github/workflows/search-ops-semimonthly.yml` → [`docs/ops/search-signals/`](../ops/search-signals/) | GSC queries/CTR + GA landings → signal artifact; **no Gemini** |
-| **Manual checklist below** | Fallback only | Use when the semimonthly artifact is missing/stale; do not plan ops around clicking through consoles |
+| **Automated extract** (`SEARCH-P4-002`) | **SoT** — `.github/workflows/search-ops-monthly.yml` → [`docs/ops/search-signals/`](../ops/search-signals/) | GSC queries/CTR + GA landings → signal artifact; **no Gemini** |
+| **Manual checklist below** | Fallback only | Use when the monthly artifact is missing/stale; do not plan ops around clicking through consoles |
 | Ops scorecard visits/contacts (`OPS-P5-*`) | Separate | Thin activity glance; does **not** include GSC queries/CTR |
 
 App Insights answers “is Studio/prod healthy?”; GSC + GA4 answer “who finds us in search, where do they land, and do they inquire or download materials?”
 
-Cadence: search signals **semimonthly** (1st and 15th, **15:00 UTC** — twice a month). Ops scorecard ACS digest stays monthly (1st at 14:00). Manual fallback / `DISC-P3-006` still align roughly with month boundaries.
+Cadence: search signals **monthly** (1st, **15:00 UTC** — after the ops scorecard at 14:00). Manual fallback / `DISC-P3-006` still align with month boundaries.
 
 **Privacy:** Do not commit inquiry PII, raw export dumps with emails, or screenshots that include private contacts. Backlog notes in git stay high-level (paths, query themes, CTR gaps).
 
@@ -103,7 +103,7 @@ The monthly ACS digest / scorecard may include **visits, top paths, inquiry coun
 | Doc | Role |
 |-----|------|
 | [search-and-analytics.md](../plans/search-and-analytics.md) | `SEARCH-*` backlog + Phase 4 automation |
-| [docs/ops/search-signals/](../ops/search-signals/) | Biweekly `SEARCH-P4-002` artifact (since last run) |
+| [docs/ops/search-signals/](../ops/search-signals/) | Monthly `SEARCH-P4-002` artifact (since last run) |
 | [gsc-data-api-access.md](gsc-data-api-access.md) | GSC API SA + `GSC-SITE-URL` (`SEARCH-P4-001`) |
 | [casting-discoverability.md](../plans/casting-discoverability.md) | `DISC-*` content backlog + Tier 4 pipeline |
 | [monthly-site-check-in.md](monthly-site-check-in.md) | How Elyse reads the ACS digest (not this GSC review) |

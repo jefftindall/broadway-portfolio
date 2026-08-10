@@ -1,6 +1,6 @@
-name: "Search: semimonthly signals"
+name: "Search: monthly signals"
 
-# SEARCH-P4-002 — Semimonthly (1st + 15th) extract of GSC queries/CTR + GA organic
+# SEARCH-P4-002 — Monthly (1st) extract of GSC queries/CTR + GA organic
 # landings since the last run into docs/ops/search-signals/{from}_{to}.{json,md}
 # (+ latest.*). Commits via Studio GitHub App. Zero Gemini calls. On job failure,
 # email ALERT-EMAIL only (not SITE-CONTACT-EMAIL). Signal-only pushes are
@@ -9,8 +9,8 @@ name: "Search: semimonthly signals"
 
 on:
   schedule:
-    # Twice a month: 1st and 15th at 15:00 UTC (after OPS scorecard on the 1st)
-    - cron: "0 15 1,15 * *"
+    # 1st of month at 15:00 UTC (after OPS scorecard at 14:00)
+    - cron: "0 15 1 * *"
   workflow_dispatch:
 
 permissions:
@@ -18,7 +18,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: search-ops-semimonthly
+  group: search-ops-monthly
   cancel-in-progress: false
 
 jobs:
@@ -122,7 +122,7 @@ jobs:
           else
             stamp="$(date -u +%Y-%m-%d)"
             git add docs/ops/search-signals/
-            git commit -m "SEARCH: semimonthly search signals (${stamp})"
+            git commit -m "SEARCH: monthly search signals (${stamp})"
             git push origin HEAD:main
             echo "Pushed search signals to main as elyse-portfolio-studio[bot] (${stamp})."
           fi
@@ -142,7 +142,7 @@ jobs:
           fi
 
   notify_failure:
-    name: Notify semimonthly search-ops failure
+    name: Notify monthly search-ops failure
     needs: [refresh]
     if: always() && !cancelled() && needs.refresh.result == 'failure'
     runs-on: ubuntu-latest
@@ -180,5 +180,5 @@ jobs:
       - name: Email ALERT-EMAIL failure notice
         env:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          WORKFLOW_NAME: "Search: semimonthly signals"
+          WORKFLOW_NAME: "Search: monthly signals"
         run: node scripts/ops-scorecard-failure-email.mjs
