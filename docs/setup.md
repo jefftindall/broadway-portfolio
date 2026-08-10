@@ -144,7 +144,7 @@ az keyvault secret set --vault-name kv-elyse-prod --name GITHUB-APP-PRIVATE-KEY 
 
 After first login to `/studio`, check `/.auth/me` while signed in to copy the exact `userId` / email into the allowlist.
 
-**Important:** SWA managed Functions do **not** resolve `@Microsoft.KeyVault(...)` app settings. After populating the vault (or whenever you change API secrets), sync resolved values into SWA with `./scripts/sync-swa-api-secrets.sh <staging|prod>`, the **Sync SWA API secrets** workflow, or `terraform apply` for that environment. `AAD_CLIENT_SECRET` stays a Key Vault reference (auth platform only). See [rotate-secrets.md](runbooks/rotate-secrets.md).
+**Important:** SWA managed Functions do **not** resolve `@Microsoft.KeyVault(...)` app settings. After populating the vault (or whenever you change API secrets), sync resolved values into SWA with `./scripts/sync-swa-api-secrets.sh <staging|prod>`, the **Ops: sync SWA secrets** workflow, or `terraform apply` for that environment. `AAD_CLIENT_SECRET` stays a Key Vault reference (auth platform only). See [rotate-secrets.md](runbooks/rotate-secrets.md).
 
 Contact forms and the single CD build use **shared** Key Vault `kv-elyse-shared` (SITE-*, Turnstile, ACS). Env vaults keep Gemini / GitHub App / allowlist / AAD. Apply bootstrap first (shared ACS in `rg-elyse-shared`), populate shared secrets, then sync SWA — see [rotate-secrets.md](runbooks/rotate-secrets.md).
 
@@ -170,22 +170,24 @@ Bootstrap creates `elyse-portfolio-gha-terraform` with subscription Contributor 
 
 Terraform also manages GitHub Environment variables. The default Actions `GITHUB_TOKEN` cannot read those, so add a repository secret **`TF_GITHUB_TOKEN`**: a classic PAT with `repo` scope, or a fine-grained PAT with Environments + Variables read/write on this repo. Workflows override `GITHUB_TOKEN` with that secret for Terraform steps.
 
-| Workflow | When | What |
-|---|---|---|
-| [static-analysis.yml](../.github/workflows/static-analysis.yml) | Every PR / push to `main` | fmt, TFLint, validate, Astro check, API syntax; then (on PRs that touch `infra/`) `terraform plan` for staging and prod after those checks succeed — **no deploys**; CI runs in parallel across PRs (no concurrency group) |
-| [azure-static-web-apps.yml](../.github/workflows/azure-static-web-apps.yml) | Push / merge to `main` when app or infra paths change; manual (`workflow_dispatch`) from `main` runs full CD | Single **Build release**; if `infra/` changed: apply staging (parallel with build) → deploy staging → change-aware smoke/journeys → apply prod → deploy prod (same artifact); if only app paths changed: build → deploy staging → verify → prod; docs-only pushes skip CD; manual dispatch from non-`main` branches runs staging only. Shares `concurrency: portfolio-cd` with Staging branch (`cancel-in-progress: false`) so only one CD run deploys at a time |
-| [staging-branch.yml](../.github/workflows/staging-branch.yml) | Manual (`workflow_dispatch`) | Apply staging Terraform from the selected branch, deploy the staging SWA, then run Playwright smoke + journeys (async test; no prod). Same `portfolio-cd` concurrency group as main CD. Use this to preview Studio `staging-studio-YYYYMMDD` branches before merging their PR |
-| [cleanup-staging-studio-branches.yml](../.github/workflows/cleanup-staging-studio-branches.yml) | Daily cron + manual | Deletes `staging-studio-YYYYMMDD` branches older than 28 days (UTC) |
+| Workflow | Display name | When | What |
+|---|---|---|---|
+| [static-analysis.yml](../.github/workflows/static-analysis.yml) | **CI: static analysis** | Every PR / push to `main` | fmt, TFLint, validate, Astro check, API syntax; then (on PRs that touch `infra/`) `terraform plan` for staging and prod after those checks succeed — **no deploys**; CI runs in parallel across PRs (no concurrency group) |
+| [azure-static-web-apps.yml](../.github/workflows/azure-static-web-apps.yml) | **CD: main** | Push / merge to `main` when app or infra paths change; manual (`workflow_dispatch`) from `main` runs full CD | Single **Build release**; if `infra/` changed: apply staging (parallel with build) → deploy staging → change-aware smoke/journeys → apply prod → deploy prod (same artifact); if only app paths changed: build → deploy staging → verify → prod; docs-only pushes skip CD; manual dispatch from non-`main` branches runs staging only. Shares `concurrency: portfolio-cd` with **CD: staging** (`cancel-in-progress: false`) so only one CD run deploys at a time |
+| [staging-branch.yml](../.github/workflows/staging-branch.yml) | **CD: staging** | Manual (`workflow_dispatch`) | Apply staging Terraform from the selected branch, deploy the staging SWA, then run Playwright smoke + journeys (async test; no prod). Same `portfolio-cd` concurrency group as main CD. Use this to preview Studio `staging-studio-YYYYMMDD` branches before merging their PR |
+| [cleanup-staging-studio-branches.yml](../.github/workflows/cleanup-staging-studio-branches.yml) | **Maint: cleanup Studio branches** | Daily cron + manual | Deletes `staging-studio-YYYYMMDD` branches older than 28 days (UTC) |
+
+Naming SoT: [runbooks/github-actions-naming.md](runbooks/github-actions-naming.md) (Scheme A). File renames are tracked as tech debt there.
 
 Promotion path:
 
-- Pull requests → **Static analysis** only (plan when infra changes); no app or infra deploy
-- Push / merge to `main` → CD runs only when app or infra paths change (`src/`, `public/`, `api/`, build config, `infra/`, etc.); **docs-only** and other non-release paths skip deploy jobs. Terraform apply runs when `infra/` changes; **Smoke Staging** after staging deploy; prod only if staging deploy **and** verification succeeded; **Smoke Production** after prod deploy (failure → Sev1 SMS+voice, no auto-rollback)
-- Manual branch test → Actions → **Staging branch** → pick the branch → Run workflow (includes smoke + journeys)
+- Pull requests → **CI: static analysis** only (plan when infra changes); no app or infra deploy
+- Push / merge to `main` → **CD: main** runs only when app or infra paths change (`src/`, `public/`, `api/`, build config, `infra/`, etc.); **docs-only** and other non-release paths skip deploy jobs. Terraform apply runs when `infra/` changes; **Smoke Staging** after staging deploy; prod only if staging deploy **and** verification succeeded; **Smoke Production** after prod deploy (failure → Sev1 SMS+voice, no auto-rollback)
+- Manual branch test → Actions → **CD: staging** → pick the branch → Run workflow (includes smoke + journeys)
 
 See [runbooks/testing-strategy.md](runbooks/testing-strategy.md) for persona journeys, local commands, and phased backlog.
 
-Branch protection should require **Static analysis** (Terraform lint / Site check / API syntax) before merge. Optionally add required reviewers on the `prod` environment for a manual gate after staging smoke.
+Branch protection should require **CI: static analysis** jobs (Terraform lint / Site check / API syntax) before merge. Optionally add required reviewers on the `prod` environment for a manual gate after staging smoke.
 
 Verify subjects if login fails (must match GitHub’s assertion, including numeric IDs):
 

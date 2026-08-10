@@ -1,7 +1,8 @@
-name: Cleanup staging Studio branches
+name: "Maint: cleanup Studio branches"
 
 # Delete staging-studio-YYYYMMDD branches older than 28 days (UTC).
 # Studio staging publishes reuse one branch per UTC day; stale branches are removed daily.
+# Display names follow docs/runbooks/github-actions-naming.md (Scheme A).
 on:
   schedule:
     - cron: "15 6 * * *"

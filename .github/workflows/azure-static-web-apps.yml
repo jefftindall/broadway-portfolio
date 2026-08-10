@@ -1,11 +1,12 @@
-name: Azure Static Web Apps CI/CD
+name: "CD: main"
 
 # Deploy only on merge to main when app or infra paths change. PRs run static analysis only.
 # Scorecard-only / search-signal pushes (docs/ops artifacts) are paths-ignored so monthly
 # OPS / SEARCH refresh can commit to main without starting CD.
-# Manual full CD from main: Actions → Azure Static Web Apps CI/CD (workflow_dispatch).
+# Manual full CD from main: Actions → CD: main (workflow_dispatch).
 # Manual dispatch from other branches runs staging only; prod stages are skipped.
-# Manual staging-only test: Actions → Staging branch (workflow_dispatch).
+# Manual staging-only test: Actions → CD: staging (workflow_dispatch).
+# Display names follow docs/runbooks/github-actions-naming.md (Scheme A).
 # After Deploy Staging: Smoke Staging (Playwright desktop + mobile) must pass before prod.
 # After Deploy Production: Smoke Production re-runs the same suite against prod; failure → Sev1
 # (SmokeFailed → ag-elyse-critical-prod: email + SMS + voice). No auto-rollback (TEST-D-003).

@@ -1,4 +1,4 @@
-name: OPS monthly scorecard
+name: "Ops: monthly scorecard"
 
 # OPS-P0-004 / OPS-P4-002 / OPS-P5 — Re-evaluate docs/ops scorecard, commit to
 # main via Studio GitHub App, email ACS digest (ALERT-EMAIL + SITE-CONTACT-EMAIL)
@@ -6,6 +6,7 @@ name: OPS monthly scorecard
 # ALERT-EMAIL only (not SITE-CONTACT-EMAIL). Never writes emails, phones, App
 # private keys, GA SA JSON, or other secrets into the scorecard or logs.
 # Scorecard-only pushes are excluded from azure-static-web-apps.yml (paths-ignore).
+# Display names follow docs/runbooks/github-actions-naming.md (Scheme A).
 
 on:
   schedule:
@@ -183,5 +184,5 @@ jobs:
       - name: Email ALERT-EMAIL failure notice
         env:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          WORKFLOW_NAME: OPS monthly scorecard
+          WORKFLOW_NAME: "Ops: monthly scorecard"
         run: node scripts/ops-scorecard-failure-email.mjs

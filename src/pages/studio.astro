@@ -690,7 +690,7 @@ const imageHashIndex = buildPublicImageHashIndex();
         <div id="staging-test-section" class="hidden space-y-2">
           <p class="text-xs uppercase tracking-[0.15em] text-muted">Test on staging</p>
           <p class="text-sm text-gel">
-            GitHub → Actions → <span class="text-spotlight">Staging branch</span> → Run workflow on
+            GitHub → Actions → <span class="text-spotlight">CD: staging</span> → Run workflow on
             this branch. Prod stays unchanged until the pull request merges.
           </p>
         </div>
@@ -1581,8 +1581,8 @@ const imageHashIndex = buildPublicImageHashIndex();
         }
         setStatus(
           meta?.prUrl
-            ? 'Saved on a staging branch. Open the pull request, or run Staging branch to test.'
-            : 'Saved on a staging branch. Run Actions → Staging branch to test.',
+            ? 'Saved on a staging branch. Open the pull request, or run CD: staging to test.'
+            : 'Saved on a staging branch. Run Actions → CD: staging to test.',
         );
         return;
       }

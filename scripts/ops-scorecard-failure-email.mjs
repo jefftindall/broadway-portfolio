@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Email ALERT-EMAIL when the OPS monthly scorecard workflow fails.
+ * Email ALERT-EMAIL when the Ops: monthly scorecard (or similar) workflow fails.
  * ACS email only — never SITE-CONTACT-EMAIL, never logs recipient addresses.
  *
  * Env:
@@ -33,7 +33,7 @@ async function main() {
   const alertEmail = envTrim("ALERT_EMAIL");
   const runUrl = envTrim("RUN_URL") || "(run URL unavailable)";
   const workflowName =
-    envTrim("WORKFLOW_NAME") || "OPS monthly scorecard";
+    envTrim("WORKFLOW_NAME") || "Ops: monthly scorecard";
 
   if (!isConfiguredEmail(alertEmail)) {
     console.log(

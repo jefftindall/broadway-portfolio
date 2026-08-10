@@ -44,6 +44,7 @@ func start
 - [Search Console & Analytics plan](docs/plans/search-and-analytics.md) — phased GSC + GA4 work (`SEARCH-*` action IDs)
 - [Brand & UI style guide](docs/style-guide.md) — tokens, type, components (visual: `/style-guide`)
 - Runbooks:
+  - [GitHub Actions naming (Scheme A)](docs/runbooks/github-actions-naming.md) — display names + file-rename tech debt
   - [GitHub App (Studio)](docs/runbooks/github-app.md)
   - [Rotate secrets](docs/runbooks/rotate-secrets.md)
   - [Deploy and rollback](docs/runbooks/deploy-and-rollback.md)

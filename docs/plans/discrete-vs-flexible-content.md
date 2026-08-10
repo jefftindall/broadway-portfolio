@@ -345,7 +345,7 @@ Out of scope for P3 (stay PR/ops): site email (`SITE_CONTACT_EMAIL` / Key Vault)
 - [x] Staging SWA `STUDIO_PUBLISH_MODE=pr` (Terraform); prod remains `direct`
 - [x] Same UTC day reuses one `staging-studio-YYYYMMDD` branch; publish merges latest `main` into it
 - [x] Open/update PR into `main`; Studio Done step shows branch + PR (no prod pipeline poll)
-- [x] Manual **Staging branch** workflow documents testing that branch on staging SWA
+- [x] Manual **CD: staging** workflow documents testing that branch on staging SWA
 - [x] Daily cleanup deletes dated branches older than 28 days
 - [x] GitHub App runbook requires Pull requests: write; Studio help / deploy / AGENTS updated
 - [ ] Operator grants Pull requests: write on the installed App and applies staging Terraform so `STUDIO_PUBLISH_MODE` is live (out-of-band)

@@ -91,7 +91,7 @@ chmod 600 ./gsc-search-sa.json
 
 **Do not grant Owner** unless a future feature explicitly needs verified-owner APIs and you accept that blast radius. Prefer keeping one SA at **Full** for read + indexing helpers.
 
-**If API calls still 403 after Full:** confirm the grant is on the same property as `GSC-SITE-URL` (domain `sc-domain:…` vs URL-prefix `https://…/`), wait a minute for propagation, and re-run **SEARCH semimonthly signals**.
+**If API calls still 403 after Full:** confirm the grant is on the same property as `GSC-SITE-URL` (domain `sc-domain:…` vs URL-prefix `https://…/`), wait a minute for propagation, and re-run **Search: semimonthly signals**.
 
 **UI gotchas:** wrong Google account; URL-prefix vs domain property (grant on the property that matches `GSC-SITE-URL`); “Users and permissions” hidden when you are not an Owner; rare “email not found” on a brand-new SA — open the SA once in Cloud Console and retry.
 
@@ -162,7 +162,7 @@ Semimonthly workflow (1st + 15th): `.github/workflows/search-ops-semimonthly.yml
 Rotate immediately if the JSON ever appears in Actions logs, chat, or git.
 
 - If reusing the GA SA: follow [ga-data-api-access.md](ga-data-api-access.md) § Rotate (updates `GA-DATA-API-SA-JSON`).
-- If using a dedicated GSC key: create a new key, `az keyvault secret set --name GSC-DATA-API-SA-JSON --file …`, delete the old GCP key, re-run **SEARCH semimonthly signals**.
+- If using a dedicated GSC key: create a new key, `az keyvault secret set --name GSC-DATA-API-SA-JSON --file …`, delete the old GCP key, re-run **Search: semimonthly signals**.
 
 ---
 

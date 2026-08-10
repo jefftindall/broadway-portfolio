@@ -2,15 +2,15 @@
 
 ## Promotion path (staging → production)
 
-1. Open a PR targeting `main`. Actions run **Static analysis** only (no deploys). If the PR touches `infra/`, **Plan staging** / **Plan prod** run after lint/checks and comment the plan on the PR.
+1. Open a PR targeting `main`. Actions run **CI: static analysis** only (no deploys). If the PR touches `infra/`, **Plan staging** / **Plan prod** run after lint/checks and comment the plan on the PR.
 2. Review the plan (when present) and merge when ready.
-3. On merge to `main`, **Azure Static Web Apps CI/CD** runs when app or infra paths changed (not on docs-only updates):
+3. On merge to `main`, **CD: main** runs when app or infra paths changed (not on docs-only updates):
    - **Build release** once (in parallel with staging Terraform when infra changed)
    - If `infra/` changed: **Terraform apply staging**, then **Deploy Staging** (from artifact), then **Smoke Staging**, then **Terraform apply prod**, then **Deploy Production** (same artifact), then **Smoke Production**
    - If only app paths changed: **Deploy Staging** → **Smoke Staging** → **Deploy Production** → **Smoke Production** (Terraform apply jobs skipped)
-   - If neither changed (e.g. `docs/` only): CD jobs are skipped; **Static analysis** still runs on the push
+   - If neither changed (e.g. `docs/` only): CD jobs are skipped; **CI: static analysis** still runs on the push
 
-CD workflows share concurrency group `portfolio-cd` (`cancel-in-progress: false`), so main CD and **Staging branch** never deploy at the same time. A second CD run waits; if more arrive while one is pending, GitHub keeps only the latest pending run. Static analysis is unconstrained and may run in parallel across PRs.
+CD workflows share concurrency group `portfolio-cd` (`cancel-in-progress: false`), so **CD: main** and **CD: staging** never deploy at the same time. A second CD run waits; if more arrive while one is pending, GitHub keeps only the latest pending run. CI is unconstrained and may run in parallel across PRs.
 
 **Smoke Staging** runs Playwright against the live staging hostname and **blocks** production. Journey scope depends on what changed: full suite for UI/infra changes, `@content` journeys for markdown-only updates, smoke-only for API-only changes. See [testing-strategy.md](testing-strategy.md). Production deploys the **same build artifact** that passed staging verification.
 
@@ -18,7 +18,9 @@ CD workflows share concurrency group `portfolio-cd` (`cancel-in-progress: false`
 
 Optional: add required reviewers on the GitHub Environment **prod** for a manual approval gate after smoke.
 
-Branch protection should require **Static analysis** checks (Terraform lint / Site check / API syntax) before merge — not deploy jobs.
+Branch protection should require **CI: static analysis** checks (Terraform lint / Site check / API syntax) before merge — not deploy jobs.
+
+Workflow display names: [github-actions-naming.md](github-actions-naming.md).
 
 ## Resume PDF
 
@@ -28,19 +30,19 @@ Branch protection should require **Static analysis** checks (Terraform lint / Si
 
 Use this for async smoke tests of infra and/or app changes without merging:
 
-1. GitHub → Actions → **Staging branch**
+1. GitHub → Actions → **CD: staging**
 2. **Run workflow** → select the branch → Run
 3. The workflow applies staging Terraform from that branch, builds and deploys the staging Static Web App, then runs the same **Smoke Staging** Playwright suite (does not promote to prod)
 
 ### Studio content on a dated staging branch
 
-Staging Studio publishes to `staging-studio-YYYYMMDD` (UTC) and opens a PR into `main` — see [github-app.md](github-app.md#staging-studio-publish-pr-mode). To preview those commits on the staging SWA before merge, run **Staging branch** against that dated branch. Merging the PR is what promotes content to production (via normal `main` CD). A daily cleanup job deletes dated branches older than 28 days.
+Staging Studio publishes to `staging-studio-YYYYMMDD` (UTC) and opens a PR into `main` — see [github-app.md](github-app.md#staging-studio-publish-pr-mode). To preview those commits on the staging SWA before merge, run **CD: staging** against that dated branch. Merging the PR is what promotes content to production (via normal `main` CD). A daily cleanup job (**Maint: cleanup Studio branches**) deletes dated branches older than 28 days.
 
 ## Redeploy without code changes
 
-GitHub → Actions → **Azure Static Web Apps CI/CD** → **Run workflow** and select the **`main`** branch to run every CD stage regardless of path filters.
+GitHub → Actions → **CD: main** → **Run workflow** and select the **`main`** branch to run every CD stage regardless of path filters.
 
-Manual dispatch from a non-`main` branch runs staging deploy and verification only (production stages are skipped). For branch testing without prod promotion, **Staging branch** is equivalent.
+Manual dispatch from a non-`main` branch runs staging deploy and verification only (production stages are skipped). For branch testing without prod promotion, **CD: staging** is the dedicated path (equivalent staging-only outcome).
 
 Alternatively, re-run all jobs on a previous `main` push workflow run.
 

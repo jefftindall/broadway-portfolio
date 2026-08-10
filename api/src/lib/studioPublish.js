@@ -100,7 +100,7 @@ export function stagingStudioPrBody({ branch, base }) {
     '',
     '### Test on staging SWA',
     '',
-    '1. GitHub → Actions → **Staging branch**',
+    '1. GitHub → Actions → **CD: staging**',
     `2. Run workflow → select \`${branch}\``,
     '3. Smoke/journeys run against the staging hostname (prod is not updated)',
     '',
