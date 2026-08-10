@@ -24,7 +24,7 @@
     "ops:scorecard-email": "node scripts/ops-scorecard-email.mjs",
     "ops:scorecard-email:preview": "node scripts/ops-scorecard-email.mjs --preview-file=tmp-scorecard-digest-preview.html",
     "search:signals": "node scripts/search-ops-signals-refresh.mjs",
-    "search:signals:fixture": "node scripts/search-ops-signals-refresh.mjs --fixture=scripts/fixtures/search-signals-sample.json --out-dir=tmp-search-signals",
+    "search:signals:fixture": "node scripts/search-ops-signals-refresh.mjs --fixture=scripts/fixtures/search-signals-sample.json --out-dir=tmp-search-signals --from=2026-07-27 --to=2026-08-09",
     "test:search-signals": "node --test scripts/search-ops-signals-refresh.test.mjs",
     "test:smoke": "playwright test --config=playwright.smoke.config.ts",
     "test:journey": "playwright test --config=playwright.journey.config.ts",

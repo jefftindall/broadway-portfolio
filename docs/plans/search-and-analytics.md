@@ -1,7 +1,7 @@
 # Plan: Google Search Console & Analytics
 
 **Artifact ID:** `ELYSE-SEARCH-001`  
-**Version:** 1.11  
+**Version:** 1.12  
 **Last updated:** 2026-08-10  
 **Audience:** Agents, implementers, operators  
 **Scope:** Google Search Console (GSC), Google Analytics 4 (GA4), and related technical SEO that makes those tools useful — not casting content strategy itself.
@@ -407,8 +407,8 @@ Content that moves rankings (Person facts, `/for/*` landers, materials downloads
 
 **Acceptance criteria**
 
-- [x] Scheduled job (1st and 15th, 15:00 UTC — ~every two weeks) pulls prior calendar month: top queries, `/for/*` CTR/impressions bands, indexing anomalies summary, GA organic landing paths
-- [x] Writes a small artifact (JSON/MD) under [`docs/ops/search-signals/`](../ops/search-signals/): **paths, query themes, numeric bands** — no emails, no full raw exports
+- [x] Scheduled job (1st and 15th, 15:00 UTC — ~every two weeks) pulls **since last run** (else 14-day lookback): top queries, `/for/*` CTR/impressions bands, indexing anomalies summary, GA organic landing paths
+- [x] Writes a small artifact (JSON/MD) under [`docs/ops/search-signals/`](../ops/search-signals/) (`latest.*` + `{from}_{to}.*`): **paths, query themes, numeric bands** — no emails, no full raw exports
 - [x] Covers checklist rows 1–5 of [search-ops-monthly.md](../runbooks/search-ops-monthly.md) at minimum (CWV/Enhancements stay manual)
 - [x] **Zero Gemini calls** in this job
 - [x] Failure notifies `ALERT-EMAIL` only (reuses `ops-scorecard-failure-email.mjs`)

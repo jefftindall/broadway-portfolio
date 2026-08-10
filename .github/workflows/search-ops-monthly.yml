@@ -1,9 +1,10 @@
 name: SEARCH biweekly signals
 
-# SEARCH-P4-002 — Pull prior calendar month GSC queries/CTR + GA organic landings
-# into docs/ops/search-signals/YYYY-MM.{json,md}. Commits via Studio GitHub App.
-# Zero Gemini calls. On job failure, email ALERT-EMAIL only (not SITE-CONTACT-EMAIL).
-# Signal-only pushes are paths-ignored in azure-static-web-apps.yml.
+# SEARCH-P4-002 — Pull GSC queries/CTR + GA organic landings since the last run
+# into docs/ops/search-signals/{from}_{to}.{json,md} (+ latest.*). Commits via
+# Studio GitHub App. Zero Gemini calls. On job failure, email ALERT-EMAIL only
+# (not SITE-CONTACT-EMAIL). Signal-only pushes are paths-ignored in
+# azure-static-web-apps.yml.
 
 on:
   schedule:
@@ -116,9 +117,9 @@ jobs:
           if git diff --quiet -- docs/ops/search-signals/; then
             echo "No search-signal changes; skipping commit."
           else
-            stamp="$(date -u +%Y-%m)"
+            stamp="$(date -u +%Y-%m-%d)"
             git add docs/ops/search-signals/
-            git commit -m "SEARCH: monthly search signals (${stamp})"
+            git commit -m "SEARCH: biweekly search signals (${stamp})"
             git push origin HEAD:main
             echo "Pushed search signals to main as elyse-portfolio-studio[bot] (${stamp})."
           fi

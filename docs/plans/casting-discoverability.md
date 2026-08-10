@@ -524,7 +524,7 @@ Same `GEMINI_API_KEY` may call both; CI draft jobs must read **`GEMINI_MODEL_SEA
 
 **Acceptance criteria**
 
-- [ ] Reads monthly artifact from `SEARCH-P4-002` ([`docs/ops/search-signals/YYYY-MM.json`](../ops/search-signals/): queries/themes, CTR gaps, organic landings, existing `/for/*` performance)
+- [ ] Reads latest artifact from `SEARCH-P4-002` ([`docs/ops/search-signals/latest.json`](../ops/search-signals/): queries/themes, CTR gaps, organic landings, existing `/for/*` performance; window since last run)
 - [ ] Computes ranked **candidate intents** with **no Gemini**
 - [ ] Filters near-duplicate keywords/slugs against `src/content/casting/`
 - [ ] Writes a small candidate list (themes/paths only — no PII, no full query dumps in git)

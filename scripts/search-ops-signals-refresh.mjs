@@ -1,17 +1,20 @@
 #!/usr/bin/env node
 /**
- * SEARCH-P4-002 — Monthly GSC + GA search signal artifact (no Gemini).
+ * SEARCH-P4-002 — Biweekly GSC + GA search signal artifact (no Gemini).
  *
- * Pulls prior calendar month: top query themes, /for/* CTR/impression bands,
- * indexing anomaly summary, GA organic landings + conversion events by landing.
- * Writes docs/ops/search-signals/YYYY-MM.{json,md} — paths/themes/bands only.
+ * Pulls stats since the last successful artifact (else last N days): top query
+ * themes, /for/* CTR/impression bands, indexing anomaly summary, GA organic
+ * landings + conversion events by landing.
+ * Writes docs/ops/search-signals/{from}_{to}.{json,md} plus latest.{json,md}.
  *
  * Env:
  *   GSC_SITE_URL (+ GSC_DATA_API_SA_JSON_FILE, else GA_DATA_API_SA_JSON_FILE)
  *   GA_PROPERTY_ID + GA_DATA_API_SA_JSON_FILE (organic landings / events)
  *
  * Flags:
- *   --anchor=YYYY-MM-DD   default: today UTC
+ *   --from=YYYY-MM-DD     explicit window start (inclusive)
+ *   --to=YYYY-MM-DD       explicit window end (inclusive; default: yesterday UTC)
+ *   --lookback-days=N     first-run / fallback window length (default: 14)
  *   --out-dir=path        default: docs/ops/search-signals
  *   --fixture=path.json   skip live APIs; build from fixture payload
  *   --strict              exit 1 if GSC and GA both unavailable
@@ -39,7 +42,10 @@ const DEFAULT_OUT = join(ROOT, "docs/ops/search-signals");
 const TOP_QUERIES = 20;
 const TOP_PAGES = 25;
 const TOP_LANDINGS = 20;
+const DEFAULT_LOOKBACK_DAYS = 14;
+const MAX_LOOKBACK_DAYS = 45;
 const GSC_SCOPE = "https://www.googleapis.com/auth/webmasters.readonly";
+const YMD_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 const PRIVACY_PATTERNS = [
   /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i,
@@ -62,18 +68,27 @@ const LEGACY_PATH_PREFIXES = [
 ];
 
 function parseArgs(argv) {
-  /** @type {{ anchor: string | null, outDir: string, fixture: string | null, strict: boolean }} */
+  /** @type {{ from: string | null, to: string | null, lookbackDays: number, outDir: string, fixture: string | null, strict: boolean }} */
   const out = {
-    anchor: null,
+    from: null,
+    to: null,
+    lookbackDays: DEFAULT_LOOKBACK_DAYS,
     outDir: DEFAULT_OUT,
     fixture: null,
     strict: false,
   };
   for (const a of argv) {
-    if (a.startsWith("--anchor=")) out.anchor = a.slice("--anchor=".length);
-    else if (a.startsWith("--out-dir=")) out.outDir = a.slice("--out-dir=".length);
+    if (a.startsWith("--from=")) out.from = a.slice("--from=".length);
+    else if (a.startsWith("--to=")) out.to = a.slice("--to=".length);
+    else if (a.startsWith("--lookback-days=")) {
+      out.lookbackDays = Number(a.slice("--lookback-days=".length));
+    } else if (a.startsWith("--out-dir=")) out.outDir = a.slice("--out-dir=".length);
     else if (a.startsWith("--fixture=")) out.fixture = a.slice("--fixture=".length);
     else if (a === "--strict") out.strict = true;
+    // Legacy --anchor= was prior-month mode; treat as --to= for one day earlier window end.
+    else if (a.startsWith("--anchor=")) {
+      out.to = addDaysUtc(a.slice("--anchor=".length), -1);
+    }
   }
   return out;
 }
@@ -82,25 +97,111 @@ function todayUtcYmd() {
   return new Date().toISOString().slice(0, 10);
 }
 
-/** Calendar month range ending before `anchorYmd` (UTC). monthsAgo=1 → previous month. */
-function monthRangeUtc(anchorYmd, monthsAgo) {
-  const d = new Date(`${anchorYmd}T00:00:00.000Z`);
-  const y = d.getUTCFullYear();
-  const m = d.getUTCMonth();
-  const start = new Date(Date.UTC(y, m - monthsAgo, 1));
-  const end = new Date(Date.UTC(y, m - monthsAgo + 1, 1));
-  const label = `${start.getUTCFullYear()}-${String(start.getUTCMonth() + 1).padStart(2, "0")}`;
-  return {
-    from: start.toISOString().slice(0, 10),
-    to: end.toISOString().slice(0, 10),
-    label,
-  };
+function assertYmd(value, label) {
+  if (!YMD_RE.test(value)) {
+    throw new Error(`Invalid ${label} (expected YYYY-MM-DD): ${value}`);
+  }
 }
 
-function endInclusiveYmd(exclusiveToYmd) {
-  const d = new Date(`${exclusiveToYmd}T00:00:00.000Z`);
-  d.setUTCDate(d.getUTCDate() - 1);
+/** @param {string} ymd @param {number} days */
+function addDaysUtc(ymd, days) {
+  assertYmd(ymd, "date");
+  const d = new Date(`${ymd}T00:00:00.000Z`);
+  d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
+}
+
+function daysBetweenUtc(fromYmd, toYmd) {
+  const a = new Date(`${fromYmd}T00:00:00.000Z`).getTime();
+  const b = new Date(`${toYmd}T00:00:00.000Z`).getTime();
+  return Math.round((b - a) / 86_400_000);
+}
+
+/**
+ * Read the newest prior artifact's inclusive end date from outDir.
+ * Prefers latest.json, else scans dated `{from}_{to}.json` / legacy `YYYY-MM.json`.
+ * @param {string} outDir
+ * @returns {string | null}
+ */
+function findLastWindowEnd(outDir) {
+  if (!existsSync(outDir)) return null;
+
+  const tryReadEnd = (filePath) => {
+    try {
+      const raw = JSON.parse(readFileSync(filePath, "utf8"));
+      const end = String(raw?.window?.toInclusive || "").trim();
+      if (YMD_RE.test(end)) return end;
+      const gen = String(raw?.generatedAt || "").slice(0, 10);
+      if (YMD_RE.test(gen)) return gen;
+    } catch {
+      // ignore corrupt/partial
+    }
+    return null;
+  };
+
+  const latestPath = join(outDir, "latest.json");
+  if (existsSync(latestPath)) {
+    const end = tryReadEnd(latestPath);
+    if (end) return end;
+  }
+
+  /** @type {string[]} */
+  const ends = [];
+  for (const name of readdirSync(outDir)) {
+    if (!name.endsWith(".json") || name === "latest.json") continue;
+    const end = tryReadEnd(join(outDir, name));
+    if (end) ends.push(end);
+  }
+  if (ends.length === 0) return null;
+  ends.sort();
+  return ends[ends.length - 1];
+}
+
+/**
+ * Resolve inclusive reporting window: since last run, else lookback days.
+ * @param {{ outDir: string, from: string | null, to: string | null, lookbackDays: number }} opts
+ */
+function resolveWindow(opts) {
+  const lookbackDays = Number.isFinite(opts.lookbackDays) && opts.lookbackDays > 0
+    ? Math.min(Math.floor(opts.lookbackDays), MAX_LOOKBACK_DAYS)
+    : DEFAULT_LOOKBACK_DAYS;
+
+  const toInclusive = opts.to || addDaysUtc(todayUtcYmd(), -1);
+  assertYmd(toInclusive, "--to");
+
+  /** @type {"explicit" | "since_last_run" | "lookback"} */
+  let source = "lookback";
+  let from = opts.from;
+
+  if (from) {
+    assertYmd(from, "--from");
+    source = "explicit";
+  } else {
+    const lastEnd = findLastWindowEnd(opts.outDir);
+    if (lastEnd) {
+      from = addDaysUtc(lastEnd, 1);
+      source = "since_last_run";
+    } else {
+      from = addDaysUtc(toInclusive, -(lookbackDays - 1));
+      source = "lookback";
+    }
+  }
+
+  // Empty / inverted window (e.g. re-run same day) → fall back to lookback ending at toInclusive.
+  if (from > toInclusive) {
+    from = addDaysUtc(toInclusive, -(lookbackDays - 1));
+    source = "lookback";
+  }
+
+  // Cap very long gaps (missed schedules) so one run does not pull a huge range.
+  if (daysBetweenUtc(from, toInclusive) + 1 > MAX_LOOKBACK_DAYS) {
+    from = addDaysUtc(toInclusive, -(MAX_LOOKBACK_DAYS - 1));
+    source = "lookback";
+  }
+
+  const toExclusive = addDaysUtc(toInclusive, 1);
+  const label = `${from}_${toInclusive}`;
+  return { from, toInclusive, toExclusive, label, source, lookbackDays };
 }
 
 function redact(msg) {
@@ -153,7 +254,7 @@ async function gscQuery(client, siteUrl, startDate, endDate, dimensions, rowLimi
       endDate,
       dimensions,
       rowLimit,
-      dataState: "final",
+      dataState: "all",
     },
   });
   return res.data?.rows || [];
@@ -513,10 +614,11 @@ function buildGaGscJoin(gsc, ga) {
 
 function renderMarkdown(artifact) {
   const lines = [
-    `# Search signals — ${artifact.month}`,
+    `# Search signals — ${artifact.period}`,
     "",
     `Generated: ${artifact.generatedAt}`,
-    `Window: ${artifact.window.from} → ${artifact.window.toInclusive} (UTC)`,
+    `Window: ${artifact.window.from} → ${artifact.window.toInclusive} (UTC)` +
+      (artifact.window.source ? ` · source=${artifact.window.source}` : ""),
     `Action: \`SEARCH-P4-002\` · **No Gemini**`,
     "",
     "## Coverage",
@@ -671,15 +773,19 @@ function artifactFromFixture(fixture) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const anchor = args.anchor || todayUtcYmd();
-  const month = monthRangeUtc(anchor, 1);
-  const endDate = endInclusiveYmd(month.to);
   const outDir = args.outDir.startsWith("/")
     ? args.outDir
     : join(ROOT, args.outDir);
+  const window = resolveWindow({
+    outDir,
+    from: args.from,
+    to: args.to,
+    lookbackDays: args.lookbackDays,
+  });
+  const { from: startDate, toInclusive: endDate, label, source } = window;
 
   console.log(
-    `SEARCH-P4-002 refresh for ${month.label} (${month.from}…${endDate}); zero Gemini calls.`,
+    `SEARCH-P4-002 refresh for ${label} (${startDate}…${endDate}; ${source}); zero Gemini calls.`,
   );
 
   /** @type {object | null} */
@@ -711,7 +817,7 @@ async function main() {
         gsc = await probeGsc({
           siteUrl,
           keyFile,
-          startDate: month.from,
+          startDate,
           endDate,
         });
         console.log(
@@ -738,7 +844,7 @@ async function main() {
         ga = await probeGaOrganic({
           propertyId,
           keyFile: gaKey,
-          startDate: month.from,
+          startDate,
           endDate,
         });
         console.log(
@@ -767,14 +873,15 @@ async function main() {
 
   const artifact = {
     $schemaComment:
-      "SEARCH-P4-002 monthly search signals. Paths, query themes, numeric bands only. No emails/phones/secrets. No Gemini.",
+      "SEARCH-P4-002 search signals since last run. Paths, query themes, numeric bands only. No emails/phones/secrets. No Gemini.",
     actionId: "SEARCH-P4-002",
-    month: month.label,
+    period: label,
     generatedAt: new Date().toISOString(),
     window: {
-      from: month.from,
-      toExclusive: month.to,
+      from: startDate,
+      toExclusive: window.toExclusive,
       toInclusive: endDate,
+      source,
     },
     castingLandersInRepo,
     coverage,
@@ -784,17 +891,22 @@ async function main() {
   };
 
   mkdirSync(outDir, { recursive: true });
-  const jsonPath = join(outDir, `${month.label}.json`);
-  const mdPath = join(outDir, `${month.label}.md`);
+  const jsonPath = join(outDir, `${label}.json`);
+  const mdPath = join(outDir, `${label}.md`);
+  const latestJsonPath = join(outDir, "latest.json");
+  const latestMdPath = join(outDir, "latest.md");
   const jsonText = `${JSON.stringify(artifact, null, 2)}\n`;
   const mdText = renderMarkdown(artifact);
   assertPrivacySafe(jsonText, jsonPath);
   assertPrivacySafe(mdText, mdPath);
   writeFileSync(jsonPath, jsonText, "utf8");
   writeFileSync(mdPath, mdText, "utf8");
+  writeFileSync(latestJsonPath, jsonText, "utf8");
+  writeFileSync(latestMdPath, mdText, "utf8");
 
   console.log(`Wrote ${jsonPath}`);
   console.log(`Wrote ${mdPath}`);
+  console.log(`Wrote ${latestJsonPath}`);
   console.log(
     `Coverage: ${coverage.map((c) => `${c.id}=${c.status}`).join(" ")}`,
   );

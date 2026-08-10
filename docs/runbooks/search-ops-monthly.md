@@ -29,7 +29,7 @@ Cadence: search signals **biweekly** (1st and 15th, **15:00 UTC**). Ops scorecar
 
 | Check | Where |
 |-------|--------|
-| Latest signal artifact | [`docs/ops/search-signals/`](../ops/search-signals/) (`YYYY-MM.json` / `.md`) |
+| Latest signal artifact | [`docs/ops/search-signals/latest.json`](../ops/search-signals/latest.json) (window since last run) |
 | GSC property for `elysetindall.com` | [Search Console](https://search.google.com/search-console) |
 | GA4 property / Measurement ID `G-XEE29C0RRE` | [Analytics](https://analytics.google.com/) |
 | Preferred host still apex | `www` → apex 301 ([dns-and-domain.md](dns-and-domain.md)) |
@@ -42,7 +42,7 @@ Residual one-time ops (not required every month): request indexing (`SEARCH-P0-0
 
 ## Monthly checklist (`SEARCH-P3-001`) — fallback
 
-Work the previous **calendar month** (same window as the ops cost / site-performance probes). **Skip this table when `SEARCH-P4-002` has already produced the month’s artifact** under [`docs/ops/search-signals/`](../ops/search-signals/).
+Work the previous **calendar month** only as a manual fallback. **Skip this table when `SEARCH-P4-002` has already produced a fresh artifact** under [`docs/ops/search-signals/`](../ops/search-signals/) (see `latest.json`; window is since the last run).
 
 | # | Source | Look at | Healthy if… | If not… |
 |---|--------|---------|-------------|---------|
@@ -103,7 +103,7 @@ The monthly ACS digest / scorecard may include **visits, top paths, inquiry coun
 | Doc | Role |
 |-----|------|
 | [search-and-analytics.md](../plans/search-and-analytics.md) | `SEARCH-*` backlog + Phase 4 automation |
-| [docs/ops/search-signals/](../ops/search-signals/) | Monthly `SEARCH-P4-002` artifact |
+| [docs/ops/search-signals/](../ops/search-signals/) | Biweekly `SEARCH-P4-002` artifact (since last run) |
 | [gsc-data-api-access.md](gsc-data-api-access.md) | GSC API SA + `GSC-SITE-URL` (`SEARCH-P4-001`) |
 | [casting-discoverability.md](../plans/casting-discoverability.md) | `DISC-*` content backlog + Tier 4 pipeline |
 | [monthly-site-check-in.md](monthly-site-check-in.md) | How Elyse reads the ACS digest (not this GSC review) |
