@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Fixture casting news</title>
+    <item>
+      <title>Latina musical theatre actress shines in new contemporary work</title>
+      <link>https://example.test/latina-mt</link>
+    </item>
+    <item>
+      <title>Comic ingénue musical theatre roles still in demand Off-Broadway</title>
+      <link>https://example.test/comic-ingenue</link>
+    </item>
+    <item>
+      <title>Actor joins the cast of Wicked on Broadway</title>
+      <link>https://example.test/wicked</link>
+    </item>
+    <item>
+      <title>Now casting this week for Hamilton swing</title>
+      <link>https://example.test/hamilton</link>
+    </item>
+    <item>
+      <title>CCM vocalist actress musical theatre workshop announced</title>
+      <link>https://example.test/ccm</link>
+    </item>
+  </channel>
+</rss>

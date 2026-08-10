@@ -2,6 +2,7 @@
 
 **Action IDs:** `SEARCH-P3-001`, `SEARCH-P3-002`, `SEARCH-P3-003`  
 **Automation track (required):** `SEARCH-P4-001`–`004` → casting `DISC-P4-003` / `DISC-P4-004`  
+**Broadway CD vernacular (separate):** `DISC-P4-007` — [casting-language-discovery.md](casting-language-discovery.md) / [`docs/ops/casting-language/`](../ops/casting-language/); GSC extract is feedback only  
 **Related:** `DISC-P3-006` (casting landers from query review); [casting-discoverability.md](../plans/casting-discoverability.md) Tier 4  
 **Audience:** Jeff (operator); outcomes may create casting/content backlog for Elyse
 
