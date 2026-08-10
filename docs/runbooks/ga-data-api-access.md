@@ -178,5 +178,6 @@ Property ID rarely changes; only update `GA-PROPERTY-ID` if you recreate the GA4
 |-----|------|
 | [rotate-secrets.md](rotate-secrets.md) | Shared vault SoT; points here for GA Data API |
 | [operational-excellence.md](../plans/operational-excellence.md) | `OPS-P5-*` contract + privacy rules |
-| [search-and-analytics.md](../plans/search-and-analytics.md) | Public Measurement ID + Phase 3 manual GSC/GA loop (not replaced by this) |
+| [search-and-analytics.md](../plans/search-and-analytics.md) | Public Measurement ID + Phase 3–4 GSC/GA loop (`SEARCH-P4-002` artifact; not replaced by scorecard visits) |
+| [gsc-data-api-access.md](gsc-data-api-access.md) | Prefer reusing this SA for Search Console reads |
 | [observability.md](observability.md) | App Insights vs GA4 roles |

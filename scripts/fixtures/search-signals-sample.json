@@ -1,0 +1,127 @@
+{
+  "gsc": {
+    "ok": true,
+    "queryCount": 3,
+    "pageCount": 3,
+    "brandVsNonBrand": {
+      "brand": { "impressions": 120, "clicks": 18, "impressionBand": "50-199" },
+      "nonBrand": { "impressions": 80, "clicks": 4, "impressionBand": "50-199" }
+    },
+    "themes": [
+      { "id": "actress", "impressions": 90, "clicks": 10, "impressionBand": "50-199", "brandShare": 40 },
+      { "id": "lessons", "impressions": 40, "clicks": 6, "impressionBand": "10-49", "brandShare": 10 },
+      { "id": "brand", "impressions": 70, "clicks": 12, "impressionBand": "50-199", "brandShare": 100 }
+    ],
+    "topQueries": [
+      {
+        "themePrimary": "brand",
+        "brand": true,
+        "query": "elyse tindall",
+        "clicks": 12,
+        "impressions": 70,
+        "impressionBand": "50-199",
+        "ctrPct": 17.1,
+        "ctrBand": "10pct+",
+        "position": 1.2
+      },
+      {
+        "themePrimary": "lessons",
+        "brand": false,
+        "query": "voice lessons nyc",
+        "clicks": 3,
+        "impressions": 40,
+        "impressionBand": "10-49",
+        "ctrPct": 7.5,
+        "ctrBand": "5-10pct",
+        "position": 18.4
+      }
+    ],
+    "pages": [
+      {
+        "path": "/",
+        "label": "Homepage",
+        "clicks": 10,
+        "impressions": 100,
+        "impressionBand": "50-199",
+        "ctrPct": 10,
+        "ctrBand": "10pct+",
+        "position": 3.1
+      },
+      {
+        "path": "/for/musical-theatre-actress-nyc",
+        "label": "Musical theatre actress NYC",
+        "clicks": 2,
+        "impressions": 45,
+        "impressionBand": "10-49",
+        "ctrPct": 4.4,
+        "ctrBand": "2-5pct",
+        "position": 22.0
+      },
+      {
+        "path": "/lessons",
+        "label": "Voice lessons",
+        "clicks": 4,
+        "impressions": 30,
+        "impressionBand": "10-49",
+        "ctrPct": 13.3,
+        "ctrBand": "10pct+",
+        "position": 8.5
+      }
+    ],
+    "focusPages": [
+      {
+        "path": "/for/musical-theatre-actress-nyc",
+        "label": "Musical theatre actress NYC",
+        "clicks": 2,
+        "impressions": 45,
+        "impressionBand": "10-49",
+        "ctrPct": 4.4,
+        "ctrBand": "2-5pct",
+        "position": 22.0
+      },
+      {
+        "path": "/lessons",
+        "label": "Voice lessons",
+        "clicks": 4,
+        "impressions": 30,
+        "impressionBand": "10-49",
+        "ctrPct": 13.3,
+        "ctrBand": "10pct+",
+        "position": 8.5
+      }
+    ],
+    "indexing": {
+      "studioPathsWithImpressions": [],
+      "legacyPathsWithImpressions": [],
+      "sitemapCount": 1,
+      "sitemapErrors": 0,
+      "note": "No /studio or known legacy paths with impressions in top pages."
+    },
+    "note": "GSC fixture: 3 query row(s), 3 page row(s)."
+  },
+  "ga": {
+    "ok": true,
+    "landings": [
+      { "path": "/", "label": "Homepage", "sessions": 40, "engagementRatePct": 62.5 },
+      { "path": "/materials", "label": "Materials (resume & headshots)", "sessions": 12, "engagementRatePct": 55.0 },
+      { "path": "/for/musical-theatre-actress-nyc", "label": "Musical theatre actress NYC", "sessions": 8, "engagementRatePct": 40.0 }
+    ],
+    "conversionsByLanding": [
+      {
+        "path": "/",
+        "label": "Homepage",
+        "events": { "generate_lead": 2, "file_download": 5 },
+        "total": 7
+      },
+      {
+        "path": "/materials",
+        "label": "Materials (resume & headshots)",
+        "events": { "file_download": 4 },
+        "total": 4
+      }
+    ],
+    "landingCount": 3,
+    "conversionLandingCount": 2,
+    "note": "GA fixture organic landings."
+  }
+}

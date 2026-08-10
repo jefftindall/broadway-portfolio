@@ -475,7 +475,7 @@ Same `GEMINI_API_KEY` may call both; CI draft jobs must read **`GEMINI_MODEL_SEA
 | `DISC-P4-000` | Document + enforce Gemini rate-limit / draft-budget contract | Shared | `done` (docs) | — | This section; [cost-and-quotas.md](../runbooks/cost-and-quotas.md); draft scripts |
 | `DISC-P4-001` | Curated intent catalog + template fill (closed queue) | **D** | `planned` | `DISC-P2-006`, `DISC-P2-007` preferred; `DISC-GAP-003` | `src/content/casting/` or `src/data/casting-intent-catalog.yaml`; `DISC-P2-001`–`005` |
 | `DISC-P4-002` | Credit-triggered lander draft PR | **C** | `planned` | `DISC-P4-000`; show upsert path | `DISC-P3-002`; Studio/`upsert_show` hook or post-merge workflow |
-| `DISC-P4-003` | Consume automated search signals (no Gemini) | Feeds **B** | `planned` | `SEARCH-P4-001`, `SEARCH-P4-002` | Signal artifact from search automation; slug gap vs `casting/*` |
+| `DISC-P4-003` | Consume automated search signals (no Gemini) | Feeds **B** | `planned` | `SEARCH-P4-001`, `SEARCH-P4-002` | [`docs/ops/search-signals/`](../ops/search-signals/); slug gap vs `casting/*` |
 | `DISC-P4-004` | GSC/GA → draft casting PR (≤2–3 bodies/mo) | **B** | `planned` | `DISC-P4-000`, `DISC-P4-003`, `SEARCH-P4-002` | GitHub App PR (same mint pattern as ops-scorecard); evidence table in PR body |
 | `DISC-P4-005` | Shared lander guardrails (dupe, evidence, evergreen, G-PR) | Shared | `planned` | Ship with `DISC-P4-001` / `004` | Validation in draft script; checklist in PR template |
 | `DISC-P4-006` | Public citeable signals → evergreen fit → draft PR | **E** | `planned` | `DISC-P4-000`, `DISC-P4-001`, `DISC-P4-005` | Allowlisted RSS/domains; rule-based fit first; Gemini only for winning copy |
@@ -524,7 +524,7 @@ Same `GEMINI_API_KEY` may call both; CI draft jobs must read **`GEMINI_MODEL_SEA
 
 **Acceptance criteria**
 
-- [ ] Reads monthly artifact from `SEARCH-P4-002` (queries, CTR gaps, organic landings, existing `/for/*` performance)
+- [ ] Reads monthly artifact from `SEARCH-P4-002` ([`docs/ops/search-signals/YYYY-MM.json`](../ops/search-signals/): queries/themes, CTR gaps, organic landings, existing `/for/*` performance)
 - [ ] Computes ranked **candidate intents** with **no Gemini**
 - [ ] Filters near-duplicate keywords/slugs against `src/content/casting/`
 - [ ] Writes a small candidate list (themes/paths only — no PII, no full query dumps in git)

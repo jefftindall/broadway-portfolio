@@ -1,8 +1,8 @@
 # Plan: Google Search Console & Analytics
 
 **Artifact ID:** `ELYSE-SEARCH-001`  
-**Version:** 1.9  
-**Last updated:** 2026-08-09  
+**Version:** 1.10  
+**Last updated:** 2026-08-10  
 **Audience:** Agents, implementers, operators  
 **Scope:** Google Search Console (GSC), Google Analytics 4 (GA4), and related technical SEO that makes those tools useful — not casting content strategy itself.
 
@@ -37,8 +37,8 @@ Implement **one phase (or one `SEARCH-*` item) per PR** when practical. Prefer l
 | Phase 0 — Apex / GSC / GA4 property | `done` | `SEARCH-P0-004` request indexing (`planned`) |
 | Phase 1 — GA4 measurement | Mostly `done` | `SEARCH-P1-005` Admin checklist (`planned`); DebugView verify under `SEARCH-P1-003`; `SEARCH-P1-006` `wont_fix` |
 | Phase 2 — Technical SEO | `done` | — |
-| Phase 3 — Monthly GSC+GA loop | `done` (runbook) | Habit ACs unchecked; **automate** via Phase 4 |
-| Phase 4 — Automate monthly extract | `planned` | `SEARCH-P4-001`–`004` — **suggested next** |
+| Phase 3 — Monthly GSC+GA loop | `done` (runbook) | Habit ACs unchecked; **SoT is Phase 4 artifact** |
+| Phase 4 — Automate monthly extract | Partial | `SEARCH-P4-001`/`002` `done` (runbook/workflow); residual: populate `GSC-SITE-URL` + SA grant; `SEARCH-P4-003`/`004` planned |
 
 ---
 
@@ -345,8 +345,8 @@ Asset: 1200×630 JPEG at `/images/og-default.jpg`. Width/height metas only for t
 
 - [x] Operator checklist documented in [search-ops-monthly.md](../runbooks/search-ops-monthly.md) (GSC Performance/Pages/CWV/Enhancements + GA Acquisition/Events + GA↔GSC)
 - [x] Cadence aligned with monthly ops scorecard / `DISC-P3-006` (roughly 1st of month)
-- [ ] Checklist executed at least once in production ops (habit; superseded as SoT by `SEARCH-P4-002` automation when that ships)
-- [ ] Automation track opened: `SEARCH-P4-001` / `SEARCH-P4-002` (required)
+- [ ] Checklist executed at least once in production ops (habit; **SoT is** `SEARCH-P4-002` artifact under [`docs/ops/search-signals/`](../ops/search-signals/))
+- [x] Automation track opened: `SEARCH-P4-001` / `SEARCH-P4-002` (required)
 
 </details>
 
@@ -384,8 +384,8 @@ Content that moves rankings (Person facts, `/for/*` landers, materials downloads
 
 | ID | Title | Status | Depends on | Primary refs |
 |----|-------|--------|------------|--------------|
-| `SEARCH-P4-001` | GSC Search Analytics API access (SA + KV secret) | `planned` | GSC property (`SEARCH-P0-002` / `DISC-P0-002`) | New runbook or extend [ga-data-api-access.md](../runbooks/ga-data-api-access.md); secret name TBD (e.g. `GSC-DATA-API-SA-JSON`) — never commit JSON |
-| `SEARCH-P4-002` | Monthly workflow: GSC queries/pages/CTR + GA landings → signal artifact | `planned` | `SEARCH-P4-001`; GA SA (`OPS-P5-002`) preferred | `.github/workflows/` (align with ops-scorecard monthly); themes/paths only in git |
+| `SEARCH-P4-001` | GSC Search Analytics API access (SA + KV secret) | `done` (runbook) | GSC property (`SEARCH-P0-002` / `DISC-P0-002`) | [gsc-data-api-access.md](../runbooks/gsc-data-api-access.md); `GSC-SITE-URL` / `GSC-DATA-API-SA-JSON` in `kv-elyse-shared` — never commit JSON |
+| `SEARCH-P4-002` | Monthly workflow: GSC queries/pages/CTR + GA landings → signal artifact | `done` | `SEARCH-P4-001`; GA SA (`OPS-P5-002`) preferred | `.github/workflows/search-ops-monthly.yml`; [`docs/ops/search-signals/`](../ops/search-signals/); themes/paths only in git |
 | `SEARCH-P4-003` | Operator digest / PR comment summarizing gaps (still no Gemini) | `planned` | `SEARCH-P4-002` | ACS email to `ALERT-EMAIL` and/or PR on draft branch; no PII |
 | `SEARCH-P4-004` | Hand off candidates to casting pipeline | `planned` | `SEARCH-P4-002`; `DISC-P4-003` | [casting-discoverability.md](casting-discoverability.md) Tier 4 |
 
@@ -394,10 +394,11 @@ Content that moves rankings (Person facts, `/for/*` landers, materials downloads
 
 **Acceptance criteria**
 
-- [ ] Service account (or reuse GA SA if scopes allow) can call Search Console Search Analytics for `elysetindall.com`
-- [ ] Credentials in Key Vault / GitHub Actions secrets only; rotate per [rotate-secrets.md](../runbooks/rotate-secrets.md)
-- [ ] Runbook steps to grant `Full` or restricted GSC user on the property
-- [ ] Local dry-run script prints **counts/themes only** — never dumps full query tables with sensitive patterns into logs
+- [x] Runbook + bootstrap KV placeholders for SA reuse (GA scorecard SA) or dedicated `GSC-DATA-API-SA-JSON`
+- [x] Credentials in Key Vault only (`ignore_changes`); rotate per [rotate-secrets.md](../runbooks/rotate-secrets.md)
+- [x] Runbook steps to grant `Full` or restricted GSC user on the property ([gsc-data-api-access.md](../runbooks/gsc-data-api-access.md))
+- [x] Local dry-run / fixture mode prints **counts/themes only** — never dumps full query tables into logs (`npm run search:signals:fixture`)
+- [ ] Operator: set `GSC-SITE-URL` and grant SA on the live GSC property (out-of-band)
 
 </details>
 
@@ -406,11 +407,12 @@ Content that moves rankings (Person facts, `/for/*` landers, materials downloads
 
 **Acceptance criteria**
 
-- [ ] Scheduled job (~1st of month) pulls prior calendar month: top queries, `/for/*` CTR/impressions bands, indexing anomalies summary, GA organic landing paths
-- [ ] Writes a small artifact (JSON/MD) safe for git or Actions artifact: **paths, query themes, numeric bands** — no emails, no full raw exports
-- [ ] Covers checklist rows 1–5 of [search-ops-monthly.md](../runbooks/search-ops-monthly.md) at minimum (CWV/Enhancements may stay manual or thin API later)
-- [ ] **Zero Gemini calls** in this job
-- [ ] Failure notifies `ALERT-EMAIL` only (same pattern as scorecard failure mail)
+- [x] Scheduled job (~1st of month 15:00 UTC) pulls prior calendar month: top queries, `/for/*` CTR/impressions bands, indexing anomalies summary, GA organic landing paths
+- [x] Writes a small artifact (JSON/MD) under [`docs/ops/search-signals/`](../ops/search-signals/): **paths, query themes, numeric bands** — no emails, no full raw exports
+- [x] Covers checklist rows 1–5 of [search-ops-monthly.md](../runbooks/search-ops-monthly.md) at minimum (CWV/Enhancements stay manual)
+- [x] **Zero Gemini calls** in this job
+- [x] Failure notifies `ALERT-EMAIL` only (reuses `ops-scorecard-failure-email.mjs`)
+- [ ] First production month with populated GSC/GA secrets confirmed (operator residual)
 
 </details>
 
@@ -464,7 +466,7 @@ SEARCH-P3-001 (monthly review runbook) ── insufficient alone
 
 ## Monthly operating loop (`SEARCH-OPS`)
 
-GSC and GA4 properties are live. **Target SoT:** automated `SEARCH-P4-002` artifact + optional digest. **Fallback until then:** manual checklist in [search-ops-monthly.md](../runbooks/search-ops-monthly.md) (~1st of month, aligned with `DISC-P3-006`).
+GSC and GA4 properties are live. **SoT:** automated `SEARCH-P4-002` artifact under [`docs/ops/search-signals/`](../ops/search-signals/) (+ optional digest via `SEARCH-P4-003`). **Fallback:** manual checklist in [search-ops-monthly.md](../runbooks/search-ops-monthly.md) (~1st of month, aligned with `DISC-P3-006`).
 
 | Source | Look at | Action |
 |--------|---------|--------|
@@ -499,8 +501,8 @@ GSC and GA4 properties are live. **Target SoT:** automated `SEARCH-P4-002` artif
 2. **Phase 1a** — Measurement ID + loader + privacy — **done** (`SEARCH-P1-001`, `002`, `004`)
 3. **Phase 1b** — Conversion events — **done in repo** (`SEARCH-P1-003`); Consent Mode — **wont_do** (`SEARCH-P1-006`); residual ops: measurement-only GA Admin (`SEARCH-P1-005`) + DebugView verify
 4. **Phase 2** — SEO polish — **done** (`SEARCH-P2-001`–`007`)
-5. **Phase 3** — Monthly loop runbook → feed `DISC-*` — **done in repo** ([search-ops-monthly.md](../runbooks/search-ops-monthly.md)); manual habit is **not** the SoT
-6. **Phase 4** — Automate `SEARCH-P3-001` (`SEARCH-P4-001`–`004`) → hand off to casting Tier 4 (`DISC-P4-003`/`004`) — **next**
+5. **Phase 3** — Monthly loop runbook → feed `DISC-*` — **done in repo** ([search-ops-monthly.md](../runbooks/search-ops-monthly.md)); SoT is Phase 4 artifact
+6. **Phase 4** — Automate `SEARCH-P3-001`: `SEARCH-P4-001`/`002` **done** (runbook + workflow); next `SEARCH-P4-003`/`004` → casting Tier 4 (`DISC-P4-003`/`004`); residual: populate `GSC-SITE-URL` + GSC SA grant
 
 ---
 
@@ -509,14 +511,15 @@ GSC and GA4 properties are live. **Target SoT:** automated `SEARCH-P4-002` artif
 | Doc | Relationship |
 |-----|----------------|
 | [casting-discoverability.md](casting-discoverability.md) | Casting SEO backlog (`DISC-*`); Tier 4 lander pipeline consumes `SEARCH-P4` signals |
-| [search-ops-monthly.md](../runbooks/search-ops-monthly.md) | Phase 3 checklist; Phase 4 automation target |
+| [search-ops-monthly.md](../runbooks/search-ops-monthly.md) | Phase 3 checklist; Phase 4 SoT is [`docs/ops/search-signals/`](../ops/search-signals/) |
 | [wordpress-to-azure-cutover.md](../runbooks/wordpress-to-azure-cutover.md) §6 | Historical cutover checklist; residual indexing in `SEARCH-P0-004` |
 | [dns-and-domain.md](../runbooks/dns-and-domain.md) | Apex / www |
 | [operational-excellence.md](operational-excellence.md) | Monthly scorecard; `OPS-P5-*` site performance (GA visits/top pages + App Insights contacts/updates) |
-| [ga-data-api-access.md](../runbooks/ga-data-api-access.md) | GA Data API KV secrets for scorecard (`OPS-P5-002`); pattern for GSC SA |
+| [ga-data-api-access.md](../runbooks/ga-data-api-access.md) | GA Data API KV secrets for scorecard (`OPS-P5-002`); prefer reuse for GSC |
+| [gsc-data-api-access.md](../runbooks/gsc-data-api-access.md) | GSC Search Analytics SA + `GSC-SITE-URL` (`SEARCH-P4-001`) |
 | [cost-and-quotas.md](../runbooks/cost-and-quotas.md) | Azure budget + Gemini RPM/RPD for Studio + lander drafts |
 | [observability.md](../runbooks/observability.md) | App Insights vs GA4 |
-| [rotate-secrets.md](../runbooks/rotate-secrets.md) | GA Measurement ID rotation (public env, not KV); GA Data API SA JSON; future GSC SA |
+| [rotate-secrets.md](../runbooks/rotate-secrets.md) | GA Measurement ID; GA/GSC Data API SA JSON |
 | [add-casting-page.md](../runbooks/add-casting-page.md) | New `/for/*` landers (sitemap inclusion); bare title contract |
 | [ux-release-testing-strategy.md](ux-release-testing-strategy.md) | `J-SEO-01` implemented (`tests/journeys/seo.spec.ts`) |
 | [AGENTS.md](../../AGENTS.md) | Agent-facing Phase 1/2 SEO & analytics contracts |

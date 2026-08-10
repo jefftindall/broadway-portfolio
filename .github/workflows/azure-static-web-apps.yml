@@ -1,8 +1,8 @@
 name: Azure Static Web Apps CI/CD
 
 # Deploy only on merge to main when app or infra paths change. PRs run static analysis only.
-# Scorecard-only pushes (docs/ops scorecard artifacts) are paths-ignored so the monthly
-# OPS refresh can commit to main without starting CD.
+# Scorecard-only / search-signal pushes (docs/ops artifacts) are paths-ignored so monthly
+# OPS / SEARCH refresh can commit to main without starting CD.
 # Manual full CD from main: Actions → Azure Static Web Apps CI/CD (workflow_dispatch).
 # Manual dispatch from other branches runs staging only; prod stages are skipped.
 # Manual staging-only test: Actions → Staging branch (workflow_dispatch).
@@ -17,10 +17,11 @@ on:
   push:
     branches:
       - main
-    # Monthly scorecard commits (Studio GitHub App → main) must not start CD.
+    # Scorecard-only / search-signal pushes (Studio GitHub App → main) must not start CD.
     paths-ignore:
       - "docs/ops/operational-excellence-scorecard.md"
       - "docs/ops/scorecard-evaluation.json"
+      - "docs/ops/search-signals/**"
   workflow_dispatch:
 
 concurrency:
