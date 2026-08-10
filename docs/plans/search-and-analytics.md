@@ -399,7 +399,7 @@ Content that moves rankings (Person facts, `/for/*` landers, materials downloads
 - [x] Runbook steps to grant GSC user on the property — live grant is **Full** (indexing-capable; Restricted is usually enough for Search Analytics alone) ([gsc-data-api-access.md](../runbooks/gsc-data-api-access.md))
 - [x] Local dry-run / fixture mode prints **counts/themes only** — never dumps full query tables into logs (`npm run search:signals:fixture`)
 - [x] Operator: SA granted on live GSC property (**Full**, for Search Analytics + future indexing helpers)
-- [ ] Operator: set `GSC-SITE-URL` in `kv-elyse-shared` (out-of-band)
+- [ ] Operator: set `GSC-SITE-URL` in `kv-elyse-shared` to `https://elysetindall.com/` (URL-prefix; out-of-band)
 
 </details>
 

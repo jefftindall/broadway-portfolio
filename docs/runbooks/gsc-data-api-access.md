@@ -31,7 +31,9 @@ Use the same resource name Search Console APIs expect:
 | Domain property | `sc-domain:elysetindall.com` |
 | URL-prefix (apex) | `https://elysetindall.com/` |
 
-Check in [Search Console](https://search.google.com/search-console) → property settings. Prefer the **domain** property when both exist.
+**Live property (operator):** URL-prefix **`https://elysetindall.com/`** — that exact string (trailing slash included) is what goes in `GSC-SITE-URL`. Grant the SA on this same property.
+
+Check in [Search Console](https://search.google.com/search-console) → top-left property picker / Settings. If a domain property is added later, switch both the KV secret and the SA grant together.
 
 ---
 

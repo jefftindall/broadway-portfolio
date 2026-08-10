@@ -97,13 +97,13 @@ Automating GSC queries / CTR / page impressions for `SEARCH-P4-002` needs a Sear
 
 | Secret | Purpose |
 |--------|---------|
-| `GSC-SITE-URL` | `sc-domain:elysetindall.com` or `https://elysetindall.com/` |
+| `GSC-SITE-URL` | Live: `https://elysetindall.com/` (URL-prefix); or `sc-domain:elysetindall.com` if using a domain property |
 | `GSC-DATA-API-SA-JSON` | Optional dedicated SA JSON; leave `REPLACE_ME` to fall back to `GA-DATA-API-SA-JSON` |
 
 ```bash
 # After bootstrap apply — full checklist:
 #   docs/runbooks/gsc-data-api-access.md
-az keyvault secret set --vault-name kv-elyse-shared --name GSC-SITE-URL --value "sc-domain:elysetindall.com"
+az keyvault secret set --vault-name kv-elyse-shared --name GSC-SITE-URL --value "https://elysetindall.com/"
 # Only if not reusing GA-DATA-API-SA-JSON:
 # az keyvault secret set --vault-name kv-elyse-shared --name GSC-DATA-API-SA-JSON --file ./gsc-search-sa.json
 # rm -f ./gsc-search-sa.json
