@@ -396,9 +396,9 @@ Content that moves rankings (Person facts, `/for/*` landers, materials downloads
 
 - [x] Runbook + bootstrap KV placeholders for SA reuse (GA scorecard SA) or dedicated `GSC-DATA-API-SA-JSON`
 - [x] Credentials in Key Vault only (`ignore_changes`); rotate per [rotate-secrets.md](../runbooks/rotate-secrets.md)
-- [x] Runbook steps to grant GSC user on the property — prefer **Restricted**; escalate to **Full** only if API 403s ([gsc-data-api-access.md](../runbooks/gsc-data-api-access.md))
+- [x] Runbook steps to grant GSC user on the property — live grant is **Full** (indexing-capable; Restricted is usually enough for Search Analytics alone) ([gsc-data-api-access.md](../runbooks/gsc-data-api-access.md))
 - [x] Local dry-run / fixture mode prints **counts/themes only** — never dumps full query tables into logs (`npm run search:signals:fixture`)
-- [x] Operator: SA granted on live GSC property (**Restricted**; Full only if needed)
+- [x] Operator: SA granted on live GSC property (**Full**, for Search Analytics + future indexing helpers)
 - [ ] Operator: set `GSC-SITE-URL` in `kv-elyse-shared` (out-of-band)
 
 </details>
