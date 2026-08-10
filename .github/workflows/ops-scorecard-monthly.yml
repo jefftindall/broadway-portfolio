@@ -117,7 +117,10 @@ jobs:
             stamp="$(date -u +%Y-%m)"
             git add docs/ops/operational-excellence-scorecard.md docs/ops/scorecard-evaluation.json
             git commit -m "OPS: monthly operational excellence scorecard (${stamp})"
-            git push origin HEAD:main
+            # Rebase onto latest main before push — the refresh probe window can
+            # race with concurrent merges (non-fast-forward without this).
+            chmod +x scripts/git-push-main-rebase.sh
+            ./scripts/git-push-main-rebase.sh --message "scorecard ${stamp}"
             echo "Pushed scorecard refresh to main as elyse-portfolio-studio[bot] (${stamp})."
           fi
 

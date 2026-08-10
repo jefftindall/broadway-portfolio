@@ -47,7 +47,7 @@ Reuse the same App for staging and prod (one installation covers the repo). Dele
 
 Each Studio publish (including gallery photo + markdown) lands as **one commit** with all files, so CD runs once. Transient GitHub/network errors and branch tip races are retried inside the API before the publish fails to the UI.
 
-The monthly ops scorecard workflow checks out with `persist-credentials: false`, mints an installation token via [`scripts/mint-github-app-token.sh`](../../scripts/mint-github-app-token.sh) (PEM never logged), configures git `http.extraheader` with that token, and pushes to `main` as `elyse-portfolio-studio[bot]`. The **Protect main** ruleset must list the App as a bypass actor, or prod Studio publishes / scorecard commits fail with “Cannot update this protected ref.”
+The monthly ops scorecard workflow (and search-ops monthly) checks out with `persist-credentials: false`, mints an installation token via [`scripts/mint-github-app-token.sh`](../../scripts/mint-github-app-token.sh) (PEM never logged), configures git `http.extraheader` with that token, and pushes to `main` as `elyse-portfolio-studio[bot]`. Before push, [`scripts/git-push-main-rebase.sh`](../../scripts/git-push-main-rebase.sh) fetches `origin/main`, rebases the bot commit, and retries on tip races (no force-push) — the Azure/GSC/GA probe windows often outlast concurrent merges. The **Protect main** ruleset must list the App as a bypass actor, or prod Studio publishes / scorecard commits fail with “Cannot update this protected ref.”
 
 1. Repo → **Settings → Rules → Rulesets → Protect main**
 2. **Bypass list** → **Add bypass** → choose the Studio GitHub App (`elyse-portfolio-studio`) → bypass mode **Always**

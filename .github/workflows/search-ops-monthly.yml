@@ -124,7 +124,10 @@ jobs:
             stamp="$(date -u +%Y-%m-%d)"
             git add docs/ops/search-signals/
             git commit -m "SEARCH: monthly search signals (${stamp})"
-            git push origin HEAD:main
+            # Rebase onto latest main before push — long GSC/GA probes can race
+            # with concurrent merges (non-fast-forward without this).
+            chmod +x scripts/git-push-main-rebase.sh
+            ./scripts/git-push-main-rebase.sh --message "search signals ${stamp}"
             echo "Pushed search signals to main as elyse-portfolio-studio[bot] (${stamp})."
           fi
 
