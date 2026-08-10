@@ -1,6 +1,6 @@
 # Search signals (`SEARCH-P4-002`)
 
-Machine-readable extract of GSC + GA organic signals **since the last run** (semimonthly schedule, 1st + 15th; first run uses a 14-day lookback) for the operator checklist in [search-ops-monthly.md](../../runbooks/search-ops-monthly.md).
+Machine-readable extract of GSC + GA organic signals **since the last run** (monthly schedule, 1st of month; first run uses a 28-day lookback) for the operator checklist in [search-ops-monthly.md](../../runbooks/search-ops-monthly.md).
 
 | File | Role |
 |------|------|
@@ -26,7 +26,7 @@ Rows 6–7 (CWV / Enhancements) remain manual.
 
 ```bash
 # Live (needs KV secrets — see gsc-data-api-access.md + ga-data-api-access.md)
-# Window = day after latest.json’s toInclusive → yesterday UTC (else 14-day lookback)
+# Window = day after latest.json’s toInclusive → yesterday UTC (else 28-day lookback)
 source scripts/fetch-ga-scorecard-secrets.sh
 source scripts/fetch-gsc-search-secrets.sh
 npm run search:signals
@@ -35,7 +35,7 @@ npm run search:signals
 npm run search:signals:fixture
 ```
 
-Scheduled: `.github/workflows/search-ops-semimonthly.yml` (1st and 15th, 15:00 UTC — twice a month). CD ignores commits under this directory.
+Scheduled: `.github/workflows/search-ops-monthly.yml` (1st of month, 13:00 UTC — before ops scorecard). CD ignores commits under this directory.
 
 ## Schema notes for consumers
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * SEARCH-P4-002 — Semimonthly GSC + GA search signal artifact (no Gemini).
+ * SEARCH-P4-002 — Monthly GSC + GA search signal artifact (no Gemini).
  *
  * Pulls stats since the last successful artifact (else last N days): top query
  * themes, /for/* CTR/impression bands, indexing anomaly summary, GA organic
@@ -14,7 +14,7 @@
  * Flags:
  *   --from=YYYY-MM-DD     explicit window start (inclusive)
  *   --to=YYYY-MM-DD       explicit window end (inclusive; default: yesterday UTC)
- *   --lookback-days=N     first-run / fallback window length (default: 14)
+ *   --lookback-days=N     first-run / fallback window length (default: 28)
  *   --out-dir=path        default: docs/ops/search-signals
  *   --fixture=path.json   skip live APIs; build from fixture payload
  *   --strict              exit 1 if GSC and GA both unavailable
@@ -43,7 +43,7 @@ const DEFAULT_GSC_SITE_URL = "https://elysetindall.com/";
 const TOP_QUERIES = 20;
 const TOP_PAGES = 25;
 const TOP_LANDINGS = 20;
-const DEFAULT_LOOKBACK_DAYS = 14;
+const DEFAULT_LOOKBACK_DAYS = 28;
 const MAX_LOOKBACK_DAYS = 45;
 const GSC_SCOPE = "https://www.googleapis.com/auth/webmasters.readonly";
 const YMD_RE = /^\d{4}-\d{2}-\d{2}$/;

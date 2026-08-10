@@ -158,7 +158,7 @@ resource "azurerm_key_vault_secret" "ga_data_api_sa_json" {
   }
 }
 
-# GSC Search Analytics API for semimonthly search-ops signals (SEARCH-P4-001 / 002).
+# GSC Search Analytics API for monthly search-ops signals (SEARCH-P4-001 / 002).
 # Prefer reusing the GA scorecard SA (grant it on the Search Console property);
 # GSC-DATA-API-SA-JSON may stay REPLACE_ME — fetch script falls back to GA SA.
 # GSC-SITE-URL defaults to the live URL-prefix property (not a secret).

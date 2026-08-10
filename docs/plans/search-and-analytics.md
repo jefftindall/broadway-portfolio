@@ -1,7 +1,7 @@
 # Plan: Google Search Console & Analytics
 
 **Artifact ID:** `ELYSE-SEARCH-001`  
-**Version:** 1.13  
+**Version:** 1.14  
 **Last updated:** 2026-08-10  
 **Audience:** Agents, implementers, operators  
 **Scope:** Google Search Console (GSC), Google Analytics 4 (GA4), and related technical SEO that makes those tools useful — not casting content strategy itself.
@@ -385,7 +385,7 @@ Content that moves rankings (Person facts, `/for/*` landers, materials downloads
 | ID | Title | Status | Depends on | Primary refs |
 |----|-------|--------|------------|--------------|
 | `SEARCH-P4-001` | GSC Search Analytics API access (SA + KV secret) | `done` (runbook) | GSC property (`SEARCH-P0-002` / `DISC-P0-002`) | [gsc-data-api-access.md](../runbooks/gsc-data-api-access.md); `GSC-SITE-URL` / `GSC-DATA-API-SA-JSON` in `kv-elyse-shared` — never commit JSON |
-| `SEARCH-P4-002` | Semimonthly workflow (1st + 15th): GSC queries/pages/CTR + GA landings → signal artifact | `done` | `SEARCH-P4-001`; GA SA (`OPS-P5-002`) preferred | `.github/workflows/search-ops-semimonthly.yml` (1st+15th, twice a month); [`docs/ops/search-signals/`](../ops/search-signals/); themes/paths only in git |
+| `SEARCH-P4-002` | Monthly workflow (1st): GSC queries/pages/CTR + GA landings → signal artifact | `done` | `SEARCH-P4-001`; GA SA (`OPS-P5-002`) preferred | `.github/workflows/search-ops-monthly.yml` (1st, 13:00 UTC — before ops scorecard); [`docs/ops/search-signals/`](../ops/search-signals/); themes/paths only in git |
 | `SEARCH-P4-003` | Operator digest / PR comment summarizing gaps (still no Gemini) | `planned` | `SEARCH-P4-002` | ACS email to `ALERT-EMAIL` and/or PR on draft branch; no PII |
 | `SEARCH-P4-004` | Hand off candidates to casting pipeline | `planned` | `SEARCH-P4-002`; `DISC-P4-003` | [casting-discoverability.md](casting-discoverability.md) Tier 4 |
 
@@ -408,7 +408,7 @@ Content that moves rankings (Person facts, `/for/*` landers, materials downloads
 
 **Acceptance criteria**
 
-- [x] Scheduled job (1st and 15th, 15:00 UTC — twice a month) pulls **since last run** (else 14-day lookback): top queries, `/for/*` CTR/impressions bands, indexing anomalies summary, GA organic landing paths
+- [x] Scheduled job (1st of month, 13:00 UTC — before ops scorecard at 14:00) pulls **since last run** (else 28-day lookback): top queries, `/for/*` CTR/impressions bands, indexing anomalies summary, GA organic landing paths
 - [x] Writes a small artifact (JSON/MD) under [`docs/ops/search-signals/`](../ops/search-signals/) (`latest.*` + `{from}_{to}.*`): **paths, query themes, numeric bands** — no emails, no full raw exports
 - [x] Commit step uses `git status --porcelain` so **new untracked** artifacts are pushed (not `git diff`, which skipped first-run files)
 - [x] Covers checklist rows 1–5 of [search-ops-monthly.md](../runbooks/search-ops-monthly.md) at minimum (CWV/Enhancements stay manual)
@@ -468,7 +468,7 @@ SEARCH-P3-001 (monthly review runbook) ── insufficient alone
 
 ## Monthly operating loop (`SEARCH-OPS`)
 
-GSC and GA4 properties are live. **SoT:** automated `SEARCH-P4-002` artifact under [`docs/ops/search-signals/`](../ops/search-signals/) (semimonthly; + optional digest via `SEARCH-P4-003`). **Fallback:** manual checklist in [search-ops-monthly.md](../runbooks/search-ops-monthly.md) (aligned with `DISC-P3-006`).
+GSC and GA4 properties are live. **SoT:** automated `SEARCH-P4-002` artifact under [`docs/ops/search-signals/`](../ops/search-signals/) (monthly; + optional digest via `SEARCH-P4-003`). **Fallback:** manual checklist in [search-ops-monthly.md](../runbooks/search-ops-monthly.md) (aligned with `DISC-P3-006`).
 
 | Source | Look at | Action |
 |--------|---------|--------|
