@@ -39,6 +39,7 @@ import {
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_OUT = join(ROOT, "docs/ops/search-signals");
+const DEFAULT_GSC_SITE_URL = "https://elysetindall.com/";
 const TOP_QUERIES = 20;
 const TOP_PAGES = 25;
 const TOP_LANDINGS = 20;
@@ -806,13 +807,22 @@ async function main() {
       `Fixture mode: GSC=${gsc.ok ? "ok" : "stale"}, GA=${ga.ok ? "ok" : "stale"}, themes=[${themeIds}].`,
     );
   } else {
-    const siteUrl = String(process.env.GSC_SITE_URL || "").trim();
+    const siteUrlRaw = String(process.env.GSC_SITE_URL || "").trim();
+    const siteUrl =
+      !siteUrlRaw || siteUrlRaw === "REPLACE_ME"
+        ? DEFAULT_GSC_SITE_URL
+        : siteUrlRaw;
+    if (!siteUrlRaw || siteUrlRaw === "REPLACE_ME") {
+      console.log(
+        "GSC_SITE_URL unset/REPLACE_ME — using default URL-prefix property.",
+      );
+    }
     const keyFile = resolveSaKeyFile();
     const propertyId = String(process.env.GA_PROPERTY_ID || "").trim();
     const gaKey =
       String(process.env.GA_DATA_API_SA_JSON_FILE || "").trim() || keyFile;
 
-    if (siteUrl && siteUrl !== "REPLACE_ME" && keyFile) {
+    if (siteUrl && keyFile) {
       try {
         gsc = await probeGsc({
           siteUrl,

@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 # Fetch GSC Search Analytics API secrets from kv-elyse-shared (SEARCH-P4-001).
 # Never prints secret values. Masks line-by-line only when GITHUB_ACTIONS=true.
-# Soft-fail: if secrets are missing/REPLACE_ME, leaves env empty so the refresh
-# script marks GSC rows stale without failing the job.
 #
-# Prefers GSC-DATA-API-SA-JSON; falls back to GA-DATA-API-SA-JSON when the GSC
-# secret is unset (reuse scorecard SA after granting GSC property access).
+# Defaults when vault values are missing / REPLACE_ME / unreachable:
+#   GSC_SITE_URL → https://elysetindall.com/  (live URL-prefix property; not secret)
+#   GSC SA JSON  → fall back to GA-DATA-API-SA-JSON (reuse scorecard SA)
 #
-# Required: az login; Key Vault Secrets User on the vault.
+# Required: az login; Key Vault Secrets User on the vault (for SA JSON).
 # Env: AZURE_SHARED_KEY_VAULT_NAME (preferred) or AZURE_KEY_VAULT_NAME.
 #
 # Outputs (GITHUB_ENV when set, else exported for local use via eval/source):
@@ -15,6 +14,9 @@
 #   GSC_DATA_API_SA_JSON_FILE  (0600 temp file; caller should delete after use)
 set -euo pipefail
 set +x
+
+# Live Search Console URL-prefix property (public). Used when KV is unset/REPLACE_ME.
+DEFAULT_GSC_SITE_URL="https://elysetindall.com/"
 
 vault="${AZURE_SHARED_KEY_VAULT_NAME:-${AZURE_KEY_VAULT_NAME:-}}"
 if [[ -z "$vault" ]]; then
@@ -39,17 +41,17 @@ emit_env() {
   fi
 }
 
-# Site URL — single-line (sc-domain:elysetindall.com or https://elysetindall.com/).
+# Site URL — single-line (sc-domain:… or https://…/). Default when missing/REPLACE_ME.
 site=""
 site="$(az keyvault secret show --vault-name "$vault" --name GSC-SITE-URL --query value -o tsv 2>/dev/null || true)"
 site="$(printf '%s' "$site" | tr -d '\r')"
 if [[ -z "$site" || "$site" == "REPLACE_ME" ]]; then
-  emit_env GSC_SITE_URL ""
-  echo "GSC-SITE-URL missing or REPLACE_ME — GSC section will be stale."
+  emit_env GSC_SITE_URL "$DEFAULT_GSC_SITE_URL"
+  echo "GSC-SITE-URL missing or REPLACE_ME — using default URL-prefix property (value not logged as sensitive)."
 else
-  mask_line "$site"
+  # Not a secret, but avoid noisy logs of config churn.
   emit_env GSC_SITE_URL "$site"
-  echo "Loaded GSC-SITE-URL from shared vault ${vault} (value not logged)."
+  echo "Loaded GSC-SITE-URL from shared vault ${vault}."
 fi
 
 write_sa_file() {
@@ -80,7 +82,7 @@ sa_raw="$(az keyvault secret show --vault-name "$vault" --name GA-DATA-API-SA-JS
 sa_raw="$(printf '%s' "$sa_raw" | tr -d '\r')"
 if [[ -z "$sa_raw" || "$sa_raw" == "REPLACE_ME" ]]; then
   emit_env GSC_DATA_API_SA_JSON_FILE ""
-  echo "GA-DATA-API-SA-JSON also missing or REPLACE_ME — GSC section will be stale."
+  echo "GA-DATA-API-SA-JSON also missing or REPLACE_ME — GSC section will be stale (no SA default)."
   exit 0
 fi
 

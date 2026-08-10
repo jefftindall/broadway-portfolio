@@ -161,10 +161,11 @@ resource "azurerm_key_vault_secret" "ga_data_api_sa_json" {
 # GSC Search Analytics API for monthly search-ops signals (SEARCH-P4-001 / 002).
 # Prefer reusing the GA scorecard SA (grant it on the Search Console property);
 # GSC-DATA-API-SA-JSON may stay REPLACE_ME — fetch script falls back to GA SA.
+# GSC-SITE-URL defaults to the live URL-prefix property (not a secret).
 # ignore tags: `az keyvault secret set --file` / Portal often adds file-encoding=utf-8.
 resource "azurerm_key_vault_secret" "gsc_site_url" {
   name         = "GSC-SITE-URL"
-  value        = "REPLACE_ME"
+  value        = "https://elysetindall.com/"
   key_vault_id = azurerm_key_vault.shared.id
   depends_on   = [azurerm_role_assignment.shared_kv_admin]
 

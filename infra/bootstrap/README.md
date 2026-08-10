@@ -28,4 +28,5 @@
 # Populate shared vault secrets per docs/runbooks/rotate-secrets.md before CD builds.
 # Set ALERT-EMAIL before expecting budget threshold emails (otherwise Owners are notified).
 # GA-PROPERTY-ID / GA-DATA-API-SA-JSON: see docs/runbooks/ga-data-api-access.md (OPS-P5 scorecard).
-# GSC-SITE-URL / GSC-DATA-API-SA-JSON: see docs/runbooks/gsc-data-api-access.md (SEARCH-P4 search signals).
+# GSC-SITE-URL defaults to https://elysetindall.com/; GSC-DATA-API-SA-JSON falls back to GA SA:
+#   docs/runbooks/gsc-data-api-access.md (SEARCH-P4 search signals).

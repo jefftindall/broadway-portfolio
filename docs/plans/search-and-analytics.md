@@ -38,7 +38,7 @@ Implement **one phase (or one `SEARCH-*` item) per PR** when practical. Prefer l
 | Phase 1 — GA4 measurement | Mostly `done` | `SEARCH-P1-005` Admin checklist (`planned`); DebugView verify under `SEARCH-P1-003`; `SEARCH-P1-006` `wont_fix` |
 | Phase 2 — Technical SEO | `done` | — |
 | Phase 3 — Monthly GSC+GA loop | `done` (runbook) | Habit ACs unchecked; **SoT is Phase 4 artifact** |
-| Phase 4 — Automate monthly extract | Partial | `SEARCH-P4-001`/`002` `done` (runbook/workflow); residual: populate `GSC-SITE-URL` + SA grant; `SEARCH-P4-003`/`004` planned |
+| Phase 4 — Automate monthly extract | Partial | `SEARCH-P4-001`/`002` `done` (runbook/workflow); residual: `SEARCH-P4-003`/`004` planned |
 
 ---
 
@@ -399,7 +399,7 @@ Content that moves rankings (Person facts, `/for/*` landers, materials downloads
 - [x] Runbook steps to grant GSC user on the property — live grant is **Full** (indexing-capable; Restricted is usually enough for Search Analytics alone) ([gsc-data-api-access.md](../runbooks/gsc-data-api-access.md))
 - [x] Local dry-run / fixture mode prints **counts/themes only** — never dumps full query tables into logs (`npm run search:signals:fixture`)
 - [x] Operator: SA granted on live GSC property (**Full**, for Search Analytics + future indexing helpers)
-- [ ] Operator: set `GSC-SITE-URL` in `kv-elyse-shared` to `https://elysetindall.com/` (URL-prefix; out-of-band)
+- [x] `GSC-SITE-URL` defaults to `https://elysetindall.com/` when KV is missing/`REPLACE_ME` (bootstrap seed + fetch/refresh fallback); optional KV override still supported
 
 </details>
 
@@ -503,7 +503,7 @@ GSC and GA4 properties are live. **SoT:** automated `SEARCH-P4-002` artifact und
 3. **Phase 1b** — Conversion events — **done in repo** (`SEARCH-P1-003`); Consent Mode — **wont_do** (`SEARCH-P1-006`); residual ops: measurement-only GA Admin (`SEARCH-P1-005`) + DebugView verify
 4. **Phase 2** — SEO polish — **done** (`SEARCH-P2-001`–`007`)
 5. **Phase 3** — Monthly loop runbook → feed `DISC-*` — **done in repo** ([search-ops-monthly.md](../runbooks/search-ops-monthly.md)); SoT is Phase 4 artifact
-6. **Phase 4** — Automate `SEARCH-P3-001`: `SEARCH-P4-001`/`002` **done** (runbook + workflow); next `SEARCH-P4-003`/`004` → casting Tier 4 (`DISC-P4-003`/`004`); residual: populate `GSC-SITE-URL` + GSC SA grant
+6. **Phase 4** — Automate `SEARCH-P3-001`: `SEARCH-P4-001`/`002` **done** (runbook + workflow); next `SEARCH-P4-003`/`004` → casting Tier 4 (`DISC-P4-003`/`004`)
 
 ---
 

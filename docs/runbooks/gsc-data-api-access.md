@@ -33,7 +33,9 @@ Use the same resource name Search Console APIs expect:
 
 **Live property (operator):** URL-prefix **`https://elysetindall.com/`** — that exact string (trailing slash included) is what goes in `GSC-SITE-URL`. Grant the SA on this same property.
 
-Check in [Search Console](https://search.google.com/search-console) → top-left property picker / Settings. If a domain property is added later, switch both the KV secret and the SA grant together.
+**Runtime default:** If the vault secret is missing, unreachable, or still `REPLACE_ME`, `scripts/fetch-gsc-search-secrets.sh` and `scripts/search-ops-signals-refresh.mjs` use `https://elysetindall.com/` automatically. Bootstrap creates the secret with that value on first apply (existing vaults with `REPLACE_ME` keep working via the runtime default until updated).
+
+Check in [Search Console](https://search.google.com/search-console) → top-left property picker / Settings. If a domain property is added later, switch both the KV secret and the SA grant together (and update the runtime default in the fetch/refresh scripts).
 
 ---
 
@@ -100,11 +102,11 @@ chmod 600 ./gsc-search-sa.json
 After bootstrap apply (secrets exist as `REPLACE_ME`):
 
 ```bash
-# Exact GSC resource string (see §1)
+# Exact GSC resource string (live: URL-prefix apex — trailing slash required)
 az keyvault secret set \
   --vault-name kv-elyse-shared \
   --name GSC-SITE-URL \
-  --value "sc-domain:elysetindall.com"
+  --value "https://elysetindall.com/"
 
 # Only when NOT reusing GA-DATA-API-SA-JSON:
 az keyvault secret set \

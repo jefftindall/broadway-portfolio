@@ -91,7 +91,7 @@ check_gsc_site() {
     return
   fi
   if [[ -z "$value" || "$value" == "REPLACE_ME" ]]; then
-    echo "::warning title=Shared Key Vault::${name} is still REPLACE_ME — search-ops GSC section stays stale until set (see docs/runbooks/gsc-data-api-access.md)."
+    echo "::notice title=Shared Key Vault::${name} is missing/REPLACE_ME — search-ops defaults to https://elysetindall.com/ at runtime (see docs/runbooks/gsc-data-api-access.md)."
   else
     echo "OK ${name}"
   fi

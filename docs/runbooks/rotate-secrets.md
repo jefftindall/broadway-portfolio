@@ -97,7 +97,7 @@ Automating GSC queries / CTR / page impressions for `SEARCH-P4-002` needs a Sear
 
 | Secret | Purpose |
 |--------|---------|
-| `GSC-SITE-URL` | Live: `https://elysetindall.com/` (URL-prefix); or `sc-domain:elysetindall.com` if using a domain property |
+| `GSC-SITE-URL` | Live default: `https://elysetindall.com/` (URL-prefix). KV optional — fetch/refresh fall back to this when missing/`REPLACE_ME` |
 | `GSC-DATA-API-SA-JSON` | Optional dedicated SA JSON; leave `REPLACE_ME` to fall back to `GA-DATA-API-SA-JSON` |
 
 ```bash
