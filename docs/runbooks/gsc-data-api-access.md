@@ -80,10 +80,14 @@ chmod 600 ./gsc-search-sa.json
 
 `gcloud` does not replace this property-ACL step.
 
-1. Open [Search Console](https://search.google.com/search-console) → the `elysetindall.com` property → **Settings → Users and permissions**.
-2. **Add user** → paste the service-account email.
-3. Permission: **Full** (or the minimum that can read Search Analytics + sitemaps — Full is simplest for a read-only automation SA).
-4. Save / accept any verification prompts.
+1. Open [Search Console](https://search.google.com/search-console) → the `elysetindall.com` property → **Settings → Users and permissions** (Owner account only; gear → Users and permissions).
+2. **Add user** → paste the service-account email (`…@….iam.gserviceaccount.com`).
+3. Permission: start with **Restricted** (read reports only — enough for Search Analytics + sitemap list in normal cases).
+4. Save. There is no “accept invite” step for service accounts; the SA should appear on the user list immediately.
+
+**If the biweekly job gets 403 / permission errors** after Restricted is set: bump the SA to **Full** on the same Users and permissions page, re-run **SEARCH biweekly signals**, and note the outcome here. Prefer Restricted until something proves Full is required. (Do **not** grant Owner unless you later need the Indexing API — that is out of scope for `SEARCH-P4-002`.)
+
+**UI gotchas:** wrong Google account; URL-prefix vs domain property (grant on the property that matches `GSC-SITE-URL`); “Users and permissions” hidden when you are not an Owner; rare “email not found” on a brand-new SA — open the SA once in Cloud Console and retry.
 
 ---
 
