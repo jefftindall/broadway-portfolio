@@ -411,6 +411,7 @@ Content that moves rankings (Person facts, `/for/*` landers, materials downloads
 - [x] Scheduled job (1st of month, 13:00 UTC — before ops scorecard at 14:00) pulls **since last run** (else 28-day lookback): top queries, `/for/*` CTR/impressions bands, indexing anomalies summary, GA organic landing paths
 - [x] Writes a small artifact (JSON/MD) under [`docs/ops/search-signals/`](../ops/search-signals/) (`latest.*` + `{from}_{to}.*`): **paths, query themes, numeric bands** — no emails, no full raw exports
 - [x] Commit step uses `git status --porcelain` so **new untracked** artifacts are pushed (not `git diff`, which skipped first-run files)
+- [x] Push uses [`scripts/git-push-main-rebase.sh`](../../scripts/git-push-main-rebase.sh) (fetch + rebase + retry; no force-push) so concurrent `main` merges during GSC/GA probes do not fail the job
 - [x] Covers checklist rows 1–5 of [search-ops-monthly.md](../runbooks/search-ops-monthly.md) at minimum (CWV/Enhancements stay manual)
 - [x] **Zero Gemini calls** in this job
 - [x] Failure notifies `ALERT-EMAIL` only (reuses `ops-scorecard-failure-email.mjs`)

@@ -2,7 +2,7 @@
 
 **Artifact ID:** `ELYSE-OPS-001`  
 **Version:** 2.5  
-**Last updated:** 2026-08-09  
+**Last updated:** 2026-08-10  
 **Audience:** Agents, implementers, operators  
 **Scope:** Reliability posture scorecard, committed SLOs, critical alerting (SMS/voice), monthly refresh loop, and **site performance / activity** (visits, updates, contacts, top pages) in that same monthly artifact. Calibrated for a lean personal portfolio — not enterprise multi-team SRE.
 
@@ -130,7 +130,7 @@ Initial SRE review — **not yet** the monthly persisted artifact (see [Scorecar
 1. **Trigger:** GitHub Actions `schedule` (`0 14 1 * *` — 1st of month 14:00 UTC) + `workflow_dispatch`.
 2. **Job:** `environment: prod` (TF OIDC subject). Azure login is required. Mint a Studio GitHub App installation token via [`scripts/mint-github-app-token.sh`](../../scripts/mint-github-app-token.sh) (PEM line-masked; never via action `with:`), verify Contents:write + `/installation/repositories`, configure git with the installation token (`persist-credentials: false` on checkout), then `node scripts/ops-scorecard-refresh.mjs --monthly --azure` (SLIs + Cost Management spend/MoM).
 3. **Privacy:** Workflow must **never** write alert emails, phones, App PEMs, or secrets into the scorecard or logs. CI enforces this with `npm run lint:actions-secrets` / **Actions secret-safety**. Digest body is scores + USD only (no recipient addresses).
-4. **Output:** Commit and push scorecard files directly to `main` as `elyse-portfolio-studio[bot]` (App is a **Protect main** bypass actor — same as Studio publishes). Do **not** open a PR. Do **not** push with the job `GITHUB_TOKEN` (`github-actions[bot]`). Do **not** trust `GET /repos` `.permissions.push` for installation tokens (often all-false).
+4. **Output:** Commit and push scorecard files directly to `main` as `elyse-portfolio-studio[bot]` (App is a **Protect main** bypass actor — same as Studio publishes). Push via [`scripts/git-push-main-rebase.sh`](../../scripts/git-push-main-rebase.sh) (fetch + rebase onto latest `main`, retry tip races; no force-push) so concurrent merges during the Azure/GA probe window do not fail the job. Do **not** open a PR. Do **not** push with the job `GITHUB_TOKEN` (`github-actions[bot]`). Do **not** trust `GET /repos` `.permissions.push` for installation tokens (often all-false).
 5. **CD:** Scorecard-only pushes are excluded from [`azure-static-web-apps.yml`](../../.github/workflows/azure-static-web-apps.yml) via `paths-ignore` on the two scorecard artifacts.
 6. **Failure:** If Azure SLI/spend queries fail after login, still refresh qualitative dimensions and mark SLI-backed rows `stale` with a note. If Azure login or App token minting fails, the job fails (no silent `GITHUB_TOKEN` fallback). **Workflow failure notify:** a follow-up job emails **`ALERT-EMAIL` only** (ACS email via [`scripts/ops-scorecard-failure-email.mjs`](../../scripts/ops-scorecard-failure-email.mjs); never `SITE-CONTACT-EMAIL`) with the Actions run URL.
 7. **Spend (`OPS-P4-002`):** Cost Management ActualCost for the previous calendar month vs the month before; vs subscription budget **ceil(expected retail × 1.25)** (`OPS-P4-001`; amount in `cost-and-quotas.md` / `budget.tf`). Persist in evaluation `costProbe` and the scorecard Cost section.
