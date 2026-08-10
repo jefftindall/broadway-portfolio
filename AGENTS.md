@@ -32,7 +32,9 @@ When a PR implements work from [`docs/plans/`](docs/plans/) (`OPS-*`, `SEARCH-*`
 
 **Never** print secret values (`echo` / `printf` / `console.log` / traces / action `with:` dumps) in workflows or scripts. Mask line-by-line; prefer temp files; on errors log names only. Full rules: [`.cursor/rules/never-echo-secrets.mdc`](.cursor/rules/never-echo-secrets.mdc). GitHub App minting: [`scripts/mint-github-app-token.sh`](scripts/mint-github-app-token.sh). If leaked, rotate immediately ([rotate-secrets.md](docs/runbooks/rotate-secrets.md)).
 
-### GitHub Actions (Node runtime + secrets)
+### GitHub Actions (naming + Node runtime + secrets)
+
+Workflow display names follow **Scheme A** (`CI:` / `CD:` / `Ops:` / `Search:` / `Maint:`) — see [`docs/runbooks/github-actions-naming.md`](docs/runbooks/github-actions-naming.md) and [`.cursor/rules/github-actions-naming.mdc`](.cursor/rules/github-actions-naming.mdc). Prefer that scheme for new workflows; filename renames are tracked as tech debt in the runbook.
 
 When editing `.github/workflows/**` or composite actions: **before commit**, scan `uses:` for actions still on **Node.js 20** and upgrade to a **Node 24+** release (or replace the action) so runners do not warn. Run `npm run lint:actions-secrets` (part of `npm run lint`) — it fails on PEM `with:` inputs, inline `GITHUB-APP-PRIVATE-KEY` fetches, and unsafe multiline `::add-mask::`. See [`.cursor/rules/github-actions-node.mdc`](.cursor/rules/github-actions-node.mdc) and [`.cursor/rules/never-echo-secrets.mdc`](.cursor/rules/never-echo-secrets.mdc).
 

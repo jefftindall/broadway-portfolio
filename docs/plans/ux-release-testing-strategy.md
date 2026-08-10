@@ -198,7 +198,7 @@ playwright.journey.config.ts
 
 - PR: static analysis required for merge.
 - `main`: Deploy Staging → **Smoke Staging** (+ journeys by profile) → Deploy Production.
-- Manual **Staging branch** workflow runs the same L3 suite.
+- Manual **CD: staging** workflow runs the same L3 suite.
 
 ### Change (phased)
 

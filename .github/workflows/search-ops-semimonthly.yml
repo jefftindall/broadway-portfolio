@@ -1,10 +1,11 @@
-name: SEARCH semimonthly signals
+name: "Search: semimonthly signals"
 
 # SEARCH-P4-002 — Semimonthly (1st + 15th) extract of GSC queries/CTR + GA organic
 # landings since the last run into docs/ops/search-signals/{from}_{to}.{json,md}
 # (+ latest.*). Commits via Studio GitHub App. Zero Gemini calls. On job failure,
 # email ALERT-EMAIL only (not SITE-CONTACT-EMAIL). Signal-only pushes are
 # paths-ignored in azure-static-web-apps.yml.
+# Display names follow docs/runbooks/github-actions-naming.md (Scheme A).
 
 on:
   schedule:
@@ -177,5 +178,5 @@ jobs:
       - name: Email ALERT-EMAIL failure notice
         env:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          WORKFLOW_NAME: SEARCH semimonthly signals
+          WORKFLOW_NAME: "Search: semimonthly signals"
         run: node scripts/ops-scorecard-failure-email.mjs

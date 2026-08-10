@@ -19,7 +19,7 @@ This document defines how we validate user experience before production deploys.
 
 | Layer | When | Command / job | What it validates |
 |-------|------|---------------|-------------------|
-| Static analysis | Every PR + `main` | `npm run lint` | Terraform, Astro check, API syntax |
+| CI: static analysis | Every PR + `main` | `npm run lint` | Terraform, Astro check, API syntax |
 | Terraform plan | PRs touching `infra/` | CI **Plan staging/prod** | Infra diff review |
 | **Build release** | Once per CD run (parallel with staging Terraform) | Job **Build release** | Single `npm run build` + API install; artifact promoted to staging and prod |
 | **Smoke** | After staging deploy | `npm run test:smoke` — job **Smoke Staging** | Route availability, SEO shell, downloads, anonymous `/studio` redirect (desktop + mobile) |
@@ -136,7 +136,7 @@ For local preview, propagation polling is usually instant; `waitForOk` still wor
 
 ## CI integration
 
-**Azure Static Web Apps CI/CD** and **Staging branch** workflows:
+**CD: main** and **CD: staging** workflows:
 
 1. **Build release** once (`npm run build` + API install); artifact uploaded for reuse
 2. Deploy staging from that artifact
@@ -191,7 +191,7 @@ On failure: Playwright retains **trace on first retry** (`trace: 'on-first-retry
 | SWA CDN propagation | `waitForOk` polls up to 4 minutes |
 | Brittle copy assertions | Prefer roles, `href`, and content fixtures |
 | Suite duration | Smoke parallel; journeys ~15 min cap; no Studio in CI |
-| Failed run | Check trace; re-run **Staging branch** workflow on the same branch |
+| Failed run | Check trace; re-run **CD: staging** workflow on the same branch |
 
 ---
 

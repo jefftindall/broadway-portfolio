@@ -42,12 +42,12 @@ test('isStagingStudioBranchExpired is true only after max age days', () => {
   assert.equal(isStagingStudioBranchExpired('main', now, 28), false);
 });
 
-test('stagingStudioPrTitle and body mention branch and Staging branch workflow', () => {
+test('stagingStudioPrTitle and body mention branch and CD: staging workflow', () => {
   const now = new Date(Date.UTC(2026, 7, 9));
   assert.equal(stagingStudioPrTitle(now), 'Studio staging 2026-08-09');
   const body = stagingStudioPrBody({ branch: 'staging-studio-20260809', base: 'main' });
   assert.match(body, /staging-studio-20260809/);
-  assert.match(body, /Staging branch/);
+  assert.match(body, /CD: staging/);
   assert.match(body, /28 days/);
 });
 

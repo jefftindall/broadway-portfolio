@@ -36,13 +36,13 @@ az keyvault secret set --vault-name kv-elyse-staging --name ALLOWED-USER-IDS --v
 az keyvault secret set --vault-name kv-elyse-prod --name ALLOWED-USER-IDS --value "<ids>"
 ```
 
-After updating the secret, sync into SWA ([rotate-secrets.md](./rotate-secrets.md#sync-swa-api-secrets-no-redeploy), **Actions → Sync SWA API secrets**, or `terraform apply`). Managed Functions do not read Key Vault references directly.
+After updating the secret, sync into SWA ([rotate-secrets.md](./rotate-secrets.md#sync-swa-api-secrets-no-redeploy), **Actions → Ops: sync SWA secrets**, or `terraform apply`). Managed Functions do not read Key Vault references directly.
 
 ## Add a temporary publisher (emergency only)
 
 1. Add their ID/email to `ALLOWED-USER-IDS` in both vaults (commands above)
 2. Ensure they can authenticate via the configured IdP and are assigned to the enterprise app
-3. Sync staging and prod ([rotate-secrets.md](./rotate-secrets.md#sync-swa-api-secrets-no-redeploy) or Sync SWA API secrets workflow once per environment)
+3. Sync staging and prod ([rotate-secrets.md](./rotate-secrets.md#sync-swa-api-secrets-no-redeploy) or **Ops: sync SWA secrets** workflow once per environment)
 4. Remove them immediately after the emergency
 
 ## Remove access

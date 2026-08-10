@@ -61,9 +61,9 @@ Staging SWA sets `STUDIO_PUBLISH_MODE=pr` (Terraform). Each UTC day reuses one b
 
 1. Publish from staging `/studio` → commits land on that branch (and merge latest `main` in so prod updates flow into staging).
 2. The App opens or updates a PR into `main`.
-3. Test: Actions → **Staging branch** → run on that branch (staging SWA only; no prod).
+3. Test: Actions → **CD: staging** → run on that branch (staging SWA only; no prod).
 4. Promote: merge the PR → normal CD (`main` → staging verify → prod).
-5. Daily workflow **Cleanup staging Studio branches** deletes `staging-studio-*` branches older than **28 days** (UTC).
+5. Daily workflow **Maint: cleanup Studio branches** deletes `staging-studio-*` branches older than **28 days** (UTC).
 
 Local API: set `STUDIO_PUBLISH_MODE=pr` in `api/local.settings.json` to exercise the same path.
 
@@ -74,7 +74,7 @@ Local API: set `STUDIO_PUBLISH_MODE=pr` in `api/local.settings.json` to exercise
 
 ### Local mint dry-run (no push)
 
-Before re-running **OPS monthly scorecard** after App key or mint-script changes:
+Before re-running **Ops: monthly scorecard** after App key or mint-script changes:
 
 ```bash
 # Git Bash / macOS / Linux; az login with Key Vault Secrets User on the vault

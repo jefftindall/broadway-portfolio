@@ -1,10 +1,11 @@
-name: Staging branch
+name: "CD: staging"
 
 # Manual async test: apply staging Terraform + deploy the staging app from any branch.
 # Runs Playwright smoke against staging afterward (does not promote to prod).
-# Automated deploys run only on merge to main (azure-static-web-apps.yml).
+# Automated deploys run only on merge to main (azure-static-web-apps.yml / CD: main).
 # Shares concurrency group portfolio-cd with azure-static-web-apps.yml so manual
 # staging deploys cannot overlap main CD.
+# Display names follow docs/runbooks/github-actions-naming.md (Scheme A).
 on:
   workflow_dispatch:
 
@@ -137,7 +138,7 @@ jobs:
           APPINSIGHTS_CONNECTION_STRING: ${{ vars.APPINSIGHTS_CONNECTION_STRING }}
           DEPLOY_ENVIRONMENT: staging
           GIT_SHA: ${{ github.sha }}
-          JOB_NAME: Staging branch
+          JOB_NAME: "CD: staging"
         run: |
           if [ -z "$APPINSIGHTS_CONNECTION_STRING" ]; then
             echo "No App Insights connection string; skipping."

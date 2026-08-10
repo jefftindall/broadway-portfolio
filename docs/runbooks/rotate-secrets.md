@@ -12,7 +12,7 @@ Secrets live in Azure Key Vault as the source of truth. Managed Functions on SWA
 
 Subscription: `e601e59a-c7f4-41f0-8178-b59740fb1974`
 
-After updating a vault secret used by the Studio / contact **API**, sync into SWA (commands below, **Actions → Sync SWA API secrets → Run workflow**, or `terraform apply`). Site-build secrets are read from **`kv-elyse-shared`** during the single Build release job.
+After updating a vault secret used by the Studio / contact **API**, sync into SWA (commands below, **Actions → Ops: sync SWA secrets → Run workflow**, or `terraform apply`). Site-build secrets are read from **`kv-elyse-shared`** during the single Build release job.
 
 ## Sync SWA API secrets (no redeploy)
 
@@ -57,7 +57,7 @@ az keyvault secret set --vault-name kv-elyse-shared --name TURNSTILE-SECRET-KEY 
 # az keyvault secret show --vault-name kv-elyse-staging --name SITE-CONTACT-EMAIL --query value -o tsv
 ```
 
-Repo Actions variable `AZURE_SHARED_KEY_VAULT_NAME` is set by bootstrap. Static analysis job **Shared vault secrets** (pull requests only) emits warnings when any of these are missing / `REPLACE_ME` (does not fail the check).
+Repo Actions variable `AZURE_SHARED_KEY_VAULT_NAME` is set by bootstrap. **CI: static analysis** job **Shared vault secrets** (pull requests only) emits warnings when any of these are missing / `REPLACE_ME` (does not fail the check).
 
 Locally: copy `.env.example` → `.env` and fill `SITE_*` plus `PUBLIC_TURNSTILE_SITE_KEY`. Optional: `PUBLIC_GA_MEASUREMENT_ID` (defaults to `G-XEE29C0RRE` in code and Terraform when unset).
 
@@ -196,7 +196,7 @@ az keyvault secret set --vault-name kv-elyse-staging --name GEMINI-API-KEY --val
 az keyvault secret set --vault-name kv-elyse-prod --name GEMINI-API-KEY --value "<new>"
 ```
 
-3. Sync both environments (script above or Sync SWA API secrets workflow)
+3. Sync both environments (script above or **Ops: sync SWA secrets** workflow)
 4. Revoke the old Gemini key
 5. Publish a harmless Studio update to verify
 
@@ -212,10 +212,10 @@ az keyvault secret set --vault-name kv-elyse-staging --name GITHUB-APP-PRIVATE-K
 az keyvault secret set --vault-name kv-elyse-prod --name GITHUB-APP-PRIVATE-KEY --file ./new-key.pem
 ```
 
-3. Sync both environments (script above or Sync SWA API secrets workflow)
+3. Sync both environments (script above or **Ops: sync SWA secrets** workflow)
 4. Delete the previous private key in the GitHub App UI (revokes the leaked material)
 5. Delete the local `.pem`
-6. Verify Studio can still commit; re-run **OPS monthly scorecard** if that job needs the App
+6. Verify Studio can still commit; re-run **Ops: monthly scorecard** if that job needs the App
 
 App ID and installation ID rarely change; only update those Key Vault secrets if you recreate the App or reinstall it, then sync.
 

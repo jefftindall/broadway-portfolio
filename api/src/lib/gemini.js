@@ -1152,7 +1152,7 @@ export async function applyContentChanges(changes, opts = {}) {
   const summaryText = actions.map((a) => a.summary).join(' ');
   const reply =
     publishMode === 'pr'
-      ? `${summaryText} Saved on a staging branch — not live on production until the pull request is merged. Use Actions → Staging branch to test on the staging site.`
+      ? `${summaryText} Saved on a staging branch — not live on production until the pull request is merged. Use Actions → CD: staging to test on the staging site.`
       : `${summaryText} The site will rebuild and go live within a few minutes.`;
 
   return { reply, actions, commitSha };
