@@ -1,8 +1,8 @@
 # Casting discoverability — assessment & implementation backlog
 
 **Artifact ID:** `ELYSE-DISC-001`  
-**Version:** 1.5  
-**Last updated:** 2026-08-09  
+**Version:** 1.6  
+**Last updated:** 2026-08-10  
 **Audience:** Agents, implementers, Elyse (content owner)  
 **Scope:** Public site discoverability for casting directors, representation, and answer engines — not voice-lesson marketing.
 
@@ -39,10 +39,10 @@ Example PR title: `DISC-P1-003: Add performer facts block to About`
 | Tier 1 — Casting-first positioning | `done` | JSON-LD enrich, Tiffany King quote, sticky mobile Materials shipped |
 | Tier 2 — New `/for/*` landers + linking | Partial | `DISC-P2-001`–`004`, `006`, `007` `done`; `005` blocked on Elyse; `008`–`010` `planned` |
 | Tier 3 — Cadence / AI readiness | Mixed | Most `planned`; `DISC-P3-006` `done` (runbook) |
-| Tier 4 — Automated lander pipeline | `planned` | `DISC-P4-001`–`006`; `DISC-P4-000` docs `done` (enforce residual) |
+| Tier 4 — Automated lander pipeline | `planned` | `DISC-P4-001`–`008`; `DISC-P4-000` docs `done` (enforce residual); Broadway keyword discovery = `007` near-term + `008` licensed later |
 | Gaps (`DISC-GAP-*`) | Mixed | Commercial headshot, demos, seeking-rep decision, external profile URLs (YouTube reel URL in `sameAs` until channel verified) |
 
-**Suggested next:** Optional `DISC-P2-008` show detail pages / `DISC-P2-009` demos (needs `DISC-GAP-004`); do not start Tier 4 until linking habits stick. `DISC-P2-005` only after `DISC-GAP-005`.
+**Suggested next:** Start Broadway casting-language track (`DISC-P4-007` + catalog `DISC-P4-001` / guardrails `DISC-P4-005`); keep GSC feedback loop (`DISC-P4-003`/`004`) in parallel. Optional `DISC-P2-008` / `DISC-P2-009` (needs `DISC-GAP-004`). `DISC-P2-005` only after `DISC-GAP-005`. Licensed board trends (`DISC-P4-008`) wait on vendor.
 
 ---
 
@@ -430,13 +430,18 @@ Contact: elyse.tindall@gmail.com
 
 ---
 
-### Tier 4 — Automated `/for/` pipeline (designs B + C + D + E)
+### Tier 4 — Automated `/for/` pipeline (designs B + C + D + E + Broadway keyword tracks)
 
-Evaluation artifact: Cursor canvas `casting-for-page-automation` (alternatives A–F). **Ship B+C+D+E**; reject F (full auto scrape→publish) and S3 board scraping without a licensed API.
+Evaluation artifact: Cursor canvas `casting-for-page-automation` (alternatives A–F). **Ship B+C+D+E**; reject F (full auto scrape→publish) and S3 board scraping **without** a licensed API.
 
 **Publish gate (Phases 0–2):** draft → **PR → human merge** (`G-PR`). Aligns with proposed Studio Tier C lock for casting ([discrete-vs-flexible-content.md](discrete-vs-flexible-content.md)). Do not auto-merge landers. Revisit Studio-assisted approve only after a constrained casting template exists.
 
 **Why automate `SEARCH-P3-001`:** The monthly GSC+GA checklist runbook alone will not run reliably. Measurement extraction must be a scheduled workflow (`SEARCH-P4-*`); this tier consumes those signals for lander drafts (`DISC-P4-004`).
+
+**Broadway casting-agent keywords (dual track):** GSC (`SEARCH-P4-002`) only surfaces queries that already earn impressions on this site — it is **feedback**, not discovery of CD vernacular. Decision (2026-08-10): ship **both** —
+
+1. **Near-term (`DISC-P4-007`):** curated Broadway casting-language catalog + allowlisted public casting news → evergreen intents (extends **D** + **E**).
+2. **Later (`DISC-P4-008`):** licensed casting-board / keyword data when a vendor ToS-compliant API or export exists — still evergreen pages + G-PR; never scrape paid boards.
 
 #### Gemini / AI credit contract (`DISC-P4-000`)
 
@@ -477,8 +482,10 @@ Same `GEMINI_API_KEY` may call both; CI draft jobs must read **`GEMINI_MODEL_SEA
 | `DISC-P4-002` | Credit-triggered lander draft PR | **C** | `planned` | `DISC-P4-000`; show upsert path | `DISC-P3-002`; Studio/`upsert_show` hook or post-merge workflow |
 | `DISC-P4-003` | Consume automated search signals (no Gemini) | Feeds **B** | `planned` | `SEARCH-P4-001`, `SEARCH-P4-002` | [`docs/ops/search-signals/`](../ops/search-signals/); slug gap vs `casting/*` |
 | `DISC-P4-004` | GSC/GA → draft casting PR (≤2–3 bodies/mo) | **B** | `planned` | `DISC-P4-000`, `DISC-P4-003`, `SEARCH-P4-002` | GitHub App PR (same mint pattern as ops-scorecard); evidence table in PR body |
-| `DISC-P4-005` | Shared lander guardrails (dupe, evidence, evergreen, G-PR) | Shared | `planned` | Ship with `DISC-P4-001` / `004` | Validation in draft script; checklist in PR template |
+| `DISC-P4-005` | Shared lander guardrails (dupe, evidence, evergreen, G-PR) | Shared | `planned` | Ship with `DISC-P4-001` / `004` / `007` | Validation in draft script; checklist in PR template |
 | `DISC-P4-006` | Public citeable signals → evergreen fit → draft PR | **E** | `planned` | `DISC-P4-000`, `DISC-P4-001`, `DISC-P4-005` | Allowlisted RSS/domains; rule-based fit first; Gemini only for winning copy |
+| `DISC-P4-007` | Broadway casting-language discovery (curated + public news) | **D+E** | `planned` | `DISC-P4-000`, `DISC-P4-001`, `DISC-P4-005` | Expert CD vernacular catalog; Playbill/BroadwayWorld/etc. allowlist; search-volume optional validate |
+| `DISC-P4-008` | Licensed casting-board keyword trends | New | `planned` | Vendor ToS-compliant API/export; `DISC-P4-005`; `DISC-P4-007` preferred first | Paid/licensed data only — never scrape; map to evergreen intents → same draft PR path |
 
 <details>
 <summary><code>DISC-P4-000</code> — Gemini draft-budget contract</summary>
@@ -567,6 +574,37 @@ Same `GEMINI_API_KEY` may call both; CI draft jobs must read **`GEMINI_MODEL_SEA
 
 </details>
 
+<details>
+<summary><code>DISC-P4-007</code> — Broadway casting-language discovery (near-term)</summary>
+
+**Status:** `planned` — primary path for “what casting agents on Broadway call this type” without licensed board data.
+
+**Acceptance criteria**
+
+- [ ] Seed catalog of Broadway CD vernacular (fach, type, ethnicity/presenting, geo, archetype) checked into repo (YAML/JSON under `src/data/` or extend `DISC-P4-001` catalog) — human-editable, no scraped board dumps
+- [ ] Optional allowlisted public casting-news sources (e.g. Playbill / BroadwayWorld casting notices) extract **type phrases** only; map to evergreen intents (reuse `DISC-P4-006` rules)
+- [ ] Optional search-volume / Keyword Planner-style validation ranks seeds before draft spend
+- [ ] Fit filter vs performer facts + `relatedShows`; skip near-dupes of existing `src/content/casting/`
+- [ ] Winners enter the same draft-PR path as `DISC-P4-004` / `001` (≤ shared Gemini monthly budget; G-PR)
+- [ ] Docs: clarify GSC signals remain **feedback** after pages ship — not the Broadway keyword mine
+
+</details>
+
+<details>
+<summary><code>DISC-P4-008</code> — Licensed casting-board keyword trends (later)</summary>
+
+**Status:** `planned` — blocked on a ToS-compliant vendor API or export; do not implement scrapers.
+
+**Acceptance criteria**
+
+- [ ] Vendor evaluation note: which product offers licensed keyword / breakdown-language access (Actors Access, Backstage, or other) and cost
+- [ ] Credentials in Key Vault only when adopted; never commit board exports with PII or proprietary breakdown text into git
+- [ ] Ingest maps board language → **evergreen catalog intents** (extend `DISC-P4-001` / `007`); reject show-title spam and “this week only” pages
+- [ ] Same guardrails (`DISC-P4-005`) + draft PR + human merge; cite “licensed source class” in PR body without pasting proprietary listings
+- [ ] Explicit non-goal: unlicensed HTML scrape of casting boards remains `wont_do`
+
+</details>
+
 #### Implementation order
 
 ```text
@@ -576,13 +614,19 @@ Before Tier 4: Tier 1 leftovers done (DISC-P1-004, 006, 007);
 Tier 4 prep: DISC-P4-000 docs done — enforce when draft jobs ship
     + SEARCH-P4-001/002 (automate SEARCH-P3-001 extract — no Gemini)
 
-Then: DISC-P4-005 guardrails
+Then (Broadway keywords — near-term):
+    DISC-P4-005 guardrails
     + DISC-P4-001 catalog fill (D) — prefer templates; Gemini optional
-    + DISC-P4-003 consume signals
-    + DISC-P4-004 GSC draft PR (B) — ≤2–3 Gemini/mo
+    + DISC-P4-007 Broadway casting-language seeds + public-news type phrases
+    + draft via shared G-PR path (budget-shared with DISC-P4-004)
+
+Parallel (site demand feedback):
+    DISC-P4-003 consume GSC/GA signals
+    + DISC-P4-004 GSC draft PR (B) — ≤2–3 Gemini/mo shared budget
     + DISC-P4-002 credit-triggered (C) — 0–1 Gemini per new credit, defer on 429
 
-Optional later: DISC-P4-006 public fit (E) — rule-based fit; Gemini only for winners
+Optional later: DISC-P4-006 public fit (E) — overlaps DISC-P4-007 news path
+Later / vendor-gated: DISC-P4-008 licensed board keyword trends
 ```
 
 ```mermaid
@@ -595,6 +639,8 @@ flowchart TD
   p4004[DISC-P4-004 Draft_PR_B]
   p4005[DISC-P4-005 Guardrails]
   p4006[DISC-P4-006 Public_E]
+  p4007[DISC-P4-007 Broadway_language]
+  p4008[DISC-P4-008 Licensed_boards]
   prGate[Human_PR_merge]
 
   searchP4 --> p4003
@@ -602,15 +648,23 @@ flowchart TD
   p4000 --> p4002
   p4000 --> p4004
   p4000 --> p4006
+  p4000 --> p4007
+  p4000 --> p4008
   p4005 --> p4001
   p4005 --> p4004
   p4005 --> p4006
+  p4005 --> p4007
+  p4005 --> p4008
   p4003 --> p4004
   p4001 --> p4006
+  p4001 --> p4007
+  p4007 --> p4008
   p4001 --> prGate
   p4002 --> prGate
   p4004 --> prGate
   p4006 --> prGate
+  p4007 --> prGate
+  p4008 --> prGate
 ```
 
 ---
@@ -660,6 +714,7 @@ flowchart TD
   SP4[SEARCH-P4 Automate GSC_GA]
   P4000[DISC-P4-000 Gemini budget]
   P4004[DISC-P4-004 GSC draft PR]
+  P4007[DISC-P4-007 Broadway language]
 
   P0001 --> P0002
   P0001 --> P0003
@@ -675,6 +730,8 @@ flowchart TD
   P2007 --> P4004
   SP4 --> P4004
   P4000 --> P4004
+  P4000 --> P4007
+  P2007 --> P4007
 ```
 
 ---
@@ -710,6 +767,7 @@ flowchart TD
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.6 | 2026-08-10 | Dual-track Broadway keyword discovery: `DISC-P4-007` (curated + public news) near-term, `DISC-P4-008` (licensed boards) later; GSC clarified as feedback |
 | 1.4 | 2026-08-09 | Status at a glance; check `DISC-P1-005` ACs; label baseline scores historical; `DISC-P4-000` → `done` (docs) |
 | 1.3 | 2026-08-09 | ACS toll-free lease in expected cost; `GEMINI_MODEL_SEARCH_OPS` (3.5) vs Studio `GEMINI_MODEL` (3.6) independent quotas |
 | 1.2 | 2026-08-09 | Tier 4 automated `/for/` pipeline (`DISC-P4-*`: B+C+D+E); Gemini contract; depends on `SEARCH-P4-*` to automate `SEARCH-P3-001` |

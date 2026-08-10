@@ -1,7 +1,7 @@
 # Plan: Google Search Console & Analytics
 
 **Artifact ID:** `ELYSE-SEARCH-001`  
-**Version:** 1.14  
+**Version:** 1.15  
 **Last updated:** 2026-08-10  
 **Audience:** Agents, implementers, operators  
 **Scope:** Google Search Console (GSC), Google Analytics 4 (GA4), and related technical SEO that makes those tools useful — not casting content strategy itself.
@@ -492,7 +492,8 @@ GSC and GA4 properties are live. **SoT:** automated `SEARCH-P4-002` artifact und
 - Advertising / remarketing configuration (unless a future decision flips `SEARCH-P1-005`)
 - Using Gemini inside `SEARCH-P4-002` extraction (budget reserved for Studio `GEMINI_MODEL` + search-ops `GEMINI_MODEL_SEARCH_OPS` bodies)
 - Pointing lander draft jobs at Studio’s `GEMINI_MODEL` / 3.6 Flash (use `GEMINI_MODEL_SEARCH_OPS` / 3.5 instead)
-- Scraping paid casting boards for keywords
+- Scraping paid casting boards for keywords (licensed ingest is `DISC-P4-008` in casting Tier 4 — never unlicensed scrape)
+- Broadway casting-agent keyword **discovery** (curated + public news `DISC-P4-007`, licensed later `DISC-P4-008`) — GSC extract is site-demand **feedback** only
 - Full casting content strategy — see [casting-discoverability.md](casting-discoverability.md)
 - Assuming sitemap submission alone ranks `/for/*` landers — index pipeline ≠ ranking lever
 
@@ -513,7 +514,7 @@ GSC and GA4 properties are live. **SoT:** automated `SEARCH-P4-002` artifact und
 
 | Doc | Relationship |
 |-----|----------------|
-| [casting-discoverability.md](casting-discoverability.md) | Casting SEO backlog (`DISC-*`); Tier 4 lander pipeline consumes `SEARCH-P4` signals |
+| [casting-discoverability.md](casting-discoverability.md) | Casting SEO backlog (`DISC-*`); Tier 4 lander pipeline consumes `SEARCH-P4` signals; Broadway keyword discovery is `DISC-P4-007`/`008` |
 | [search-ops-monthly.md](../runbooks/search-ops-monthly.md) | Phase 3 checklist; Phase 4 SoT is [`docs/ops/search-signals/`](../ops/search-signals/) |
 | [wordpress-to-azure-cutover.md](../runbooks/wordpress-to-azure-cutover.md) §6 | Historical cutover checklist; residual indexing in `SEARCH-P0-004` |
 | [dns-and-domain.md](../runbooks/dns-and-domain.md) | Apex / www |

@@ -42,6 +42,7 @@ Phased work and action IDs live in [docs/plans/search-and-analytics.md](docs/pla
 - Monthly GSC + GA review checklist: [search-ops-monthly.md](docs/runbooks/search-ops-monthly.md) (`SEARCH-P3-001`–`003`).
 - **SoT:** automated extract `SEARCH-P4-002` → [`docs/ops/search-signals/`](docs/ops/search-signals/) (workflow `.github/workflows/search-ops-monthly.yml`); GSC access runbook `SEARCH-P4-001`.
 - Hand off to casting Tier 4 (`DISC-P4-*`); digest/PR summary is `SEARCH-P4-003` (planned).
+- Broadway casting-agent keyword **discovery** is `DISC-P4-007` (curated + public news) / `DISC-P4-008` (licensed later) — GSC extract is site-demand feedback, not the CD vernacular mine.
 - Feed findings into `DISC-*` / content PRs — do not paste PII or full query exports into git.
 - Re-check GSC Experience/CWV after major hero/reel visual changes.
 - Ops scorecard visits/contacts (`OPS-P5-*`) do **not** replace GSC query/CTR extraction.
