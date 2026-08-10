@@ -37,11 +37,13 @@ npm run casting:discover -- --write-stubs=tmp-casting-stubs --max-winners=3
 npm run test:casting-language
 ```
 
+**Monthly CI:** `.github/workflows/search-ops-monthly.yml` runs discovery with `--fetch-news` after `SEARCH-P4-002` extract and commits the casting-language artifact to `main` (same Studio App push; CD ignores `docs/ops/casting-language/**`).
+
 Artifact SoT: [`docs/ops/casting-language/`](../ops/casting-language/).
 
 ## Operator loop
 
-1. Run discovery (fixture or `--fetch-news`).
+1. Prefer the monthly CI artifact (or run discovery locally with fixture / `--fetch-news`).
 2. Review `latest.md` winners — check fit, evidence shows, near-dupe skips.
 3. Open a content PR (hand or future `DISC-P4-004` job) with unique body copy per [add-casting-page.md](add-casting-page.md).
 4. After merge, monthly GSC (`SEARCH-P4-002`) measures whether the new `/for/*` earns impressions/CTR.

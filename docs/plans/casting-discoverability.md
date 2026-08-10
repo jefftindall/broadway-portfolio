@@ -1,7 +1,7 @@
 # Casting discoverability — assessment & implementation backlog
 
 **Artifact ID:** `ELYSE-DISC-001`  
-**Version:** 1.7  
+**Version:** 1.8  
 **Last updated:** 2026-08-10  
 **Audience:** Agents, implementers, Elyse (content owner)  
 **Scope:** Public site discoverability for casting directors, representation, and answer engines — not voice-lesson marketing.
@@ -484,7 +484,7 @@ Same `GEMINI_API_KEY` may call both; CI draft jobs must read **`GEMINI_MODEL_SEA
 | `DISC-P4-004` | GSC/GA → draft casting PR (≤2–3 bodies/mo) | **B** | `planned` | `DISC-P4-000`, `DISC-P4-003`, `SEARCH-P4-002` | GitHub App PR (same mint pattern as ops-scorecard); evidence table in PR body |
 | `DISC-P4-005` | Shared lander guardrails (dupe, evidence, evergreen, G-PR) | Shared | `in_progress` | Ship with `DISC-P4-001` / `004` / `007` | Helpers in `scripts/lib/casting-language.mjs`; PR checklist residual |
 | `DISC-P4-006` | Public citeable signals → evergreen fit → draft PR | **E** | `planned` | `DISC-P4-000`, `DISC-P4-001`, `DISC-P4-005` | Allowlisted RSS/domains; rule-based fit first; Gemini only for winning copy |
-| `DISC-P4-007` | Broadway casting-language discovery (curated + public news) | **D+E** | `done` | `DISC-P4-000`, `DISC-P4-001`, `DISC-P4-005` | `npm run casting:discover`; [`docs/ops/casting-language/`](../ops/casting-language/); [casting-language-discovery.md](../runbooks/casting-language-discovery.md) |
+| `DISC-P4-007` | Broadway casting-language discovery (curated + public news) | **D+E** | `done` | `DISC-P4-000`, `DISC-P4-001`, `DISC-P4-005` | `npm run casting:discover`; monthly via `.github/workflows/search-ops-monthly.yml`; [`docs/ops/casting-language/`](../ops/casting-language/); [casting-language-discovery.md](../runbooks/casting-language-discovery.md) |
 | `DISC-P4-008` | Licensed casting-board keyword trends | New | `planned` | Vendor ToS-compliant API/export; `DISC-P4-005`; `DISC-P4-007` preferred first | Paid/licensed data only — never scrape; map to evergreen intents → same draft PR path |
 
 <details>
@@ -591,6 +591,7 @@ Same `GEMINI_API_KEY` may call both; CI draft jobs must read **`GEMINI_MODEL_SEA
 - [x] Fit filter vs performer facts + `relatedShows`; skip near-dupes of existing `src/content/casting/`
 - [x] Winners enter the same draft-PR path as `DISC-P4-004` / `001` — artifact + optional `--write-stubs` handoff; body generation / App PR still `DISC-P4-004` (≤ shared Gemini monthly budget; G-PR)
 - [x] Docs: clarify GSC signals remain **feedback** after pages ship — not the Broadway keyword mine ([casting-language-discovery.md](../runbooks/casting-language-discovery.md), [`docs/ops/casting-language/`](../ops/casting-language/))
+- [x] Monthly search-ops workflow runs discovery with `--fetch-news` and commits the casting-language artifact (same cadence as `SEARCH-P4-002`)
 
 </details>
 
@@ -771,6 +772,7 @@ flowchart TD
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.8 | 2026-08-10 | Monthly search-ops workflow runs `DISC-P4-007` discover (`--fetch-news`) alongside `SEARCH-P4-002` |
 | 1.7 | 2026-08-10 | `DISC-P4-007` `done` — catalog + `casting:discover` + `docs/ops/casting-language/`; `DISC-P4-001`/`005` `in_progress` |
 | 1.6 | 2026-08-10 | Dual-track Broadway keyword discovery: `DISC-P4-007` (curated + public news) near-term, `DISC-P4-008` (licensed boards) later; GSC clarified as feedback |
 | 1.4 | 2026-08-09 | Status at a glance; check `DISC-P1-005` ACs; label baseline scores historical; `DISC-P4-000` → `done` (docs) |

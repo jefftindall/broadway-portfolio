@@ -11,6 +11,8 @@ Ranked **evergreen** `/for/*` intent candidates from the Broadway casting-langua
 
 **Privacy:** slugs, keywords, fit scores, volume numbers, truncated news titles only — no emails, PEMs, or proprietary breakdown dumps.
 
+**Scheduled:** `.github/workflows/search-ops-monthly.yml` (1st of month, 13:00 UTC) runs `npm`-equivalent `node scripts/casting-language-discover.mjs --fetch-news` after GSC/GA extract and commits `docs/ops/casting-language/` alongside search signals (CD paths-ignored).
+
 ## Produce locally
 
 ```bash
@@ -20,7 +22,7 @@ npm run casting:discover
 # With RSS fixture + optional Keyword Planner volume file
 npm run casting:discover:fixture
 
-# Live allowlisted RSS (Playbill / BroadwayWorld when reachable)
+# Live allowlisted RSS (Playbill / BroadwayWorld when reachable) — same as monthly CI
 npm run casting:discover -- --fetch-news
 
 # Frontmatter-only stubs for human / future Gemini body fill

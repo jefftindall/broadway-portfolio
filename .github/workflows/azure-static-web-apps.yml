@@ -2,7 +2,7 @@ name: "CD: main"
 
 # Deploy only on merge to main when app or infra paths change. PRs run static analysis only.
 # Scorecard-only / search-signal / casting-language pushes (docs/ops artifacts) are paths-ignored so monthly
-# OPS / SEARCH refresh can commit to main without starting CD.
+# OPS / SEARCH refresh (incl. DISC-P4-007 casting-language) can commit to main without starting CD.
 # Manual full CD from main: Actions → CD: main (workflow_dispatch).
 # Manual dispatch from other branches runs staging only; prod stages are skipped.
 # Manual staging-only test: Actions → CD: staging (workflow_dispatch).

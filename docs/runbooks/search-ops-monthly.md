@@ -11,6 +11,7 @@
 | Mode | Status | Notes |
 |------|--------|-------|
 | **Automated extract** (`SEARCH-P4-002`) | **SoT** — `.github/workflows/search-ops-monthly.yml` → [`docs/ops/search-signals/`](../ops/search-signals/) | GSC queries/CTR + GA landings → signal artifact; **no Gemini** |
+| **Casting-language candidates** (`DISC-P4-007`) | Same monthly workflow → [`docs/ops/casting-language/`](../ops/casting-language/) | Catalog fit + allowlisted public RSS; **no Gemini**; not board scrapes |
 | **Manual checklist below** | Fallback only | Use when the monthly artifact is missing/stale; do not plan ops around clicking through consoles |
 | Ops scorecard visits/contacts (`OPS-P5-*`) | Separate | Thin activity glance; does **not** include GSC queries/CTR |
 
