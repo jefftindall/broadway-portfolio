@@ -32,8 +32,8 @@ Rules:
 | [`azure-static-web-apps.yml`](../../.github/workflows/azure-static-web-apps.yml) | `CD: main` | push `main` + dispatch |
 | [`staging-branch.yml`](../../.github/workflows/staging-branch.yml) | `CD: staging` | dispatch |
 | [`sync-swa-api-secrets.yml`](../../.github/workflows/sync-swa-api-secrets.yml) | `Ops: sync SWA secrets` | dispatch |
-| [`ops-scorecard-monthly.yml`](../../.github/workflows/ops-scorecard-monthly.yml) | `Ops: monthly scorecard` | cron 1st + dispatch |
-| [`search-ops-monthly.yml`](../../.github/workflows/search-ops-monthly.yml) | `Search: monthly signals` | cron 1st + dispatch |
+| [`ops-scorecard-monthly.yml`](../../.github/workflows/ops-scorecard-monthly.yml) | `Ops: monthly scorecard` | cron 1st 14:00 UTC + dispatch |
+| [`search-ops-monthly.yml`](../../.github/workflows/search-ops-monthly.yml) | `Search: monthly signals` | cron 1st 13:00 UTC (before scorecard) + dispatch |
 | [`cleanup-staging-studio-branches.yml`](../../.github/workflows/cleanup-staging-studio-branches.yml) | `Maint: cleanup Studio branches` | daily cron + dispatch |
 
 ## Tech debt: rename files to match Scheme A

@@ -153,7 +153,7 @@ node scripts/search-ops-signals-refresh.mjs \
 
 Confirm `docs/ops/search-signals/latest.json` (or the dry-run out-dir) has `coverage` rows 1–5 and that job logs show theme ids / counts only. Soft-fail leaves GSC/GA sections `stale` and must **not** print SA JSON.
 
-Monthly workflow (1st): `.github/workflows/search-ops-monthly.yml` (`SEARCH-P4-002`; 1st of month, 15:00 UTC).
+Monthly workflow (1st): `.github/workflows/search-ops-monthly.yml` (`SEARCH-P4-002`; 1st of month, 13:00 UTC — before ops scorecard).
 
 ---
 

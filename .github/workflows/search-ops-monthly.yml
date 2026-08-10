@@ -9,8 +9,9 @@ name: "Search: monthly signals"
 
 on:
   schedule:
-    # 1st of month at 15:00 UTC (after OPS scorecard at 14:00)
-    - cron: "0 15 1 * *"
+    # 1st of month at 13:00 UTC (before OPS scorecard at 14:00 so a future
+    # digest can include fresh search-signal details)
+    - cron: "0 13 1 * *"
   workflow_dispatch:
 
 permissions:

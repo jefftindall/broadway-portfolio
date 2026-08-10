@@ -35,7 +35,7 @@ npm run search:signals
 npm run search:signals:fixture
 ```
 
-Scheduled: `.github/workflows/search-ops-monthly.yml` (1st of month, 15:00 UTC). CD ignores commits under this directory.
+Scheduled: `.github/workflows/search-ops-monthly.yml` (1st of month, 13:00 UTC — before ops scorecard). CD ignores commits under this directory.
 
 ## Schema notes for consumers
 

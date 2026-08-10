@@ -385,7 +385,7 @@ Content that moves rankings (Person facts, `/for/*` landers, materials downloads
 | ID | Title | Status | Depends on | Primary refs |
 |----|-------|--------|------------|--------------|
 | `SEARCH-P4-001` | GSC Search Analytics API access (SA + KV secret) | `done` (runbook) | GSC property (`SEARCH-P0-002` / `DISC-P0-002`) | [gsc-data-api-access.md](../runbooks/gsc-data-api-access.md); `GSC-SITE-URL` / `GSC-DATA-API-SA-JSON` in `kv-elyse-shared` — never commit JSON |
-| `SEARCH-P4-002` | Monthly workflow (1st): GSC queries/pages/CTR + GA landings → signal artifact | `done` | `SEARCH-P4-001`; GA SA (`OPS-P5-002`) preferred | `.github/workflows/search-ops-monthly.yml` (1st, 15:00 UTC); [`docs/ops/search-signals/`](../ops/search-signals/); themes/paths only in git |
+| `SEARCH-P4-002` | Monthly workflow (1st): GSC queries/pages/CTR + GA landings → signal artifact | `done` | `SEARCH-P4-001`; GA SA (`OPS-P5-002`) preferred | `.github/workflows/search-ops-monthly.yml` (1st, 13:00 UTC — before ops scorecard); [`docs/ops/search-signals/`](../ops/search-signals/); themes/paths only in git |
 | `SEARCH-P4-003` | Operator digest / PR comment summarizing gaps (still no Gemini) | `planned` | `SEARCH-P4-002` | ACS email to `ALERT-EMAIL` and/or PR on draft branch; no PII |
 | `SEARCH-P4-004` | Hand off candidates to casting pipeline | `planned` | `SEARCH-P4-002`; `DISC-P4-003` | [casting-discoverability.md](casting-discoverability.md) Tier 4 |
 
@@ -408,7 +408,7 @@ Content that moves rankings (Person facts, `/for/*` landers, materials downloads
 
 **Acceptance criteria**
 
-- [x] Scheduled job (1st of month, 15:00 UTC) pulls **since last run** (else 28-day lookback): top queries, `/for/*` CTR/impressions bands, indexing anomalies summary, GA organic landing paths
+- [x] Scheduled job (1st of month, 13:00 UTC — before ops scorecard at 14:00) pulls **since last run** (else 28-day lookback): top queries, `/for/*` CTR/impressions bands, indexing anomalies summary, GA organic landing paths
 - [x] Writes a small artifact (JSON/MD) under [`docs/ops/search-signals/`](../ops/search-signals/) (`latest.*` + `{from}_{to}.*`): **paths, query themes, numeric bands** — no emails, no full raw exports
 - [x] Commit step uses `git status --porcelain` so **new untracked** artifacts are pushed (not `git diff`, which skipped first-run files)
 - [x] Covers checklist rows 1–5 of [search-ops-monthly.md](../runbooks/search-ops-monthly.md) at minimum (CWV/Enhancements stay manual)

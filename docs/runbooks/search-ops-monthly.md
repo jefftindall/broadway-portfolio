@@ -15,7 +15,7 @@
 
 App Insights answers “is Studio/prod healthy?”; GSC + GA4 answer “who finds us in search, where do they land, and do they inquire or download materials?”
 
-Cadence: search signals **monthly** (1st, **15:00 UTC** — after the ops scorecard at 14:00). Manual fallback / `DISC-P3-006` still align with month boundaries.
+Cadence: search signals **monthly** (1st, **13:00 UTC** — before the ops scorecard at 14:00, so a future digest can include fresh GSC/GA signal details). Manual fallback / `DISC-P3-006` still align with month boundaries.
 
 **Privacy:** Do not commit inquiry PII, raw export dumps with emails, or screenshots that include private contacts. Backlog notes in git stay high-level (paths, query themes, CTR gaps).
 
