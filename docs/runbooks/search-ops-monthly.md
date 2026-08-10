@@ -9,17 +9,19 @@
 
 | Mode | Status | Notes |
 |------|--------|-------|
-| **Automated extract** (`SEARCH-P4-002`) | **Required SoT** once shipped | GSC queries/CTR + GA landings → signal artifact; **no Gemini** |
-| **Manual checklist below** | Fallback only | Will not happen reliably — do not plan ops around monthly clicking |
+| **Automated extract** (`SEARCH-P4-002`) | **SoT** — `.github/workflows/search-ops-semimonthly.yml` → [`docs/ops/search-signals/`](../ops/search-signals/) | GSC queries/CTR + GA landings → signal artifact; **no Gemini** |
+| **Manual checklist below** | Fallback only | Use when the semimonthly artifact is missing/stale; do not plan ops around clicking through consoles |
 | Ops scorecard visits/contacts (`OPS-P5-*`) | Separate | Thin activity glance; does **not** include GSC queries/CTR |
 
 App Insights answers “is Studio/prod healthy?”; GSC + GA4 answer “who finds us in search, where do they land, and do they inquire or download materials?”
 
-Cadence: roughly the **1st of each month**, aligned with the ops scorecard ACS digest and `DISC-P3-006`.
+Cadence: search signals **semimonthly** (1st and 15th, **15:00 UTC** — twice a month). Ops scorecard ACS digest stays monthly (1st at 14:00). Manual fallback / `DISC-P3-006` still align roughly with month boundaries.
 
 **Privacy:** Do not commit inquiry PII, raw export dumps with emails, or screenshots that include private contacts. Backlog notes in git stay high-level (paths, query themes, CTR gaps).
 
 **AI credits:** Search extract jobs must not call Gemini. Lander **body** drafts use **`GEMINI_MODEL_SEARCH_OPS`** (default `gemini-3.5-flash`), separate from Studio’s `GEMINI_MODEL` (`gemini-3.6-flash`) — per-model **5 RPM / 20 RPD**. See [cost-and-quotas.md](cost-and-quotas.md) and `DISC-P4-000`.
+
+**Setup:** GSC API access — [gsc-data-api-access.md](gsc-data-api-access.md) (`SEARCH-P4-001`). GA Data API — [ga-data-api-access.md](ga-data-api-access.md).
 
 ---
 
@@ -27,11 +29,12 @@ Cadence: roughly the **1st of each month**, aligned with the ops scorecard ACS d
 
 | Check | Where |
 |-------|--------|
+| Latest signal artifact | [`docs/ops/search-signals/latest.json`](../ops/search-signals/latest.json) (window since last run) |
 | GSC property for `elysetindall.com` | [Search Console](https://search.google.com/search-console) |
 | GA4 property / Measurement ID `G-XEE29C0RRE` | [Analytics](https://analytics.google.com/) |
 | Preferred host still apex | `www` → apex 301 ([dns-and-domain.md](dns-and-domain.md)) |
 | Optional: last month’s scorecard activity | ACS digest / [`operational-excellence-scorecard.md`](../ops/operational-excellence-scorecard.md) § Site performance |
-| When Phase 4 exists | Prefer the monthly signal artifact / digest over re-clicking this table |
+| Secrets populated | `GSC-SITE-URL` (+ GA/GSC SA) in `kv-elyse-shared` |
 
 Residual one-time ops (not required every month): request indexing (`SEARCH-P0-004`), measurement-only GA Admin (`SEARCH-P1-005`), DebugView event verify.
 
@@ -39,7 +42,7 @@ Residual one-time ops (not required every month): request indexing (`SEARCH-P0-0
 
 ## Monthly checklist (`SEARCH-P3-001`) — fallback
 
-Work the previous **calendar month** (same window as the ops cost / site-performance probes). **Skip this table when `SEARCH-P4-002` has already produced the month’s artifact.**
+Work the previous **calendar month** only as a manual fallback. **Skip this table when `SEARCH-P4-002` has already produced a fresh artifact** under [`docs/ops/search-signals/`](../ops/search-signals/) (see `latest.json`; window is since the last run).
 
 | # | Source | Look at | Healthy if… | If not… |
 |---|--------|---------|-------------|---------|
@@ -100,8 +103,10 @@ The monthly ACS digest / scorecard may include **visits, top paths, inquiry coun
 | Doc | Role |
 |-----|------|
 | [search-and-analytics.md](../plans/search-and-analytics.md) | `SEARCH-*` backlog + Phase 4 automation |
+| [docs/ops/search-signals/](../ops/search-signals/) | Biweekly `SEARCH-P4-002` artifact (since last run) |
+| [gsc-data-api-access.md](gsc-data-api-access.md) | GSC API SA + `GSC-SITE-URL` (`SEARCH-P4-001`) |
 | [casting-discoverability.md](../plans/casting-discoverability.md) | `DISC-*` content backlog + Tier 4 pipeline |
 | [monthly-site-check-in.md](monthly-site-check-in.md) | How Elyse reads the ACS digest (not this GSC review) |
-| [ga-data-api-access.md](ga-data-api-access.md) | Automating GA visits into the scorecard (ops) |
+| [ga-data-api-access.md](ga-data-api-access.md) | Automating GA visits into the scorecard (ops) + organic landings for search signals |
 | [cost-and-quotas.md](cost-and-quotas.md) | Gemini RPM/RPD shared with Studio |
 | [observability.md](observability.md) | App Insights vs GA4 |

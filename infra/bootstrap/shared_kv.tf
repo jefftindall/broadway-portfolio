@@ -158,6 +158,33 @@ resource "azurerm_key_vault_secret" "ga_data_api_sa_json" {
   }
 }
 
+# GSC Search Analytics API for semimonthly search-ops signals (SEARCH-P4-001 / 002).
+# Prefer reusing the GA scorecard SA (grant it on the Search Console property);
+# GSC-DATA-API-SA-JSON may stay REPLACE_ME — fetch script falls back to GA SA.
+# GSC-SITE-URL defaults to the live URL-prefix property (not a secret).
+# ignore tags: `az keyvault secret set --file` / Portal often adds file-encoding=utf-8.
+resource "azurerm_key_vault_secret" "gsc_site_url" {
+  name         = "GSC-SITE-URL"
+  value        = "https://elysetindall.com/"
+  key_vault_id = azurerm_key_vault.shared.id
+  depends_on   = [azurerm_role_assignment.shared_kv_admin]
+
+  lifecycle {
+    ignore_changes = [value, tags]
+  }
+}
+
+resource "azurerm_key_vault_secret" "gsc_data_api_sa_json" {
+  name         = "GSC-DATA-API-SA-JSON"
+  value        = "REPLACE_ME"
+  key_vault_id = azurerm_key_vault.shared.id
+  depends_on   = [azurerm_role_assignment.shared_kv_admin]
+
+  lifecycle {
+    ignore_changes = [value, tags]
+  }
+}
+
 # Repo-level var so Build release / CI do not depend on a per-environment vault.
 resource "github_actions_variable" "azure_shared_key_vault_name" {
   count         = var.manage_github_actions ? 1 : 0

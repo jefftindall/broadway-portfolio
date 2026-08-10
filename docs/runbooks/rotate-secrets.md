@@ -6,7 +6,7 @@ Secrets live in Azure Key Vault as the source of truth. Managed Functions on SWA
 
 | Scope | Key Vault | Resource group | Purpose |
 |---|---|---|---|
-| **Shared (build + ACS + ops alerts + GA scorecard)** | `kv-elyse-shared` | `rg-elyse-shared` | SITE-*, Turnstile, ACS email/SMS, `ALERT-*`, `GA-*` (identical across envs) |
+| **Shared (build + ACS + ops alerts + GA/GSC scorecard)** | `kv-elyse-shared` | `rg-elyse-shared` | SITE-*, Turnstile, ACS email/SMS, `ALERT-*`, `GA-*`, `GSC-*` (identical across envs) |
 | Staging API | `kv-elyse-staging` | `rg-elyse-portfolio-staging` | Gemini, GitHub App, allowlist, AAD |
 | Production API | `kv-elyse-prod` | `rg-elyse-portfolio-prod` | Same as staging |
 
@@ -90,6 +90,26 @@ rm -f ./ga-scorecard-sa.json
 ```
 
 Never echo the JSON key; mask line-by-line in Actions; rotate the GCP key immediately if leaked. These secrets are **not** synced into SWA. Full operator checklist + rotate: [ga-data-api-access.md](ga-data-api-access.md).
+
+### GSC Search Analytics API (semimonthly search signals) — `SEARCH-P4-001`
+
+Automating GSC queries / CTR / page impressions for `SEARCH-P4-002` needs a Search Console property user (service account) plus the site URL string. Prefer **reusing** the GA scorecard SA after enabling `searchconsole.googleapis.com` and granting the SA on the GSC property.
+
+| Secret | Purpose |
+|--------|---------|
+| `GSC-SITE-URL` | Live default: `https://elysetindall.com/` (URL-prefix). KV optional — fetch/refresh fall back to this when missing/`REPLACE_ME` |
+| `GSC-DATA-API-SA-JSON` | Optional dedicated SA JSON; leave `REPLACE_ME` to fall back to `GA-DATA-API-SA-JSON` |
+
+```bash
+# After bootstrap apply — full checklist:
+#   docs/runbooks/gsc-data-api-access.md
+az keyvault secret set --vault-name kv-elyse-shared --name GSC-SITE-URL --value "https://elysetindall.com/"
+# Only if not reusing GA-DATA-API-SA-JSON:
+# az keyvault secret set --vault-name kv-elyse-shared --name GSC-DATA-API-SA-JSON --file ./gsc-search-sa.json
+# rm -f ./gsc-search-sa.json
+```
+
+Never echo the JSON key. These secrets are **not** synced into SWA. Workflow: `.github/workflows/search-ops-semimonthly.yml`.
 
 ## Contact forms (ACS email / SMS + Cloudflare Turnstile)
 

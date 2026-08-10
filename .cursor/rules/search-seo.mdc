@@ -37,10 +37,11 @@ Phased work and action IDs live in [docs/plans/search-and-analytics.md](docs/pla
 - **OG default:** `public/images/og-default.jpg` is 1200×630 JPEG; default path emits `og:image:width` / `height` / `alt`.
 - **Tests:** `J-SEO-01` in `tests/journeys/seo.spec.ts`; smoke asserts robots Disallow.
 
-## Phase 3 — Operating loop
+## Phase 3–4 — Operating loop
 
 - Monthly GSC + GA review checklist: [search-ops-monthly.md](docs/runbooks/search-ops-monthly.md) (`SEARCH-P3-001`–`003`).
-- **Automate** the checklist via `SEARCH-P4-*` (manual habit will not stick); hand off to casting Tier 4 (`DISC-P4-*`).
+- **SoT:** automated extract `SEARCH-P4-002` → [`docs/ops/search-signals/`](docs/ops/search-signals/) (workflow `.github/workflows/search-ops-semimonthly.yml`); GSC access runbook `SEARCH-P4-001`.
+- Hand off to casting Tier 4 (`DISC-P4-*`); digest/PR summary is `SEARCH-P4-003` (planned).
 - Feed findings into `DISC-*` / content PRs — do not paste PII or full query exports into git.
 - Re-check GSC Experience/CWV after major hero/reel visual changes.
 - Ops scorecard visits/contacts (`OPS-P5-*`) do **not** replace GSC query/CTR extraction.
@@ -57,7 +58,7 @@ When you change the surfaces in this rule’s globs (or GA events / SEO contract
 | Person JSON-LD merge or page schemas | Plan Phase 2 + `docs/style-guide.md` SEO notes |
 | robots.txt / OG default / slashless URLs | Plan Phase 2 statuses/ACs |
 | SEO journey/smoke coverage | Plan `SEARCH-P2-007` + `ux-release-testing-strategy.md` (`J-SEO-01`) |
-| Monthly GSC/GA review process | Plan Phase 3–4 + [search-ops-monthly.md](docs/runbooks/search-ops-monthly.md) |
+| Monthly GSC/GA review process | Plan Phase 3–4 + [search-ops-monthly.md](docs/runbooks/search-ops-monthly.md) + [`docs/ops/search-signals/`](docs/ops/search-signals/) |
 | Casting lander draft automation | [casting-discoverability.md](docs/plans/casting-discoverability.md) Tier 4 + Gemini budget in cost-and-quotas |
 
 Prefer linking the plan from PR bodies over pasting the full backlog.

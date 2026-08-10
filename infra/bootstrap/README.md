@@ -10,7 +10,7 @@
 #   Resource group:    rg-elyse-tfstate
 #   Storage account:   stelysetfstateeu2
 #   Container:         tfstate
-#   Shared RG/vault:   rg-elyse-shared / kv-elyse-shared (SITE-*, Turnstile, ACS, ALERT-*, GA-*)
+#   Shared RG/vault:   rg-elyse-shared / kv-elyse-shared (SITE-*, Turnstile, ACS, ALERT-*, GA-*, GSC-*)
 #   Shared ACS:        acs-elyse-shared + email-elyse-shared (one MailFrom / SMS number)
 #   Subscription budget: budget-elyse-portfolio-monthly (ceil(expected×1.25), currently $34/mo; ALERT-EMAIL at 80%/100%)
 #   Region:            eastus2
@@ -28,3 +28,5 @@
 # Populate shared vault secrets per docs/runbooks/rotate-secrets.md before CD builds.
 # Set ALERT-EMAIL before expecting budget threshold emails (otherwise Owners are notified).
 # GA-PROPERTY-ID / GA-DATA-API-SA-JSON: see docs/runbooks/ga-data-api-access.md (OPS-P5 scorecard).
+# GSC-SITE-URL defaults to https://elysetindall.com/; GSC-DATA-API-SA-JSON falls back to GA SA:
+#   docs/runbooks/gsc-data-api-access.md (SEARCH-P4 search signals).

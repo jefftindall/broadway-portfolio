@@ -81,6 +81,39 @@ check_ga() {
 check_ga GA-PROPERTY-ID
 check_ga GA-DATA-API-SA-JSON
 
+# GSC Search Analytics (SEARCH-P4-001): site URL must be set for monthly signals.
+# GSC-DATA-API-SA-JSON may stay REPLACE_ME when reusing GA-DATA-API-SA-JSON.
+check_gsc_site() {
+  local name="GSC-SITE-URL"
+  local value
+  if ! value=$(az keyvault secret show --vault-name "$vault" --name "$name" --query value -o tsv 2>/dev/null); then
+    warn "Secret ${name} is missing in ${vault} (apply infra/bootstrap shared_kv.tf)."
+    return
+  fi
+  if [[ -z "$value" || "$value" == "REPLACE_ME" ]]; then
+    echo "::notice title=Shared Key Vault::${name} is missing/REPLACE_ME — search-ops defaults to https://elysetindall.com/ at runtime (see docs/runbooks/gsc-data-api-access.md)."
+  else
+    echo "OK ${name}"
+  fi
+}
+
+check_gsc_sa() {
+  local name="GSC-DATA-API-SA-JSON"
+  local value
+  if ! value=$(az keyvault secret show --vault-name "$vault" --name "$name" --query value -o tsv 2>/dev/null); then
+    warn "Secret ${name} is missing in ${vault} (apply infra/bootstrap shared_kv.tf)."
+    return
+  fi
+  if [[ -z "$value" || "$value" == "REPLACE_ME" ]]; then
+    echo "::notice title=Shared Key Vault::${name} is REPLACE_ME — search-ops will fall back to GA-DATA-API-SA-JSON when that SA has GSC access (see docs/runbooks/gsc-data-api-access.md)."
+  else
+    echo "OK ${name}"
+  fi
+}
+
+check_gsc_site
+check_gsc_sa
+
 # SMS from is optional for Build release (email-only until set); warn separately.
 sms_from=""
 if ! sms_from=$(az keyvault secret show --vault-name "$vault" --name ACS-SMS-FROM --query value -o tsv 2>/dev/null); then
