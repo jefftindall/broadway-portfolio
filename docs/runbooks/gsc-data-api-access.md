@@ -143,7 +143,7 @@ node scripts/search-ops-signals-refresh.mjs \
 
 Confirm `docs/ops/search-signals/YYYY-MM.json` (or the dry-run out-dir) has `coverage` rows 1–5 and that job logs show theme ids / counts only. Soft-fail leaves GSC/GA sections `stale` and must **not** print SA JSON.
 
-Monthly workflow: `.github/workflows/search-ops-monthly.yml` (`SEARCH-P4-002`).
+Biweekly workflow: `.github/workflows/search-ops-monthly.yml` (`SEARCH-P4-002`; 1st and 15th).
 
 ---
 
@@ -152,7 +152,7 @@ Monthly workflow: `.github/workflows/search-ops-monthly.yml` (`SEARCH-P4-002`).
 Rotate immediately if the JSON ever appears in Actions logs, chat, or git.
 
 - If reusing the GA SA: follow [ga-data-api-access.md](ga-data-api-access.md) § Rotate (updates `GA-DATA-API-SA-JSON`).
-- If using a dedicated GSC key: create a new key, `az keyvault secret set --name GSC-DATA-API-SA-JSON --file …`, delete the old GCP key, re-run **SEARCH monthly signals**.
+- If using a dedicated GSC key: create a new key, `az keyvault secret set --name GSC-DATA-API-SA-JSON --file …`, delete the old GCP key, re-run **SEARCH biweekly signals**.
 
 ---
 

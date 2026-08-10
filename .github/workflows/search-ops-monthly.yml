@@ -1,4 +1,4 @@
-name: SEARCH monthly signals
+name: SEARCH biweekly signals
 
 # SEARCH-P4-002 — Pull prior calendar month GSC queries/CTR + GA organic landings
 # into docs/ops/search-signals/YYYY-MM.{json,md}. Commits via Studio GitHub App.
@@ -7,8 +7,8 @@ name: SEARCH monthly signals
 
 on:
   schedule:
-    # 1st of month 15:00 UTC (after OPS scorecard at 14:00)
-    - cron: "0 15 1 * *"
+    # 1st and 15th at 15:00 UTC (~every two weeks; after OPS scorecard on the 1st)
+    - cron: "0 15 1,15 * *"
   workflow_dispatch:
 
 permissions:
@@ -176,5 +176,5 @@ jobs:
       - name: Email ALERT-EMAIL failure notice
         env:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          WORKFLOW_NAME: SEARCH monthly signals
+          WORKFLOW_NAME: SEARCH biweekly signals
         run: node scripts/ops-scorecard-failure-email.mjs
