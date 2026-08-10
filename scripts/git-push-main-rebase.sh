@@ -11,6 +11,10 @@
 #   - git remote `origin` authenticated for push (App http.extraheader)
 #   - Never prints tokens/secrets
 #
+# Notes:
+#   Rebase uses --autostash so incidental working-tree dirt (e.g. chmod +x on
+#   scripts still stored as non-executable in git) cannot block the rebase.
+#
 # Usage:
 #   ./scripts/git-push-main-rebase.sh
 #   ./scripts/git-push-main-rebase.sh --message "context for logs"
@@ -44,8 +48,14 @@ while ((attempt <= max_attempts)); do
   echo "Fetching origin/main (attempt ${attempt}/${max_attempts}) for ${label}…"
   git fetch origin main
 
-  if ! git rebase origin/main; then
+  if ! git diff --quiet || ! git diff --cached --quiet; then
+    echo "Working tree has local changes before rebase; using --autostash:"
+    git status --porcelain
+  fi
+
+  if ! git rebase --autostash origin/main; then
     echo "::error::Rebase onto origin/main failed (conflict or other error). Resolve manually; not force-pushing."
+    git status --porcelain || true
     git rebase --abort 2>/dev/null || true
     exit 1
   fi
