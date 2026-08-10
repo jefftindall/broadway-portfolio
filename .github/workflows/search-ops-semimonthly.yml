@@ -115,7 +115,9 @@ jobs:
           set -euo pipefail
           set +x
 
-          if git diff --quiet -- docs/ops/search-signals/; then
+          # Use porcelain status (not git diff): first runs create untracked
+          # latest.* / {from}_{to}.* that git diff ignores, which skipped commits.
+          if [[ -z "$(git status --porcelain -- docs/ops/search-signals/)" ]]; then
             echo "No search-signal changes; skipping commit."
           else
             stamp="$(date -u +%Y-%m-%d)"
