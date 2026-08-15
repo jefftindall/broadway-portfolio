@@ -263,7 +263,8 @@ const fieldClass =
     });
     syncPreferredContact(form);
 
-    if (siteKey) {
+    async function mountTurnstile() {
+      if (!siteKey || widgetId !== undefined) return;
       try {
         await loadTurnstile();
         const mount = form.querySelector<HTMLElement>('[data-turnstile-mount]');
@@ -280,6 +281,13 @@ const fieldClass =
         if (submitBtn) submitBtn.disabled = true;
       }
     }
+
+    form.addEventListener('focusin', () => {
+      void mountTurnstile();
+    }, { once: true });
+    form.addEventListener('pointerdown', () => {
+      void mountTurnstile();
+    }, { once: true });
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();

@@ -46,7 +46,9 @@ const hide =
 
         document.body.classList.add('has-casting-mobile-bar');
 
-        const reelTargets = document.querySelectorAll('#reel, iframe[src*="youtube"], iframe[src*="youtu.be"]');
+        const reelTargets = document.querySelectorAll(
+          '#reel, [data-video-facade], iframe[src*="youtube"], iframe[src*="youtu.be"]',
+        );
         if (!reelTargets.length) return;
 
         const observer = new IntersectionObserver(
