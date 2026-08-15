@@ -1667,29 +1667,27 @@ const imageHashIndex = buildPublicImageHashIndex();
       return true;
     }
 
-    async function resizeImage(file: File): Promise<PhotoPayload | null> {
-      const bitmap = await createImageBitmap(file);
-      const max = 1600;
-      const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
-      const w = Math.round(bitmap.width * scale);
-      const h = Math.round(bitmap.height * scale);
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return null;
-      ctx.drawImage(bitmap, 0, 0, w, h);
-      const blob: Blob | null = await new Promise((resolve) =>
-        canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.85),
-      );
-      if (!blob) return null;
-      const buffer = await blob.arrayBuffer();
+    /** Transport cap only — do not bake display sizes here. Derived variants are build-time. */
+    const STUDIO_PHOTO_MAX_BYTES = 12 * 1024 * 1024;
+
+    function photoTooLarge(file: File): boolean {
+      return file.size > STUDIO_PHOTO_MAX_BYTES;
+    }
+
+    async function photoPayloadFromFile(file: File): Promise<PhotoPayload | null> {
+      const type =
+        file.type === 'image/png' || file.type === 'image/webp' || file.type === 'image/jpeg'
+          ? file.type
+          : '';
+      if (!type) return null;
+      const buffer = await file.arrayBuffer();
       let binary = '';
       const bytes = new Uint8Array(buffer);
       for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]!);
       const dataBase64 = btoa(binary);
-      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/\.\w+$/, '.jpg');
-      return { name: safe, contentType: 'image/jpeg', dataBase64 };
+      const ext = type === 'image/png' ? '.png' : type === 'image/webp' ? '.webp' : '.jpg';
+      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/\.\w+$/, ext);
+      return { name: safe, contentType: type, dataBase64 };
     }
 
     function fieldClass(readOnly = false) {
@@ -2434,8 +2432,12 @@ const imageHashIndex = buildPublicImageHashIndex();
         setStatus('Choose a different photo, or confirm when ready to publish a duplicate.');
         return;
       }
-      const resized = await resizeImage(file);
-      if (!resized) {
+      if (photoTooLarge(file)) {
+        setStatus('That photo is larger than 12 MB. Choose a smaller file.');
+        return;
+      }
+      const photo = await photoPayloadFromFile(file);
+      if (!photo) {
         setStatus('Could not read that photo. Try a JPEG, PNG, or WebP.');
         return;
       }
@@ -2456,7 +2458,7 @@ const imageHashIndex = buildPublicImageHashIndex();
         'add_gallery_photo',
         args,
         'Could not prepare gallery photo.',
-        resized,
+        photo,
       );
     });
 
@@ -2570,6 +2572,10 @@ const imageHashIndex = buildPublicImageHashIndex();
         return;
       }
       if (photoEl.files?.[0]) {
+        if (photoTooLarge(photoEl.files[0])) {
+          setStatus('That photo is larger than 12 MB. Choose a smaller file.');
+          return;
+        }
         if (!askPhotoDuplicatePath) {
           askPhotoDuplicatePath = await checkPhotoDuplicate(photoEl.files[0]);
           if (askPhotoDuplicatePath) {
@@ -2587,8 +2593,8 @@ const imageHashIndex = buildPublicImageHashIndex();
 
       draftPhoto = undefined;
       if (photoEl.files?.[0]) {
-        const resized = await resizeImage(photoEl.files[0]);
-        if (resized) draftPhoto = resized;
+        const photo = await photoPayloadFromFile(photoEl.files[0]);
+        if (photo) draftPhoto = photo;
       }
 
       try {

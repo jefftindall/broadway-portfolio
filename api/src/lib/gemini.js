@@ -416,10 +416,26 @@ export function isAllowedContentPath(path) {
 }
 
 /**
+ * SHA-256 hex of the raw committed image (never a derived variant).
+ * @param {unknown} raw
+ * @returns {string | undefined}
+ */
+export function normalizeContentHash(raw) {
+  const hash = String(raw || '')
+    .trim()
+    .toLowerCase();
+  return /^[a-f0-9]{64}$/.test(hash) ? hash : undefined;
+}
+
+/**
  * Build a proposed file change from a Gemini tool call (no GitHub write).
+ * @param {string} name
+ * @param {Record<string, unknown>} args
+ * @param {string} [photoPath]
+ * @param {{ originalContentHash?: string }} [options]
  * @returns {Promise<{ tool: string, path: string, content: string, commitMessage: string, summary: string, preview?: Record<string, unknown>, livePath?: string }>}
  */
-export async function buildContentChange(name, args, photoPath) {
+export async function buildContentChange(name, args, photoPath, options = {}) {
   const today = todayIsoDate();
   /** @type {{ tool: string, path: string, content: string, commitMessage: string, summary: string, preview?: Record<string, unknown>, livePath?: string }} */
   let change;
@@ -632,9 +648,13 @@ export async function buildContentChange(name, args, photoPath) {
       // Newest first on /gallery (ascending sort). Ignore any client-supplied order.
       const order = -Date.now();
       const focus = String(args.focus || '').trim() || undefined;
+      const contentHash = normalizeContentHash(
+        options.originalContentHash || args.contentHash,
+      );
       const content =
         toFrontmatter({
           image,
+          contentHash,
           tags: tags.length ? tags : undefined,
           order,
           focus,
@@ -1278,9 +1298,9 @@ export async function buildProductionSiteContext() {
 
 /**
  * Ask Gemini for tool calls and return proposed file changes (no commits).
- * @param {{ message: string, photoPath?: string }} opts
+ * @param {{ message: string, photoPath?: string, originalContentHash?: string }} opts
  */
-export async function runContentAgent({ message, photoPath }) {
+export async function runContentAgent({ message, photoPath, originalContentHash }) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('Missing GEMINI_API_KEY');
 
@@ -1358,7 +1378,9 @@ Rules:
 
   const changes = [];
   for (const call of functionCalls) {
-    const change = await buildContentChange(call.name, call.args || {}, photoPath);
+    const change = await buildContentChange(call.name, call.args || {}, photoPath, {
+      originalContentHash,
+    });
     trackEvent('StudioToolExecuted', { tool: call.name, mode: 'draft' });
     changes.push(change);
   }
