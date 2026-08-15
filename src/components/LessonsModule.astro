@@ -3,6 +3,7 @@ import { lessonOfferings } from '../lib/site';
 import SectionHeader from './SectionHeader.astro';
 import GlassPanel from './GlassPanel.astro';
 import CtaLink from './CtaLink.astro';
+import OptimizedImg from './OptimizedImg.astro';
 
 interface Props {
   compact?: boolean;
@@ -24,14 +25,15 @@ const { compact = false } = Astro.props;
     </div>
 
     <div class="relative mt-10 overflow-hidden rounded-sm border border-line">
-      <img
+      <OptimizedImg
         src="/images/lessons/lessons-banner.jpg"
         alt=""
         class="absolute inset-0 h-full w-full object-cover"
-        width="1600"
-        height="900"
+        width={1600}
+        height={900}
+        sizes="(min-width: 72rem) 72rem, 100vw"
         loading="lazy"
-        aria-hidden="true"
+        ariaHidden
       />
       <div class="absolute inset-0 bg-ink/70" aria-hidden="true"></div>
       <div class="relative grid gap-4 p-6 sm:grid-cols-2 md:p-8">

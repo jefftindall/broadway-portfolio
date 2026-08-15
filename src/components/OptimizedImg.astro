@@ -1,0 +1,49 @@
+---
+import { derivedSrc, derivedSrcset } from '../lib/derivedImages';
+
+interface Props {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+  sizes?: string;
+  class?: string;
+  style?: string;
+  loading?: 'eager' | 'lazy';
+  fetchpriority?: 'high' | 'low' | 'auto';
+  decoding?: 'async' | 'auto' | 'sync';
+  ariaHidden?: boolean;
+}
+
+const {
+  src,
+  alt,
+  width,
+  height,
+  sizes,
+  class: className,
+  style,
+  loading,
+  fetchpriority,
+  decoding = 'async',
+  ariaHidden = false,
+} = Astro.props;
+
+const srcset = derivedSrcset(src);
+const resolvedSrc = derivedSrc(src);
+---
+
+<img
+  src={resolvedSrc}
+  srcset={srcset}
+  sizes={srcset ? sizes : undefined}
+  alt={alt}
+  class={className}
+  style={style}
+  width={width}
+  height={height}
+  loading={loading}
+  fetchpriority={fetchpriority}
+  decoding={decoding}
+  aria-hidden={ariaHidden ? 'true' : undefined}
+/>

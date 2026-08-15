@@ -5,6 +5,7 @@ import { site } from '../../lib/site';
 import GlassPanel from '../../components/GlassPanel.astro';
 import CtaLink from '../../components/CtaLink.astro';
 import InquiryForm from '../../components/InquiryForm.astro';
+import OptimizedImg from '../../components/OptimizedImg.astro';
 
 const entry = await getEntry('pages', 'lessons-book');
 if (!entry) throw new Error('Missing lessons book page content');
@@ -56,13 +57,14 @@ const jsonLd = [
 >
   <section class="relative overflow-hidden border-b border-line">
     <div class="absolute inset-0">
-      <img
+      <OptimizedImg
         src="/images/lessons/lessons-banner.jpg"
         alt=""
         class="h-full w-full object-cover"
-        width="1600"
-        height="900"
-        aria-hidden="true"
+        width={1600}
+        height={900}
+        sizes="100vw"
+        ariaHidden
       />
       <div class="absolute inset-0 bg-ink/75" aria-hidden="true"></div>
     </div>
