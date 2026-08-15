@@ -2,6 +2,7 @@
 
 **Action IDs:** `SEARCH-P3-001`, `SEARCH-P3-002`, `SEARCH-P3-003`  
 **Automation track (required):** `SEARCH-P4-001`–`004` → casting `DISC-P4-003` / `DISC-P4-004`  
+**Broadway CD vernacular (separate):** `DISC-P4-007` — [casting-language-discovery.md](casting-language-discovery.md) / [`docs/ops/casting-language/`](../ops/casting-language/); GSC extract is feedback only  
 **Related:** `DISC-P3-006` (casting landers from query review); [casting-discoverability.md](../plans/casting-discoverability.md) Tier 4  
 **Audience:** Jeff (operator); outcomes may create casting/content backlog for Elyse
 
@@ -10,6 +11,7 @@
 | Mode | Status | Notes |
 |------|--------|-------|
 | **Automated extract** (`SEARCH-P4-002`) | **SoT** — `.github/workflows/search-ops-monthly.yml` → [`docs/ops/search-signals/`](../ops/search-signals/) | GSC queries/CTR + GA landings → signal artifact; **no Gemini** |
+| **Casting-language candidates** (`DISC-P4-007`) | Same monthly workflow → [`docs/ops/casting-language/`](../ops/casting-language/) | Catalog fit + allowlisted public RSS; **no Gemini**; not board scrapes |
 | **Manual checklist below** | Fallback only | Use when the monthly artifact is missing/stale; do not plan ops around clicking through consoles |
 | Ops scorecard visits/contacts (`OPS-P5-*`) | Separate | Thin activity glance; does **not** include GSC queries/CTR |
 

@@ -1,0 +1,207 @@
+{
+  "$schemaComment": "DISC-P4-007 casting-language candidates. Slugs/keywords/bands only. No Gemini. No board scrapes.",
+  "actionId": "DISC-P4-007",
+  "generatedAt": "2026-08-10T03:16:54.775Z",
+  "generatedDate": "2026-08-10",
+  "catalogCount": 15,
+  "existingLanderCount": 20,
+  "minFit": 0.5,
+  "newsCoverage": [
+    {
+      "id": "fixture",
+      "status": "ok",
+      "note": "5 item title(s) from fixture"
+    }
+  ],
+  "newsStats": {
+    "items": 5,
+    "mapped": 3,
+    "rejectedOrUnmapped": 2
+  },
+  "winners": [
+    {
+      "id": "latina-musical-theatre-actress",
+      "slug": "latina-musical-theatre-actress",
+      "keyword": "Latina musical theatre actress",
+      "title": "Latina Musical Theatre Actress",
+      "category": "ethnicity",
+      "fitScore": 1,
+      "fitMatched": [
+        "ethnicity:latina",
+        "ethnicity:hispanic",
+        "type:musical-theatre",
+        "geo:nyc"
+      ],
+      "priority": 90,
+      "volume": 320,
+      "newsBoost": 7,
+      "newsTitles": [
+        "Latina musical theatre actress shines in new contemporary work",
+        "CCM vocalist actress musical theatre workshop announced"
+      ],
+      "relatedShows": [
+        "Anastasia",
+        "Miss You Like Hell"
+      ],
+      "relatedSkills": [
+        "Musical theatre",
+        "Ethnically ambiguous"
+      ],
+      "rankScore": 172.4,
+      "handoff": "DISC-P4-004"
+    },
+    {
+      "id": "hispanic-musical-theatre-actress",
+      "slug": "hispanic-musical-theatre-actress",
+      "keyword": "Hispanic musical theatre actress",
+      "title": "Hispanic Musical Theatre Actress",
+      "category": "ethnicity",
+      "fitScore": 1,
+      "fitMatched": [
+        "ethnicity:hispanic",
+        "ethnicity:latina",
+        "type:musical-theatre"
+      ],
+      "priority": 88,
+      "volume": 210,
+      "newsBoost": 6,
+      "newsTitles": [
+        "Latina musical theatre actress shines in new contemporary work",
+        "CCM vocalist actress musical theatre workshop announced"
+      ],
+      "relatedShows": [
+        "Anastasia",
+        "Miss You Like Hell"
+      ],
+      "relatedSkills": [
+        "Musical theatre",
+        "Ethnically ambiguous"
+      ],
+      "rankScore": 166.2,
+      "handoff": "DISC-P4-004"
+    },
+    {
+      "id": "ethnically-ambiguous-ingenue",
+      "slug": "ethnically-ambiguous-ingenue",
+      "keyword": "ethnically ambiguous ingénue musical theatre",
+      "title": "Ethnically Ambiguous Ingénue",
+      "category": "ethnicity",
+      "fitScore": 1,
+      "fitMatched": [
+        "ethnicity:ambiguous",
+        "archetype:ingenue",
+        "type:musical-theatre",
+        "age:young-adult"
+      ],
+      "priority": 86,
+      "volume": null,
+      "newsBoost": 3,
+      "newsTitles": [
+        "Comic ingénue musical theatre roles still in demand Off-Broadway"
+      ],
+      "relatedShows": [
+        "Anastasia",
+        "Miss You Like Hell"
+      ],
+      "relatedSkills": [
+        "Ethnically ambiguous",
+        "Ingénue",
+        "Musical theatre"
+      ],
+      "rankScore": 152,
+      "handoff": "DISC-P4-004"
+    },
+    {
+      "id": "ccm-vocalist-actress",
+      "slug": "ccm-vocalist-actress",
+      "keyword": "CCM vocalist actress musical theatre",
+      "title": "CCM Vocalist Actress",
+      "category": "fach",
+      "fitScore": 1,
+      "fitMatched": [
+        "vocal:ccm",
+        "vocal:belt",
+        "type:musical-theatre"
+      ],
+      "priority": 72,
+      "volume": 40,
+      "newsBoost": 5,
+      "newsTitles": [
+        "CCM vocalist actress musical theatre workshop announced"
+      ],
+      "relatedShows": [
+        "Miss You Like Hell",
+        "NYC Cabaret — Stage Kiss"
+      ],
+      "relatedSkills": [
+        "CCM",
+        "Belt",
+        "Musical theatre"
+      ],
+      "rankScore": 151.8,
+      "handoff": "DISC-P4-004"
+    },
+    {
+      "id": "contemporary-musical-theatre-actress",
+      "slug": "contemporary-musical-theatre-actress",
+      "keyword": "contemporary musical theatre actress",
+      "title": "Contemporary Musical Theatre Actress",
+      "category": "type",
+      "fitScore": 1,
+      "fitMatched": [
+        "type:musical-theatre",
+        "type:contemporary",
+        "vocal:belt",
+        "vocal:ccm"
+      ],
+      "priority": 75,
+      "volume": null,
+      "newsBoost": 4,
+      "newsTitles": [
+        "Latina musical theatre actress shines in new contemporary work"
+      ],
+      "relatedShows": [
+        "Miss You Like Hell",
+        "Anastasia"
+      ],
+      "relatedSkills": [
+        "Musical theatre",
+        "Belt",
+        "CCM"
+      ],
+      "rankScore": 149.5,
+      "handoff": "DISC-P4-004"
+    }
+  ],
+  "skipped": [
+    {
+      "id": "comic-ingenue-musical-theatre",
+      "slug": "comic-ingenue-musical-theatre",
+      "reason": "near_duplicate",
+      "detail": "ingenue-musical-theatre @ 0.75"
+    },
+    {
+      "id": "young-mezzo-musical-theatre",
+      "slug": "young-mezzo-musical-theatre",
+      "reason": "near_duplicate",
+      "detail": "mezzo-soprano-musical-theatre @ 0.80"
+    },
+    {
+      "id": "bass-baritone-musical-theatre",
+      "slug": "bass-baritone-musical-theatre",
+      "reason": "low_fit",
+      "detail": "0.00"
+    },
+    {
+      "id": "ballet-dancer-broadway",
+      "slug": "ballet-dancer-broadway",
+      "reason": "low_fit",
+      "detail": "0.00"
+    }
+  ],
+  "notes": [
+    "GSC search-signals are site-demand feedback after pages ship — not the Broadway keyword mine.",
+    "Lander body generation remains DISC-P4-004 on GEMINI_MODEL_SEARCH_OPS (G-PR).",
+    "Licensed casting-board trends are DISC-P4-008."
+  ]
+}

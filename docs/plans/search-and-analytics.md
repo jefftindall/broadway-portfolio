@@ -1,7 +1,7 @@
 # Plan: Google Search Console & Analytics
 
 **Artifact ID:** `ELYSE-SEARCH-001`  
-**Version:** 1.14  
+**Version:** 1.16  
 **Last updated:** 2026-08-10  
 **Audience:** Agents, implementers, operators  
 **Scope:** Google Search Console (GSC), Google Analytics 4 (GA4), and related technical SEO that makes those tools useful — not casting content strategy itself.
@@ -385,7 +385,7 @@ Content that moves rankings (Person facts, `/for/*` landers, materials downloads
 | ID | Title | Status | Depends on | Primary refs |
 |----|-------|--------|------------|--------------|
 | `SEARCH-P4-001` | GSC Search Analytics API access (SA + KV secret) | `done` (runbook) | GSC property (`SEARCH-P0-002` / `DISC-P0-002`) | [gsc-data-api-access.md](../runbooks/gsc-data-api-access.md); `GSC-SITE-URL` / `GSC-DATA-API-SA-JSON` in `kv-elyse-shared` — never commit JSON |
-| `SEARCH-P4-002` | Monthly workflow (1st): GSC queries/pages/CTR + GA landings → signal artifact | `done` | `SEARCH-P4-001`; GA SA (`OPS-P5-002`) preferred | `.github/workflows/search-ops-monthly.yml` (1st, 13:00 UTC — before ops scorecard); [`docs/ops/search-signals/`](../ops/search-signals/); themes/paths only in git |
+| `SEARCH-P4-002` | Monthly workflow (1st): GSC queries/pages/CTR + GA landings → signal artifact; also runs `DISC-P4-007` casting-language discover | `done` | `SEARCH-P4-001`; GA SA (`OPS-P5-002`) preferred | `.github/workflows/search-ops-monthly.yml` (1st, 13:00 UTC — before ops scorecard); [`docs/ops/search-signals/`](../ops/search-signals/) + [`docs/ops/casting-language/`](../ops/casting-language/); themes/paths only in git |
 | `SEARCH-P4-003` | Operator digest / PR comment summarizing gaps (still no Gemini) | `planned` | `SEARCH-P4-002` | ACS email to `ALERT-EMAIL` and/or PR on draft branch; no PII |
 | `SEARCH-P4-004` | Hand off candidates to casting pipeline | `planned` | `SEARCH-P4-002`; `DISC-P4-003` | [casting-discoverability.md](casting-discoverability.md) Tier 4 |
 
@@ -410,6 +410,7 @@ Content that moves rankings (Person facts, `/for/*` landers, materials downloads
 
 - [x] Scheduled job (1st of month, 13:00 UTC — before ops scorecard at 14:00) pulls **since last run** (else 28-day lookback): top queries, `/for/*` CTR/impressions bands, indexing anomalies summary, GA organic landing paths
 - [x] Writes a small artifact (JSON/MD) under [`docs/ops/search-signals/`](../ops/search-signals/) (`latest.*` + `{from}_{to}.*`): **paths, query themes, numeric bands** — no emails, no full raw exports
+- [x] Same workflow runs `DISC-P4-007` casting-language discover (`--fetch-news`) → [`docs/ops/casting-language/`](../ops/casting-language/) (zero Gemini; catalog + allowlisted RSS)
 - [x] Commit step uses `git status --porcelain` so **new untracked** artifacts are pushed (not `git diff`, which skipped first-run files)
 - [x] Push uses [`scripts/git-push-main-rebase.sh`](../../scripts/git-push-main-rebase.sh) (fetch + `rebase --autostash` + retry; no force-push) so concurrent `main` merges during GSC/GA probes do not fail the job (and incidental `chmod +x` dirt cannot block rebase)
 - [x] Covers checklist rows 1–5 of [search-ops-monthly.md](../runbooks/search-ops-monthly.md) at minimum (CWV/Enhancements stay manual)
@@ -492,7 +493,8 @@ GSC and GA4 properties are live. **SoT:** automated `SEARCH-P4-002` artifact und
 - Advertising / remarketing configuration (unless a future decision flips `SEARCH-P1-005`)
 - Using Gemini inside `SEARCH-P4-002` extraction (budget reserved for Studio `GEMINI_MODEL` + search-ops `GEMINI_MODEL_SEARCH_OPS` bodies)
 - Pointing lander draft jobs at Studio’s `GEMINI_MODEL` / 3.6 Flash (use `GEMINI_MODEL_SEARCH_OPS` / 3.5 instead)
-- Scraping paid casting boards for keywords
+- Scraping paid casting boards for keywords (licensed ingest is `DISC-P4-008` in casting Tier 4 — never unlicensed scrape)
+- Broadway casting-agent keyword **discovery** (curated + public news `DISC-P4-007`, licensed later `DISC-P4-008`) — GSC extract is site-demand **feedback** only
 - Full casting content strategy — see [casting-discoverability.md](casting-discoverability.md)
 - Assuming sitemap submission alone ranks `/for/*` landers — index pipeline ≠ ranking lever
 
@@ -513,7 +515,7 @@ GSC and GA4 properties are live. **SoT:** automated `SEARCH-P4-002` artifact und
 
 | Doc | Relationship |
 |-----|----------------|
-| [casting-discoverability.md](casting-discoverability.md) | Casting SEO backlog (`DISC-*`); Tier 4 lander pipeline consumes `SEARCH-P4` signals |
+| [casting-discoverability.md](casting-discoverability.md) | Casting SEO backlog (`DISC-*`); Tier 4 lander pipeline consumes `SEARCH-P4` signals; Broadway keyword discovery is `DISC-P4-007`/`008` |
 | [search-ops-monthly.md](../runbooks/search-ops-monthly.md) | Phase 3 checklist; Phase 4 SoT is [`docs/ops/search-signals/`](../ops/search-signals/) |
 | [wordpress-to-azure-cutover.md](../runbooks/wordpress-to-azure-cutover.md) §6 | Historical cutover checklist; residual indexing in `SEARCH-P0-004` |
 | [dns-and-domain.md](../runbooks/dns-and-domain.md) | Apex / www |

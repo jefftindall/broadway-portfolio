@@ -2,9 +2,11 @@ name: "Search: monthly signals"
 
 # SEARCH-P4-002 — Monthly (1st) extract of GSC queries/CTR + GA organic
 # landings since the last run into docs/ops/search-signals/{from}_{to}.{json,md}
-# (+ latest.*). Commits via Studio GitHub App. Zero Gemini calls. On job failure,
-# email ALERT-EMAIL only (not SITE-CONTACT-EMAIL). Signal-only pushes are
-# paths-ignored in azure-static-web-apps.yml.
+# (+ latest.*). Also runs DISC-P4-007 casting-language discovery (catalog fit +
+# allowlisted public RSS; zero Gemini) into docs/ops/casting-language/.
+# Commits via Studio GitHub App. On job failure, email ALERT-EMAIL only
+# (not SITE-CONTACT-EMAIL). Artifact-only pushes are paths-ignored in
+# azure-static-web-apps.yml.
 # Display names follow docs/runbooks/github-actions-naming.md (Scheme A).
 
 on:
@@ -111,24 +113,42 @@ jobs:
       - name: Refresh search signal artifact
         run: node scripts/search-ops-signals-refresh.mjs
 
-      - name: Commit search signals to main
+      - name: Refresh casting-language candidates
+        run: |
+          set -euo pipefail
+          # DISC-P4-007 — catalog fit/dedupe + allowlisted public RSS (no Gemini,
+          # no board scrapes). Per-source RSS failures are soft; catalog still ranks.
+          node scripts/casting-language-discover.mjs --fetch-news
+
+      - name: Commit search + casting-language artifacts to main
         run: |
           set -euo pipefail
           set +x
 
           # Use porcelain status (not git diff): first runs create untracked
-          # latest.* / {from}_{to}.* that git diff ignores, which skipped commits.
-          if [[ -z "$(git status --porcelain -- docs/ops/search-signals/)" ]]; then
-            echo "No search-signal changes; skipping commit."
+          # latest.* / dated files that git diff ignores, which skipped commits.
+          signals_dirty="$(git status --porcelain -- docs/ops/search-signals/ || true)"
+          casting_dirty="$(git status --porcelain -- docs/ops/casting-language/ || true)"
+          if [[ -z "${signals_dirty}" && -z "${casting_dirty}" ]]; then
+            echo "No search-signal or casting-language changes; skipping commit."
           else
             stamp="$(date -u +%Y-%m-%d)"
-            git add docs/ops/search-signals/
-            git commit -m "SEARCH: monthly search signals (${stamp})"
+            parts=()
+            if [[ -n "${signals_dirty}" ]]; then
+              git add docs/ops/search-signals/
+              parts+=("search signals")
+            fi
+            if [[ -n "${casting_dirty}" ]]; then
+              git add docs/ops/casting-language/
+              parts+=("casting language")
+            fi
+            joined="$(IFS=' + '; echo "${parts[*]}")"
+            git commit -m "SEARCH: monthly ${joined} (${stamp})"
             # Rebase onto latest main before push — long GSC/GA probes can race
             # with concurrent merges (non-fast-forward without this).
             chmod +x scripts/git-push-main-rebase.sh
-            ./scripts/git-push-main-rebase.sh --message "search signals ${stamp}"
-            echo "Pushed search signals to main as elyse-portfolio-studio[bot] (${stamp})."
+            ./scripts/git-push-main-rebase.sh --message "monthly search ops ${stamp}"
+            echo "Pushed monthly search-ops artifacts to main as elyse-portfolio-studio[bot] (${stamp})."
           fi
 
       - name: Cleanup GSC/GA service-account temp files

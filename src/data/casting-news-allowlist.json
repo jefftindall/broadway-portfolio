@@ -1,0 +1,34 @@
+{
+  "$schemaComment": "DISC-P4-007 / DISC-P4-006 — allowlisted public casting-news sources only. Respect robots/ToS. No Actors Access / Backstage scrape.",
+  "version": 1,
+  "actionId": "DISC-P4-007",
+  "sources": [
+    {
+      "id": "playbill-news",
+      "name": "Playbill",
+      "domain": "playbill.com",
+      "kind": "rss",
+      "url": "https://playbill.com/rss",
+      "enabled": true,
+      "notes": "Public RSS; extract type phrases only — never paste proprietary breakdowns."
+    },
+    {
+      "id": "broadwayworld-news",
+      "name": "BroadwayWorld",
+      "domain": "broadwayworld.com",
+      "kind": "rss",
+      "url": "https://www.broadwayworld.com/rss/news.xml",
+      "enabled": true,
+      "notes": "Public news RSS when available; skip on fetch failure."
+    }
+  ],
+  "rejectTitlePatterns": [
+    "(?i)\\bcasting\\s+(call|breakdown)\\b",
+    "(?i)\\bjoins\\s+the\\s+(cast|company)\\b",
+    "(?i)\\breplaces\\b.+\\bin\\b",
+    "(?i)\\bwicked\\b",
+    "(?i)\\bhamilton\\b",
+    "(?i)\\blion\\s+king\\b"
+  ],
+  "notes": "Show-title / this-week casting headlines map to evergreen catalog intents or are dropped. Licensed board data is DISC-P4-008."
+}
