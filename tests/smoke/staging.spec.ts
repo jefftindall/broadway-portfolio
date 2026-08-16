@@ -111,6 +111,9 @@ test.describe('public smoke', () => {
     }
 
     expect(location).toMatch(/\.auth\/login/i);
+    // Auth 302s must not inherit the public HTML max-age or browsers replay
+    // login after Entra returns to /studio (staging hostname and prod apex).
+    expect(response.headers()['cache-control'] ?? '').toMatch(/no-store/i);
   });
 });
 

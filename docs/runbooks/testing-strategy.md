@@ -68,7 +68,7 @@ playwright.journey.config.ts
 - Extended routes: `/news`, `/lessons/book`, sample `/for/{slug}`
 - Assets: resume PDF, theatrical headshot JPG
 - SEO: `robots.txt`, `sitemap-index.xml`
-- Auth boundary: anonymous `GET /studio` returns redirect on SWA hosts (skipped locally — `astro preview` has no Easy Auth)
+- Auth boundary: anonymous `GET /studio` returns redirect on SWA hosts (skipped locally — `astro preview` has no Easy Auth); that 302 must be `Cache-Control: private, no-store` (staging hostname and prod apex)
 - Shows list: at least one credit title from content (not fixed show names)
 - Viewports: desktop + mobile (parallel)
 

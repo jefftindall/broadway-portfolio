@@ -149,7 +149,7 @@ Smoke retains thin route canaries (home/about/contact/gallery/news/book) alongsi
 
 | ID | Journey | Status | Gate recommendation |
 |----|---------|--------|---------------------|
-| `J-STU-01` | Anonymous `/studio` → login redirect | `done` | Smoke on SWA hosts |
+| `J-STU-01` | Anonymous `/studio` → login redirect (`no-store`) | `done` | Smoke on SWA hosts |
 | `J-STU-02` | Signed-in non-publisher → deny + `Reference:` | `planned` | Needs test account outside allowlist |
 | `J-STU-03` | Publisher compose → Preview → Publish | `planned` | Scheduled / manual until storageState |
 | `J-API-01` | Unauthenticated `POST /api/updateContent` → 401/302 | `planned` | Good L3 candidate |
