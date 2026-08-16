@@ -1,6 +1,7 @@
 ---
 import { site } from '../lib/site';
 import CtaLink from './CtaLink.astro';
+import OptimizedImg from './OptimizedImg.astro';
 
 interface Props {
   image?: string;
@@ -15,14 +16,14 @@ const {
 
 <section class="relative min-h-[88vh] overflow-hidden" aria-labelledby="hero-heading">
   <div class="absolute inset-0">
-    <img
+    <OptimizedImg
       src={image}
       alt={`${site.name}, musical theatre actress`}
       class="h-full w-full object-cover object-[center_20%]"
-      width="1600"
-      height="2000"
+      width={1600}
+      height={2000}
+      sizes="100vw"
       fetchpriority="high"
-      decoding="async"
     />
     <div
       class="absolute inset-0 bg-gradient-to-r from-ink via-ink/80 to-ink/35"

@@ -4,6 +4,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import LessonCta from '../components/LessonCta.astro';
 import PerformerFacts from '../components/PerformerFacts.astro';
 import { site } from '../lib/site';
+import OptimizedImg from '../components/OptimizedImg.astro';
 
 const entry = await getEntry('pages', 'about');
 if (!entry) throw new Error('Missing about page content');
@@ -18,14 +19,14 @@ const { Content } = await render(entry);
   <section class="mx-auto max-w-6xl px-6 py-16 md:py-24">
     <div class="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
       <div class="overflow-hidden rounded-sm border border-line">
-        <img
+        <OptimizedImg
           src={site.heroImage}
           alt={`${site.name}, musical theatre actress and vocal coach`}
           class="aspect-[3/4] w-full object-cover object-top"
-          width="800"
-          height="1067"
+          width={800}
+          height={1067}
+          sizes="(min-width: 1024px) 28rem, 100vw"
           fetchpriority="high"
-          decoding="async"
         />
       </div>
       <div>

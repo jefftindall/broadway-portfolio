@@ -1,0 +1,56 @@
+{
+  "recipeVersion": 1,
+  "entries": [
+    {
+      "sourcePath": "/images/shows/Ursula.jpg",
+      "sourceSha256": "dc843e68190494c0af42c7e3ed91da9193eb6825baaa8dc02f7221d40e384059",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 420,
+          "path": "/images/_derived/dc843e68190494c0af42c7e3ed91da9193eb6825baaa8dc02f7221d40e384059/420.webp",
+          "format": "webp"
+        },
+        {
+          "width": 840,
+          "path": "/images/_derived/dc843e68190494c0af42c7e3ed91da9193eb6825baaa8dc02f7221d40e384059/840.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/lessons/lessons-banner.jpg",
+      "sourceSha256": "7736d53b5c78c8380c853ad6043d1c0dda6f787f14f955dfc4281f0a3778fa87",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 800,
+          "path": "/images/_derived/7736d53b5c78c8380c853ad6043d1c0dda6f787f14f955dfc4281f0a3778fa87/800.webp",
+          "format": "webp"
+        },
+        {
+          "width": 1600,
+          "path": "/images/_derived/7736d53b5c78c8380c853ad6043d1c0dda6f787f14f955dfc4281f0a3778fa87/1600.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/photos/elyse-portrait.jpg",
+      "sourceSha256": "fb0e791ab164c35f4388f4b1bb4d04d780ded9b9a44aba3fdb7c19a928b45d65",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 800,
+          "path": "/images/_derived/fb0e791ab164c35f4388f4b1bb4d04d780ded9b9a44aba3fdb7c19a928b45d65/800.webp",
+          "format": "webp"
+        },
+        {
+          "width": 1600,
+          "path": "/images/_derived/fb0e791ab164c35f4388f4b1bb4d04d780ded9b9a44aba3fdb7c19a928b45d65/1600.webp",
+          "format": "webp"
+        }
+      ]
+    }
+  ]
+}
