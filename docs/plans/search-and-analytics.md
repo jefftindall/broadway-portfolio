@@ -125,7 +125,7 @@ Apex cutover, GSC registration, and GA4 property setup are **done** (see [Live o
 **Acceptance criteria**
 
 - [ ] URL Inspection + “Request indexing” for `/`, `/materials`, `/shows`
-- [ ] Same for top `/for/*` landers (at least the homepage-linked / highest-intent ones)
+- [ ] Same for top `/for/*` landers (highest-intent queries — not homepage-linked; landers are inbound SEO only)
 - [ ] No soft-404 / redirect-error surprises; fix with one-hop 301s if needed
 - [ ] (Optional) Bing Webmaster Tools sitemap submitted
 
@@ -475,7 +475,7 @@ GSC and GA4 properties are live. **SoT:** automated `SEARCH-P4-002` artifact und
 |--------|---------|--------|
 | GSC Performance | Queries, CTR, impressions on `/for/*`, `/lessons`, brand vs non-brand | Refine titles/descriptions or new/refined casting landers (`DISC-P3-002` / `DISC-P4-004`) |
 | GSC Pages | Coverage errors, unexpected URLs (`/studio`, old WP paths) | 301s / `noIndex` / sitemap filter |
-| GA4 Acquisition → Organic Search | Landing pages, engagement | Fix weak landers; promote strong ones in nav/home |
+| GA4 Acquisition → Organic Search | Landing pages, engagement | Fix weak landers (copy/title); do **not** promote `/for/*` in nav, footer, About, or Shows — inbound SEO only |
 | GA4 Events | Inquiry / download conversion by landing page | Prioritize content refresh |
 | GA4 ↔ GSC (linked) | Query → page → conversion | Decide content vs technical fix |
 | GSC Experience / CWV | LCP on hero/reel-heavy pages, mobile | Perf follow-ups (`SEARCH-P3-003`) |

@@ -5,10 +5,9 @@ import OptimizedImg from './OptimizedImg.astro';
 
 interface Props {
   show: CollectionEntry<'shows'>;
-  relatedCasting?: CollectionEntry<'casting'>[];
 }
 
-const { show, relatedCasting = [] } = Astro.props;
+const { show } = Astro.props;
 const { Content } = await render(show);
 const { title, year, role, venue, featured, image, imageFocus } = show.data;
 const imgStyle = `object-position: ${imageFocus}`;
@@ -52,24 +51,6 @@ const imgStyle = `object-position: ${imageFocus}`;
       <div class="prose-site mt-4 max-w-3xl text-sm md:text-base">
         <Content />
       </div>
-      {
-        relatedCasting.length > 0 && (
-          <p class="mt-4 text-sm text-muted">
-            Casting pages:{' '}
-            {relatedCasting.map((page, i) => (
-              <>
-                {i > 0 && <span aria-hidden="true"> · </span>}
-                <a
-                  href={`/for/${page.id}`}
-                  class="text-gel underline underline-offset-4 hover:text-spotlight"
-                >
-                  {page.data.title}
-                </a>
-              </>
-            ))}
-          </p>
-        )
-      }
     </div>
   </div>
 </article>

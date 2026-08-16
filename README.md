@@ -5,7 +5,7 @@ Astro portfolio for [elysetindall.com](https://elysetindall.com) with a Gemini-p
 ## Features
 
 - Public site: Shows, Materials, Lessons, About, News, Contact (Gallery linked from About + footer); private voice Lessons (vocal pedagogy / CCM)
-- Casting SEO landing pages at `/for/[slug]`
+- Casting SEO landing pages at `/for/[slug]` (inbound from search; not linked from site chrome)
 - Private `/studio` companion (auth required) — natural language updates via Gemini → GitHub commits → SWA rebuild
 - Terraform for Azure (bootstrap + staging/prod, Key Vault, Entra auth, GitHub Actions OIDC)
 - Studio publishes via **GitHub App** installation tokens (no PAT)

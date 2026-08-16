@@ -13,6 +13,10 @@ globs:
   - docs/plans/search-and-analytics.md
   - docs/runbooks/search-ops-monthly.md
   - src/content/casting/**
+  - src/components/Footer.astro
+  - src/components/ShowCredit.astro
+  - src/pages/shows.astro
+  - src/content/pages/about.md
 ---
 
 # Search Console & Analytics (Phase 1–3)
@@ -30,7 +34,7 @@ Phased work and action IDs live in [docs/plans/search-and-analytics.md](docs/pla
 ## Phase 2 — Technical SEO
 
 - **Titles:** Pages pass bare titles. `BaseLayout` appends ` · Elyse Tindall` (and strips legacy `| Elyse Tindall`). Do not embed the brand in casting frontmatter — see [add-casting-page.md](docs/runbooks/add-casting-page.md).
-- **Casting landers:** `LandingLayout` ends after **Related credits** (plus “View all shows”). Never add CTAs, casting-index links, Materials links, or other chrome below that section — footer Materials / Contact / Lessons is the action strip.
+- **Casting landers:** Inbound SEO only. Do **not** link to `/for` or `/for/*` from nav, footer, About, Shows, Materials, or credit lists — discovery is sitemap + search. `LandingLayout` ends after **Related credits** (plus “View all shows”). Never add CTAs, casting-index links, Materials links, or other chrome below that section — footer Materials / Contact / Lessons is the action strip. Landers may link **out** to those canonical pages.
 - **JSON-LD:** `Seo.astro` prepends default `Person` when custom `jsonLd` has no top-level / `@graph` Person. Nested `about` / `founder` do not count. Do not emit duplicate conflicting Person `@id`s.
 - **Canonicals / schema URLs:** Prefer slashless paths (e.g. `/materials`, not `/materials/`).
 - **Studio:** `noIndex` on `/studio`; sitemap filters `/studio`; `Disallow: /studio` in `public/robots.txt`.

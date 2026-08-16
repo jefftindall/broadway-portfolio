@@ -17,9 +17,9 @@ relatedShows:
   - Anastasia
 cta: Request materials
 ---
-
-Write 2–4 useful paragraphs. Link naturally inside the body only.
 ```
+
+Write 2–4 useful paragraphs. Link **out** from the body to canonical site pages (`/shows`, `/materials`, `/contact`, `/about`) when it helps. Do **not** add inbound links to this lander from those pages, nav, footer, or credit lists — `/for/*` pages are SEO entry points only (sitemap + search).
 
 **Title contract:** Pass a bare `title` (no `| Elyse Tindall` and no ` · Elyse Tindall`). `BaseLayout` appends the brand suffix, so the document title becomes `Human Title · Elyse Tindall`. Do not embed the brand in frontmatter.
 

@@ -80,6 +80,7 @@ playwright.journey.config.ts
 | `CAST-02` | Shows → filter “Musical” → credits update | Desktop |
 | `CAST-03` | `/for/{slug}` → CTA + contact link | Desktop |
 | `CAST-04` | Mobile: materials in ≤2 taps from home | Mobile (`@mobile`) |
+| `CAST-05` | Public chrome does not link to `/for/*` | Desktop |
 | `LESSON-01` | Lessons → Book → rates → lesson inquiry mailto; no acting-lesson copy | Desktop + mobile |
 | `LESSON-02` | Contact → Book a lesson | Desktop |
 | `VISIT-01` | News list → article | Desktop |

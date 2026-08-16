@@ -48,7 +48,7 @@ Work the previous **calendar month** only as a manual fallback. **Skip this tabl
 |---|--------|---------|-------------|---------|
 | 1 | **GSC → Performance** | Queries, CTR, impressions on `/for/*`, `/lessons`, brand vs non-brand | Brand queries healthy; non-brand landers not collapsing | Refine titles/descriptions or plan a new/refined lander (`DISC-P3-002` / `DISC-P4-004`) |
 | 2 | **GSC → Pages** (indexing) | Coverage errors; unexpected URLs (`/studio`, old WP paths) | No soft-404 / redirect loops; `/studio` not indexed | One-hop 301s / `noIndex` / sitemap filter ([staticwebapp.config.json](../../public/staticwebapp.config.json)) |
-| 3 | **GA4 → Acquisition → Organic Search** | Landing pages, engagement | Money pages (`/`, `/materials`, `/shows`, `/for/*`) appear | Fix weak landers; promote strong ones in nav/home |
+| 3 | **GA4 → Acquisition → Organic Search** | Landing pages, engagement | Money pages (`/`, `/materials`, `/shows`, `/for/*`) appear | Fix weak landers (copy/title); do **not** promote `/for/*` in nav, footer, About, or Shows — inbound SEO only |
 | 4 | **GA4 → Events** | `generate_lead`, `file_download`, `select_content` by landing page | Inquiries/downloads attach to intended landers | Prioritize content refresh on pages with traffic but no conversion |
 | 5 | **GA4 ↔ GSC** (linked) | Query → page → conversion | Clear story for top queries | Decide content vs technical fix |
 | 6 | **GSC → Experience / CWV** | LCP on hero/reel-heavy pages (mobile) | No new “poor” regressions after ship | Perf follow-up (`SEARCH-P3-003`) |

@@ -80,4 +80,13 @@ test.describe('casting journeys', () => {
     await expect(page.getByRole('heading', { name: 'Materials', level: 1 })).toBeVisible();
     await expect(page.getByRole('link', { name: /Resume \(PDF\)/i })).toBeVisible();
   });
+
+  test('CAST-05 public chrome does not link to /for landers', { tag: '@content' }, async ({
+    page,
+  }) => {
+    for (const path of ['/', '/about', '/shows', '/materials', '/contact']) {
+      await waitForOk(page, path);
+      await expect(page.locator('a[href^="/for"]')).toHaveCount(0);
+    }
+  });
 });
