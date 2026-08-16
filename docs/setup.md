@@ -241,7 +241,7 @@ Azure Portal → **Entra ID → Enterprise applications → `elyse-portfolio-pro
 
 ### Pin the token issuer (recommended)
 
-[`staticwebapp.config.json`](../staticwebapp.config.json) ships with a tenant-agnostic issuer so first deploy works. Harden it by replacing `common` with your tenant:
+[`staticwebapp.config.json`](../staticwebapp.config.json) ships with a tenant-agnostic issuer so first deploy works. Cache-Control routes in that file (mirrored under `public/`) are explained in [swa-caching.md](runbooks/swa-caching.md). Harden the issuer by replacing `common` with your tenant:
 
 ```bash
 terraform output -raw entra_openid_issuer

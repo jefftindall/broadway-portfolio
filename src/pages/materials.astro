@@ -80,7 +80,11 @@ const jsonLd = {
           <h2 id="reel-heading" class="font-display text-3xl text-spotlight md:text-4xl">Reel</h2>
           <p class="mt-2 text-sm text-muted">NYC Cabaret — Stage Kiss at Ripley-Grier Studios</p>
           <div class="mt-6">
-            <VideoEmbed url={site.reelUrl} title="NYC Cabaret — Stage Kiss reel" />
+            <VideoEmbed
+              url={site.reelUrl}
+              title={site.reelTitle}
+              poster={site.reelPoster}
+            />
           </div>
         </div>
 

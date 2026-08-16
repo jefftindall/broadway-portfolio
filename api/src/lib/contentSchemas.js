@@ -130,6 +130,7 @@ export const pressQuoteSchema = z.object({
 
 export const siteSettingsSchema = z.object({
   reelUrl: z.string().url(),
+  reelTitle: z.string().min(1).max(120),
   shortBio: z.string().min(1).max(600),
   pressQuote: pressQuoteSchema,
   performer: performerSpecSchema,

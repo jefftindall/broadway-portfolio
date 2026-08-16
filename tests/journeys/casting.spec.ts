@@ -18,7 +18,10 @@ test.describe('casting journeys', () => {
     await page.getByRole('link', { name: /Request materials/i }).click();
     await expect(page).toHaveURL(/\/materials\/?$/);
     await expect(page.getByRole('heading', { name: 'Materials', level: 1 })).toBeVisible();
-    await expect(page.locator('iframe[title*="reel" i], iframe[src*="youtube"]').first()).toBeVisible();
+    await expect(page.locator('#reel')).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: /Play.*reel/i }).or(page.locator('iframe[title*="reel" i]')).first(),
+    ).toBeVisible();
 
     const resumeLink = page.getByRole('link', { name: /Resume \(PDF\)/i });
     await expect(resumeLink).toBeVisible();

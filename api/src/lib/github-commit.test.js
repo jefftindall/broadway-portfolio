@@ -178,3 +178,21 @@ test('buildPublishCommitMessage summarizes lesson rates', () => {
   assert.match(msg, /Tool: update_lesson_rates/);
   assert.match(msg, /- rates: 30min=\$60; 60min=\$110/);
 });
+
+test('buildPublishCommitMessage includes reel poster extra file', () => {
+  const msg = buildPublishCommitMessage(
+    [
+      {
+        tool: 'update_reel_url',
+        path: 'src/data/site-settings.json',
+        content: '{"reelUrl":"https://youtu.be/41jdPTkN_Sw"}',
+        commitMessage: 'studio: update_reel_url site-settings.json',
+        commitParams: { reelUrl: 'https://youtu.be/41jdPTkN_Sw' },
+      },
+    ],
+    [{ path: 'public/images/photos/reel-poster.jpg' }],
+  );
+  assert.match(msg, /^studio: update_reel_url site-settings\.json \(\+image\)\n/);
+  assert.match(msg, /- public\/images\/photos\/reel-poster\.jpg/);
+  assert.match(msg, /- reelUrl: https:\/\/youtu\.be\/41jdPTkN_Sw/);
+});

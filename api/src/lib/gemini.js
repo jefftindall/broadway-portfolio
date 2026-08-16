@@ -221,11 +221,16 @@ const tools = [
       {
         name: 'update_reel_url',
         description:
-          'Update the casting reel YouTube (or video) URL used on Materials, Shows, and home. Start from the live Reel URL in the catalog unless she provides a full replacement link.',
+          'Update the casting reel YouTube (or video) URL and the video embed accessible title used on Materials, Shows, and home. Start from the live Reel URL / title in the catalog unless she provides replacements. Publishing downloads a still from the video into public/images/photos/reel-poster.jpg — do not invent a poster path or require a photo attachment. Do not change show credits or Materials page copy.',
         parameters: {
           type: 'OBJECT',
           properties: {
             reelUrl: { type: 'STRING', description: 'Full https URL to the reel video' },
+            reelTitle: {
+              type: 'STRING',
+              description:
+                'Accessible title for the video embed (Play button / iframe title). Start from Reel title (live) unless she gives a new title. Not the show credit title.',
+            },
           },
           required: ['reelUrl'],
         },
@@ -685,16 +690,27 @@ export async function buildContentChange(name, args, photoPath, options = {}) {
     case 'update_reel_url': {
       const reelUrl = String(args.reelUrl || '').trim();
       if (!reelUrl) throw new Error('update_reel_url requires reelUrl.');
-      const merged = await mergeSiteSettings({ reelUrl });
+      const patch = { reelUrl };
+      if (args.reelTitle != null && String(args.reelTitle).trim()) {
+        patch.reelTitle = String(args.reelTitle).trim();
+      }
+      const merged = await mergeSiteSettings(patch);
       change = {
         tool: name,
         path: merged.path,
         content: merged.content,
         commitMessage: 'studio: update_reel_url site-settings.json',
-        summary: 'Updated the casting reel link on Materials and related pages.',
+        summary: 'Updated the casting reel link, embed title, and poster on Materials and related pages.',
         livePath: '/materials',
-        commitParams: { reelUrl: merged.data.reelUrl },
-        preview: { kind: 'reel', reelUrl: merged.data.reelUrl },
+        commitParams: {
+          reelUrl: merged.data.reelUrl,
+          reelTitle: merged.data.reelTitle,
+        },
+        preview: {
+          kind: 'reel',
+          reelUrl: merged.data.reelUrl,
+          reelTitle: merged.data.reelTitle,
+        },
       };
       break;
     }
@@ -1020,6 +1036,7 @@ export function extractCommitParams(change) {
     try {
       const data = JSON.parse(content);
       if (tool === 'update_reel_url' || data.reelUrl) put('reelUrl', data.reelUrl);
+      if (tool === 'update_reel_url' || data.reelTitle) put('reelTitle', data.reelTitle);
       if (tool === 'update_short_bio' || data.shortBio) put('shortBio', data.shortBio);
       if (tool === 'update_press_quote' || data.pressQuote) {
         if (data.pressQuote?.quote) put('quote', data.pressQuote.quote);
@@ -1278,6 +1295,7 @@ export async function buildProductionSiteContext() {
   try {
     const settings = await readSiteSettings();
     lines.push(`Reel URL (live): ${settings.reelUrl}`);
+    lines.push(`Reel title (live): ${settings.reelTitle}`);
     lines.push(`Short bio (live): ${settings.shortBio}`);
     lines.push(
       `Press quote (live): “${settings.pressQuote.quote}” — ${settings.pressQuote.attribution}`,
@@ -1330,7 +1348,7 @@ Rules:
 - Prefer update_short_bio when she wants a short About lead update. Do not rewrite the full About page body (that is PR-only). Start from Short bio (live) in the catalog.
 - Prefer update_press_quote when she wants to change the homepage press quote or its attribution. Start from Press quote (live) in the catalog; send only fields she changes.
 - Prefer update_performer_facts when she asks to change availability, vocal range/type, union, playing age, height, or ethnicity. Read Performer facts (live) first; only send fields she wants changed.
-- Prefer update_reel_url when she wants to change the casting reel link. Start from Reel URL (live) unless she gives a full new URL.
+- Prefer update_reel_url when she wants to change the casting reel link or the video embed title. Start from Reel URL / title (live) unless she gives replacements. The site refreshes the reel poster still from the video; do not invent a poster path. Do not rewrite show credits or Materials page copy.
 - Prefer update_lessons_copy when she asks to change lessons philosophy, approach, or teaching details at ${siteUrl}/lessons. Never include dollar amounts or rates in that copy.
 - Prefer update_lessons_seo only when she explicitly wants to change the Lessons page title or search description.
 - Prefer update_lesson_rates when she asks to change lesson prices or session rates. This updates ${siteUrl}/lessons/book only — always provide both rates with ids 30min and 60min and numeric priceAmount (use Lesson rates (live) from the catalog for any rate she does not change).

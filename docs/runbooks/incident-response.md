@@ -35,3 +35,4 @@ Examples: homepage or materials availability fail; **Deploy Production** failed 
 | [rotate-secrets.md](./rotate-secrets.md) | `ALERT-*` set + Sev1 prove-out |
 | [manage-access.md](./manage-access.md) | Studio allowlist / Entra |
 | [troubleshoot-build.md](./troubleshoot-build.md) | Build / CD OIDC failures |
+| [swa-caching.md](./swa-caching.md) | Browser / image cache after a successful deploy |

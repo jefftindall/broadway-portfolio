@@ -15,6 +15,11 @@ import {
   runContentAgent,
 } from '../lib/gemini.js';
 import { studioFailureResponse } from '../lib/httpErrors.js';
+import {
+  REEL_POSTER_REPO_PATH,
+  fetchReelPoster,
+  reelUrlFromPublishChanges,
+} from '../lib/reelPoster.js';
 import { flush, trackEvent, trackException } from '../lib/telemetry.js';
 import slugify from 'slugify';
 
@@ -221,6 +226,38 @@ app.http('updateContent', {
             binary: true,
           },
         ];
+      }
+
+      const reelUrl = reelUrlFromPublishChanges(changes);
+      if (reelUrl) {
+        try {
+          const poster = await fetchReelPoster(reelUrl);
+          if (poster) {
+            extraFiles = [
+              ...extraFiles,
+              {
+                path: REEL_POSTER_REPO_PATH,
+                content: poster.contentBase64,
+                binary: true,
+              },
+            ];
+            trackEvent('StudioReelPosterUpdated', { correlationId });
+          } else {
+            trackEvent('StudioReelPosterSkipped', { correlationId, reason: 'unavailable' });
+            context.warn('Reel poster fetch returned no still; publishing reel URL without a new poster', {
+              correlationId,
+            });
+          }
+        } catch (err) {
+          trackEvent('StudioReelPosterSkipped', {
+            correlationId,
+            reason: 'error',
+            errName: err instanceof Error ? err.name : 'Error',
+          });
+          context.warn('Reel poster fetch failed; publishing reel URL without a new poster', {
+            correlationId,
+          });
+        }
       }
 
       const result = await applyContentChanges(changes, {

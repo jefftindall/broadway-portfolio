@@ -896,6 +896,23 @@
       ]
     },
     {
+      "sourcePath": "/images/photos/reel-poster.jpg",
+      "sourceSha256": "207fa24b2c5186210f1b5350d08882b45c0d8d3bc2a58fdff064c91e51544a69",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 800,
+          "path": "/images/_derived/207fa24b2c5186210f1b5350d08882b45c0d8d3bc2a58fdff064c91e51544a69/800.webp",
+          "format": "webp"
+        },
+        {
+          "width": 1600,
+          "path": "/images/_derived/207fa24b2c5186210f1b5350d08882b45c0d8d3bc2a58fdff064c91e51544a69/1600.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
       "sourcePath": "/images/shows/anastasia.jpg",
       "sourceSha256": "3fde5ed0e6bc0a6dc914ba21cad8271aa20ad37afb4c7cf0a1d8588dd6ba7816",
       "recipeVersion": 1,

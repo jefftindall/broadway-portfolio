@@ -76,6 +76,7 @@ test('validateContentFile accepts site-settings JSON', () => {
   const content = JSON.stringify(
     {
       reelUrl: 'https://youtu.be/41jdPTkN_Sw',
+      reelTitle: 'NYC Cabaret — Stage Kiss reel',
       shortBio: 'A short bio for About.',
       pressQuote: {
         quote: 'The funniest actor you’ve never seen.',

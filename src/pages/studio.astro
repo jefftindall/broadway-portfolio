@@ -17,6 +17,7 @@ const bookFormat = book?.data.format ?? '';
 const bookScheduling = book?.data.scheduling ?? '';
 const performer = site.performer;
 const reelUrl = site.reelUrl;
+const reelTitle = site.reelTitle;
 const shortBio = site.shortBio;
 const pressQuote = site.pressQuote;
 const siteLocation = site.location;
@@ -543,7 +544,20 @@ const imageHashIndex = buildPublicImageHashIndex();
       </div>
 
       <div id="compose-reel" class="hidden space-y-4">
-        <p class="text-sm text-muted">Paste the YouTube (or video) link for Materials, Shows, and home.</p>
+        <p class="text-sm text-muted">
+          Paste the YouTube (or video) link. Title is the name on the play button (not show or Materials copy).
+        </p>
+        <label class="block text-sm text-muted">
+          Reel title
+          <input
+            id="reel-title"
+            type="text"
+            maxlength="120"
+            value={reelTitle}
+            placeholder="NYC Cabaret — Stage Kiss reel"
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          />
+        </label>
         <label class="block text-sm text-muted">
           Reel link
           <input
@@ -723,7 +737,7 @@ const imageHashIndex = buildPublicImageHashIndex();
           kind: 'rates';
           rates: Array<{ id: string; label: string; price?: string; priceAmount: number }>;
         }
-      | { kind: 'reel'; reelUrl: string }
+      | { kind: 'reel'; reelUrl: string; reelTitle?: string }
       | { kind: 'shortBio'; shortBio: string }
       | { kind: 'pressQuote'; quote: string; attribution: string }
       | {
@@ -824,6 +838,7 @@ const imageHashIndex = buildPublicImageHashIndex();
     const factHeight = document.getElementById('fact-height') as HTMLInputElement;
     const factEthnicity = document.getElementById('fact-ethnicity') as HTMLTextAreaElement;
     const reelUrlInput = document.getElementById('reel-url') as HTMLInputElement;
+    const reelTitleInput = document.getElementById('reel-title') as HTMLInputElement;
     const shortBioInput = document.getElementById('short-bio') as HTMLTextAreaElement;
     const pressQuoteInput = document.getElementById('press-quote-text') as HTMLTextAreaElement;
     const pressAttributionInput = document.getElementById(
@@ -887,6 +902,7 @@ const imageHashIndex = buildPublicImageHashIndex();
       height: string;
       ethnicity: string;
       reelUrl: string;
+      reelTitle: string;
       shortBio: string;
       pressQuote: string;
       pressAttribution: string;
@@ -904,6 +920,7 @@ const imageHashIndex = buildPublicImageHashIndex();
       height: factHeight.value,
       ethnicity: factEthnicity.value,
       reelUrl: reelUrlInput.value,
+      reelTitle: reelTitleInput.value,
       shortBio: shortBioInput.value,
       pressQuote: pressQuoteInput.value,
       pressAttribution: pressAttributionInput.value,
@@ -921,6 +938,7 @@ const imageHashIndex = buildPublicImageHashIndex();
         height: factHeight.value,
         ethnicity: factEthnicity.value,
         reelUrl: reelUrlInput.value,
+        reelTitle: reelTitleInput.value,
         shortBio: shortBioInput.value,
         pressQuote: pressQuoteInput.value,
         pressAttribution: pressAttributionInput.value,
@@ -950,6 +968,7 @@ const imageHashIndex = buildPublicImageHashIndex();
       }
       if (task === 'reel') {
         reelUrlInput.value = live.reelUrl;
+        reelTitleInput.value = live.reelTitle;
         return;
       }
       if (task === 'bio') {
@@ -1054,6 +1073,7 @@ const imageHashIndex = buildPublicImageHashIndex();
         }
         if (change.tool === 'update_reel_url' && preview?.kind === 'reel') {
           reelUrlInput.value = preview.reelUrl || '';
+          reelTitleInput.value = preview.reelTitle || '';
           touched = true;
         }
         if (change.tool === 'update_short_bio' && preview?.kind === 'shortBio') {
@@ -1183,6 +1203,7 @@ const imageHashIndex = buildPublicImageHashIndex();
       factHeight.disabled = busy;
       factEthnicity.disabled = busy;
       reelUrlInput.disabled = busy;
+      reelTitleInput.disabled = busy;
       shortBioInput.disabled = busy;
       pressQuoteInput.disabled = busy;
       pressAttributionInput.disabled = busy;
@@ -1839,14 +1860,14 @@ const imageHashIndex = buildPublicImageHashIndex();
       wrap.appendChild(panel);
     }
 
-    function renderReelSitePreview(wrap: HTMLElement, url: string) {
+    function renderReelSitePreview(wrap: HTMLElement, url: string, title?: string) {
       const embed = youtubeOrVimeoEmbed(url);
       if (embed) {
         const frameWrap = document.createElement('div');
         frameWrap.className = 'aspect-video overflow-hidden rounded-sm border border-line bg-panel';
         const iframe = document.createElement('iframe');
         iframe.src = embed;
-        iframe.title = 'Casting reel preview';
+        iframe.title = title || 'Casting reel preview';
         iframe.className = 'h-full w-full';
         iframe.loading = 'lazy';
         iframe.allow =
@@ -2009,7 +2030,8 @@ const imageHashIndex = buildPublicImageHashIndex();
 
       if (tool === 'update_reel_url' || preview?.kind === 'reel') {
         const url = preview && preview.kind === 'reel' ? preview.reelUrl : '';
-        renderReelSitePreview(wrap, url);
+        const title = preview && preview.kind === 'reel' ? preview.reelTitle : '';
+        renderReelSitePreview(wrap, url, title);
         return;
       }
 
@@ -2209,6 +2231,9 @@ const imageHashIndex = buildPublicImageHashIndex();
         }
         if (typeof data.reelUrl === 'string' && data.reelUrl) {
           reelUrlInput.value = data.reelUrl;
+        }
+        if (typeof data.reelTitle === 'string' && data.reelTitle) {
+          reelTitleInput.value = data.reelTitle;
         }
         if (typeof data.shortBio === 'string' && data.shortBio) {
           shortBioInput.value = data.shortBio;
@@ -2523,11 +2548,20 @@ const imageHashIndex = buildPublicImageHashIndex();
 
     reelPreviewBtn.addEventListener('click', async () => {
       const reelUrl = reelUrlInput.value.trim();
+      const nextTitle = reelTitleInput.value.trim();
       if (!reelUrl) {
         setStatus('Paste a reel link first.');
         return;
       }
-      await runDiscretePreview('update_reel_url', { reelUrl }, 'Could not prepare reel update.');
+      if (!nextTitle) {
+        setStatus('Enter a reel title first.');
+        return;
+      }
+      await runDiscretePreview(
+        'update_reel_url',
+        { reelUrl, reelTitle: nextTitle },
+        'Could not prepare reel update.',
+      );
     });
 
     reelResetBtn.addEventListener('click', () => {

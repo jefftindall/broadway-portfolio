@@ -71,3 +71,7 @@ When **Deploy Production** fails, CD emits `DeployFailed` to prod App Insights (
 ## Rollback infrastructure
 
 Prefer a forward fix: revert the infra commit and merge so CD re-applies the previous configuration. Avoid `terraform destroy` against shared staging/prod unless you intend a full teardown.
+
+## Browser / CDN cache after a good deploy
+
+SWA origin cache is cleared on deploy. HTML revalidates after **30 seconds**. Hashed `/_astro/*` and content-addressed `/images/_derived/*` use new URLs on each rebuild, so long cache on those files does not pin old pages. If a **stable** `/images/…` original looks stale, see [swa-caching.md](swa-caching.md) (diagnose → rename vs wait 7 days → purge only if enterprise-grade edge is on).

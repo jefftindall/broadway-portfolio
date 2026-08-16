@@ -1,4 +1,5 @@
 import { ageInYears } from './age';
+import { REEL_POSTER_PATH } from './reelPoster';
 import siteSettings from '../data/site-settings.json';
 
 function requiredSiteEnv(name: 'SITE_CONTACT_EMAIL', fromMeta: string | undefined): string {
@@ -36,6 +37,13 @@ export const site = {
   youtube: 'https://www.youtube.com/watch?v=41jdPTkN_Sw',
   /** Studio-writable via site-settings.json */
   reelUrl: siteSettings.reelUrl,
+  /** Accessible name for the casting-reel VideoEmbed (`Play {title}` / iframe title). */
+  reelTitle: siteSettings.reelTitle,
+  /**
+   * Click-to-play / JSON-LD still. Studio overwrites `public/images/photos/reel-poster.jpg`
+   * on `update_reel_url`; display uses derived WebP after the next build.
+   */
+  reelPoster: REEL_POSTER_PATH,
   /** About lead paragraph — Studio-writable; SEO description stays locked below */
   shortBio: siteSettings.shortBio,
   /** Homepage press quote — Studio-writable */

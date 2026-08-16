@@ -11,6 +11,7 @@ export const SITE_SETTINGS_PATH = 'src/data/site-settings.json';
  */
 export const DEFAULT_SITE_SETTINGS = siteSettingsSchema.parse({
   reelUrl: 'https://youtu.be/41jdPTkN_Sw',
+  reelTitle: 'NYC Cabaret — Stage Kiss reel',
   shortBio:
     'Elyse Tindall is a musical theatre actress and vocal coach from Atlanta, Georgia, now based in New York City.',
   pressQuote: {
@@ -54,6 +55,7 @@ export async function readSiteSettings() {
  * Merge allowlisted top-level patches into site-settings.json.
  * @param {Partial<{
  *   reelUrl: string,
+ *   reelTitle: string,
  *   shortBio: string,
  *   pressQuote: Partial<{ quote: string, attribution: string }>,
  *   performer: Record<string, string>,
@@ -65,6 +67,7 @@ export async function mergeSiteSettings(patch) {
   const next = {
     ...current,
     ...('reelUrl' in patch && patch.reelUrl !== undefined ? { reelUrl: patch.reelUrl } : {}),
+    ...('reelTitle' in patch && patch.reelTitle !== undefined ? { reelTitle: patch.reelTitle } : {}),
     ...('shortBio' in patch && patch.shortBio !== undefined ? { shortBio: patch.shortBio } : {}),
     pressQuote:
       patch.pressQuote && typeof patch.pressQuote === 'object'
