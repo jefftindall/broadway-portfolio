@@ -55,6 +55,7 @@ Contacts: `ALERT-EMAIL`, `ALERT-SMS-PHONE`, `ALERT-VOICE-PHONE` in `kv-elyse-sha
 - Daily ingestion cap: **1 GB** per App Insights component (cap notifications enabled)
 - Browser sampling: **25%** staging, **10%** prod (`PUBLIC_APPINSIGHTS_SAMPLE_PERCENT`) for pageviews / generic fetch
 - **Studio UI publish events are force-sampled at 100%** (`StudioPublishUiSuccess` / `StudioPublishUiFailed` / `StudioPublishToProdCompleted` and metric `StudioPublishToProdDurationMs`) and flushed after track
+- **Studio auth health is force-sampled at 100%** (`StudioAuthOutcome` on `/studio/health` — `TEST-C-005`)
 - **Homepage field FCP is force-sampled at 100%** (`HomepageFcpMs` on `/` only — `OPS-P2-002`)
 - Server: adaptive sampling in `api/host.json` for Request/Dependency, with **`excludedTypes: Event;Exception`** so custom events and exceptions are never dropped
 - Custom Functions `TelemetryClient` uses `samplingPercentage = 100` and `flush()` on deny / 500 paths
@@ -92,6 +93,7 @@ User-facing messages stay short and non-technical. Full provider/SDK detail is o
 | `StudioPublishUiSuccess` / `StudioPublishUiFailed` | Studio UI (always sampled; `reason` + optional `correlationId` on failures) |
 | `StudioPublishToProdCompleted` | Studio Done-step when Deploy Production succeeds (`durationMs` from Publish click; always sampled) |
 | `StudioPublishToProdDurationMs` | Browser custom metric (same window as above; always sampled) |
+| `StudioAuthOutcome` | `/studio/health` after a successful signed-in load (`TEST-C-005`; always sampled) |
 | `DeployCompleted` | GitHub Actions after SWA upload (staging or prod) |
 | `DeployFailed` | GitHub Actions when **Deploy Production** job fails (`OPS-P3-003`; pages critical AG) |
 | `SmokeFailed` | GitHub Actions when **Smoke Production** fails after deploy (`TEST-D-003`; pages critical AG; no auto-rollback) |
@@ -164,7 +166,7 @@ Studio / publish events:
 
 ```kusto
 customEvents
-| where name in ("StudioAccessDenied", "StudioPublishDenied", "StudioDraftRequested", "StudioDraftFailed", "StudioPublishRequested", "StudioPublishFailed", "StudioToolExecuted", "GitHubCommitSucceeded", "GitHubCommitFailed", "GitHubCommitRetry", "StudioPublishUiSuccess", "StudioPublishUiFailed", "StudioPublishToProdCompleted", "DeployCompleted", "DeployFailed", "SmokeFailed", "ContactInquiryReceived", "ContactInquiryFailed")
+| where name in ("StudioAccessDenied", "StudioPublishDenied", "StudioDraftRequested", "StudioDraftFailed", "StudioPublishRequested", "StudioPublishFailed", "StudioToolExecuted", "GitHubCommitSucceeded", "GitHubCommitFailed", "GitHubCommitRetry", "StudioPublishUiSuccess", "StudioPublishUiFailed", "StudioPublishToProdCompleted", "StudioAuthOutcome", "DeployCompleted", "DeployFailed", "SmokeFailed", "ContactInquiryReceived", "ContactInquiryFailed")
 | order by timestamp desc
 | take 100
 ```

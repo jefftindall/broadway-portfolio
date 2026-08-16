@@ -72,4 +72,4 @@ Do **not** re-add `terraform.yml`.
 | Re-run GSC/GA signal extract | **Search: monthly signals** |
 | Force Studio branch cleanup | **Maint: cleanup Studio branches** |
 
-Related: [deploy-and-rollback.md](deploy-and-rollback.md), [setup.md](../setup.md), [rotate-secrets.md](rotate-secrets.md).
+Related: [deploy-and-rollback.md](deploy-and-rollback.md), [setup.md](../setup.md), [rotate-secrets.md](rotate-secrets.md), [studio-auth-monitoring.md](studio-auth-monitoring.md).

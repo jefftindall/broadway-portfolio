@@ -1,8 +1,24 @@
 data "azuread_client_config" "current" {}
 
+data "azuread_domains" "initial" {
+  only_initial = true
+}
+
+data "azuread_users" "monitor" {
+  user_principal_names = [local.monitor_upn]
+  ignore_missing       = true
+}
+
 locals {
   # SWA custom authentication callback path for the "aad" provider
   auth_callback_path = "/.auth/login/aad/callback"
+
+  monitor_upn = var.monitor_upn != "" ? var.monitor_upn : "studio-monitor@${data.azuread_domains.initial.domains[0].domain_name}"
+
+  # Application app role for post-deploy client_credentials (TEST-C-005). Stable UUID.
+  monitor_ping_role_id = "a7c4e8f1-2b3d-4e5f-a6b7-c8d9e0f1a2b3"
+
+  monitor_identifier_uri = "api://elyse-portfolio-${var.environment}"
 
   # Hostnames that must be able to complete an Entra sign-in:
   # the Azure-generated SWA hostname plus apex/www custom domains for this environment.
@@ -21,12 +37,22 @@ resource "azuread_application" "swa" {
   display_name     = "elyse-portfolio-${var.environment}"
   owners           = [data.azuread_client_config.current.object_id]
   sign_in_audience = "AzureADMyOrg"
+  identifier_uris  = [local.monitor_identifier_uri]
 
   web {
     implicit_grant {
       access_token_issuance_enabled = false
       id_token_issuance_enabled     = true
     }
+  }
+
+  app_role {
+    allowed_member_types = ["Application"]
+    description          = "Client-credentials ping for post-deploy token checks (TEST-C-005)"
+    display_name         = "Monitor Ping"
+    enabled              = true
+    id                   = local.monitor_ping_role_id
+    value                = "Monitor.Ping"
   }
 
   required_resource_access {
@@ -63,6 +89,22 @@ resource "azuread_service_principal" "swa" {
   lifecycle {
     ignore_changes = [owners]
   }
+}
+
+# Default role (0000…) — assignment required, no custom user-facing roles.
+# Count is 0 until bootstrap creates the monitor user (ignore_missing).
+resource "azuread_app_role_assignment" "monitor" {
+  count               = length(data.azuread_users.monitor.object_ids) == 1 ? 1 : 0
+  app_role_id         = "00000000-0000-0000-0000-000000000000"
+  principal_object_id = data.azuread_users.monitor.object_ids[0]
+  resource_object_id  = azuread_service_principal.swa.object_id
+}
+
+# Same-app client_credentials needs the SWA SP assigned Monitor.Ping on itself.
+resource "azuread_app_role_assignment" "monitor_ping_self" {
+  app_role_id         = local.monitor_ping_role_id
+  principal_object_id = azuread_service_principal.swa.object_id
+  resource_object_id  = azuread_service_principal.swa.object_id
 }
 
 # Anchors the secret's end_date so it stays stable between plans, and triggers

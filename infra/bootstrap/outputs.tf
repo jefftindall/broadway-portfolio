@@ -65,6 +65,15 @@ output "shared_key_vault_uri" {
   value = azurerm_key_vault.shared.vault_uri
 }
 
+output "monitor_upn" {
+  description = "Dedicated Studio smoke monitor UPN (password and TOTP seed are in kv-elyse-shared)"
+  value       = azuread_user.monitor.user_principal_name
+}
+
+output "monitor_object_id" {
+  value = azuread_user.monitor.object_id
+}
+
 output "shared_acs_name" {
   description = "Shared Communication Service (email + SMS) used by staging and prod"
   value       = azurerm_communication_service.shared.name

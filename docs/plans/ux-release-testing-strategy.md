@@ -1,8 +1,8 @@
 # Plan: UX release testing strategy
 
 **Artifact ID:** `ELYSE-TEST-001`  
-**Version:** 1.2  
-**Last updated:** 2026-08-09  
+**Version:** 1.3  
+**Last updated:** 2026-08-16  
 **Audience:** Agents, implementers  
 **Scope:** Playwright smoke + journey coverage, PR shift-left, Studio/API safety nets — not ops synthetics (`OPS-*`) or SEO content strategy (`DISC-*` / `SEARCH-*`).
 
@@ -34,7 +34,7 @@ Living “what runs today” SoT: [testing-strategy.md](../runbooks/testing-stra
 |--------------|--------|-------|
 | Phase A — Staging gate with real journeys | Mostly `done` | Smoke + journeys on CD; helpers + dynamic content; docs runbook |
 | Phase B — Shift left on PRs | `in_progress` | `playwright.journey.config.ts` + `test:journey` exist; **not** wired as a PR-required job yet |
-| Phase C — Studio & API safety net | Partial | Unauth `/studio` in smoke (`done`); API unit tests + publisher auth schedule still `planned` |
+| Phase C — Studio & API safety net | Partial | Unauth `/studio` in smoke (`done`); **signed-in `/studio/health`** (`TEST-C-005` `done` once TOTP is enrolled); API unit tests + publisher auth schedule still `planned` |
 | Phase D — Observability loop | Partial | **Smoke Production** + Sev1 on failure (`TEST-D-003` `done`); Playwright **trace/video on failure** still `planned` |
 
 | Journey ID | Status | Where |
@@ -52,7 +52,8 @@ Living “what runs today” SoT: [testing-strategy.md](../runbooks/testing-stra
 | `J-GAL-01` (gallery **tag filter**) | `planned` | No filter assertions yet |
 | `J-REEL-01` / `J-FOOT-01` / `J-ABOUT-01` / `J-A11Y-01` | `planned` | P1 catalog |
 | `J-STU-01` (anon studio) | `done` | Smoke (SWA hosts) |
-| `J-STU-02` / `03`, `J-API-01` / `02` | `planned` | Phase C |
+| `J-STU-04` (signed-in health) | `done` | Smoke `studio-auth.spec.ts` (skips until TOTP seed) |
+| `J-STU-02` / `03`, `J-API-01` / `02` | `planned` | Phase C publisher / API |
 
 **Suggested next:** Gallery tag-filter journey (`J-GAL-01`); L1 contract tests (`TEST-B-003`); optional PR journey job (`TEST-B-002`); Studio unauth API status (`TEST-C-001` residual).
 
@@ -103,7 +104,7 @@ Today’s release stack (see runbook for detail):
 │     smoke + journeys · desktop + mobile · blocks prod       │
 ├─────────────────────────────────────────────────────────────┤
 │ L4  Studio & ops checks — partial                           │
-│     Unauth redirect done; publisher path planned            │
+│     Unauth redirect + signed-in /studio/health; publisher planned │
 ├─────────────────────────────────────────────────────────────┤
 │ L5  Prod signals — done                                     │
 │     Availability synthetics · Smoke Production + Sev1 alert │
@@ -150,7 +151,8 @@ Smoke retains thin route canaries (home/about/contact/gallery/news/book) alongsi
 | ID | Journey | Status | Gate recommendation |
 |----|---------|--------|---------------------|
 | `J-STU-01` | Anonymous `/studio` → login redirect (`no-store`) | `done` | Smoke on SWA hosts |
-| `J-STU-02` | Signed-in non-publisher → deny + `Reference:` | `planned` | Needs test account outside allowlist |
+| `J-STU-04` | Signed-in monitor → `/studio/health` marker | `done` | Smoke desktop; skips until `MONITOR-TOTP-SEED` |
+| `J-STU-02` | Signed-in non-publisher → deny + `Reference:` | `planned` | Monitor user exists but assertion is health, not compose deny |
 | `J-STU-03` | Publisher compose → Preview → Publish | `planned` | Scheduled / manual until storageState |
 | `J-API-01` | Unauthenticated `POST /api/updateContent` → 401/302 | `planned` | Good L3 candidate |
 | `J-API-02` | Unit: `contentValidate`, schemas, `httpErrors` | `planned` | PR layer in `api/` |
@@ -172,7 +174,8 @@ tests/
     propagation.ts   # waitForOk CDN polling
     content.ts       # Dynamic casting/news/show discovery
   smoke/
-    staging.spec.ts  # L3 canaries + assets + studio unauth
+    staging.spec.ts      # L3 canaries + assets + studio unauth
+    studio-auth.spec.ts  # J-STU-04 / TEST-C-005
   journeys/
     casting.spec.ts  # CAST-01 … CAST-04
     lessons.spec.ts  # LESSON-01 … LESSON-02
@@ -208,7 +211,7 @@ playwright.journey.config.ts
 |-------|----------------|--------|
 | **A** | Real journeys on staging gate | `done` (smoke kept as canary layer + journeys) |
 | **B** | Journey/preview on PRs; then required | `in_progress` — config exists; PR job not required |
-| **C** | Studio/API deeper checks | `planned` (partial: `J-STU-01`) |
+| **C** | Studio/API deeper checks | `in_progress` (`J-STU-01` + `TEST-C-005`; publisher `TEST-C-003` still planned) |
 | **D** | Trace artifacts + optional prod canary | `planned` |
 
 ---
@@ -230,6 +233,7 @@ Still open (`TEST-B-003`):
 | Approach | Status | Use when |
 |----------|--------|----------|
 | Unauth redirect | `done` | Smoke L3 |
+| Signed-in `/studio/health` | `done` | Smoke `TEST-C-005` / `J-STU-04` |
 | Unauth API 401 | `planned` | L3 candidate |
 | Staging storageState | `planned` | J-STU-02/03 |
 | Publish throwaway draft | `planned` | Scheduled only |
@@ -283,8 +287,20 @@ Do **not** call live Gemini on every `main` deploy until cost, rate limits, and 
 |----|------|--------|--------------|
 | `TEST-C-001` | L3: unauth `/studio` + unauth API status | `in_progress` | Studio redirect `done`; API status `planned` |
 | `TEST-C-002` | API unit tests for validation + httpErrors | `planned` | `api/` |
-| `TEST-C-003` | Staging auth fixture + scheduled publisher smoke | `planned` | Separate workflow |
+| `TEST-C-003` | Staging auth fixture + scheduled publisher smoke | `planned` | Separate workflow; **not** the monitor health check |
 | `TEST-C-004` | Align runbooks; shrink manual Studio steps | `planned` | refine-studio-gemini |
+| `TEST-C-005` | Post-deploy signed-in `/studio/health` + `client_credentials` | `done` | Bootstrap monitor user; [studio-auth-monitoring.md](../runbooks/studio-auth-monitoring.md) |
+
+<details>
+<summary><code>TEST-C-005</code> acceptance</summary>
+
+- [x] Read-only `/studio/health` marker (no compose/Gemini)
+- [x] Bootstrap `azuread_user` + `MONITOR-*` in `kv-elyse-shared`; env stacks assign the user to both SWA apps
+- [x] Smoke Staging + Smoke Production: `client_credentials` + Playwright login (skip until TOTP seed)
+- [x] TOTP capture runbook (software authenticator secret, not push MFA)
+- [ ] Residual: operator enrolls TOTP and sets `MONITOR-TOTP-SEED` (out of band)
+
+</details>
 
 ### Phase D — Observability loop
 
@@ -314,7 +330,7 @@ Do **not** call live Gemini on every `main` deploy until cost, rate limits, and 
 | CDN propagation flakes | Keep `waitForOk` |
 | Suite too slow / blocks CD | Change-aware journey profiles; cap P0 |
 | Mailto/tel cannot be “clicked” in CI | Assert `href` only |
-| Studio auth secrets in CI | Separate workflow; never block prod on Gemini until stable |
+| Studio auth secrets in CI | Shared KV + skip until TOTP; never put monitor on `ALLOWED-USER-IDS`; publisher still separate (`TEST-C-003`) |
 | Over-testing copy | Brand invariants + roles; not full prose snapshots |
 
 ---

@@ -6,7 +6,7 @@ Secrets live in Azure Key Vault as the source of truth. Managed Functions on SWA
 
 | Scope | Key Vault | Resource group | Purpose |
 |---|---|---|---|
-| **Shared (build + ACS + ops alerts + GA/GSC scorecard)** | `kv-elyse-shared` | `rg-elyse-shared` | SITE-*, Turnstile, ACS email/SMS, `ALERT-*`, `GA-*`, `GSC-*` (identical across envs) |
+| **Shared (build + ACS + ops alerts + GA/GSC scorecard + Studio monitor)** | `kv-elyse-shared` | `rg-elyse-shared` | SITE-*, Turnstile, ACS email/SMS, `ALERT-*`, `GA-*`, `GSC-*`, `MONITOR-*` (identical across envs) |
 | Staging API | `kv-elyse-staging` | `rg-elyse-portfolio-staging` | Gemini, GitHub App, allowlist, AAD |
 | Production API | `kv-elyse-prod` | `rg-elyse-portfolio-prod` | Same as staging |
 
@@ -44,6 +44,9 @@ Created by **bootstrap** Terraform (`infra/bootstrap/shared_kv.tf`). One Astro b
 | `ACS-CONNECTION-STRING` | `ACS_CONNECTION_STRING` | Terraform-managed from `acs-elyse-shared` |
 | `ACS-EMAIL-SENDER` | `ACS_EMAIL_SENDER` | Terraform-managed Azure-managed MailFrom |
 | `ACS-SMS-FROM` | `ACS_SMS_FROM` | Manual E.164 toll-free; may be set in KV while verification is pending (~5 weeks). SMS sends only once ACS accepts the number |
+| `MONITOR-UPN` | `MONITOR_UPN` | Terraform-managed Studio smoke user; [studio-auth-monitoring.md](studio-auth-monitoring.md) |
+| `MONITOR-PASSWORD` | `MONITOR_PASSWORD` | Terraform-managed (`random_password`); also in bootstrap state |
+| `MONITOR-TOTP-SEED` | `MONITOR_TOTP_SEED` | Operator-set Base32 seed (`REPLACE_ME` until enrolled). **Never** Terraform |
 
 ```bash
 # Apply bootstrap once so kv-elyse-shared exists, then:
@@ -56,6 +59,8 @@ az keyvault secret set --vault-name kv-elyse-shared --name TURNSTILE-SECRET-KEY 
 # If values already lived in env vaults, copy once then stop writing there:
 # az keyvault secret show --vault-name kv-elyse-staging --name SITE-CONTACT-EMAIL --query value -o tsv
 ```
+
+`MONITOR-UPN` / `MONITOR-PASSWORD` are set by bootstrap Terraform (`infra/bootstrap/monitor_user.tf`). Set `MONITOR-TOTP-SEED` from a file after software TOTP enrollment — never `--value` with the seed on the command line. Full capture, rotation, and diagnostics: [studio-auth-monitoring.md](studio-auth-monitoring.md).
 
 Repo Actions variable `AZURE_SHARED_KEY_VAULT_NAME` is set by bootstrap. **CI: static analysis** job **Shared vault secrets** (pull requests only) emits warnings when any of these are missing / `REPLACE_ME` (does not fail the check).
 

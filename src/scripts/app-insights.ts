@@ -10,6 +10,7 @@ const FORCE_SAMPLE_EVENTS = new Set([
   'StudioPublishUiSuccess',
   'StudioPublishUiFailed',
   'StudioPublishToProdCompleted',
+  'StudioAuthOutcome',
 ]);
 const FORCE_SAMPLE_METRICS = new Set([
   'StudioPublishToProdDurationMs',

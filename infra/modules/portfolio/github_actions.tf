@@ -66,6 +66,23 @@ resource "github_actions_environment_variable" "ga_measurement_id" {
   value         = var.ga_measurement_id
 }
 
+# Public-by-design: SWA Entra app id for post-deploy client_credentials (TEST-C-005).
+resource "github_actions_environment_variable" "aad_client_id" {
+  count         = var.manage_github_actions ? 1 : 0
+  environment   = github_repository_environment.this[0].environment
+  repository    = var.github_repo
+  variable_name = "AAD_CLIENT_ID"
+  value         = azuread_application.swa.client_id
+}
+
+resource "github_actions_environment_variable" "aad_monitor_token_scope" {
+  count         = var.manage_github_actions ? 1 : 0
+  environment   = github_repository_environment.this[0].environment
+  repository    = var.github_repo
+  variable_name = "AAD_MONITOR_TOKEN_SCOPE"
+  value         = "${local.monitor_identifier_uri}/.default"
+}
+
 # Deploy jobs read env-scoped API secrets from this vault (Gemini, ACS, etc.).
 # SITE-* / Turnstile are in bootstrap kv-elyse-shared (AZURE_SHARED_KEY_VAULT_NAME).
 resource "github_actions_environment_variable" "azure_key_vault_name" {
