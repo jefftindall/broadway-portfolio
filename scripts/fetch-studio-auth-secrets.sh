@@ -11,7 +11,6 @@ set +x
 
 shared_vault="${AZURE_SHARED_KEY_VAULT_NAME:-kv-elyse-shared}"
 env_vault="${AZURE_KEY_VAULT_NAME:-}"
-deploy_env="${DEPLOY_ENVIRONMENT:-}"
 swa_name="${AZURE_STATIC_WEB_APP_NAME:-}"
 swa_rg="${AZURE_RESOURCE_GROUP:-}"
 
@@ -65,8 +64,8 @@ else
   echo "AAD_CLIENT_ID is empty — token check will fail until SWA app settings or GitHub var exist."
 fi
 
-if [[ -z "${AAD_MONITOR_TOKEN_SCOPE:-}" && -n "$deploy_env" ]]; then
-  AAD_MONITOR_TOKEN_SCOPE="api://elyse-portfolio-${deploy_env}/.default"
+if [[ -z "${AAD_MONITOR_TOKEN_SCOPE:-}" && -n "${AAD_CLIENT_ID:-}" ]]; then
+  AAD_MONITOR_TOKEN_SCOPE="api://${AAD_CLIENT_ID}/.default"
 fi
 if [[ -n "${AAD_MONITOR_TOKEN_SCOPE:-}" ]]; then
   echo "AAD_MONITOR_TOKEN_SCOPE=${AAD_MONITOR_TOKEN_SCOPE}" >>"$GITHUB_ENV"
