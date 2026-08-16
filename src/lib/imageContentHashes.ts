@@ -4,8 +4,13 @@ import path from 'node:path';
 
 const IMAGE_EXT = /\.(jpe?g|png|webp)$/i;
 
-/** Public image trees Studio may upload into or gallery entries may reference. */
-const IMAGE_ROOTS = ['public/images/gallery', 'public/images/photos'] as const;
+/** Public image trees Studio may upload into or content may reference. Never includes `_derived`. */
+const IMAGE_ROOTS = [
+  'public/images/gallery',
+  'public/images/photos',
+  'public/images/shows',
+  'public/images/lessons',
+] as const;
 
 /**
  * Map SHA-256 hex → public URL path (e.g. `/images/gallery/headshot.jpg`).
@@ -33,7 +38,7 @@ function walk(
 ) {
   for (const ent of fs.readdirSync(absDir, { withFileTypes: true })) {
     if (ent.name.startsWith('.')) continue;
-    if (ent.name === 'instagram') continue;
+    if (ent.name === 'instagram' || ent.name === '_derived') continue;
     const abs = path.join(absDir, ent.name);
     if (ent.isDirectory()) {
       walk(abs, rootRel, index, cwd);

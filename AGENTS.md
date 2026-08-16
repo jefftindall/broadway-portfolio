@@ -50,7 +50,7 @@ When editing `.github/workflows/**` or composite actions: **before commit**, sca
 - Device reference for mic/screenshots: **iPhone 17 · Safari**.
 
 ### Public site (primary service)
-- Dev server: `npm run dev` (Astro, serves on port 4321). Build: `npm run build` (runs `resume:pdf` then Astro → `dist/`).
+- Dev server: `npm run dev` (Astro, serves on port 4321). Build: `npm run build` (runs `resume:pdf`, then incremental `images:optimize`, then Astro → `dist/`).
 - Verification: `npm run lint` plus `npm run build` and manual checks. Post-staging CD runs `npm run test:smoke` and profile-based journeys (`test:journey` or `test:journey:content`); prod reuses the same build artifact, then **Smoke Production** (`TEST-D-003`; failure pages Sev1 SMS+voice) — see [`docs/runbooks/testing-strategy.md`](docs/runbooks/testing-strategy.md).
 - Content is markdown under `src/content/` (`shows`, `news`, `gallery`, `pages`, `casting`) with Zod schemas in `src/content.config.ts`. Adding a markdown file adds a live route (e.g. a new `src/content/news/*.md` appears on `/news` and `/news/<id>`).
 - **Removed pages / URLs:** Whenever a public page or content route is removed, renamed, or otherwise stops serving at its old path, add a **301 redirect** in [`public/staticwebapp.config.json`](public/staticwebapp.config.json) (and mirror in root [`staticwebapp.config.json`](staticwebapp.config.json)) from the old URL to the best remaining equivalent. One hop only; list each path once (SWA treats `/path` and `/path/` as duplicates — prefer slashless). Do not leave public 404s for known old links — see [`docs/runbooks/wordpress-to-azure-cutover.md`](docs/runbooks/wordpress-to-azure-cutover.md).

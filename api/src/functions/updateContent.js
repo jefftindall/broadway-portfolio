@@ -1,4 +1,5 @@
 import { app } from '@azure/functions';
+import crypto from 'node:crypto';
 import {
   getClientPrincipal,
   isAuthorizedPublisher,
@@ -7,7 +8,12 @@ import {
   unauthorized,
 } from '../lib/auth.js';
 import { ensurePullRequest, preparePublishTarget } from '../lib/github.js';
-import { applyContentChanges, buildContentChange, runContentAgent } from '../lib/gemini.js';
+import {
+  applyContentChanges,
+  buildContentChange,
+  normalizeContentHash,
+  runContentAgent,
+} from '../lib/gemini.js';
 import { studioFailureResponse } from '../lib/httpErrors.js';
 import { flush, trackEvent, trackException } from '../lib/telemetry.js';
 import slugify from 'slugify';
@@ -37,6 +43,39 @@ function rewritePhotoPaths(changes, fromPath, toPath) {
     ...change,
     content: String(change.content || '').split(fromPath).join(toPath),
   }));
+}
+
+/**
+ * SHA-256 of the raw photo bytes Studio is about to commit (never a derived variant).
+ * @param {{ dataBase64?: string } | undefined} photo
+ */
+function originalContentHashFromPhoto(photo) {
+  if (!photo?.dataBase64) return undefined;
+  const buf = Buffer.from(String(photo.dataBase64), 'base64');
+  if (!buf.length) return undefined;
+  return crypto.createHash('sha256').update(buf).digest('hex');
+}
+
+/**
+ * Ensure gallery markdown written before publish still carries the raw-file hash.
+ * @param {Array<{ path: string, content: string }>} changes
+ * @param {string | undefined} hash
+ */
+function injectGalleryContentHash(changes, hash) {
+  const contentHash = normalizeContentHash(hash);
+  if (!contentHash) return changes;
+  return changes.map((change) => {
+    if (!String(change.path || '').replace(/\\/g, '/').startsWith('src/content/gallery/')) {
+      return change;
+    }
+    const content = String(change.content || '');
+    if (/^contentHash:/m.test(content)) return change;
+    if (!/^image:/m.test(content)) return change;
+    return {
+      ...change,
+      content: content.replace(/^(image:\s*.+)$/m, `$1\ncontentHash: ${JSON.stringify(contentHash)}`),
+    };
+  });
 }
 
 app.http('updateContent', {
@@ -96,7 +135,8 @@ app.http('updateContent', {
         });
         // Optional attached photo → provisional path (same as draft); binary commits on publish.
         const photoPath = hasPhoto ? provisionalPhotoPath(body.photo?.name) : undefined;
-        const change = await buildContentChange(tool, args, photoPath);
+        const originalContentHash = originalContentHashFromPhoto(body.photo);
+        const change = await buildContentChange(tool, args, photoPath, { originalContentHash });
         return {
           status: 200,
           jsonBody: {
@@ -121,7 +161,8 @@ app.http('updateContent', {
         });
 
         const photoPath = hasPhoto ? provisionalPhotoPath(body.photo?.name) : undefined;
-        const result = await runContentAgent({ message, photoPath });
+        const originalContentHash = originalContentHashFromPhoto(body.photo);
+        const result = await runContentAgent({ message, photoPath, originalContentHash });
         return {
           status: 200,
           jsonBody: {
@@ -172,6 +213,7 @@ app.http('updateContent', {
           : provisionalPhotoPath(body.photo.name);
         // Rewrite markdown to the final public path before the single atomic commit.
         changes = rewritePhotoPaths(changes, provisional, photoPath);
+        changes = injectGalleryContentHash(changes, originalContentHashFromPhoto(body.photo));
         extraFiles = [
           {
             path: repoPath,

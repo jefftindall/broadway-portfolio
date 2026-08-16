@@ -49,6 +49,11 @@ export const newsFrontmatterSchema = z.object({
 export const galleryFrontmatterSchema = z.object({
   caption: z.string().default(''),
   image: z.string().min(1),
+  /** SHA-256 of the raw committed image bytes (never a derived variant). */
+  contentHash: z
+    .string()
+    .regex(/^[a-f0-9]{64}$/, 'contentHash must be a sha256 hex digest')
+    .optional(),
   tags: z.array(z.string()).default([]),
   /** Gallery grid sort; lower = newer / first. Studio auto-assigns on upload. */
   order: z.number().optional(),
