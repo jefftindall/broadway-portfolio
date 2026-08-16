@@ -1,6 +1,6 @@
 import { expect, test as base } from '@playwright/test';
 import { unlinkSync } from 'node:fs';
-import { generateTotp } from '../helpers/totp';
+import { completeEntraLogin } from '../helpers/entraLogin';
 import { redactHarFile } from '../helpers/redactHar';
 import { isStaticWebAppHost } from '../helpers/propagation';
 
@@ -65,49 +65,28 @@ test.describe('studio auth smoke', () => {
     await page.waitForURL(/login\.microsoftonline\.com/i, { timeout: 45_000 });
     marks.redirect = Date.now();
 
-    const email = page.locator('input[name="loginfmt"], input[type="email"]');
-    await email.waitFor({ state: 'visible', timeout: 30_000 });
-    await email.fill(upn);
-    await page.locator('input[type="submit"], #idSIButton9').first().click();
-
-    const passwd = page.locator('input[name="passwd"], input[type="password"]');
-    await passwd.waitFor({ state: 'visible', timeout: 30_000 });
-    await passwd.fill(password);
-    await page.locator('input[type="submit"], #idSIButton9').first().click();
-
-    const otc = page.locator('input[name="otc"]');
-    await expect(otc, 'Entra must prompt for an authenticator code (not push/number-match)').toBeVisible({
-      timeout: 45_000,
-    });
-    await otc.fill(generateTotp(totpSeed));
-    await page.locator('input[type="submit"], #idSIButton9').first().click();
+    await completeEntraLogin(page, upn, password, totpSeed);
     marks.idp = Date.now();
 
-    const kmsiNo = page.locator('#idBtn_Back');
-    try {
-      await kmsiNo.waitFor({ state: 'visible', timeout: 8_000 });
-      await kmsiNo.click();
-    } catch {
-      // KMSI ("Stay signed in?") is not always shown.
-    }
-
-    await page.waitForURL(/\/\.auth\/login\/aad\/callback|\/studio\/health/i, { timeout: 45_000 });
+    // 401 override hardcodes post_login_redirect_uri=/studio.
+    await page.waitForURL(/\/studio(\/health)?\/?(\?|$)/i, { timeout: 45_000 });
+    expect(page.url(), 'must not bounce back to Entra login').not.toMatch(/login\.microsoftonline\.com/i);
+    const me = await page.request.get('/.auth/me');
+    expect(me.ok(), '/.auth/me should succeed').toBeTruthy();
+    const meJson = (await me.json()) as { clientPrincipal?: { userId?: string } | null };
+    expect(meJson?.clientPrincipal?.userId, 'SWA session cookie').toBeTruthy();
     marks.callback = Date.now();
 
-    if (!/\/studio\/health/i.test(page.url())) {
-      await page.waitForURL(/\/studio\/health/i, { timeout: 45_000 });
-    }
+    // 401 override always returns to /studio, and a top-level navigation to
+    // /studio/health re-enters that override. The session can still fetch the
+    // canary (page.request shares the SWA auth cookies).
+    const health = await page.request.get('/studio/health');
+    expect(health.ok(), '/studio/health should be 200 with the session cookie').toBeTruthy();
+    const html = await health.text();
+    expect(html).toContain('data-studio-health="ok"');
+    expect(html).toContain('studio-health-ok');
+    expect(html, 'must not be the Entra login page').not.toMatch(/login\.microsoftonline\.com/i);
     marks.render = Date.now();
-
-    const marker = page.locator('[data-studio-health="ok"]');
-    await expect(marker).toBeVisible();
-    await expect(marker).toContainText('studio-health-ok');
-    expect(page.url(), 'must not bounce back to Entra login').not.toMatch(/login\.microsoftonline\.com/i);
-
-    const me = await page.request.get('/.auth/me');
-    expect(me.ok(), '/.auth/me should succeed with the session cookie').toBeTruthy();
-    await page.reload();
-    await expect(page.locator('[data-studio-health="ok"]')).toBeVisible();
 
     test.info().annotations.push({
       type: 'studio-auth-timings-ms',

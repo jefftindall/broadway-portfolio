@@ -114,9 +114,9 @@ Then sign in once with the new password from KV (TOTP seed unchanged unless Entr
 | Smoke skips Studio login | `MONITOR-TOTP-SEED` still `REPLACE_ME`, or bootstrap user not created |
 | `client_credentials` skipped | Identifier URI not on the SWA app yet — apply env Terraform (`Monitor.Ping` + self-assignment) |
 | `client_credentials` fails | `AAD-CLIENT-SECRET` / `Monitor.Ping` self-assignment / identifier URI `api://{AAD_CLIENT_ID}` |
-| Entra “invalid code” | Seed whitespace/newlines; clock skew; enrolled push instead of TOTP |
+| Entra “Need admin approval” | Identifier URI / `Monitor.Ping` made the login app an API. Grant admin consent (Terraform `azuread_application_pre_authorized` + delegated grants, or `az ad app permission admin-consent`) |
 | Redirect loop / AADSTS50011 | `terraform output entra_redirect_uris` vs hostname used in smoke |
-| Health loads without marker | Wrong path (`/studio` compose); or user not assigned to that env’s SWA app |
+| Health 200 but URL stays `/studio` | SWA 401 override hardcodes `post_login_redirect_uri=/studio`; smoke asserts the canary via authenticated fetch |
 | Signed in but Studio deny + `Reference:` | Monitor was added to `ALLOWED-USER-IDS` — remove it |
 | Playwright timeout on `input[name="otc"]` | MFA is push/number-match; re-enroll with a visible secret key |
 

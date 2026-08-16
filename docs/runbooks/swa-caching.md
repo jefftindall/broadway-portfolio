@@ -1,6 +1,6 @@
 # Runbook: SWA caching
 
-Azure Static Web Apps serves this site. Cache-Control headers live in [`public/staticwebapp.config.json`](../../public/staticwebapp.config.json) (copied to `dist/` on build) and must stay **identical** to root [`staticwebapp.config.json`](../../staticwebapp.config.json), including the Entra `auth` block. Route-specific headers override `globalHeaders`.
+Azure Static Web Apps serves this site. Cache-Control headers live in [`public/staticwebapp.config.json`](../../public/staticwebapp.config.json) (copied to `dist/` on build) and must stay **identical** to root [`staticwebapp.config.json`](../../staticwebapp.config.json), including the Entra `auth` block. Route-specific headers override `globalHeaders`. **401 → login 302s from `responseOverrides` use `globalHeaders` only** (they do not pick up `/studio` route headers), so `globalHeaders.Cache-Control` is `private, no-store` and public HTML cache is an explicit `/*` route listed after `/studio`.
 
 SWA **origin** cache is invalidated automatically on each deploy ([SWA FAQ](https://learn.microsoft.com/azure/static-web-apps/faq#do-i-have-to-manually-purge-or-invalidate-the-cache-after-a-deployment)). These headers control **browser** (and any optional CDN / enterprise-grade edge) reuse of a URL.
 
@@ -8,8 +8,8 @@ SWA **origin** cache is invalidated automatically on each deploy ([SWA FAQ](http
 
 | Path | `Cache-Control` | Why |
 |------|-----------------|-----|
-| HTML and everything without a more specific route (`/`, `/shows`, `/downloads/*`, fonts not under `/_astro`, favicon, …) | `public, must-revalidate, max-age=30` | Pages and downloads change in place. After 30s the browser must revalidate. |
-| `/studio`, `/studio/*`, `/api/*`, `/api/contactInquiry` | `private, no-store` | Auth-gated (and inquiry) responses. A cached 302 to `/.auth/login/aad` replays after Entra returns to `/studio` and loops. Route headers override `globalHeaders`. |
+| HTML and everything without a more specific route (`/`, `/shows`, `/downloads/*`, fonts not under `/_astro`, favicon, …) | `public, must-revalidate, max-age=30` via `/*` | Pages and downloads change in place. After 30s the browser must revalidate. |
+| `/studio`, `/studio/*`, `/api/*`, `/api/contactInquiry`, unmatched / 401 login 302s | `private, no-store` | Auth-gated (and inquiry) responses. A cached 302 to `/.auth/login/aad` replays after Entra returns to `/studio` and loops. 401 overrides inherit `globalHeaders`, not the `/studio` route. |
 | `/_astro/*` | `public, max-age=31536000, immutable` | Vite/Astro content-hashes filenames (`Hero.xxxxx.js`). A new build gets a **new URL**. |
 | `/images/_derived/*` | `public, max-age=31536000, immutable` | Path is `/images/_derived/{sha256(original)}/{width}.webp`. New original bytes → new SHA → new URL. |
 | `/images/*` (originals, not `_derived`) | `public, max-age=604800` (7 days) | Stable public paths (`/images/shows/Ursula.jpg`). Not `immutable` so a later overwrite can refresh after TTL. |
