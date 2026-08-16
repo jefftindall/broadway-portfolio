@@ -18,7 +18,9 @@ locals {
   # Application app role for post-deploy client_credentials (TEST-C-005). Stable UUID.
   monitor_ping_role_id = "a7c4e8f1-2b3d-4e5f-a6b7-c8d9e0f1a2b3"
 
-  monitor_identifier_uri = "api://elyse-portfolio-${var.environment}"
+  # Tenant policy requires app ID, tenant ID, or a verified domain in the URI
+  # (api://elyse-portfolio-<env> is rejected). Scope is api://{client-id}/.default.
+  monitor_identifier_uri = "api://${azuread_application.swa.client_id}"
 
   # Hostnames that must be able to complete an Entra sign-in:
   # the Azure-generated SWA hostname plus apex/www custom domains for this environment.
@@ -37,7 +39,10 @@ resource "azuread_application" "swa" {
   display_name     = "elyse-portfolio-${var.environment}"
   owners           = [data.azuread_client_config.current.object_id]
   sign_in_audience = "AzureADMyOrg"
-  identifier_uris  = [local.monitor_identifier_uri]
+
+  api {
+    requested_access_token_version = 2
+  }
 
   web {
     implicit_grant {
@@ -72,6 +77,12 @@ resource "azuread_application" "swa" {
     # Owners: avoid thrashing between local users and the Terraform OIDC principal.
     ignore_changes = [web[0].redirect_uris, owners]
   }
+}
+
+# Set after create so the URI can include client_id (same-resource self-reference is a cycle).
+resource "azuread_application_identifier_uri" "swa" {
+  application_id = azuread_application.swa.id
+  identifier_uri = local.monitor_identifier_uri
 }
 
 # Managed separately so the Static Web App can consume the client ID without a dependency cycle.

@@ -113,7 +113,7 @@ Then sign in once with the new password from KV (TOTP seed unchanged unless Entr
 |---------|-------------|
 | Smoke skips Studio login | `MONITOR-TOTP-SEED` still `REPLACE_ME`, or bootstrap user not created |
 | `client_credentials` skipped | Identifier URI not on the SWA app yet — apply env Terraform (`Monitor.Ping` + self-assignment) |
-| `client_credentials` fails | `AAD-CLIENT-SECRET` / `Monitor.Ping` self-assignment / identifier URI `api://elyse-portfolio-<env>` |
+| `client_credentials` fails | `AAD-CLIENT-SECRET` / `Monitor.Ping` self-assignment / identifier URI `api://{AAD_CLIENT_ID}` |
 | Entra “invalid code” | Seed whitespace/newlines; clock skew; enrolled push instead of TOTP |
 | Redirect loop / AADSTS50011 | `terraform output entra_redirect_uris` vs hostname used in smoke |
 | Health loads without marker | Wrong path (`/studio` compose); or user not assigned to that env’s SWA app |
