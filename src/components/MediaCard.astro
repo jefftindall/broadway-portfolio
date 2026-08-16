@@ -1,4 +1,6 @@
 ---
+import OptimizedImg from './OptimizedImg.astro';
+
 interface Props {
   src: string;
   alt: string;
@@ -22,25 +24,40 @@ const {
 const aspectClass =
   aspect === 'video' ? 'aspect-video' : aspect === 'square' ? 'aspect-square' : 'aspect-[3/4]';
 
+const dims =
+  aspect === 'video'
+    ? { width: 960, height: 540 }
+    : aspect === 'square'
+      ? { width: 960, height: 960 }
+      : { width: 960, height: 1280 };
+
+const sizes =
+  aspect === 'video'
+    ? '(min-width: 768px) 42rem, 100vw'
+    : '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw';
+
 const shellClass = [
   'group overflow-hidden rounded-sm border border-line',
   className,
 ];
 
 const imgStyle = `object-position: ${objectPosition}`;
+const imgClass = 'h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]';
 ---
 
 {
   href ? (
     <a href={href} class:list={shellClass}>
       <div class:list={['relative overflow-hidden bg-panel', aspectClass]}>
-        <img
+        <OptimizedImg
           src={src}
           alt={alt}
-          class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+          class={imgClass}
           style={imgStyle}
           loading="lazy"
-          decoding="async"
+          width={dims.width}
+          height={dims.height}
+          sizes={sizes}
         />
         {caption && (
           <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/90 via-ink/40 to-transparent p-4 pt-12">
@@ -52,13 +69,15 @@ const imgStyle = `object-position: ${objectPosition}`;
   ) : (
     <figure class:list={shellClass}>
       <div class:list={['relative overflow-hidden bg-panel', aspectClass]}>
-        <img
+        <OptimizedImg
           src={src}
           alt={alt}
-          class="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+          class={imgClass}
           style={imgStyle}
           loading="lazy"
-          decoding="async"
+          width={dims.width}
+          height={dims.height}
+          sizes={sizes}
         />
         {caption && (
           <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink/90 via-ink/40 to-transparent p-4 pt-12">

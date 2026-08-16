@@ -172,6 +172,34 @@ test('buildContentChange add_gallery_photo writes gallery markdown + preview', a
   assert.doesNotMatch(change.content, /^order:\s*52$/m);
 });
 
+test('buildContentChange add_gallery_photo persists original contentHash', async () => {
+  const hash = 'ab'.repeat(32);
+  const change = await buildContentChange(
+    'add_gallery_photo',
+    {
+      image: '/images/photos/pending-headshot.jpg',
+      tags: ['portrait'],
+    },
+    undefined,
+    { originalContentHash: hash },
+  );
+  assert.match(change.content, new RegExp(`contentHash: "${hash}"`));
+  assert.doesNotThrow(() => validateContentFile(change.path, change.content));
+});
+
+test('buildContentChange add_gallery_photo ignores invalid contentHash', async () => {
+  const change = await buildContentChange(
+    'add_gallery_photo',
+    {
+      image: '/images/photos/pending-headshot.jpg',
+      tags: ['portrait'],
+      contentHash: 'not-a-digest',
+    },
+    undefined,
+  );
+  assert.doesNotMatch(change.content, /contentHash:/);
+});
+
 test('buildContentChange add_gallery_photo uses attached photoPath when image omitted', async () => {
   const change = await buildContentChange(
     'add_gallery_photo',

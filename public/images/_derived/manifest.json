@@ -2,18 +2,827 @@
   "recipeVersion": 1,
   "entries": [
     {
-      "sourcePath": "/images/shows/Ursula.jpg",
-      "sourceSha256": "dc843e68190494c0af42c7e3ed91da9193eb6825baaa8dc02f7221d40e384059",
+      "sourcePath": "/images/gallery/baa-spring-cabaret-dont-tell-mama.jpg",
+      "sourceSha256": "29ec7ce149746177f6a1416522276f7c1286cbc75ce9aa0d9eb42b84453062bd",
       "recipeVersion": 1,
       "outputs": [
         {
-          "width": 420,
-          "path": "/images/_derived/dc843e68190494c0af42c7e3ed91da9193eb6825baaa8dc02f7221d40e384059/420.webp",
+          "width": 480,
+          "path": "/images/_derived/29ec7ce149746177f6a1416522276f7c1286cbc75ce9aa0d9eb42b84453062bd/480.webp",
           "format": "webp"
         },
         {
-          "width": 840,
-          "path": "/images/_derived/dc843e68190494c0af42c7e3ed91da9193eb6825baaa8dc02f7221d40e384059/840.webp",
+          "width": 960,
+          "path": "/images/_derived/29ec7ce149746177f6a1416522276f7c1286cbc75ce9aa0d9eb42b84453062bd/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/baa.jpg",
+      "sourceSha256": "9fe8922c346d2f90ead49c04f1a2f4ce87c306a5c256c3afc7a55ddc5d8996c5",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/9fe8922c346d2f90ead49c04f1a2f4ce87c306a5c256c3afc7a55ddc5d8996c5/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 800,
+          "path": "/images/_derived/9fe8922c346d2f90ead49c04f1a2f4ce87c306a5c256c3afc7a55ddc5d8996c5/800.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/9fe8922c346d2f90ead49c04f1a2f4ce87c306a5c256c3afc7a55ddc5d8996c5/960.webp",
+          "format": "webp"
+        },
+        {
+          "width": 1600,
+          "path": "/images/_derived/9fe8922c346d2f90ead49c04f1a2f4ce87c306a5c256c3afc7a55ddc5d8996c5/1600.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/basura-alliance-theater.jpg",
+      "sourceSha256": "5aad0ce6ff0201fe6310b0aa5c30e6fab07eaef8f34d06204c351dde11ab19ba",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/5aad0ce6ff0201fe6310b0aa5c30e6fab07eaef8f34d06204c351dde11ab19ba/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/5aad0ce6ff0201fe6310b0aa5c30e6fab07eaef8f34d06204c351dde11ab19ba/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/echoes-of-the-fork.jpg",
+      "sourceSha256": "eee0b8138f3c0ee2146f2f087e3a360647ce3fd70998a441d8c3c864149b2038",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/eee0b8138f3c0ee2146f2f087e3a360647ce3fd70998a441d8c3c864149b2038/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/eee0b8138f3c0ee2146f2f087e3a360647ce3fd70998a441d8c3c864149b2038/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/headshot.jpg",
+      "sourceSha256": "fb0e791ab164c35f4388f4b1bb4d04d780ded9b9a44aba3fdb7c19a928b45d65",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/fb0e791ab164c35f4388f4b1bb4d04d780ded9b9a44aba3fdb7c19a928b45d65/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/fb0e791ab164c35f4388f4b1bb4d04d780ded9b9a44aba3fdb7c19a928b45d65/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/high-school-graduation.jpg",
+      "sourceSha256": "3d23d43fa22d5e2108018612c2f203bc802b9c04e692c0e3d4c74f98311fea83",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/3d23d43fa22d5e2108018612c2f203bc802b9c04e692c0e3d4c74f98311fea83/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/3d23d43fa22d5e2108018612c2f203bc802b9c04e692c0e3d4c74f98311fea83/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/karaoke-2023-10.jpg",
+      "sourceSha256": "78fae9bd6599f303ccfb1b2de537d7578c978bcb51a2b2c26cc6ed5ecd215c43",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/78fae9bd6599f303ccfb1b2de537d7578c978bcb51a2b2c26cc6ed5ecd215c43/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/78fae9bd6599f303ccfb1b2de537d7578c978bcb51a2b2c26cc6ed5ecd215c43/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/karaoke-2025-11.jpg",
+      "sourceSha256": "de7b1328960c6cd26c15e6846be2636c7a76dbf4bca05babb2bcf42daea055e7",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/de7b1328960c6cd26c15e6846be2636c7a76dbf4bca05babb2bcf42daea055e7/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/de7b1328960c6cd26c15e6846be2636c7a76dbf4bca05babb2bcf42daea055e7/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/karaoke-2026-04.jpg",
+      "sourceSha256": "2546f9697c81ac9a5bf90dfcaf6b3fa7946e04c9f6b21cecbb098984508f5c3e",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/2546f9697c81ac9a5bf90dfcaf6b3fa7946e04c9f6b21cecbb098984508f5c3e/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/2546f9697c81ac9a5bf90dfcaf6b3fa7946e04c9f6b21cecbb098984508f5c3e/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/listen.jpg",
+      "sourceSha256": "bfb283aeef88b81d4e6a88c6b947d64f745447afb0aec277011e2b57908467f3",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/bfb283aeef88b81d4e6a88c6b947d64f745447afb0aec277011e2b57908467f3/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/bfb283aeef88b81d4e6a88c6b947d64f745447afb0aec277011e2b57908467f3/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/london-big-ben-dusk.jpg",
+      "sourceSha256": "0f20142c955400d0f3d0902c387e782748aeace046b990b7ec5020374fa3256b",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/0f20142c955400d0f3d0902c387e782748aeace046b990b7ec5020374fa3256b/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/0f20142c955400d0f3d0902c387e782748aeace046b990b7ec5020374fa3256b/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/london-hays-galleria.jpg",
+      "sourceSha256": "58397c9798b00b4429c5af0f081c12deb03b1afe17d2e4a4e97fd8e4d28be2ad",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/58397c9798b00b4429c5af0f081c12deb03b1afe17d2e4a4e97fd8e4d28be2ad/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/58397c9798b00b4429c5af0f081c12deb03b1afe17d2e4a4e97fd8e4d28be2ad/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/london-millennium-bridge.jpg",
+      "sourceSha256": "8dd8d44453b639be6463a6446abce084270cc82da9c41a07ab8b125e537262a2",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/8dd8d44453b639be6463a6446abce084270cc82da9c41a07ab8b125e537262a2/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/8dd8d44453b639be6463a6446abce084270cc82da9c41a07ab8b125e537262a2/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/london-telephone-booth.jpg",
+      "sourceSha256": "a0f5f1c636b0f83ab1e52bca72bc120e21dc93e41dbfdba596065b49037ece2d",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/a0f5f1c636b0f83ab1e52bca72bc120e21dc93e41dbfdba596065b49037ece2d/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/a0f5f1c636b0f83ab1e52bca72bc120e21dc93e41dbfdba596065b49037ece2d/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/london-westminster-bridge.jpg",
+      "sourceSha256": "26efab9a81ffd3217362ff592f8055209f57c4c2623c5887f9e691b43ddddaab",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/26efab9a81ffd3217362ff592f8055209f57c4c2623c5887f9e691b43ddddaab/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/26efab9a81ffd3217362ff592f8055209f57c4c2623c5887f9e691b43ddddaab/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/miss-you-like-hell-1.jpg",
+      "sourceSha256": "738c8853f2cb330a032baf41ede32309f07eab18366ec97d5e0945be671479c7",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/738c8853f2cb330a032baf41ede32309f07eab18366ec97d5e0945be671479c7/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/738c8853f2cb330a032baf41ede32309f07eab18366ec97d5e0945be671479c7/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/miss-you-like-hell-2.jpg",
+      "sourceSha256": "0f92b301a35366247652a64959a634c4429b9a7acc22de315604b997a8650813",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/0f92b301a35366247652a64959a634c4429b9a7acc22de315604b997a8650813/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/0f92b301a35366247652a64959a634c4429b9a7acc22de315604b997a8650813/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/miss-you-like-hell-3.jpg",
+      "sourceSha256": "2480c691ae70a8833df2897546334689dd127f936b805c236f09f7576d139519",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/2480c691ae70a8833df2897546334689dd127f936b805c236f09f7576d139519/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/2480c691ae70a8833df2897546334689dd127f936b805c236f09f7576d139519/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/new-money-1.jpg",
+      "sourceSha256": "0c0429629a5b71a2f7b25e8e580217061cfc44fac756eb469e602413360e104d",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/0c0429629a5b71a2f7b25e8e580217061cfc44fac756eb469e602413360e104d/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/0c0429629a5b71a2f7b25e8e580217061cfc44fac756eb469e602413360e104d/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/new-money-2.jpg",
+      "sourceSha256": "300fcaa2967ff06385d4ca911047695db8451abb8cd67effb668cc137e6fd587",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/300fcaa2967ff06385d4ca911047695db8451abb8cd67effb668cc137e6fd587/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/300fcaa2967ff06385d4ca911047695db8451abb8cd67effb668cc137e6fd587/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/new-money-3.jpg",
+      "sourceSha256": "f8408f93e1ee6695f6ff04534858c796b27756ad15b9f9b5f4013af1ac17b930",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/f8408f93e1ee6695f6ff04534858c796b27756ad15b9f9b5f4013af1ac17b930/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/f8408f93e1ee6695f6ff04534858c796b27756ad15b9f9b5f4013af1ac17b930/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/nyc-cobblestone.jpg",
+      "sourceSha256": "1361ae3825d38d4a0c33f10bb49f560f53e5f9cc454241947ef87c3166d59ee2",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/1361ae3825d38d4a0c33f10bb49f560f53e5f9cc454241947ef87c3166d59ee2/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/1361ae3825d38d4a0c33f10bb49f560f53e5f9cc454241947ef87c3166d59ee2/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/nyc-snowstorm-arms-up.jpg",
+      "sourceSha256": "bbca965cb7984afea7179733824b6413dabc81e4b72b44ef5f6825b5f6d8cc17",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/bbca965cb7984afea7179733824b6413dabc81e4b72b44ef5f6825b5f6d8cc17/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/bbca965cb7984afea7179733824b6413dabc81e4b72b44ef5f6825b5f6d8cc17/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/nyc-snowstorm-street.jpg",
+      "sourceSha256": "05c5a3fb640b20b3f16c43a8c9e3c34cd41b530ecb96db3b2635141899206dbb",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/05c5a3fb640b20b3f16c43a8c9e3c34cd41b530ecb96db3b2635141899206dbb/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/05c5a3fb640b20b3f16c43a8c9e3c34cd41b530ecb96db3b2635141899206dbb/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/nyc-times-square.jpg",
+      "sourceSha256": "be8d8d55a53bdfb5e7939f2d7314e931645b5f186d80b1ec1da076db82ef1a84",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/be8d8d55a53bdfb5e7939f2d7314e931645b5f186d80b1ec1da076db82ef1a84/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/be8d8d55a53bdfb5e7939f2d7314e931645b5f186d80b1ec1da076db82ef1a84/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/nyc-visit-crosswalk.jpg",
+      "sourceSha256": "cd759b6e7cc1687f7938ad3377010ce2396cd812e0c886f3f10d7c0336f1f8c4",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/cd759b6e7cc1687f7938ad3377010ce2396cd812e0c886f3f10d7c0336f1f8c4/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/cd759b6e7cc1687f7938ad3377010ce2396cd812e0c886f3f10d7c0336f1f8c4/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/nyc-visit-dont-tell-mama.jpg",
+      "sourceSha256": "9556bbf668fd13f6c4eac326a2c5734be01b24c2cffb8c723a9d0657637b057e",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/9556bbf668fd13f6c4eac326a2c5734be01b24c2cffb8c723a9d0657637b057e/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/9556bbf668fd13f6c4eac326a2c5734be01b24c2cffb8c723a9d0657637b057e/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/nyc-visit-idina-poster.jpg",
+      "sourceSha256": "5b6d883fa3fe714a87ef86011bd7725f1527bcbcd00a29f35bf2b883633923df",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/5b6d883fa3fe714a87ef86011bd7725f1527bcbcd00a29f35bf2b883633923df/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/5b6d883fa3fe714a87ef86011bd7725f1527bcbcd00a29f35bf2b883633923df/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/nyc-visit-lot-1.jpg",
+      "sourceSha256": "8ad46e46c54ab93fbd528671c5d1714be59386a7d0fd182d3eee85d5298994fa",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/8ad46e46c54ab93fbd528671c5d1714be59386a7d0fd182d3eee85d5298994fa/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/8ad46e46c54ab93fbd528671c5d1714be59386a7d0fd182d3eee85d5298994fa/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/nyc-visit-lot-2.jpg",
+      "sourceSha256": "2b4be25bb29d55e7003231515017170d67163a311d08353344bb2da893db6e7b",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/2b4be25bb29d55e7003231515017170d67163a311d08353344bb2da893db6e7b/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/2b4be25bb29d55e7003231515017170d67163a311d08353344bb2da893db6e7b/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/nyc-visit-nederlander.jpg",
+      "sourceSha256": "7539d04b4ef59a074851c2e4c28ce5b580359fd5db0504c0a00c3c734e8848e1",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/7539d04b4ef59a074851c2e4c28ce5b580359fd5db0504c0a00c3c734e8848e1/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/7539d04b4ef59a074851c2e4c28ce5b580359fd5db0504c0a00c3c734e8848e1/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/nyc-visit-pizza.jpg",
+      "sourceSha256": "79892fb2b8493cad5a4155107bf660b822485791954408aef7f76322a2b379a9",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/79892fb2b8493cad5a4155107bf660b822485791954408aef7f76322a2b379a9/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/79892fb2b8493cad5a4155107bf660b822485791954408aef7f76322a2b379a9/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/nyc-visit-skyline-1.jpg",
+      "sourceSha256": "ee1067c69dc919878e757b832c4c9a37db3128ee8bbde544c28f544b2b674e41",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/ee1067c69dc919878e757b832c4c9a37db3128ee8bbde544c28f544b2b674e41/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/ee1067c69dc919878e757b832c4c9a37db3128ee8bbde544c28f544b2b674e41/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/nyc-visit-theater-district.jpg",
+      "sourceSha256": "3b7fc692dbac1fc1941fb013e06b19ad31ebe029222c5b75c9313e4df3046f9f",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/3b7fc692dbac1fc1941fb013e06b19ad31ebe029222c5b75c9313e4df3046f9f/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/3b7fc692dbac1fc1941fb013e06b19ad31ebe029222c5b75c9313e4df3046f9f/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/paris-cafe.jpg",
+      "sourceSha256": "7640838960984e081b302817e68a350b7d7b4c553c02816a35fd727c574089b8",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/7640838960984e081b302817e68a350b7d7b4c553c02816a35fd727c574089b8/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/7640838960984e081b302817e68a350b7d7b4c553c02816a35fd727c574089b8/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/paris-eiffel.jpg",
+      "sourceSha256": "dc5930c1e292030b5218fb64fbcc8c19f5857f97c1aada42e5dc75cdafe0000d",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/dc5930c1e292030b5218fb64fbcc8c19f5857f97c1aada42e5dc75cdafe0000d/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/dc5930c1e292030b5218fb64fbcc8c19f5857f97c1aada42e5dc75cdafe0000d/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/paris-louvre-mona-lisa.jpg",
+      "sourceSha256": "4fcc253dc001d4614db0c4bd677e99ecbedd76ed0a089c45a9ccae183cf13de7",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/4fcc253dc001d4614db0c4bd677e99ecbedd76ed0a089c45a9ccae183cf13de7/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/4fcc253dc001d4614db0c4bd677e99ecbedd76ed0a089c45a9ccae183cf13de7/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/paris-tuileries.jpg",
+      "sourceSha256": "d9d31777fab8e1c4a784a81fada2ae09f7a3a4148fb8e31556441cd4fb68a0a1",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/d9d31777fab8e1c4a784a81fada2ae09f7a3a4148fb8e31556441cd4fb68a0a1/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/d9d31777fab8e1c4a784a81fada2ae09f7a3a4148fb8e31556441cd4fb68a0a1/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/performance-3.jpg",
+      "sourceSha256": "9a8c0f9f169faaf81dab353d0c838b2632c014c78e80407c2cb1e7f38010d25d",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/9a8c0f9f169faaf81dab353d0c838b2632c014c78e80407c2cb1e7f38010d25d/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/9a8c0f9f169faaf81dab353d0c838b2632c014c78e80407c2cb1e7f38010d25d/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/portrait-2.jpg",
+      "sourceSha256": "efce90c2bca9ddcb2d6fc0be780002c38e735a24bc3c26f78a4aa476c44a0d4e",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/efce90c2bca9ddcb2d6fc0be780002c38e735a24bc3c26f78a4aa476c44a0d4e/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/efce90c2bca9ddcb2d6fc0be780002c38e735a24bc3c26f78a4aa476c44a0d4e/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/portrait-3.jpg",
+      "sourceSha256": "3959ffe0dc4f8e70ddaee62cf9812b989a7548886c24b0a30623bc7839b02519",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/3959ffe0dc4f8e70ddaee62cf9812b989a7548886c24b0a30623bc7839b02519/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/3959ffe0dc4f8e70ddaee62cf9812b989a7548886c24b0a30623bc7839b02519/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/recent-1.jpg",
+      "sourceSha256": "9ab17fcdbad87685916e886c9870225a9f6027c8cdf79058c66ca1959af3d2b5",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/9ab17fcdbad87685916e886c9870225a9f6027c8cdf79058c66ca1959af3d2b5/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/9ab17fcdbad87685916e886c9870225a9f6027c8cdf79058c66ca1959af3d2b5/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/rehearsal-studio.jpg",
+      "sourceSha256": "303b5e9b0ee70c8c30547c17b30ff7fa75d62a0814935d33a2342cca5894921d",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/303b5e9b0ee70c8c30547c17b30ff7fa75d62a0814935d33a2342cca5894921d/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/303b5e9b0ee70c8c30547c17b30ff7fa75d62a0814935d33a2342cca5894921d/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/scuba-diving.jpg",
+      "sourceSha256": "8fc8a65ea39d00c9acfe6b48aca5f0a8c60377ed1c83d484114cb5a833d4007f",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/8fc8a65ea39d00c9acfe6b48aca5f0a8c60377ed1c83d484114cb5a833d4007f/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/8fc8a65ea39d00c9acfe6b48aca5f0a8c60377ed1c83d484114cb5a833d4007f/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/st-cecilia-choir.jpg",
+      "sourceSha256": "a5f95cc51a575fd590f38b1a5e488274d5d57021395e861b13112bbc69d63aaf",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/a5f95cc51a575fd590f38b1a5e488274d5d57021395e861b13112bbc69d63aaf/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/a5f95cc51a575fd590f38b1a5e488274d5d57021395e861b13112bbc69d63aaf/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/studio-2.jpg",
+      "sourceSha256": "64474f9e3a00638c81722dd268fa856d0012a01e2c515d5137726b5f03ce4b65",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/64474f9e3a00638c81722dd268fa856d0012a01e2c515d5137726b5f03ce4b65/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/64474f9e3a00638c81722dd268fa856d0012a01e2c515d5137726b5f03ce4b65/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/theater-tech-spotlight.jpg",
+      "sourceSha256": "e985a78cb1628953a1bb0ce4b604fb830971f0483e8aceffedca4ea21cf7d6ca",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/e985a78cb1628953a1bb0ce4b604fb830971f0483e8aceffedca4ea21cf7d6ca/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/e985a78cb1628953a1bb0ce4b604fb830971f0483e8aceffedca4ea21cf7d6ca/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/gallery/travel-airport.jpg",
+      "sourceSha256": "4e73dd8c4915f5ed53cb953c14829235a7264f91c94372acf3a50d7775bfcbea",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/4e73dd8c4915f5ed53cb953c14829235a7264f91c94372acf3a50d7775bfcbea/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/4e73dd8c4915f5ed53cb953c14829235a7264f91c94372acf3a50d7775bfcbea/960.webp",
           "format": "webp"
         }
       ]
@@ -36,6 +845,40 @@
       ]
     },
     {
+      "sourcePath": "/images/photos/1786315498954-65c5ac1b-79aa-456f-8f0d-5234354b1e54.jpg",
+      "sourceSha256": "5dd2f8812b336cbafdd925e710d0180ff70d4ee315450ebe29a5c9b362fdcd1d",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/5dd2f8812b336cbafdd925e710d0180ff70d4ee315450ebe29a5c9b362fdcd1d/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/5dd2f8812b336cbafdd925e710d0180ff70d4ee315450ebe29a5c9b362fdcd1d/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/photos/cabaret-reel-poster.jpg",
+      "sourceSha256": "207fa24b2c5186210f1b5350d08882b45c0d8d3bc2a58fdff064c91e51544a69",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 480,
+          "path": "/images/_derived/207fa24b2c5186210f1b5350d08882b45c0d8d3bc2a58fdff064c91e51544a69/480.webp",
+          "format": "webp"
+        },
+        {
+          "width": 960,
+          "path": "/images/_derived/207fa24b2c5186210f1b5350d08882b45c0d8d3bc2a58fdff064c91e51544a69/960.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
       "sourcePath": "/images/photos/elyse-portrait.jpg",
       "sourceSha256": "fb0e791ab164c35f4388f4b1bb4d04d780ded9b9a44aba3fdb7c19a928b45d65",
       "recipeVersion": 1,
@@ -48,6 +891,186 @@
         {
           "width": 1600,
           "path": "/images/_derived/fb0e791ab164c35f4388f4b1bb4d04d780ded9b9a44aba3fdb7c19a928b45d65/1600.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/shows/anastasia.jpg",
+      "sourceSha256": "3fde5ed0e6bc0a6dc914ba21cad8271aa20ad37afb4c7cf0a1d8588dd6ba7816",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 420,
+          "path": "/images/_derived/3fde5ed0e6bc0a6dc914ba21cad8271aa20ad37afb4c7cf0a1d8588dd6ba7816/420.webp",
+          "format": "webp"
+        },
+        {
+          "width": 800,
+          "path": "/images/_derived/3fde5ed0e6bc0a6dc914ba21cad8271aa20ad37afb4c7cf0a1d8588dd6ba7816/800.webp",
+          "format": "webp"
+        },
+        {
+          "width": 840,
+          "path": "/images/_derived/3fde5ed0e6bc0a6dc914ba21cad8271aa20ad37afb4c7cf0a1d8588dd6ba7816/840.webp",
+          "format": "webp"
+        },
+        {
+          "width": 1600,
+          "path": "/images/_derived/3fde5ed0e6bc0a6dc914ba21cad8271aa20ad37afb4c7cf0a1d8588dd6ba7816/1600.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/shows/baa-spring-cabaret-2025.jpg",
+      "sourceSha256": "fa92a12c7ce0113dd05253b3f37c5f3d73ef8f6ef7d6b3d1e754467511bc6cad",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 420,
+          "path": "/images/_derived/fa92a12c7ce0113dd05253b3f37c5f3d73ef8f6ef7d6b3d1e754467511bc6cad/420.webp",
+          "format": "webp"
+        },
+        {
+          "width": 840,
+          "path": "/images/_derived/fa92a12c7ce0113dd05253b3f37c5f3d73ef8f6ef7d6b3d1e754467511bc6cad/840.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/shows/echoes-of-the-fork.jpg",
+      "sourceSha256": "8181d429e8be1626403687784baa46ffc71c12c68b2d1bc5cd5e033f20daea73",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 420,
+          "path": "/images/_derived/8181d429e8be1626403687784baa46ffc71c12c68b2d1bc5cd5e033f20daea73/420.webp",
+          "format": "webp"
+        },
+        {
+          "width": 840,
+          "path": "/images/_derived/8181d429e8be1626403687784baa46ffc71c12c68b2d1bc5cd5e033f20daea73/840.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/shows/listen.jpg",
+      "sourceSha256": "925bf9fe08acdc1fb8669bfc68a44bd8553f7cec91f59d518ccb3d76d34f544f",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 420,
+          "path": "/images/_derived/925bf9fe08acdc1fb8669bfc68a44bd8553f7cec91f59d518ccb3d76d34f544f/420.webp",
+          "format": "webp"
+        },
+        {
+          "width": 840,
+          "path": "/images/_derived/925bf9fe08acdc1fb8669bfc68a44bd8553f7cec91f59d518ccb3d76d34f544f/840.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/shows/little-women.jpg",
+      "sourceSha256": "0574fcc46445d4572f6f04fdbd4b6b08fc3ecba0f261a70ff179f0b570e33ddc",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 420,
+          "path": "/images/_derived/0574fcc46445d4572f6f04fdbd4b6b08fc3ecba0f261a70ff179f0b570e33ddc/420.webp",
+          "format": "webp"
+        },
+        {
+          "width": 840,
+          "path": "/images/_derived/0574fcc46445d4572f6f04fdbd4b6b08fc3ecba0f261a70ff179f0b570e33ddc/840.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/shows/mary-poppins.jpg",
+      "sourceSha256": "b6a90c70c4b09f1c1783325deb82492c99d7bbfaca715a44f96ee0d663fe6a85",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 420,
+          "path": "/images/_derived/b6a90c70c4b09f1c1783325deb82492c99d7bbfaca715a44f96ee0d663fe6a85/420.webp",
+          "format": "webp"
+        },
+        {
+          "width": 840,
+          "path": "/images/_derived/b6a90c70c4b09f1c1783325deb82492c99d7bbfaca715a44f96ee0d663fe6a85/840.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/shows/miss-you-like-hell.jpg",
+      "sourceSha256": "6f9cce3a189dffa4431dce70934d9293872fc44f7e7ca781e825f6b5afd169f3",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 420,
+          "path": "/images/_derived/6f9cce3a189dffa4431dce70934d9293872fc44f7e7ca781e825f6b5afd169f3/420.webp",
+          "format": "webp"
+        },
+        {
+          "width": 840,
+          "path": "/images/_derived/6f9cce3a189dffa4431dce70934d9293872fc44f7e7ca781e825f6b5afd169f3/840.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/shows/site-19.jpg",
+      "sourceSha256": "0cc6d03926b695e0f20bb9a1c2c44e3f183f16ed91fe0c650e9be362b72fc81a",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 420,
+          "path": "/images/_derived/0cc6d03926b695e0f20bb9a1c2c44e3f183f16ed91fe0c650e9be362b72fc81a/420.webp",
+          "format": "webp"
+        },
+        {
+          "width": 840,
+          "path": "/images/_derived/0cc6d03926b695e0f20bb9a1c2c44e3f183f16ed91fe0c650e9be362b72fc81a/840.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/shows/Ursula.jpg",
+      "sourceSha256": "dc843e68190494c0af42c7e3ed91da9193eb6825baaa8dc02f7221d40e384059",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 420,
+          "path": "/images/_derived/dc843e68190494c0af42c7e3ed91da9193eb6825baaa8dc02f7221d40e384059/420.webp",
+          "format": "webp"
+        },
+        {
+          "width": 840,
+          "path": "/images/_derived/dc843e68190494c0af42c7e3ed91da9193eb6825baaa8dc02f7221d40e384059/840.webp",
+          "format": "webp"
+        }
+      ]
+    },
+    {
+      "sourcePath": "/images/shows/where-the-sky-meets-the-sea.jpg",
+      "sourceSha256": "9fa880fc8747e1c80fd5cfa468c9d715f0995e29ce9f3d0385d6d54715ea99e6",
+      "recipeVersion": 1,
+      "outputs": [
+        {
+          "width": 420,
+          "path": "/images/_derived/9fa880fc8747e1c80fd5cfa468c9d715f0995e29ce9f3d0385d6d54715ea99e6/420.webp",
+          "format": "webp"
+        },
+        {
+          "width": 840,
+          "path": "/images/_derived/9fa880fc8747e1c80fd5cfa468c9d715f0995e29ce9f3d0385d6d54715ea99e6/840.webp",
           "format": "webp"
         }
       ]
