@@ -3,7 +3,7 @@
     "identityProviders": {
       "azureActiveDirectory": {
         "registration": {
-          "openIdIssuer": "https://login.microsoftonline.com/common/v2.0",
+          "openIdIssuer": "https://login.microsoftonline.com/e78bb87b-bdca-4a5f-8f90-a1c388528a5f/v2.0",
           "clientIdSettingName": "AAD_CLIENT_ID",
           "clientSecretSettingName": "AAD_CLIENT_SECRET"
         }
@@ -131,19 +131,31 @@
     },
     {
       "route": "/studio",
-      "allowedRoles": ["authenticated"]
+      "allowedRoles": ["authenticated"],
+      "headers": {
+        "Cache-Control": "private, no-store"
+      }
     },
     {
       "route": "/studio/*",
-      "allowedRoles": ["authenticated"]
+      "allowedRoles": ["authenticated"],
+      "headers": {
+        "Cache-Control": "private, no-store"
+      }
     },
     {
       "route": "/api/contactInquiry",
-      "allowedRoles": ["anonymous", "authenticated"]
+      "allowedRoles": ["anonymous", "authenticated"],
+      "headers": {
+        "Cache-Control": "private, no-store"
+      }
     },
     {
       "route": "/api/*",
-      "allowedRoles": ["authenticated"]
+      "allowedRoles": ["authenticated"],
+      "headers": {
+        "Cache-Control": "private, no-store"
+      }
     },
     {
       "route": "/.auth/login/github",

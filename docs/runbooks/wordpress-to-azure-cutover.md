@@ -71,7 +71,7 @@ Notes:
 
 ## 3. Redirect rules (repo)
 
-Rules live in [`public/staticwebapp.config.json`](../../public/staticwebapp.config.json) (copied into `dist/` on build). Keep the same redirect block mirrored in root [`staticwebapp.config.json`](../../staticwebapp.config.json) so auth + redirects stay aligned.
+Rules live in [`public/staticwebapp.config.json`](../../public/staticwebapp.config.json) (copied into `dist/` on build). Keep that file identical to root [`staticwebapp.config.json`](../../staticwebapp.config.json) (auth issuer, cache headers, redirects) — SWA deploys `dist/`, not the repo-root copy.
 
 Requirements:
 

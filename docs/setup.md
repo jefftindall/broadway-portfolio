@@ -239,16 +239,13 @@ Because `require_app_role_assignment = true`, she must be assigned before she ca
 
 Azure Portal → **Entra ID → Enterprise applications → `elyse-portfolio-prod` → Users and groups → Add user**.
 
-### Pin the token issuer (recommended)
+### Token issuer (same tenant for staging and prod)
 
-[`staticwebapp.config.json`](../staticwebapp.config.json) ships with a tenant-agnostic issuer so first deploy works. Cache-Control routes in that file (mirrored under `public/`) are explained in [swa-caching.md](runbooks/swa-caching.md). Harden the issuer by replacing `common` with your tenant:
+[`staticwebapp.config.json`](../staticwebapp.config.json) (mirrored under `public/`, which is what Astro copies into `dist/` for SWA) pins `openIdIssuer` to this directory:
 
-```bash
-terraform output -raw entra_openid_issuer
-# https://login.microsoftonline.com/<tenant-id>/v2.0
-```
+`https://login.microsoftonline.com/e78bb87b-bdca-4a5f-8f90-a1c388528a5f/v2.0`
 
-The registration is single-tenant and the API enforces the Key Vault allowlist, so publishing stays locked to Elyse either way.
+That value is `terraform output -raw entra_openid_issuer` from **either** environment — staging and prod are separate Entra apps (`AAD_CLIENT_ID` / secret per SWA) in the **same** tenant. Do not use `/common/v2.0`: the apps are `AzureADMyOrg`, and a `common` issuer makes SWA reject the tenant `iss` after login (redirect loop). Entra redirect URIs already cover the staging `*.azurestaticapps.net` hostname and prod apex/www ([above](#redirect-uris)). Cache-Control for `/studio` must stay `private, no-store` so the login 302 is not replayed after Entra returns — see [swa-caching.md](runbooks/swa-caching.md).
 
 ### Verify
 
