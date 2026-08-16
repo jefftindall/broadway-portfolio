@@ -48,6 +48,7 @@ func start
   - [GitHub App (Studio)](docs/runbooks/github-app.md)
   - [Rotate secrets](docs/runbooks/rotate-secrets.md)
   - [Deploy and rollback](docs/runbooks/deploy-and-rollback.md)
+  - [SWA caching](docs/runbooks/swa-caching.md) — Cache-Control, why deploys stay fresh, when to flush
   - [Manage access](docs/runbooks/manage-access.md)
   - [Add casting page](docs/runbooks/add-casting-page.md)
   - [Troubleshoot build](docs/runbooks/troubleshoot-build.md)
