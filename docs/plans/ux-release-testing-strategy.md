@@ -43,6 +43,7 @@ Living “what runs today” SoT: [testing-strategy.md](../runbooks/testing-stra
 | `CAST-02` (shows filter) | `done` | Musical filter (not Film/Cabaret-only wording) |
 | `CAST-03` (`/for/*` CTA) | `done` | casting.spec.ts |
 | `CAST-04` (mobile materials) | `done` | casting.spec.ts |
+| `CAST-05` (no inbound `/for` chrome) | `done` | Home/about/shows/materials/contact have no `a[href^="/for"]` |
 | `LESSON-01` / `02` | `done` | `tests/journeys/lessons.spec.ts` |
 | `VISIT-01` (news loop) | `done` | `tests/journeys/visitor.spec.ts` |
 | `VISIT-02` (gallery images) | `done` | Load/visibility — **not** tag filter |
@@ -128,6 +129,7 @@ Shipped IDs use the names in `tests/journeys/*.spec.ts`. Older plan aliases (`J-
 | `LESSON-01` / `02` (was `J-LESS-01`) | Lessons → book → inquiry | `done` | `/lessons/book`; form; voice-lessons brand |
 | `VISIT-01` (was `J-NEWS-01`) | News list → article | `done` | Detail heading; content-driven slug |
 | `CAST-03` (was `J-FOR-01`) | `/for/{slug}` → contact CTA | `done` | Dynamic casting slug |
+| `CAST-05` | Public chrome does not link to `/for/*` | `done` | Home/about/shows/materials/contact |
 | `CAST-01` assets (was `J-ASSET-01`) | Materials downloads | `done` | Resume + theatrical headshot |
 
 Smoke retains thin route canaries (home/about/contact/gallery/news/book) alongside journeys — not fully deleted (`TEST-A-002` residual).

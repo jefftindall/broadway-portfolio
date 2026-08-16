@@ -1,8 +1,8 @@
 # Casting discoverability — assessment & implementation backlog
 
 **Artifact ID:** `ELYSE-DISC-001`  
-**Version:** 1.5  
-**Last updated:** 2026-08-09  
+**Version:** 1.7  
+**Last updated:** 2026-08-16  
 **Audience:** Agents, implementers, Elyse (content owner)  
 **Scope:** Public site discoverability for casting directors, representation, and answer engines — not voice-lesson marketing.
 
@@ -37,12 +37,12 @@ Example PR title: `DISC-P1-003: Add performer facts block to About`
 |-------------|--------|----------------|
 | Tier 0 — Cutover / GSC / redirects | `done` | Spot-check / Bing / indexing residuals under P0 ACs; `SEARCH-P0-004` |
 | Tier 1 — Casting-first positioning | `done` | JSON-LD enrich, Tiffany King quote, sticky mobile Materials shipped |
-| Tier 2 — New `/for/*` landers + linking | Partial | `DISC-P2-001`–`004`, `006`, `007` `done`; `005` blocked on Elyse; `008`–`010` `planned` |
+| Tier 2 — New `/for/*` landers + linking | Partial | `DISC-P2-001`–`004`, `007` `done`; `DISC-P2-006` / `010` `wont_fix` (inbound SEO only); `005` blocked on Elyse; `008`–`009` `planned` |
 | Tier 3 — Cadence / AI readiness | Mixed | Most `planned`; `DISC-P3-006` `done` (runbook) |
 | Tier 4 — Automated lander pipeline | `planned` | `DISC-P4-001`–`006`; `DISC-P4-000` docs `done` (enforce residual) |
 | Gaps (`DISC-GAP-*`) | Mixed | Commercial headshot, demos, seeking-rep decision, external profile URLs (YouTube reel URL in `sameAs` until channel verified) |
 
-**Suggested next:** Optional `DISC-P2-008` show detail pages / `DISC-P2-009` demos (needs `DISC-GAP-004`); do not start Tier 4 until linking habits stick. `DISC-P2-005` only after `DISC-GAP-005`.
+**Suggested next:** Optional `DISC-P2-008` show detail pages / `DISC-P2-009` demos (needs `DISC-GAP-004`). `/for/*` landers stay inbound SEO only (`DISC-P2-006` / `010` `wont_fix`). `DISC-P2-005` only after `DISC-GAP-005`.
 
 ---
 
@@ -308,11 +308,11 @@ Shipped: homepage `PressQuote`; SoT moved to `site.pressQuote` / Studio `update_
 | `DISC-P2-003` | Casting page: mezzo-soprano musical theatre | `done` | `DISC-P1-003` | `src/content/casting/mezzo-soprano-musical-theatre.md` |
 | `DISC-P2-004` | Casting page: triple threat actress NYC | `done` | — | `src/content/casting/triple-threat-actress-nyc.md` |
 | `DISC-P2-005` | Casting page: seeking representation NYC | `planned` | Elyse approval | `src/content/casting/seeking-representation-nyc.md` |
-| `DISC-P2-006` | Internal linking for `/for/*` pages | `done` | — | `src/components/Footer.astro`, `src/content/pages/about.md`, `src/components/ShowCredit.astro` |
-| `DISC-P2-007` | Casting index page listing all `/for/*` landers | `done` | — | `src/pages/for/index.astro` |
+| `DISC-P2-006` | Internal linking for `/for/*` pages | `wont_fix` | — | Inbound SEO only — no nav/footer/About/Shows/credit links to `/for/*` |
+| `DISC-P2-007` | Casting index page listing all `/for/*` landers | `done` | — | `src/pages/for/index.astro` (sitemap hub; not linked from site chrome) |
 | `DISC-P2-008` | Individual show detail pages | `planned` | — | `src/pages/shows/[slug].astro`, show markdown bodies |
 | `DISC-P2-009` | Add 2–3 vocal demo clips (16-bar song cuts) | `planned` | `DISC-GAP-004` | `src/pages/materials.astro`, `src/content/shows/*.md` or gallery |
-| `DISC-P2-010` | Cross-link show credits → relevant casting pages | `planned` | `DISC-P2-006`, `DISC-P2-008` | Show templates, casting frontmatter |
+| `DISC-P2-010` | Cross-link show credits → relevant casting pages | `wont_fix` | — | Landers link **out** to `/shows`; credits do not link back |
 
 <details>
 <summary><code>DISC-P2-001</code> … <code>DISC-P2-005</code> — New casting pages</summary>
@@ -343,9 +343,9 @@ Shipped: homepage `PressQuote`; SoT moved to `site.pressQuote` / Studio `update_
 
 **Acceptance criteria**
 
-- [x] Footer includes “For casting” → `/for/` index or curated list
-- [x] About page links to 3+ relevant `/for/*` pages in prose
-- [x] Shows page links to role-relevant casting pages (e.g. Anastasia → `anastasia-lily`)
+- [ ] Footer includes “For casting” → `/for/` index or curated list — `wont_fix`: `/for/*` are inbound SEO landers, not in-site destinations
+- [ ] About page links to 3+ relevant `/for/*` pages in prose — `wont_fix` (`src/content/pages/about.md` has no casting-index section)
+- [ ] Shows page links to role-relevant casting pages (e.g. Anastasia → `anastasia-lily`) — `wont_fix`: credits do not link to landers; landers link out via Related credits → `/shows`
 
 </details>
 
@@ -356,7 +356,7 @@ Shipped: homepage `PressQuote`; SoT moved to `site.pressQuote` / Studio `update_
 
 - [x] `/for/` lists all casting collection entries with title + one-line description
 - [x] Included in sitemap
-- [x] Not linked in main nav (footer is enough) unless usability testing says otherwise
+- [x] Not linked from nav, footer, About, Shows, or credit lists — inbound SEO hub only (`CAST-05`)
 
 </details>
 
@@ -473,7 +473,7 @@ Same `GEMINI_API_KEY` may call both; CI draft jobs must read **`GEMINI_MODEL_SEA
 | ID | Title | Design | Status | Depends on | Primary refs |
 |----|-------|--------|--------|------------|--------------|
 | `DISC-P4-000` | Document + enforce Gemini rate-limit / draft-budget contract | Shared | `done` (docs) | — | This section; [cost-and-quotas.md](../runbooks/cost-and-quotas.md); draft scripts |
-| `DISC-P4-001` | Curated intent catalog + template fill (closed queue) | **D** | `planned` | `DISC-P2-006`, `DISC-P2-007` preferred; `DISC-GAP-003` | `src/content/casting/` or `src/data/casting-intent-catalog.yaml`; `DISC-P2-001`–`005` |
+| `DISC-P4-001` | Curated intent catalog + template fill (closed queue) | **D** | `planned` | `DISC-P2-007` preferred; `DISC-GAP-003` | `src/content/casting/` or `src/data/casting-intent-catalog.yaml`; `DISC-P2-001`–`005` |
 | `DISC-P4-002` | Credit-triggered lander draft PR | **C** | `planned` | `DISC-P4-000`; show upsert path | `DISC-P3-002`; Studio/`upsert_show` hook or post-merge workflow |
 | `DISC-P4-003` | Consume automated search signals (no Gemini) | Feeds **B** | `planned` | `SEARCH-P4-001`, `SEARCH-P4-002` | [`docs/ops/search-signals/`](../ops/search-signals/); slug gap vs `casting/*` |
 | `DISC-P4-004` | GSC/GA → draft casting PR (≤2–3 bodies/mo) | **B** | `planned` | `DISC-P4-000`, `DISC-P4-003`, `SEARCH-P4-002` | GitHub App PR (same mint pattern as ops-scorecard); evidence table in PR body |
@@ -571,7 +571,8 @@ Same `GEMINI_API_KEY` may call both; CI draft jobs must read **`GEMINI_MODEL_SEA
 
 ```text
 Before Tier 4: Tier 1 leftovers done (DISC-P1-004, 006, 007);
-    DISC-P2-001–004 + DISC-P2-006/007 linking shipped (005 pending GAP-005)
+    DISC-P2-001–004 + DISC-P2-007 index shipped (005 pending GAP-005);
+    DISC-P2-006/010 wont_fix (inbound SEO only — no site-chrome links to /for/*)
 
 Tier 4 prep: DISC-P4-000 docs done — enforce when draft jobs ship
     + SEARCH-P4-001/002 (automate SEARCH-P3-001 extract — no Gemini)
@@ -683,7 +684,7 @@ flowchart TD
 
 | Asset | Location | Notes |
 |-------|----------|-------|
-| 16 casting landing pages | `src/content/casting/*.md` → `/for/<slug>/` | Orphan until `DISC-P2-006` |
+| 16 casting landing pages | `src/content/casting/*.md` → `/for/<slug>/` | Inbound SEO only (`DISC-P2-006` / `010` `wont_fix`); sitemap + search, not site chrome |
 | Sitemap + robots | `astro.config.mjs`, `public/robots.txt` | Live after `DISC-P0-001` |
 | JSON-LD Person / VideoObject | `src/pages/index.astro`, `Seo.astro` | Extend via `DISC-P1-004` |
 | Reel | `site.reelUrl` | YouTube Stage Kiss |
@@ -710,6 +711,8 @@ flowchart TD
 
 | Version | Date | Change |
 |---------|------|--------|
+| 1.7 | 2026-08-16 | `/for/*` inbound SEO only: `DISC-P2-006` / `010` `wont_fix`; no nav/footer/About/Shows/credit links to landers |
+| 1.6 | 2026-08-16 | `DISC-P2-006` About prose `/for/*` links `wont_fix` — landers are SEO-only, not About/index content |
 | 1.4 | 2026-08-09 | Status at a glance; check `DISC-P1-005` ACs; label baseline scores historical; `DISC-P4-000` → `done` (docs) |
 | 1.3 | 2026-08-09 | ACS toll-free lease in expected cost; `GEMINI_MODEL_SEARCH_OPS` (3.5) vs Studio `GEMINI_MODEL` (3.6) independent quotas |
 | 1.2 | 2026-08-09 | Tier 4 automated `/for/` pipeline (`DISC-P4-*`: B+C+D+E); Gemini contract; depends on `SEARCH-P4-*` to automate `SEARCH-P3-001` |

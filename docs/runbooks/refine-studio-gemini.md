@@ -64,7 +64,7 @@ Canonical values live in [`src/data/site-settings.json`](../../src/data/site-set
 | `update_performer_facts` | Casting facts on About + Materials |
 | `update_short_bio` | About lead paragraph only (full About body is PR-only) |
 | `update_press_quote` | Homepage press quote + attribution under the hero |
-| `update_casting_fields` | Frontmatter on an **existing** `/for/…` page (no create, no body rewrite). Lander chrome ends at **Related credits** — never add CTAs / Materials / casting-index links below that block. |
+| `update_casting_fields` | Frontmatter on an **existing** `/for/…` page (no create, no body rewrite). Inbound SEO only — never add links to landers from About, Shows, footer, or credits. Lander chrome ends at **Related credits** — never add CTAs / Materials / casting-index links below that block. |
 
 Publish allowlist is kind-scoped: shows/news/gallery/lessons/book/casting + exact `site-settings.json`. `about.md` is not Studio-writable.
 

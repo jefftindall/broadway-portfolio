@@ -1,5 +1,4 @@
 ---
-import { getCollection } from 'astro:content';
 import type { CollectionEntry } from 'astro:content';
 import ShowCredit from './ShowCredit.astro';
 import VideoEmbed from './VideoEmbed.astro';
@@ -11,19 +10,6 @@ interface Props {
 }
 
 const { shows, showFilters = true, showVideos = true } = Astro.props;
-
-const castingPages = await getCollection('casting');
-const castingByShowTitle = new Map<string, CollectionEntry<'casting'>[]>();
-for (const page of castingPages) {
-  for (const showTitle of page.data.relatedShows ?? []) {
-    const list = castingByShowTitle.get(showTitle) ?? [];
-    list.push(page);
-    castingByShowTitle.set(showTitle, list);
-  }
-}
-for (const list of castingByShowTitle.values()) {
-  list.sort((a, b) => a.data.title.localeCompare(b.data.title));
-}
 
 const categories = [
   { id: 'all', label: 'All' },
@@ -61,10 +47,7 @@ const categories = [
     {
       shows.map((show) => (
         <div class="credit-item" data-category={show.data.category ?? 'musical'}>
-          <ShowCredit
-            show={show}
-            relatedCasting={castingByShowTitle.get(show.data.title) ?? []}
-          />
+          <ShowCredit show={show} />
           {showVideos && show.data.videoUrl && (
             <div class="mb-8 max-w-2xl">
               <VideoEmbed url={show.data.videoUrl} title={show.data.title} />
