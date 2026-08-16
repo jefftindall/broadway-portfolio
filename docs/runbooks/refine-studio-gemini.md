@@ -60,7 +60,7 @@ Canonical values live in [`src/data/site-settings.json`](../../src/data/site-set
 
 | Tool | Updates |
 |------|---------|
-| `update_reel_url` | Reel link on Materials / Shows / home |
+| `update_reel_url` | Reel link + video embed title on Materials / Shows / home, plus `public/images/photos/reel-poster.jpg` still |
 | `update_performer_facts` | Casting facts on About + Materials |
 | `update_short_bio` | About lead paragraph only (full About body is PR-only) |
 | `update_press_quote` | Homepage press quote + attribution under the hero |

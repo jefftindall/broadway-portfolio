@@ -44,6 +44,7 @@ test('collectReferencedImages finds content + hardcoded originals', () => {
   assert.ok(refs.get('/images/gallery/headshot.jpg')?.has('gallery'));
   assert.ok(refs.get(HARDCODED_REFS[0].sourcePath)?.has('hero'));
   assert.ok(refs.get(HARDCODED_REFS[1].sourcePath)?.has('banner'));
+  assert.ok(refs.get('/images/photos/reel-poster.jpg')?.has('poster'));
   for (const sourcePath of refs.keys()) {
     assert.ok(!sourcePath.includes('/_derived/'), sourcePath);
   }

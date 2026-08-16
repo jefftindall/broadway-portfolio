@@ -21,7 +21,7 @@ Everyday publishes do **not** depend on flushing a long-lived URL:
 
 1. **Copy, layout, and markdown** ship as HTML. Visitors pick up the new page within **30 seconds** (`must-revalidate`), then the HTML points at whatever asset URLs that build used.
 2. **JS/CSS** from `npm run build` land under `/_astro/` with a new hash in the filename. Old hashed files may stay in browsers for a year; that is correct — nothing still references them after the HTML updates.
-3. **Display images** on cards, gallery, hero, and lessons use `OptimizedImg`, which prefers `_derived/{rawSha}/…`. `images:optimize` keys that folder on the **raw file’s SHA-256**. Replacing an original in git (or Studio committing a new photo) produces a new SHA, a new derived path, and HTML that points at it after the next deploy. The old derivative can remain cached unused.
+3. **Display images** on cards, gallery, hero, lessons, and the reel facade use `OptimizedImg`, which prefers `_derived/{rawSha}/…`. `images:optimize` keys that folder on the **raw file’s SHA-256**. Replacing an original in git (or Studio committing a new photo / overwriting `reel-poster.jpg`) produces a new SHA, a new derived path, and HTML that points at it after the next deploy. The old derivative can remain cached unused.
 4. **Studio photo uploads** write `public/images/photos/{timestamp}-….jpg` — a new path every time — and gallery markdown references that path.
 5. **Resume PDF and theatrical headshot** under `/downloads/` inherit the **30s** HTML policy, so materials updates are not held for a week.
 

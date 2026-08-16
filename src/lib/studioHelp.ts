@@ -95,10 +95,11 @@ export const studioCapabilities: StudioCapability[] = [
     tool: 'update_reel_url',
     title: 'Reel link',
     summary:
-      'Change the casting reel video link used on Materials, Shows, and home. Edit in the Studio hub (or by voice), then confirm with an embedded video Preview before publishing.',
+      'Change the casting reel video link and the video embed title (play button / iframe name) on Materials, Shows, and home. Publishing also refreshes the reel poster still from YouTube or Vimeo. Does not change show credits or Materials page copy. Edit in the Studio hub (or by voice), then confirm with an embedded video Preview before publishing.',
     livePath: '/materials',
     examplePrompts: [
       'Update my reel to this YouTube link: https://youtu.be/41jdPTkN_Sw',
+      'Rename the reel play-button title to NYC Cabaret — Stage Kiss reel.',
       'Change the reel on Materials to my newest Stage Kiss video.',
     ],
   },

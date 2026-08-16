@@ -1,4 +1,7 @@
 ---
+import OptimizedImg from './OptimizedImg.astro';
+import { videoEmbedUrl, youtubeVideoId } from '../lib/reelPoster';
+
 interface Props {
   url: string;
   title?: string;
@@ -8,53 +11,22 @@ interface Props {
 
 const { url, title = 'Performance video', poster } = Astro.props;
 
-function youtubeId(raw: string): string | null {
-  try {
-    const u = new URL(raw);
-    if (u.hostname.includes('youtu.be')) {
-      const id = u.pathname.split('/').filter(Boolean)[0];
-      return id || null;
-    }
-    if (u.hostname.includes('youtube.com')) {
-      if (u.pathname.startsWith('/embed/')) {
-        return u.pathname.split('/').filter(Boolean)[1] || null;
-      }
-      return u.searchParams.get('v');
-    }
-  } catch {
-    return null;
-  }
-  return null;
-}
-
-function toEmbed(raw: string): string | null {
-  try {
-    const u = new URL(raw);
-    if (u.hostname.includes('youtu.be') || u.hostname.includes('youtube.com')) {
-      const id = youtubeId(raw);
-      return id ? `https://www.youtube.com/embed/${id}` : null;
-    }
-    if (u.hostname.includes('vimeo.com')) {
-      const id = u.pathname.split('/').filter(Boolean).pop();
-      return id ? `https://player.vimeo.com/video/${id}` : null;
-    }
-  } catch {
-    return null;
-  }
-  return null;
-}
-
-const ytId = youtubeId(url);
-const embed = toEmbed(url);
-const posterSrc = poster || (ytId ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg` : undefined);
+const ytId = youtubeVideoId(url);
+const embed = videoEmbedUrl(url);
+const localPoster = poster?.startsWith('/') ? poster : undefined;
+const remotePoster = localPoster
+  ? undefined
+  : poster || (ytId ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg` : undefined);
+const posterSrc = localPoster || remotePoster;
+const useFacade = Boolean(embed && posterSrc);
 ---
 
 {
-  ytId && posterSrc ? (
+  useFacade ? (
     <div
       class="relative aspect-video overflow-hidden rounded-sm border border-line bg-panel"
       data-video-facade
-      data-youtube-id={ytId}
+      data-embed-src={embed}
       data-video-title={title}
     >
       <button
@@ -62,15 +34,30 @@ const posterSrc = poster || (ytId ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jp
         class="group relative block h-full w-full cursor-pointer"
         aria-label={`Play ${title}`}
       >
-        <img
-          src={posterSrc}
-          alt=""
-          width={1280}
-          height={720}
-          class="h-full w-full object-cover"
-          loading="lazy"
-          decoding="async"
-        />
+        {
+          localPoster ? (
+            <OptimizedImg
+              src={localPoster}
+              alt=""
+              width={1280}
+              height={720}
+              class="h-full w-full object-cover"
+              sizes="(min-width: 1024px) 560px, 100vw"
+              loading="lazy"
+              ariaHidden
+            />
+          ) : (
+            <img
+              src={remotePoster}
+              alt=""
+              width={1280}
+              height={720}
+              class="h-full w-full object-cover"
+              loading="lazy"
+              decoding="async"
+            />
+          )
+        }
         <span
           class="absolute inset-0 bg-ink/25 transition group-hover:bg-ink/35"
           aria-hidden="true"
@@ -105,12 +92,13 @@ const posterSrc = poster || (ytId ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jp
 
 <script>
   function activateFacade(root: HTMLElement) {
-    const id = root.dataset.youtubeId;
-    if (!id || root.dataset.activated === '1') return;
+    const embed = root.dataset.embedSrc;
+    if (!embed || root.dataset.activated === '1') return;
     root.dataset.activated = '1';
     const title = root.dataset.videoTitle || 'Performance video';
     const iframe = document.createElement('iframe');
-    iframe.src = `https://www.youtube.com/embed/${id}?autoplay=1`;
+    const joiner = embed.includes('?') ? '&' : '?';
+    iframe.src = `${embed}${joiner}autoplay=1`;
     iframe.title = title;
     iframe.className = 'h-full w-full';
     iframe.allow =

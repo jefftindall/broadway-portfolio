@@ -49,6 +49,7 @@ app.http('studioDiscrete', {
           authorized: true,
           rates: rates || [],
           reelUrl: settings?.reelUrl || null,
+          reelTitle: settings?.reelTitle || null,
           shortBio: settings?.shortBio || null,
           pressQuote: settings?.pressQuote || null,
           performer: settings?.performer || null,

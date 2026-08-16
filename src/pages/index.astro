@@ -10,6 +10,7 @@ import PostCard from '../components/PostCard.astro';
 import VideoEmbed from '../components/VideoEmbed.astro';
 import GlassPanel from '../components/GlassPanel.astro';
 import { site } from '../lib/site';
+import { buildReelVideoJsonLd } from '../lib/reelPoster';
 import { buildPersonJsonLd } from '../lib/personSchema';
 import { getFeaturedShowsForHome } from '../lib/shows';
 import PressQuote from '../components/PressQuote.astro';
@@ -26,6 +27,13 @@ const person = buildPersonJsonLd({
 });
 delete person['@context'];
 
+const reelVideo = buildReelVideoJsonLd({
+  name: site.reelTitle,
+  contentUrl: site.reelUrl,
+  posterPath: site.reelPoster,
+  siteUrl: site.url,
+});
+
 const jsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
@@ -38,15 +46,7 @@ const jsonLd = {
       description: site.description,
       publisher: { '@id': `${site.url}/#person` },
     },
-    {
-      '@type': 'VideoObject',
-      name: 'NYC Cabaret — Stage Kiss',
-      description: 'Elyse Tindall performs Stage Kiss at Ripley-Grier Studios, New York City.',
-      thumbnailUrl: new URL('/images/photos/cabaret-reel-poster.jpg', site.url).href,
-      uploadDate: '2024-08-01',
-      contentUrl: site.reelUrl,
-      embedUrl: 'https://www.youtube.com/embed/41jdPTkN_Sw',
-    },
+    ...(reelVideo ? [reelVideo] : []),
   ],
 };
 ---
@@ -98,8 +98,8 @@ const jsonLd = {
           <GlassPanel strong class="overflow-hidden p-2 md:p-3">
             <VideoEmbed
               url={site.reelUrl}
-              title="NYC Cabaret — Stage Kiss reel"
-              poster="/images/photos/cabaret-reel-poster.jpg"
+              title={site.reelTitle}
+              poster={site.reelPoster}
             />
             <div class="px-3 pb-3 pt-4 md:px-4">
               <p class="font-display text-2xl text-spotlight">Watch reel</p>

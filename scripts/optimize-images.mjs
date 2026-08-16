@@ -16,6 +16,7 @@ export const WEBP_QUALITY = 78;
 export const ROLE_WIDTHS = {
   hero: [800, 1600],
   banner: [800, 1600],
+  poster: [800, 1600],
   show: [420, 840],
   gallery: [480, 960],
   news: [800, 1600],
@@ -24,6 +25,7 @@ export const ROLE_WIDTHS = {
 export const HARDCODED_REFS = [
   { sourcePath: '/images/photos/elyse-portrait.jpg', role: 'hero' },
   { sourcePath: '/images/lessons/lessons-banner.jpg', role: 'banner' },
+  { sourcePath: '/images/photos/reel-poster.jpg', role: 'poster' },
 ];
 
 const CONTENT_ROLES = [
