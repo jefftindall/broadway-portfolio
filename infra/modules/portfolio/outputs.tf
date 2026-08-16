@@ -69,6 +69,16 @@ output "entra_redirect_uris" {
   value       = local.redirect_uris
 }
 
+output "entra_monitor_token_scope" {
+  description = "client_credentials scope for the Monitor.Ping app role"
+  value       = "${local.monitor_identifier_uri}/.default"
+}
+
+output "monitor_upn" {
+  description = "Studio smoke monitor UPN (assigned to this SWA app once the bootstrap user exists)"
+  value       = local.monitor_upn
+}
+
 output "github_actions_client_id" {
   description = "Entra application (client) ID for GitHub Actions OIDC"
   value       = azuread_application.github_actions.client_id

@@ -239,6 +239,8 @@ Because `require_app_role_assignment = true`, she must be assigned before she ca
 
 Azure Portal → **Entra ID → Enterprise applications → `elyse-portfolio-prod` → Users and groups → Add user**.
 
+Repeat for `elyse-portfolio-staging`. Apply order: **bootstrap** (creates `studio-monitor@…` + `MONITOR-*` in `kv-elyse-shared`) then **env** stacks (assign that user to both SWA apps). Do **not** add the monitor UPN to `ALLOWED-USER-IDS`. Enroll software TOTP and set `MONITOR-TOTP-SEED` per [studio-auth-monitoring.md](runbooks/studio-auth-monitoring.md) (`TEST-C-005`).
+
 ### Token issuer (same tenant for staging and prod)
 
 [`staticwebapp.config.json`](../staticwebapp.config.json) (mirrored under `public/`, which is what Astro copies into `dist/` for SWA) pins `openIdIssuer` to this directory:

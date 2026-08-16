@@ -66,3 +66,9 @@ variable "manage_github_actions" {
   description = "When true, set repo-level AZURE_TF_* Actions variables (requires GH_TOKEN)"
   default     = true
 }
+
+variable "monitor_upn" {
+  type        = string
+  description = "UPN for the dedicated Studio smoke monitor user. Empty uses studio-monitor@<initial tenant domain>."
+  default     = ""
+}

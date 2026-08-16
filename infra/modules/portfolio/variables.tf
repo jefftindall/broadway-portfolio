@@ -90,6 +90,12 @@ variable "require_app_role_assignment" {
   default     = true
 }
 
+variable "monitor_upn" {
+  type        = string
+  description = "UPN of the bootstrap Studio smoke monitor user. Empty uses studio-monitor@<initial tenant domain>."
+  default     = ""
+}
+
 variable "entra_secret_lifetime" {
   type        = string
   description = "How long each generated client secret stays valid (timeadd duration)"

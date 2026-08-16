@@ -63,3 +63,9 @@ variable "ga_measurement_id" {
   default     = "G-XEE29C0RRE"
 }
 
+variable "monitor_upn" {
+  type        = string
+  description = "UPN of the bootstrap Studio smoke monitor user. Empty uses studio-monitor@<initial tenant domain>. Must match infra/bootstrap."
+  default     = ""
+}
+

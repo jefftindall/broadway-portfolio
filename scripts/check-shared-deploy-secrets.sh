@@ -114,6 +114,23 @@ check_gsc_sa() {
 check_gsc_site
 check_gsc_sa
 
+# Studio smoke monitor (TEST-C-005): TOTP seed is operator-set; REPLACE_ME skips login Playwright.
+check_monitor_totp() {
+  local name="MONITOR-TOTP-SEED"
+  local value
+  if ! value=$(az keyvault secret show --vault-name "$vault" --name "$name" --query value -o tsv 2>/dev/null); then
+    echo "::notice title=Shared Key Vault::${name} is missing — apply infra/bootstrap (monitor_user.tf). Playwright Studio login will skip until the user and TOTP seed exist (docs/runbooks/studio-auth-monitoring.md)."
+    return
+  fi
+  if [[ -z "$value" || "$value" == "REPLACE_ME" ]]; then
+    echo "::notice title=Shared Key Vault::${name} is REPLACE_ME — enroll software TOTP per docs/runbooks/studio-auth-monitoring.md. Public smoke still runs."
+  else
+    echo "OK ${name} (value not logged)"
+  fi
+}
+
+check_monitor_totp
+
 # SMS from is optional for Build release (email-only until set); warn separately.
 sms_from=""
 if ! sms_from=$(az keyvault secret show --vault-name "$vault" --name ACS-SMS-FROM --query value -o tsv 2>/dev/null); then
