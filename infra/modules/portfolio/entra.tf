@@ -18,6 +18,10 @@ locals {
   # Application app role for post-deploy client_credentials (TEST-C-005). Stable UUID.
   monitor_ping_role_id = "a7c4e8f1-2b3d-4e5f-a6b7-c8d9e0f1a2b3"
 
+  # Delegated scope so user login can be pre-authorized after the app exposes an API.
+  # Application-only Monitor.Ping cannot be user-consented ("Need admin approval").
+  user_impersonation_scope_id = "4e8f2c1a-9b7d-4a6e-8f3c-1d2e3a4b5c6d"
+
   # Tenant policy requires app ID, tenant ID, or a verified domain in the URI
   # (api://elyse-portfolio-<env> is rejected). Scope is api://{client-id}/.default.
   monitor_identifier_uri = "api://${azuread_application.swa.client_id}"
@@ -42,6 +46,17 @@ resource "azuread_application" "swa" {
 
   api {
     requested_access_token_version = 2
+
+    oauth2_permission_scope {
+      admin_consent_description  = "Sign in to Studio as the signed-in user."
+      admin_consent_display_name = "Access Studio"
+      enabled                    = true
+      id                         = local.user_impersonation_scope_id
+      type                       = "User"
+      user_consent_description   = "Sign in to Studio."
+      user_consent_display_name  = "Access Studio"
+      value                      = "user_impersonation"
+    }
   }
 
   web {
@@ -100,6 +115,15 @@ resource "azuread_service_principal" "swa" {
   lifecycle {
     ignore_changes = [owners]
   }
+}
+
+# Skip the user consent prompt when Easy Auth requests this app's own API
+# (identifier URI + app roles otherwise show "Need admin approval").
+resource "azuread_application_pre_authorized" "swa" {
+  application_id       = azuread_application.swa.id
+  authorized_client_id = azuread_application.swa.client_id
+  permission_ids       = [local.user_impersonation_scope_id]
+  depends_on           = [azuread_application_identifier_uri.swa]
 }
 
 # Default role (0000…) — assignment required, no custom user-facing roles.
