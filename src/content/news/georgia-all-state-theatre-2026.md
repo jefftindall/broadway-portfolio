@@ -1,6 +1,6 @@
 ---
 title: "Elyse Tindall Selected as Soloist for Georgia All-State Theatre"
-date: "2026-01-15"
+date: "2026-02-07"
 description: "Elyse Tindall has been selected as a featured soloist for the Georgia All-State Theatre showcase."
 tags:
   - "performance"
