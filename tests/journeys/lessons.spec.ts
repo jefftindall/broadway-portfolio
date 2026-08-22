@@ -53,9 +53,10 @@ test.describe('lessons journeys', () => {
 
     await waitForOk(page, '/terms');
     await expect(page.getByRole('heading', { name: 'Paid voice lessons' })).toBeVisible();
-    await expect(page.getByText(/24 hours/i).first()).toBeVisible();
-    await expect(page.getByText(/Stripe/i).first()).toBeVisible();
-    await expect(page.getByText(/does not offer acting lessons/i)).toBeVisible();
+    await expect(page.getByText(/Cancel at least 24 hours/i)).toBeVisible();
+    await expect(page.getByText(/Payments are processed by Stripe/i)).toBeVisible();
+    // Stated in both Site purpose and Voice lessons — do not use a bare locator.
+    await expect(page.getByText(/does not offer acting lessons/i).first()).toBeVisible();
   });
 
   test('LESSON-01 mobile book flow', { tag: '@mobile' }, async ({ page }) => {

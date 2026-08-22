@@ -2,7 +2,7 @@
 
 **Artifact ID:** `ELYSE-TEST-001`  
 **Version:** 1.3  
-**Last updated:** 2026-08-16  
+**Last updated:** 2026-08-22  
 **Audience:** Agents, implementers  
 **Scope:** Playwright smoke + journey coverage, PR shift-left, Studio/API safety nets — not ops synthetics (`OPS-*`) or SEO content strategy (`DISC-*` / `SEARCH-*`).
 
@@ -45,6 +45,7 @@ Living “what runs today” SoT: [testing-strategy.md](../runbooks/testing-stra
 | `CAST-04` (mobile materials) | `done` | casting.spec.ts |
 | `CAST-05` (no inbound `/for` chrome) | `done` | Home/about/shows/materials/contact have no `a[href^="/for"]` |
 | `LESSON-01` / `02` | `done` | `tests/journeys/lessons.spec.ts` |
+| `LESSON-03` (paid-lesson legal copy) | `done` | Privacy `#payments` + Terms `#paid-lessons`; voice-only phrase uses `.first()` (two matches on `/terms`) |
 | `VISIT-01` (news loop) | `done` | `tests/journeys/visitor.spec.ts` |
 | `VISIT-02` (gallery images) | `done` | Load/visibility — **not** tag filter |
 | `VISIT-03` / `04` (nav / mobile menu) | `done` | visitor.spec.ts |
@@ -128,6 +129,7 @@ Shipped IDs use the names in `tests/journeys/*.spec.ts`. Older plan aliases (`J-
 | `CAST-02` (was `J-SHOW-01`) | Shows → filter by category | `done` | Musical tab; non-matching credits hidden |
 | `J-GAL-01` | Gallery → filter by tag → restore | `planned` | Tag filter; non-matching `.gallery-item` hidden |
 | `LESSON-01` / `02` (was `J-LESS-01`) | Lessons → book → inquiry | `done` | `/lessons/book`; form; voice-lessons brand |
+| `LESSON-03` | Privacy / Terms paid-lesson legal copy | `done` | Stripe; 24h refund; voice-only (`.first()` on `/terms`) |
 | `VISIT-01` (was `J-NEWS-01`) | News list → article | `done` | Detail heading; content-driven slug |
 | `CAST-03` (was `J-FOR-01`) | `/for/{slug}` → contact CTA | `done` | Dynamic casting slug |
 | `CAST-05` | Public chrome does not link to `/for/*` | `done` | Home/about/shows/materials/contact |
@@ -178,7 +180,7 @@ tests/
     studio-auth.spec.ts  # J-STU-04 / TEST-C-005
   journeys/
     casting.spec.ts  # CAST-01 … CAST-04
-    lessons.spec.ts  # LESSON-01 … LESSON-02
+    lessons.spec.ts  # LESSON-01 … LESSON-03
     visitor.spec.ts  # VISIT-01 … VISIT-04
     seo.spec.ts      # J-SEO-01
 
