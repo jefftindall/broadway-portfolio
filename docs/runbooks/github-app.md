@@ -70,7 +70,7 @@ Local API: set `STUDIO_PUBLISH_MODE=pr` in `api/local.settings.json` to exercise
 ## Verify
 
 - **Prod:** Publish a harmless Studio update and confirm a commit authored by the GitHub App appears on `main`.
-- **Staging:** Publish from the staging hostname and confirm a `staging-studio-YYYYMMDD` branch + open PR (not a direct `main` commit).
+- **Staging:** Publish from `https://test.elysetindall.com` (or the staging SWA hostname) and confirm a `staging-studio-YYYYMMDD` branch + open PR (not a direct `main` commit).
 
 ### Local mint dry-run (no push)
 

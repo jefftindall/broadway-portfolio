@@ -51,7 +51,7 @@ az keyvault secret show --vault-name kv-elyse-shared --name MONITOR-TOTP-SEED --
 
 The last command should print `false` until you finish this section. To **use** UPN/password locally, copy them from the Portal Key Vault blade or `az keyvault secret show ... --query value -o tsv` in a private terminal you will not paste from.
 
-2. In a **private** browser (Incognito / InPrivate) on a machine that will not stay signed in as the monitor, open `https://elysetindall.com/studio/health` (or staging `https://<swa>/.azurestaticapps.net/studio/health`, or `https://aka.ms/mfasetup`) and sign in with `MONITOR-UPN` / `MONITOR-PASSWORD`.
+2. In a **private** browser (Incognito / InPrivate) on a machine that will not stay signed in as the monitor, open `https://elysetindall.com/studio/health` (or staging `https://test.elysetindall.com/studio/health`, or `https://aka.ms/mfasetup`) and sign in with `MONITOR-UPN` / `MONITOR-PASSWORD`.
 
 3. Security Defaults prompts **More information required** / register MFA.
 

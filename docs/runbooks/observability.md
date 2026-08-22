@@ -9,7 +9,7 @@
 
 Terraform wires `APPLICATIONINSIGHTS_CONNECTION_STRING` into the Static Web App (managed Functions) and publishes `APPINSIGHTS_CONNECTION_STRING` as a GitHub Environment variable for the Astro browser SDK and deploy events.
 
-Terraform also publishes GitHub Environment variable `GA_MEASUREMENT_ID` (default `G-XEE29C0RRE`) for Google Analytics 4. Deploy workflows map it to `PUBLIC_GA_MEASUREMENT_ID` at Astro build time. The browser SDK lives in `src/scripts/ga.ts` and is skipped for `noIndex` pages and `/studio`. Override with `-var='ga_measurement_id=G-…'` on apply, or set `PUBLIC_GA_MEASUREMENT_ID` locally (see `.env.example`). App Insights remains the source of truth for Studio/ops telemetry; GA4 is for public traffic and Search Console association. Phased GSC + GA work (including events and the monthly review loop) lives in [search-and-analytics.md](../plans/search-and-analytics.md).
+Terraform also publishes GitHub Environment variable `GA_MEASUREMENT_ID` (default `G-XEE29C0RRE`) for Google Analytics 4. Deploy workflows map it to `PUBLIC_GA_MEASUREMENT_ID` at Astro build time. The browser SDK lives in `src/scripts/ga.ts` and is skipped for `noIndex` pages, `/studio`, and any host that is not `elysetindall.com` / `www` (staging `test.elysetindall.com` must not send GA). Override with `-var='ga_measurement_id=G-…'` on apply, or set `PUBLIC_GA_MEASUREMENT_ID` locally (see `.env.example`). App Insights remains the source of truth for Studio/ops telemetry; GA4 is for public traffic and Search Console association. Phased GSC + GA work (including events and the monthly review loop) lives in [search-and-analytics.md](../plans/search-and-analytics.md).
 
 ### GA4 public events (`SEARCH-P1-003`)
 

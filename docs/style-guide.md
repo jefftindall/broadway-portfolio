@@ -126,6 +126,7 @@ Use sparingly for presence:
 - Shows: `VideoObject` for the Studio reel (`buildReelVideoJsonLd` — title, watch URL, poster, embed URL when YouTube/Vimeo; no invented description or uploadDate) (+ default Person prepended)
 - Prefer slashless URLs in canonicals and JSON-LD (`/materials`, not `/materials/`)
 - Studio: `noIndex`, sitemap filter, `Disallow: /studio` in robots.txt
+- Staging (`test.elysetindall.com`): deploy-time `Disallow: /` + `X-Robots-Tag` (`SEARCH-P2-008`); not in committed robots.txt
 - See [search-and-analytics.md](plans/search-and-analytics.md) (`SEARCH-*`) for the measurement + technical SEO backlog
 
 ## Do / don’t

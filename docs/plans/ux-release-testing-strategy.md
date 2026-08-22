@@ -146,7 +146,7 @@ Smoke retains thin route canaries (home/about/contact/gallery/news/book) alongsi
 | `J-FOOT-01` | Footer CTAs | `planned` | Materials / Contact / Lessons |
 | `J-ABOUT-01` | About → Lessons / Book CTAs | `planned` | Teaching cross-links |
 | `J-A11Y-01` | Skip link / nav landmark / filter tablists | `planned` | Smoke-level a11y |
-| `J-SEO-01` | Title/canonical/OG; sitemap excludes `/studio` | `done` | `tests/journeys/seo.spec.ts` |
+| `J-SEO-01` | Title/canonical/OG; sitemap excludes `/studio`; staging noindex when on SWA host | `done` | `tests/journeys/seo.spec.ts` |
 
 ### P2 — Studio / authenticated (L4)
 

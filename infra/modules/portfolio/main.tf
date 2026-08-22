@@ -239,3 +239,19 @@ resource "azurerm_static_web_app_custom_domain" "www" {
   domain_name       = "www.${var.custom_domain}"
   validation_type   = "cname-delegation"
 }
+
+# Subdomains (staging test.elysetindall.com). TXT validation so apply does not
+# wait on DNS — unlike cname-delegation, which fails CD until the CNAME exists.
+resource "azurerm_static_web_app_custom_domain" "hostname" {
+  for_each          = toset(var.custom_hostnames)
+  static_web_app_id = azurerm_static_web_app.main.id
+  domain_name       = each.value
+  validation_type   = "dns-txt-token"
+
+  lifecycle {
+    precondition {
+      condition     = var.custom_domain == "" || (each.value != var.custom_domain && each.value != "www.${var.custom_domain}")
+      error_message = "custom_hostnames must not repeat custom_domain or www.<custom_domain>."
+    }
+  }
+}

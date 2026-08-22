@@ -164,7 +164,7 @@ Public forms POST to `/api/contactInquiry`. Email (and SMS when configured) go t
 ### Turnstile
 
 1. Create a free Cloudflare account → **Turnstile → Add widget**.
-2. Hostnames: `elysetindall.com`, `www.elysetindall.com`, staging SWA host, `localhost`.
+2. Hostnames: `elysetindall.com`, `www.elysetindall.com`, `test.elysetindall.com`, staging SWA host (`*.azurestaticapps.net`), `localhost`.
 3. Set **shared** vault only (commands above).
 4. Sync SWA API secrets (secret key → Functions). Redeploy so Build release picks up the site key.
 

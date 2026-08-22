@@ -65,6 +65,7 @@ module "portfolio" {
   environment               = "staging"
   location                  = var.location
   custom_domain             = var.custom_domain
+  custom_hostnames          = var.custom_hostnames
   additional_auth_hostnames = var.additional_auth_hostnames
   github_owner              = var.github_owner
   github_owner_id           = var.github_owner_id
@@ -87,6 +88,11 @@ output "static_web_app_name" {
 
 output "static_web_app_default_hostname" {
   value = module.portfolio.static_web_app_default_hostname
+}
+
+output "custom_hostname_validation_tokens" {
+  value     = module.portfolio.custom_hostname_validation_tokens
+  sensitive = true
 }
 
 output "static_web_app_api_key" {

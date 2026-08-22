@@ -1,6 +1,6 @@
 # Runbook: DNS and domain
 
-Custom-domain validation and apex DNS mechanics for `elysetindall.com`. For the full Namecheap EasyWP → Azure migration (redirects, cutover, search consoles, decommission), use [wordpress-to-azure-cutover.md](wordpress-to-azure-cutover.md).
+Custom-domain validation and DNS mechanics for `elysetindall.com` (prod apex/www) and `test.elysetindall.com` (staging). For the full Namecheap EasyWP → Azure migration (redirects, cutover, search consoles, decommission), use [wordpress-to-azure-cutover.md](wordpress-to-azure-cutover.md).
 
 ## Validate custom domain
 
@@ -41,6 +41,30 @@ Preferred public host is the apex (`https://elysetindall.com`). Terraform binds 
 3. Confirm `https://www.elysetindall.com/` returns **301** to `https://elysetindall.com/` (path preserved)
 
 Without “Set as default,” www serves the site with a valid cert but does not redirect — duplicate host for SEO. Entra callback URIs already include www when `custom_domain` is set.
+
+## Staging: `test.elysetindall.com`
+
+Do **not** set staging `custom_domain` to `test.elysetindall.com` — that variable is apex-only and would also try to bind `www.test.elysetindall.com`. Staging uses `custom_hostnames = ["test.elysetindall.com"]` (`dns-txt-token`) so Terraform apply does not wait on DNS.
+
+**After staging Terraform apply:**
+
+1. `cd infra/environments/staging && terraform output -json custom_hostname_validation_tokens` (sensitive map; copy the `test.elysetindall.com` value)
+2. Staging SWA hostname: `terraform output -raw static_web_app_default_hostname`
+3. Namecheap → Domain List → Manage → **Advanced DNS**:
+
+| Type | Host | Value |
+|------|------|-------|
+| TXT | `_dnsauth.test` | `<validation token from step 1>` |
+| CNAME | `test` | `ambitious-glacier-056054a0f.7.azurestaticapps.net` (confirm with `terraform output -raw static_web_app_default_hostname` if the SWA was ever recreated) |
+
+4. Portal → Static Web App **staging** → **Custom domains** → wait until `test.elysetindall.com` is **Ready**
+5. Select `test.elysetindall.com` → **Set as default** so `*.azurestaticapps.net` 301s there (same pattern as prod apex). Smoke already prefers a Ready custom domain via `scripts/resolve-swa-hostname.sh`.
+6. Confirm `https://test.elysetindall.com/` serves the site with a valid cert
+7. Cloudflare Turnstile widget: add hostname `test.elysetindall.com` ([rotate-secrets.md](rotate-secrets.md#turnstile))
+
+**Crawlers:** Staging deploys patch `robots.txt` (`Disallow: /`) and `X-Robots-Tag: noindex, nofollow, noarchive` on the uploaded artifact only (`SEARCH-P2-008`). Production `public/robots.txt` is unchanged. Canonicals still point at `https://elysetindall.com`.
+
+Entra redirect URIs include `https://test.elysetindall.com/.auth/login/aad/callback` automatically from `custom_hostnames`.
 
 ## Certificates
 

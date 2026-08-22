@@ -10,7 +10,7 @@ let clickBound = false;
 
 export function initGa() {
   if (initialized || typeof window === 'undefined') return;
-  if (!shouldLoadGa(window.location.pathname, documentRequestsNoIndex())) return;
+  if (!shouldLoadGa(window.location.pathname, documentRequestsNoIndex(), window.location.hostname)) return;
 
   const measurementId = getGaMeasurementId();
   if (!measurementId) return;

@@ -1,8 +1,8 @@
 # Plan: Google Search Console & Analytics
 
 **Artifact ID:** `ELYSE-SEARCH-001`  
-**Version:** 1.14  
-**Last updated:** 2026-08-10  
+**Version:** 1.15  
+**Last updated:** 2026-08-22  
 **Audience:** Agents, implementers, operators  
 **Scope:** Google Search Console (GSC), Google Analytics 4 (GA4), and related technical SEO that makes those tools useful — not casting content strategy itself.
 
@@ -36,7 +36,7 @@ Implement **one phase (or one `SEARCH-*` item) per PR** when practical. Prefer l
 |--------------|--------|----------------|
 | Phase 0 — Apex / GSC / GA4 property | `done` | `SEARCH-P0-004` request indexing (`planned`) |
 | Phase 1 — GA4 measurement | Mostly `done` | `SEARCH-P1-005` Admin checklist (`planned`); DebugView verify under `SEARCH-P1-003`; `SEARCH-P1-006` `wont_fix` |
-| Phase 2 — Technical SEO | `done` | — |
+| Phase 2 — Technical SEO | `done` | Staging custom host `noindex` (`SEARCH-P2-008`) |
 | Phase 3 — Monthly GSC+GA loop | `done` (runbook) | Habit ACs unchecked; **SoT is Phase 4 artifact** |
 | Phase 4 — Automate monthly extract | Partial | `SEARCH-P4-001`/`002` `done` (runbook/workflow); residual: `SEARCH-P4-003`/`004` planned |
 
@@ -72,7 +72,7 @@ GA must load only on **public** pages (never `/studio`). App Insights remains th
 |------------|--------|-----------|
 | GA4 Measurement ID as code (default `G-XEE29C0RRE`) | Terraform `ga_measurement_id` → GitHub `GA_MEASUREMENT_ID` → `PUBLIC_GA_MEASUREMENT_ID` | `SEARCH-P1-001` |
 | Client gtag loader | `src/scripts/ga.ts`, `src/lib/analytics.ts`, `BaseLayout` | `SEARCH-P1-002` |
-| Skip GA on Studio / `noindex` | Path + robots meta checks; `/studio` sets `noIndex` | `SEARCH-P1-002`, `SEARCH-P2-001` |
+| Skip GA on Studio / `noindex` / non-prod hosts | Path + robots meta + hostname (`elysetindall.com` / `www` only) | `SEARCH-P1-002`, `SEARCH-P2-001`, `SEARCH-P2-008` |
 | Conversion / engagement events | `trackGaEvent` + inquiry / downloads / CTAs | `SEARCH-P1-003` |
 | Privacy disclosure for GA | `src/pages/privacy.astro` | `SEARCH-P1-004` |
 | Consent Mode banner | Skipped — measurement-only, no consent UI | `SEARCH-P1-006` (`wont_fix`) |
@@ -87,6 +87,7 @@ GA must load only on **public** pages (never `/studio`). App Insights remains th
 | `Disallow: /studio` | `public/robots.txt` | `SEARCH-P2-005` |
 | Slashless materials URLs | Materials JSON-LD + Hero/Footer hrefs | `SEARCH-P2-006` |
 | SEO journey coverage | `tests/journeys/seo.spec.ts` (`J-SEO-01`); smoke Disallow check | `SEARCH-P2-007` |
+| Staging not indexed | Deploy-time `Disallow: /` + `X-Robots-Tag` on staging only; `test.elysetindall.com` | `SEARCH-P2-008` |
 
 ### Live ops (already done)
 
@@ -140,7 +141,7 @@ Confirm `www.elysetindall.com` still 301s to the apex after any domain change ([
 | ID | Title | Status | Depends on | Primary files |
 |----|-------|--------|------------|---------------|
 | `SEARCH-P1-001` | Provision Measurement ID as Terraform → GitHub env → Astro build | `done` | — | `infra/modules/portfolio/{variables,github_actions}.tf`, env stacks, workflows, `.env.example` |
-| `SEARCH-P1-002` | Load gtag on public pages; skip Studio / noindex | `done` | `SEARCH-P1-001` | `src/lib/analytics.ts`, `src/scripts/ga.ts`, `src/layouts/BaseLayout.astro` |
+| `SEARCH-P1-002` | Load gtag on public pages; skip Studio / noindex / non-prod hosts | `done` | `SEARCH-P1-001` | `src/lib/analytics.ts`, `src/scripts/ga.ts`, `src/layouts/BaseLayout.astro` |
 | `SEARCH-P1-003` | Define conversion / engagement events | `done` | `SEARCH-P1-002` | Inquiry forms, materials downloads, reel/materials CTAs |
 | `SEARCH-P1-004` | Privacy disclosure for Analytics | `done` | `SEARCH-P1-002` | `src/pages/privacy.astro` |
 | `SEARCH-P1-005` | Keep GA measurement-only (no ads/signals unless chosen) | `planned` | — | GA Admin property settings (ops checklist below) |
@@ -169,6 +170,7 @@ Confirm `www.elysetindall.com` still 301s to the apex after any domain change ([
 - [x] Public pages initialize gtag with the configured Measurement ID
 - [x] `/studio` and `/studio/*` do not send GA hits
 - [x] Pages with `noindex` (e.g. style-guide, studio help) do not send GA hits
+- [x] Non-production hosts (`test.elysetindall.com`, `*.azurestaticapps.net`, localhost) do not send GA hits (`isPublicProductionHost`)
 - [x] Documented in [observability.md](../runbooks/observability.md)
 
 </details>
@@ -256,6 +258,7 @@ Keep the event set small and stable:
 | `SEARCH-P2-005` | Optional `Disallow: /studio` in robots.txt | `done` | — | `public/robots.txt` |
 | `SEARCH-P2-006` | Align slashless canonicals (e.g. materials JSON-LD trailing slash) | `done` | — | Page JSON-LD URLs vs canonicals |
 | `SEARCH-P2-007` | Journey/smoke coverage for SEO basics | `done` | — | `tests/journeys/seo.spec.ts` (`J-SEO-01`); smoke robots Disallow |
+| `SEARCH-P2-008` | Keep staging (`test.elysetindall.com`) out of search indexes | `done` | — | `scripts/apply-staging-noindex.mjs`; staging SWA `custom_hostnames`; GA host skip |
 
 <details>
 <summary><code>SEARCH-P2-002</code> — Casting titles</summary>
@@ -322,7 +325,22 @@ Asset: 1200×630 JPEG at `/images/og-default.jpg`. Width/height metas only for t
 **Acceptance criteria**
 
 - [x] `J-SEO-01` in `tests/journeys/seo.spec.ts` (title/canonical/OG; no double-brand casting title; robots Disallow; sitemap excludes `/studio`)
-- [x] Smoke asserts `Disallow: /studio`
+- [x] Smoke asserts `Disallow: /studio` on production / local preview; staging SWA is host-aware (`SEARCH-P2-008`)
+
+</details>
+
+<details>
+<summary><code>SEARCH-P2-008</code> — Staging not indexed</summary>
+
+**Acceptance criteria**
+
+- [x] Staging public host is `test.elysetindall.com` (Terraform `custom_hostnames`, TXT + CNAME in [dns-and-domain.md](../runbooks/dns-and-domain.md))
+- [x] Staging deploy rewrites `robots.txt` to `Disallow: /` (no Sitemap) and sets `X-Robots-Tag: noindex, nofollow, noarchive` — **after** downloading the shared release artifact, **before** SWA upload. Production artifact is unmodified.
+- [x] Canonicals continue to point at `https://elysetindall.com` (shared Astro `site`)
+- [x] GA loads only on `elysetindall.com` / `www.elysetindall.com` (`isPublicProductionHost`)
+- [x] Smoke / `J-SEO-01` are host-aware: staging expects noindex; prod / local preview keep `Disallow: /studio` + Sitemap
+
+Do **not** put `X-Robots-Tag` or `Disallow: /` in committed `public/robots.txt` / `staticwebapp.config.json` — those ship to production.
 
 </details>
 
@@ -503,7 +521,7 @@ GSC and GA4 properties are live. **SoT:** automated `SEARCH-P4-002` artifact und
 1. **Phase 0** — Apex / GSC / GA4 registration — **done**; residual: request indexing (`SEARCH-P0-004`)
 2. **Phase 1a** — Measurement ID + loader + privacy — **done** (`SEARCH-P1-001`, `002`, `004`)
 3. **Phase 1b** — Conversion events — **done in repo** (`SEARCH-P1-003`); Consent Mode — **wont_do** (`SEARCH-P1-006`); residual ops: measurement-only GA Admin (`SEARCH-P1-005`) + DebugView verify
-4. **Phase 2** — SEO polish — **done** (`SEARCH-P2-001`–`007`)
+4. **Phase 2** — SEO polish — **done** (`SEARCH-P2-001`–`008`)
 5. **Phase 3** — Monthly loop runbook → feed `DISC-*` — **done in repo** ([search-ops-monthly.md](../runbooks/search-ops-monthly.md)); SoT is Phase 4 artifact
 6. **Phase 4** — Automate `SEARCH-P3-001`: `SEARCH-P4-001`/`002` **done** (runbook + workflow); next `SEARCH-P4-003`/`004` → casting Tier 4 (`DISC-P4-003`/`004`)
 
@@ -516,7 +534,7 @@ GSC and GA4 properties are live. **SoT:** automated `SEARCH-P4-002` artifact und
 | [casting-discoverability.md](casting-discoverability.md) | Casting SEO backlog (`DISC-*`); Tier 4 lander pipeline consumes `SEARCH-P4` signals |
 | [search-ops-monthly.md](../runbooks/search-ops-monthly.md) | Phase 3 checklist; Phase 4 SoT is [`docs/ops/search-signals/`](../ops/search-signals/) |
 | [wordpress-to-azure-cutover.md](../runbooks/wordpress-to-azure-cutover.md) §6 | Historical cutover checklist; residual indexing in `SEARCH-P0-004` |
-| [dns-and-domain.md](../runbooks/dns-and-domain.md) | Apex / www |
+| [dns-and-domain.md](../runbooks/dns-and-domain.md) | Apex / www / staging `test.elysetindall.com` |
 | [operational-excellence.md](operational-excellence.md) | Monthly scorecard; `OPS-P5-*` site performance (GA visits/top pages + App Insights contacts/updates) |
 | [ga-data-api-access.md](../runbooks/ga-data-api-access.md) | GA Data API KV secrets for scorecard (`OPS-P5-002`); prefer reuse for GSC |
 | [gsc-data-api-access.md](../runbooks/gsc-data-api-access.md) | GSC Search Analytics SA + `GSC-SITE-URL` (`SEARCH-P4-001`) |

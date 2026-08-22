@@ -9,6 +9,19 @@ export function isStaticWebAppHost(): boolean {
   return /\.azurestaticapps\.net/i.test(base) || /elysetindall\.com/i.test(base);
 }
 
+/**
+ * Staging SWA (azure host or test.elysetindall.com) gets Disallow: / + X-Robots-Tag
+ * at deploy time. Local preview and production keep public robots.txt.
+ */
+export function expectsStagingNoIndex(): boolean {
+  try {
+    const host = new URL(process.env.BASE_URL || 'http://localhost').hostname.toLowerCase();
+    return host === 'test.elysetindall.com' || host.endsWith('.azurestaticapps.net');
+  } catch {
+    return false;
+  }
+}
+
 /** Wait until staging serves HTTP 2xx/3xx for a path (SWA CDN propagation). */
 export async function waitForOk(page: Page, path: string) {
   const deadline = Date.now() + PROPAGATION_DEADLINE_MS;

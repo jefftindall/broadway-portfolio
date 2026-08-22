@@ -20,6 +20,24 @@ variable "custom_domain" {
   default     = ""
 }
 
+variable "custom_hostnames" {
+  type        = list(string)
+  description = "Non-apex hostnames to bind with TXT validation (e.g. staging test.elysetindall.com). Do not include the apex or www — those come from custom_domain. Empty on prod."
+  default     = []
+
+  validation {
+    condition     = length(var.custom_hostnames) == length(toset(var.custom_hostnames))
+    error_message = "custom_hostnames must not contain duplicates."
+  }
+
+  validation {
+    condition = alltrue([
+      for host in var.custom_hostnames : can(regex("^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$", host))
+    ])
+    error_message = "custom_hostnames must be lowercase FQDNs (e.g. test.elysetindall.com)."
+  }
+}
+
 variable "github_owner" {
   type        = string
   description = "GitHub org or user that owns the portfolio repo"

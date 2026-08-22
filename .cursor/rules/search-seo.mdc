@@ -25,7 +25,7 @@ Phased work and action IDs live in [docs/plans/search-and-analytics.md](docs/pla
 
 ## Phase 1 — GA4 (measurement)
 
-- Load GA only on **public** pages. Skip `/studio` and any page with `noIndex` (`shouldLoadGa` in `src/lib/analytics.ts`).
+- Load GA only on **public production** pages (`elysetindall.com` / `www`). Skip `/studio`, any page with `noIndex`, and staging hosts (`shouldLoadGa` / `isPublicProductionHost` in `src/lib/analytics.ts`).
 - App Insights remains Studio/ops telemetry — do not send Studio diagnostics to GA.
 - Keep the event set small: `generate_lead`, `file_download`, `select_content` via `trackGaEvent` / `data-ga-*`.
 - Consent Mode banner is `SEARCH-P1-006` `wont_fix` unless product/legal reopens it.
@@ -37,7 +37,7 @@ Phased work and action IDs live in [docs/plans/search-and-analytics.md](docs/pla
 - **Casting landers:** Inbound SEO only. Do **not** link to `/for` or `/for/*` from nav, footer, About, Shows, Materials, or credit lists — discovery is sitemap + search. `LandingLayout` ends after **Related credits** (plus “View all shows”). Never add CTAs, casting-index links, Materials links, or other chrome below that section — footer Materials / Contact / Lessons is the action strip. Landers may link **out** to those canonical pages.
 - **JSON-LD:** `Seo.astro` prepends default `Person` when custom `jsonLd` has no top-level / `@graph` Person. Nested `about` / `founder` do not count. Do not emit duplicate conflicting Person `@id`s.
 - **Canonicals / schema URLs:** Prefer slashless paths (e.g. `/materials`, not `/materials/`).
-- **Studio:** `noIndex` on `/studio`; sitemap filters `/studio`; `Disallow: /studio` in `public/robots.txt`.
+- **Studio:** `noIndex` on `/studio`; sitemap filters `/studio`; `Disallow: /studio` in `public/robots.txt`. Staging is noindexed at deploy time (`SEARCH-P2-008`) — not via committed robots.txt.
 - **OG default:** `public/images/og-default.jpg` is 1200×630 JPEG; default path emits `og:image:width` / `height` / `alt`.
 - **Tests:** `J-SEO-01` in `tests/journeys/seo.spec.ts`; smoke asserts robots Disallow.
 
@@ -60,7 +60,7 @@ When you change the surfaces in this rule’s globs (or GA events / SEO contract
 | GA loader, skip rules, or events | `search-and-analytics.md` Phase 1 ACs + [observability.md](docs/runbooks/observability.md) |
 | Title suffix / casting title contract | Plan Phase 2 + `AGENTS.md` SEO section + `add-casting-page.md` |
 | Person JSON-LD merge or page schemas | Plan Phase 2 + `docs/style-guide.md` SEO notes |
-| robots.txt / OG default / slashless URLs | Plan Phase 2 statuses/ACs |
+| robots.txt / OG default / slashless URLs / staging noindex | Plan Phase 2 statuses/ACs (`SEARCH-P2-005`, `SEARCH-P2-008`) |
 | SEO journey/smoke coverage | Plan `SEARCH-P2-007` + `ux-release-testing-strategy.md` (`J-SEO-01`) |
 | Monthly GSC/GA review process | Plan Phase 3–4 + [search-ops-monthly.md](docs/runbooks/search-ops-monthly.md) + [`docs/ops/search-signals/`](docs/ops/search-signals/) |
 | Casting lander draft automation | [casting-discoverability.md](docs/plans/casting-discoverability.md) Tier 4 + Gemini budget in cost-and-quotas |

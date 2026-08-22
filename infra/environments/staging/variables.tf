@@ -12,13 +12,19 @@ variable "location" {
 
 variable "custom_domain" {
   type        = string
-  description = "Leave empty for staging unless using a staging hostname"
+  description = "Apex custom domain (leave empty on staging — use custom_hostnames for test.elysetindall.com)"
   default     = ""
+}
+
+variable "custom_hostnames" {
+  type        = list(string)
+  description = "Non-apex hostnames bound on this SWA (TXT validation). Staging public host is test.elysetindall.com."
+  default     = ["test.elysetindall.com"]
 }
 
 variable "additional_auth_hostnames" {
   type        = list(string)
-  description = "Extra hostnames allowed to complete Entra sign-in (Azure SWA hostname is added automatically)"
+  description = "Extra hostnames allowed to complete Entra sign-in (Azure SWA hostname and custom_hostnames are added automatically)"
   default     = []
 }
 
