@@ -16,7 +16,7 @@ Private **voice** lessons are currently inquire-then-schedule: rates live on [`/
 6. Choose a vendor stack scored on complexity, cost, setup effort, and annual maintenance.
 7. Prefer a processor whose APIs/webhooks can later feed **Studio** (paid status, month rollups) without abandoning Phase 1 Payment Links.
 
-This plan compares options and recommends a phased path. Phase 1 Payment Links are **in progress**: Key Vault placeholders + runtime feature flag + Privacy/Terms are in repo; live CTAs wait on test-mode links in staging KV.
+This plan compares options and recommends a phased path. Phase 1 Payment Links are **in progress**: test/live keys live in `kv-elyse-shared`; bootstrap Terraform owns products, prices (synced from `lessons-book.md`), webhooks, and Payment Links; staging CTAs wait on a successful bootstrap apply + sync.
 
 _Last updated: 2026-08-22._
 
@@ -314,12 +314,13 @@ Do not charge cards from unconfirmed voice prompts. Keep `/studio` and `/studio/
 
 | # | Work | Status |
 |---|------|--------|
-| 1 | Stripe account + per-env Key Vault placeholders (`STRIPE-*`; staging test / prod live) | `done` (populate values in KV after apply) |
+| 1 | Stripe account + shared Key Vault `STRIPE-TEST-*` / `STRIPE-LIVE-*` (staging maps test, prod maps live) | `done` (one-off copy from env vaults via `scripts/copy-stripe-keys-to-shared-kv.sh`) |
 | 2 | Privacy/Terms updates for paid lessons | `done` (`/privacy#payments`, `/terms#paid-lessons`) |
 | 3 | `/lessons/book` Pay CTAs gated by `LESSON_PAYMENTS_ENABLED` (staging **true**, prod **false**) | `in_progress` (UI wired; hidden on prod until go-live + live Payment Links) |
 | 4 | Operator runbook: day-of charge, refund, monthly CSV | `planned` |
 | 5 | Journey test: inquiry flow + legal copy; pay CTA when flag+links (`LESSON-01` / `LESSON-03`) | `done` |
-| 6 | Later: Checkout Session Function; webhook → paid status for Studio | `planned` |
-| 7 | Later: Studio schedule / paid / comms / reports per [`studio-teaching-business.md`](./studio-teaching-business.md) | `planned` |
+| 6 | Bootstrap: products, prices (cents from `lessons-book.md`), webhook endpoints, Payment Link upsert; `POST /api/stripeWebhook` | `done` |
+| 7 | Later: Checkout Session Function; webhook → paid status for Studio | `planned` |
+| 8 | Later: Studio schedule / paid / comms / reports per [`studio-teaching-business.md`](./studio-teaching-business.md) | `planned` |
 
-CD ships **one Astro artifact** to staging and prod, so the pay-flow flag and Payment Link URLs are **runtime** SWA app settings (`GET /api/lessonPayConfig`), not baked `PUBLIC_*` vars. Restricted API keys (`rk_test_` / `rk_live_`) and webhook secrets stay in the env vaults and are never returned by that endpoint. Populate commands: [rotate-secrets.md](../runbooks/rotate-secrets.md#stripe-lesson-payments). Go-live on production: `terraform apply -var='lesson_payments_enabled=true'` in `infra/environments/prod` after live Payment Links are set.
+CD ships **one Astro artifact** to staging and prod, so the pay-flow flag and Payment Link URLs are **runtime** SWA app settings (`GET /api/lessonPayConfig`), not baked `PUBLIC_*` vars. Restricted API keys (`rk_test_` / `rk_live_`) and webhook secrets stay in **`kv-elyse-shared`** and are never returned by that endpoint. Rate changes in `lessons-book.md` require a **bootstrap re-apply** so Stripe prices follow the site. Populate / copy commands: [rotate-secrets.md](../runbooks/rotate-secrets.md#stripe-lesson-payments). Go-live on production: `terraform apply -var='lesson_payments_enabled=true'` in `infra/environments/prod` after live Payment Links are set.

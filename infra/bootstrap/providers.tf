@@ -18,6 +18,14 @@ terraform {
       source  = "hashicorp/random"
       version = "~> 3.6"
     }
+    stripe = {
+      source  = "stripe/stripe"
+      version = "~> 0.2.2"
+    }
+    external = {
+      source  = "hashicorp/external"
+      version = "~> 2.3"
+    }
   }
 
   # Local state only — this stack creates the remote backend used by staging/prod.

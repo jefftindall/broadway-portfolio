@@ -10,8 +10,14 @@
 #   Resource group:    rg-elyse-tfstate
 #   Storage account:   stelysetfstateeu2
 #   Container:         tfstate
-#   Shared RG/vault:   rg-elyse-shared / kv-elyse-shared (SITE-*, Turnstile, ACS, ALERT-*, GA-*, GSC-*, MONITOR-*)
+#   Shared RG/vault:   rg-elyse-shared / kv-elyse-shared (SITE-*, Turnstile, ACS, ALERT-*, GA-*, GSC-*, MONITOR-*, Stripe TEST/LIVE)
 #   Shared ACS:        acs-elyse-shared + email-elyse-shared (one MailFrom / SMS number)
+#   Stripe catalog:    products + prices (from src/content/pages/lessons-book.md) + webhook endpoints
+#                      after STRIPE-TEST-* / STRIPE-LIVE-* keys are populated (not REPLACE_ME).
+#                      One-off copy from env vaults: ../../scripts/copy-stripe-keys-to-shared-kv.sh
+#                      then re-apply this stack. Do not data-source env vaults from bootstrap.
+#                      First creation of STRIPE-*-SECRET-KEY placeholders: terraform apply
+#                      -target those eight azurerm_key_vault_secret resources, then copy, then full apply.
 #   Studio monitor:    azuread_user studio-monitor@<initial domain> + MONITOR-UPN/PASSWORD/TOTP-SEED
 #                      Apply requires User Administrator (or Global Administrator). TOTP seed:
 #                      docs/runbooks/studio-auth-monitoring.md

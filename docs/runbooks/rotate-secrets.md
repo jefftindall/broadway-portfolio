@@ -6,8 +6,8 @@ Secrets live in Azure Key Vault as the source of truth. Managed Functions on SWA
 
 | Scope | Key Vault | Resource group | Purpose |
 |---|---|---|---|
-| **Shared (build + ACS + ops alerts + GA/GSC scorecard + Studio monitor)** | `kv-elyse-shared` | `rg-elyse-shared` | SITE-*, Turnstile, ACS email/SMS, `ALERT-*`, `GA-*`, `GSC-*`, `MONITOR-*` (identical across envs) |
-| Staging API | `kv-elyse-staging` | `rg-elyse-portfolio-staging` | Gemini, GitHub App, allowlist, AAD, Stripe |
+| **Shared (build + ACS + ops alerts + GA/GSC scorecard + Studio monitor + Stripe)** | `kv-elyse-shared` | `rg-elyse-shared` | SITE-*, Turnstile, ACS email/SMS, `ALERT-*`, `GA-*`, `GSC-*`, `MONITOR-*`, `STRIPE-TEST-*` / `STRIPE-LIVE-*` |
+| Staging API | `kv-elyse-staging` | `rg-elyse-portfolio-staging` | Gemini, GitHub App, allowlist, AAD |
 | Production API | `kv-elyse-prod` | `rg-elyse-portfolio-prod` | Same as staging |
 
 Subscription: `e601e59a-c7f4-41f0-8178-b59740fb1974`
@@ -44,6 +44,7 @@ Created by **bootstrap** Terraform (`infra/bootstrap/shared_kv.tf`). One Astro b
 | `ACS-CONNECTION-STRING` | `ACS_CONNECTION_STRING` | Terraform-managed from `acs-elyse-shared` |
 | `ACS-EMAIL-SENDER` | `ACS_EMAIL_SENDER` | Terraform-managed Azure-managed MailFrom |
 | `ACS-SMS-FROM` | `ACS_SMS_FROM` | Manual E.164 toll-free; may be set in KV while verification is pending (~5 weeks). SMS sends only once ACS accepts the number |
+| `STRIPE-TEST-*` / `STRIPE-LIVE-*` | `STRIPE_*` | Lesson payments — see [Stripe](#stripe-lesson-payments). Not baked into the Astro bundle |
 | `MONITOR-UPN` | `MONITOR_UPN` | Terraform-managed Studio smoke user; [studio-auth-monitoring.md](studio-auth-monitoring.md) |
 | `MONITOR-PASSWORD` | `MONITOR_PASSWORD` | Terraform-managed (`random_password`); also in bootstrap state |
 | `MONITOR-TOTP-SEED` | `MONITOR_TOTP_SEED` | Operator-set Base32 seed (`REPLACE_ME` until enrolled). **Never** Terraform |
@@ -118,44 +119,44 @@ Never echo the JSON key. These secrets are **not** synced into SWA. Workflow: `.
 
 ## Stripe (lesson payments)
 
-Per-environment vaults so **staging stays on Stripe test mode** and **prod uses live keys**. CD deploys one Astro artifact to both SWAs, so Payment Links and the public pay-flow flag are **runtime** Function/SWA settings (`GET /api/lessonPayConfig`), not build-time `PUBLIC_*` vars.
+Test-mode and live keys both live in **shared** `kv-elyse-shared`. Staging SWA maps `STRIPE-TEST-*`; prod maps `STRIPE-LIVE-*`. Bootstrap Terraform owns products, prices (USD cents from [`src/content/pages/lessons-book.md`](../../src/content/pages/lessons-book.md)), webhook endpoints, and Payment Link upserts. Environment stacks only data-source those secrets — they must not feed bootstrap. CD deploys one Astro artifact to both SWAs, so Payment Links and the public pay-flow flag are **runtime** Function/SWA settings (`GET /api/lessonPayConfig`), not build-time `PUBLIC_*` vars.
 
-Terraform creates `REPLACE_ME` placeholders (`infra/modules/portfolio/stripe.tf`). Prefer a **restricted API key** (`rk_test_` / `rk_live_`) over a full secret key (`sk_`). Never put secret/restricted keys in the Astro bundle, git, or chat.
+Prefer a **restricted API key** (`rk_test_` / `rk_live_`) with Products, Prices, Webhook Endpoints, and Payment Links write. Never put secret/restricted keys in the Astro bundle, git, or chat.
 
-| Secret name | Env var | Staging | Production |
+| Secret name | Env var | Staging (test) | Production (live) |
 |---|---|---|---|
-| `STRIPE-SECRET-KEY` | `STRIPE_SECRET_KEY` | Test-mode restricted key (`rk_test_…`) | Live restricted key (`rk_live_…`) |
-| `STRIPE-PUBLISHABLE-KEY` | `STRIPE_PUBLISHABLE_KEY` | `pk_test_…` | `pk_live_…` |
-| `STRIPE-WEBHOOK-SECRET` | `STRIPE_WEBHOOK_SECRET` | Test endpoint `whsec_…` (Phase 2) | Live endpoint `whsec_…` |
-| `STRIPE-PAYMENT-LINK-30MIN` | `STRIPE_PAYMENT_LINK_30MIN` | Test Payment Link (`https://buy.stripe.com/test_…`) | Live 30-min link |
-| `STRIPE-PAYMENT-LINK-60MIN` | `STRIPE_PAYMENT_LINK_60MIN` | Test 60-min link | Live 60-min link |
+| `STRIPE-TEST-SECRET-KEY` / `STRIPE-LIVE-SECRET-KEY` | `STRIPE_SECRET_KEY` | `rk_test_…` or `sk_test_…` | `rk_live_…` or `sk_live_…` |
+| `STRIPE-TEST-PUBLISHABLE-KEY` / `STRIPE-LIVE-PUBLISHABLE-KEY` | `STRIPE_PUBLISHABLE_KEY` | `pk_test_…` | `pk_live_…` |
+| `STRIPE-TEST-WEBHOOK-SECRET` / `STRIPE-LIVE-WEBHOOK-SECRET` | `STRIPE_WEBHOOK_SECRET` | Written by bootstrap from `stripe_webhook_endpoint` | Same (live endpoint) |
+| `STRIPE-TEST-PAYMENT-LINK-30MIN` / `STRIPE-LIVE-PAYMENT-LINK-30MIN` | `STRIPE_PAYMENT_LINK_30MIN` | Upserted by bootstrap from the 30-min price | Same (live) |
+| `STRIPE-TEST-PAYMENT-LINK-60MIN` / `STRIPE-LIVE-PAYMENT-LINK-60MIN` | `STRIPE_PAYMENT_LINK_60MIN` | Upserted from the 60-min price | Same (live) |
 
 Feature flag (not a Key Vault secret): SWA app setting `LESSON_PAYMENTS_ENABLED`, Terraform `lesson_payments_enabled` — **true on staging**, **false on prod** until go-live. `GET /api/lessonPayConfig` returns links only when the flag is on **and** at least one Payment Link is a real `https://buy.stripe.com/…` URL (not `REPLACE_ME`). Prod with the flag off does not expose live links.
 
-```bash
-# After env terraform apply (secrets exist as REPLACE_ME).
-# Staging — Dashboard test mode (toggle "Test mode" on).
-az keyvault secret set --vault-name kv-elyse-staging --name STRIPE-SECRET-KEY --file ./stripe-rk-test.txt
-az keyvault secret set --vault-name kv-elyse-staging --name STRIPE-PUBLISHABLE-KEY --value "pk_test_..."
-az keyvault secret set --vault-name kv-elyse-staging --name STRIPE-WEBHOOK-SECRET --value "whsec_..."
-az keyvault secret set --vault-name kv-elyse-staging --name STRIPE-PAYMENT-LINK-30MIN --value "https://buy.stripe.com/test_..."
-az keyvault secret set --vault-name kv-elyse-staging --name STRIPE-PAYMENT-LINK-60MIN --value "https://buy.stripe.com/test_..."
-rm -f ./stripe-rk-test.txt
-./scripts/sync-swa-api-secrets.sh staging
+When advertised rates in `lessons-book.md` change, **re-apply `infra/bootstrap`** so Stripe prices and Payment Links follow the website (Stripe prices are immutable; Terraform replaces them).
 
-# Production — live mode. Leave LESSON_PAYMENTS_ENABLED=false until you are ready.
-az keyvault secret set --vault-name kv-elyse-prod --name STRIPE-SECRET-KEY --file ./stripe-rk-live.txt
-az keyvault secret set --vault-name kv-elyse-prod --name STRIPE-PUBLISHABLE-KEY --value "pk_live_..."
-az keyvault secret set --vault-name kv-elyse-prod --name STRIPE-WEBHOOK-SECRET --value "whsec_..."
-az keyvault secret set --vault-name kv-elyse-prod --name STRIPE-PAYMENT-LINK-30MIN --value "https://buy.stripe.com/..."
-az keyvault secret set --vault-name kv-elyse-prod --name STRIPE-PAYMENT-LINK-60MIN --value "https://buy.stripe.com/..."
-rm -f ./stripe-rk-live.txt
+```bash
+# After bootstrap apply (placeholders exist). One-off copy from env vaults if keys
+# were populated there first — never prints values. Strips trailing newlines so
+# Stripe Authorization headers stay valid:
+./scripts/copy-stripe-keys-to-shared-kv.sh
+
+# Or set shared secrets directly (never --value a secret key if history is retained):
+az keyvault secret set --vault-name kv-elyse-shared --name STRIPE-TEST-SECRET-KEY --file ./stripe-rk-test.txt
+az keyvault secret set --vault-name kv-elyse-shared --name STRIPE-TEST-PUBLISHABLE-KEY --value "pk_test_..."
+az keyvault secret set --vault-name kv-elyse-shared --name STRIPE-LIVE-SECRET-KEY --file ./stripe-rk-live.txt
+az keyvault secret set --vault-name kv-elyse-shared --name STRIPE-LIVE-PUBLISHABLE-KEY --value "pk_live_..."
+rm -f ./stripe-rk-test.txt ./stripe-rk-live.txt
+
+# Second bootstrap apply creates products, prices, webhooks, and Payment Links.
+cd infra/bootstrap && terraform apply
+./scripts/sync-swa-api-secrets.sh staging
 ./scripts/sync-swa-api-secrets.sh prod
 ```
 
-Never `--value` a restricted/secret key on the command line if your shell history is retained — write it to a `0600` file, set from `--file`, then delete the file. Sync copies resolved values into SWA (same as Gemini). The pay-flow **flag** is not in Key Vault; after links are populated, staging shows `/lessons/book` Pay CTAs automatically. To show them on production: `cd infra/environments/prod && terraform apply -var='lesson_payments_enabled=true'`.
+Do not write webhook secrets by hand — bootstrap stores `stripe_webhook_endpoint.secret` in `STRIPE-*-WEBHOOK-SECRET`. Restricted keys need Products / Prices / Webhook Endpoints / Payment Links write. The next **environment** Terraform apply will destroy leftover `STRIPE-*` secrets in `kv-elyse-staging` / `kv-elyse-prod` (already copied to shared). The pay-flow **flag** is not in Key Vault; after links are populated, staging shows `/lessons/book` Pay CTAs automatically. To show them on production: `cd infra/environments/prod && terraform apply -var='lesson_payments_enabled=true'`.
 
-If a live key is leaked, roll it in the Stripe Dashboard immediately (see [protecting against compromised API keys](https://support.stripe.com/questions/protecting-against-compromised-api-keys)) and update the matching vault secret + sync.
+If a live key is leaked, roll it in the Stripe Dashboard immediately (see [protecting against compromised API keys](https://support.stripe.com/questions/protecting-against-compromised-api-keys)) and update the matching shared vault secret + re-apply bootstrap + sync.
 
 ## Contact forms (ACS email / SMS + Cloudflare Turnstile)
 

@@ -72,3 +72,27 @@ variable "monitor_upn" {
   description = "UPN for the dedicated Studio smoke monitor user. Empty uses studio-monitor@<initial tenant domain>."
   default     = ""
 }
+
+variable "stripe_webhook_url_test" {
+  type        = string
+  description = "Known staging hostname for Stripe webhooks. Not an environment-stack output."
+  default     = "https://test.elysetindall.com/api/stripeWebhook"
+}
+
+variable "stripe_webhook_url_live" {
+  type        = string
+  description = "Known production hostname for Stripe webhooks. Not an environment-stack output."
+  default     = "https://elysetindall.com/api/stripeWebhook"
+}
+
+variable "stripe_payment_link_success_url_test" {
+  type        = string
+  description = "Where Stripe Payment Links return after a test-mode checkout."
+  default     = "https://test.elysetindall.com/lessons/book"
+}
+
+variable "stripe_payment_link_success_url_live" {
+  type        = string
+  description = "Where Stripe Payment Links return after a live checkout."
+  default     = "https://elysetindall.com/lessons/book"
+}
