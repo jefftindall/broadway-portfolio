@@ -1,0 +1,153 @@
+---
+import { bakedLessonPayConfig, type LessonPayRateId } from '../lib/lessonPayments';
+import CtaLink from './CtaLink.astro';
+
+interface Rate {
+  id: string;
+  label: string;
+  price: string;
+}
+
+interface Props {
+  rates: Rate[];
+}
+
+const { rates } = Astro.props;
+const baked = bakedLessonPayConfig();
+const bakedRates = rates.filter((rate) => baked.links[rate.id as LessonPayRateId]);
+---
+
+{
+  baked.enabled ? (
+    <div
+      id="lesson-pay"
+      class="mt-8 border-t border-line pt-6"
+      data-lesson-pay
+      data-baked="true"
+    >
+      <h3 class="font-display text-2xl text-spotlight">Pay for a lesson</h3>
+      <p class="mt-2 text-sm text-muted">
+        Prepaid private <strong>voice</strong> lessons only. Schedule is confirmed by email — pay
+        the matching session length after you have a time, or just before we start.
+      </p>
+      <div class="mt-4 flex flex-wrap gap-3">
+        {
+          bakedRates.map((rate) => (
+            <CtaLink
+              href={baked.links[rate.id as LessonPayRateId] ?? '#'}
+              external
+              data-ga-event="select_content"
+              data-ga-content-type="lesson_payment"
+              data-ga-content-id={rate.id}
+              data-testid={`lesson-pay-${rate.id}`}
+            >
+              Pay {rate.price} · {rate.label}
+            </CtaLink>
+          ))
+        }
+      </div>
+      <p class="mt-4 text-xs text-muted">
+        Card numbers are handled by Stripe, not this site.{' '}
+        <a href="/terms#paid-lessons">Cancellation &amp; refunds</a>
+        {' · '}
+        <a href="/privacy#payments">Privacy</a>
+      </p>
+    </div>
+  ) : (
+    <div
+      id="lesson-pay"
+      class="mt-8 border-t border-line pt-6"
+      data-lesson-pay
+      data-baked="false"
+      data-rates={JSON.stringify(
+        rates.map((rate) => ({ id: rate.id, label: rate.label, price: rate.price })),
+      )}
+      hidden
+    ></div>
+  )
+}
+
+<script>
+  import { parseLessonPayConfig, sanitizeStripePaymentLink } from '../lib/lessonPayments';
+  import { trackGaEvent } from '../lib/analytics';
+
+  const root = document.querySelector<HTMLElement>('[data-lesson-pay]');
+  if (root && root.dataset.baked !== 'true') {
+    void (async () => {
+      try {
+        const res = await fetch('/api/lessonPayConfig', {
+          headers: { Accept: 'application/json' },
+        });
+        if (!res.ok) return;
+        const config = parseLessonPayConfig(await res.json());
+        if (!config.enabled) return;
+
+        const rates = JSON.parse(root.dataset.rates || '[]') as {
+          id: string;
+          label: string;
+          price: string;
+        }[];
+
+        const heading = document.createElement('h3');
+        heading.className = 'font-display text-2xl text-spotlight';
+        heading.textContent = 'Pay for a lesson';
+
+        const copy = document.createElement('p');
+        copy.className = 'mt-2 text-sm text-muted';
+        copy.append('Prepaid private ');
+        const voice = document.createElement('strong');
+        voice.textContent = 'voice';
+        copy.append(voice);
+        copy.append(
+          ' lessons only. Schedule is confirmed by email — pay the matching session length after you have a time, or just before we start.',
+        );
+
+        const actions = document.createElement('div');
+        actions.className = 'mt-4 flex flex-wrap gap-3';
+
+        const ctaClass =
+          'inline-flex min-h-11 items-center justify-center rounded-sm px-6 py-3 text-sm transition bg-gold text-ink font-semibold hover:brightness-110';
+
+        for (const rate of rates) {
+          const href = sanitizeStripePaymentLink(
+            config.links[rate.id as '30min' | '60min'],
+          );
+          if (!href) continue;
+          const a = document.createElement('a');
+          a.href = href;
+          a.className = ctaClass;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.dataset.testid = `lesson-pay-${rate.id}`;
+          a.textContent = `Pay ${rate.price} · ${rate.label}`;
+          a.addEventListener('click', () => {
+            trackGaEvent('select_content', {
+              content_type: 'lesson_payment',
+              content_id: rate.id,
+            });
+          });
+          actions.append(a);
+        }
+
+        if (!actions.childElementCount) return;
+
+        const legal = document.createElement('p');
+        legal.className = 'mt-4 text-xs text-muted';
+        legal.append('Card numbers are handled by Stripe, not this site. ');
+        const terms = document.createElement('a');
+        terms.href = '/terms#paid-lessons';
+        terms.textContent = 'Cancellation & refunds';
+        const sep = document.createTextNode(' · ');
+        const privacy = document.createElement('a');
+        privacy.href = '/privacy#payments';
+        privacy.textContent = 'Privacy';
+        legal.append(terms, sep, privacy);
+
+        root.replaceChildren(heading, copy, actions, legal);
+        root.hidden = false;
+      } catch {
+        // Stay hidden when Functions are not running (local `astro dev`).
+      }
+    })();
+  }
+</script>

@@ -9,7 +9,7 @@ SWA **origin** cache is invalidated automatically on each deploy ([SWA FAQ](http
 | Path | `Cache-Control` | Why |
 |------|-----------------|-----|
 | HTML and everything without a more specific route (`/`, `/shows`, `/downloads/*`, fonts not under `/_astro`, favicon, …) | `public, must-revalidate, max-age=30` via `/*` | Pages and downloads change in place. After 30s the browser must revalidate. |
-| `/studio`, `/studio/*`, `/api/*`, `/api/contactInquiry`, unmatched / 401 login 302s | `private, no-store` | Auth-gated (and inquiry) responses. A cached 302 to `/.auth/login/aad` replays after Entra returns to `/studio` and loops. 401 overrides inherit `globalHeaders`, not the `/studio` route. |
+| `/studio`, `/studio/*`, `/api/*`, `/api/contactInquiry`, `/api/lessonPayConfig`, unmatched / 401 login 302s | `private, no-store` | Auth-gated, inquiry, and public lesson-pay config responses. A cached 302 to `/.auth/login/aad` replays after Entra returns to `/studio` and loops. 401 overrides inherit `globalHeaders`, not the `/studio` route. |
 | `/_astro/*` | `public, max-age=31536000, immutable` | Vite/Astro content-hashes filenames (`Hero.xxxxx.js`). A new build gets a **new URL**. |
 | `/images/_derived/*` | `public, max-age=31536000, immutable` | Path is `/images/_derived/{sha256(original)}/{width}.webp`. New original bytes → new SHA → new URL. |
 | `/images/*` (originals, not `_derived`) | `public, max-age=604800` (7 days) | Stable public paths (`/images/shows/Ursula.jpg`). Not `immutable` so a later overwrite can refresh after TTL. |

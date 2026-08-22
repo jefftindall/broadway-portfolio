@@ -10,6 +10,7 @@ interface Props {
   'data-ga-content-id'?: string;
   'data-ga-file-name'?: string;
   'data-ga-file-extension'?: string;
+  'data-testid'?: string;
 }
 
 const {
@@ -22,6 +23,7 @@ const {
   'data-ga-content-id': dataGaContentId,
   'data-ga-file-name': dataGaFileName,
   'data-ga-file-extension': dataGaFileExtension,
+  'data-testid': dataTestId,
 } = Astro.props;
 
 const variants = {
@@ -47,6 +49,7 @@ const variants = {
   data-ga-content-id={dataGaContentId}
   data-ga-file-name={dataGaFileName}
   data-ga-file-extension={dataGaFileExtension}
+  data-testid={dataTestId}
 >
   <slot />
 </a>

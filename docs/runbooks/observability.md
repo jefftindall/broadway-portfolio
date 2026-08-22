@@ -89,6 +89,7 @@ User-facing messages stay short and non-technical. Full provider/SDK detail is o
 | `GitHubCommitRetry` | Transient GitHub/network or tip-race retry before success/failure |
 | `GET /api/publisherStatus` | Preflight allowlist check for Studio UI |
 | `GET /api/publishStatus` | Studio Done-step pipeline poll (`sha` → Actions run status) |
+| `GET /api/lessonPayConfig` | Public pay-flow flag + Payment Link URLs (no secret keys; empty when prod flag is off) |
 | Page views / client errors / fetch | Browser SDK in `BaseLayout` |
 | `StudioPublishUiSuccess` / `StudioPublishUiFailed` | Studio UI (always sampled; `reason` + optional `correlationId` on failures) |
 | `StudioPublishToProdCompleted` | Studio Done-step when Deploy Production succeeds (`durationMs` from Publish click; always sampled) |

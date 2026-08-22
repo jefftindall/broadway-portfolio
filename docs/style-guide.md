@@ -76,6 +76,7 @@ Contrast rule: primary CTAs use **gold on ink**. Muted text is secondary only.
 | `LessonsModule` | `src/components/LessonsModule.astro` | Flagship private voice / vocal coaching block |
 | `ContactLanes` | `src/components/ContactLanes.astro` | Casting vs lesson lanes (forms on `/contact`; links elsewhere) |
 | `InquiryForm` | `src/components/InquiryForm.astro` | Live casting / lesson forms → `POST /api/contactInquiry` |
+| `LessonPayCtas` | `src/components/LessonPayCtas.astro` | Stripe Payment Links on `/lessons/book` when `LESSON_PAYMENTS_ENABLED` is on |
 | `ShowCard` / `CreditList` | `src/components/` | Credits; filters by `category` |
 | `MediaCard` | `src/components/MediaCard.astro` | Gallery / media thumbnails |
 | `VideoEmbed` | `src/components/VideoEmbed.astro` | YouTube / Vimeo reel embeds |

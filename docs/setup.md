@@ -142,11 +142,13 @@ az keyvault secret set --vault-name kv-elyse-prod --name GITHUB-APP-PRIVATE-KEY 
 
 `ALLOWED_USER_IDS` is a comma-separated list matching SWA principal `userId`, `userDetails`, or email claim (lowercase).
 
+Stripe lesson-payment placeholders (`STRIPE-SECRET-KEY`, publishable key, webhook secret, 30/60-min Payment Links) are created on env apply. Staging uses **test mode**; prod uses **live**. Populate commands and the `LESSON_PAYMENTS_ENABLED` flag (staging on, prod off until go-live): [rotate-secrets.md](runbooks/rotate-secrets.md#stripe-lesson-payments).
+
 After first login to `/studio`, check `/.auth/me` while signed in to copy the exact `userId` / email into the allowlist.
 
 **Important:** SWA managed Functions do **not** resolve `@Microsoft.KeyVault(...)` app settings. After populating the vault (or whenever you change API secrets), sync resolved values into SWA with `./scripts/sync-swa-api-secrets.sh <staging|prod>`, the **Ops: sync SWA secrets** workflow, or `terraform apply` for that environment. `AAD_CLIENT_SECRET` stays a Key Vault reference (auth platform only). See [rotate-secrets.md](runbooks/rotate-secrets.md).
 
-Contact forms and the single CD build use **shared** Key Vault `kv-elyse-shared` (SITE-*, Turnstile, ACS). Env vaults keep Gemini / GitHub App / allowlist / AAD. Apply bootstrap first (shared ACS in `rg-elyse-shared`), populate shared secrets, then sync SWA — see [rotate-secrets.md](runbooks/rotate-secrets.md).
+Contact forms and the single CD build use **shared** Key Vault `kv-elyse-shared` (SITE-*, Turnstile, ACS). Env vaults keep Gemini / GitHub App / allowlist / AAD / Stripe. Apply bootstrap first (shared ACS in `rg-elyse-shared`), populate shared secrets, then sync SWA — see [rotate-secrets.md](runbooks/rotate-secrets.md). Stripe placeholders (`STRIPE-*`) are created on env apply; staging gets test-mode values, prod gets live. The public pay-flow flag is Terraform `lesson_payments_enabled` (staging **true**, prod **false** until go-live).
 
 ## 4. GitHub Actions OIDC (no deploy-token secret)
 

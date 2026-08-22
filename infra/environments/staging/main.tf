@@ -74,6 +74,7 @@ module "portfolio" {
   manage_github_actions     = var.manage_github_actions
   ga_measurement_id         = var.ga_measurement_id
   monitor_upn               = var.monitor_upn
+  lesson_payments_enabled   = var.lesson_payments_enabled
 }
 
 output "resource_group_name" {
