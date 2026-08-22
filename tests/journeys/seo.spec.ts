@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { sampleCastingSlug } from '../helpers/content';
-import { waitForOk, waitForRequestOk } from '../helpers/propagation';
+import { waitForOk, waitForRequestOk, expectsStagingNoIndex } from '../helpers/propagation';
 
 const castingSlug = sampleCastingSlug();
 
@@ -47,8 +47,15 @@ test.describe('J-SEO-01 technical SEO', () => {
   test('robots.txt Disallow /studio and Sitemap', async ({ request }) => {
     const robots = await waitForRequestOk(request, '/robots.txt');
     const text = await robots.text();
-    expect(text).toMatch(/Disallow:\s*\/studio/i);
-    expect(text).toMatch(/Sitemap:/i);
+    if (expectsStagingNoIndex()) {
+      expect(text).toMatch(/Disallow:\s*\/\s*$/m);
+      expect(text).not.toMatch(/Sitemap:/i);
+      const home = await waitForRequestOk(request, '/');
+      expect(home.headers()['x-robots-tag'] ?? '').toMatch(/noindex/i);
+    } else {
+      expect(text).toMatch(/Disallow:\s*\/studio/i);
+      expect(text).toMatch(/Sitemap:/i);
+    }
   });
 
   test('sitemap excludes studio and includes public paths', async ({ request }) => {

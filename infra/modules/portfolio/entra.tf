@@ -27,10 +27,11 @@ locals {
   monitor_identifier_uri = "api://${azuread_application.swa.client_id}"
 
   # Hostnames that must be able to complete an Entra sign-in:
-  # the Azure-generated SWA hostname plus apex/www custom domains for this environment.
+  # the Azure-generated SWA hostname plus apex/www and any extra custom hostnames.
   auth_hostnames = distinct(concat(
     [azurerm_static_web_app.main.default_host_name],
     var.custom_domain == "" ? [] : [var.custom_domain, "www.${var.custom_domain}"],
+    var.custom_hostnames,
     var.additional_auth_hostnames,
   ))
 

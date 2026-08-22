@@ -10,7 +10,9 @@ name: "CD: main"
 # After Deploy Staging: Smoke Staging (Playwright desktop + mobile) must pass before prod.
 # After Deploy Production: Smoke Production re-runs the same suite against prod; failure → Sev1
 # (SmokeFailed → ag-elyse-critical-prod: email + SMS + voice). No auto-rollback (TEST-D-003).
-# Build once per release; staging and prod deploy the same artifact that was verified.
+# Build once per release; staging and prod deploy the same HTML/JS artifact that was
+# verified. Staging-only: apply-staging-noindex.mjs rewrites robots.txt + X-Robots-Tag
+# on the downloaded copy before upload (prod keeps the unmodified artifact).
 # Serialize CD with staging-branch.yml (shared group) so only one deploy runs at a time.
 # cancel-in-progress: false waits instead of cancelling; GitHub keeps one pending slot
 # (latest-wins if more runs arrive while one is queued).
@@ -261,6 +263,14 @@ jobs:
         with:
           name: release-${{ github.sha }}
 
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Apply staging noindex (robots.txt + X-Robots-Tag)
+        run: node scripts/apply-staging-noindex.mjs dist
+
       - name: Azure login (OIDC)
         uses: azure/login@v3
         with:
@@ -356,14 +366,10 @@ jobs:
       - name: Resolve staging hostname
         id: host
         run: |
-          HOST=$(az staticwebapp show \
-            --name "${{ vars.AZURE_STATIC_WEB_APP_NAME }}" \
-            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
-            --query defaultHostname -o tsv)
-          if [ -z "$HOST" ]; then
-            echo "::error::Could not resolve staging Static Web App hostname"
-            exit 1
-          fi
+          chmod +x scripts/resolve-swa-hostname.sh
+          HOST=$(./scripts/resolve-swa-hostname.sh \
+            "${{ vars.AZURE_STATIC_WEB_APP_NAME }}" \
+            "${{ vars.AZURE_RESOURCE_GROUP }}")
           echo "hostname=$HOST" >> "$GITHUB_OUTPUT"
           echo "Staging URL: https://$HOST"
 

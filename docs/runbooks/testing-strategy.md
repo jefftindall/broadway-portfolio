@@ -68,7 +68,7 @@ playwright.journey.config.ts
 - Public routes: home, shows, gallery, lessons, materials, about, contact
 - Extended routes: `/news`, `/lessons/book`, sample `/for/{slug}`
 - Assets: resume PDF, theatrical headshot JPG
-- SEO: `robots.txt`, `sitemap-index.xml`
+- SEO: `robots.txt`, `sitemap-index.xml` (staging SWA expects `Disallow: /` + `X-Robots-Tag`; prod / local preview keep `Disallow: /studio` + Sitemap)
 - Auth boundary: anonymous `GET /studio` returns redirect on SWA hosts (skipped locally — `astro preview` has no Easy Auth); that 302 must be `Cache-Control: private, no-store` (staging hostname and prod apex)
 - Signed-in canary (`TEST-C-005`): desktop Playwright logs in as the bootstrap monitor user and asserts `/studio/health` (`studio-health-ok`). Skips while `MONITOR-TOTP-SEED` is `REPLACE_ME`. Same jobs also run `npm run test:studio-auth-token` (`client_credentials`). See [studio-auth-monitoring.md](studio-auth-monitoring.md).
 - Shows list: at least one credit title from content (not fixed show names)
@@ -126,7 +126,7 @@ Read-only Entra login against `/studio/health` **is** in smoke (`TEST-C-005`) on
 Against a running site (staging hostname or `npm run preview` after build):
 
 ```bash
-export BASE_URL=https://<staging-hostname>.azurestaticapps.net
+export BASE_URL=https://test.elysetindall.com
 npm ci
 npx playwright install chromium
 npm run test:smoke
@@ -145,8 +145,8 @@ For local preview, propagation polling is usually instant; `waitForOk` still wor
 **CD: main** and **CD: staging** workflows:
 
 1. **Build release** once (`npm run build` + API install); artifact uploaded for reuse
-2. Deploy staging from that artifact
-3. Resolve staging hostname via Azure CLI
+2. Deploy staging from that artifact (after `apply-staging-noindex.mjs` on the staging copy only)
+3. Resolve staging hostname via `scripts/resolve-swa-hostname.sh` (Ready custom domain, else default SWA host)
 4. `npm run test:studio-auth-token` then `npm run test:smoke` (Studio login spec skips until TOTP is enrolled)
 5. Journeys per `test_profile` (`full`, `content`, or skip for API-only)
 6. Prod deploy downloads the **same artifact** — no second site build

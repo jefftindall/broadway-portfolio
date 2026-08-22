@@ -19,13 +19,22 @@ export function getGaMeasurementId(): string {
 }
 
 /**
- * Whether to initialize GA on this document. Skips authenticated Studio and
- * pages that emit `noindex` (style-guide, studio help, etc.).
+ * Whether to initialize GA on this document. Skips authenticated Studio,
+ * pages that emit `noindex` (style-guide, studio help, etc.), and any host
+ * that is not the public production site (`elysetindall.com` / `www`).
+ * Staging (`test.elysetindall.com`, `*.azurestaticapps.net`) must not send hits.
  */
-export function shouldLoadGa(pathname: string, noIndex: boolean): boolean {
+export function shouldLoadGa(pathname: string, noIndex: boolean, hostname = ''): boolean {
   if (noIndex) return false;
   if (pathname === '/studio' || pathname.startsWith('/studio/')) return false;
+  if (!isPublicProductionHost(hostname)) return false;
   return true;
+}
+
+/** Apex and www only — staging custom domain and SWA default hosts are excluded. */
+export function isPublicProductionHost(hostname: string): boolean {
+  const host = hostname.replace(/\.$/, '').split(':')[0]?.toLowerCase() ?? '';
+  return host === 'elysetindall.com' || host === 'www.elysetindall.com';
 }
 
 /** Client-side: read the robots meta written by Seo.astro. */

@@ -38,6 +38,12 @@ output "www_custom_domain" {
   value       = try(azurerm_static_web_app_custom_domain.www[0].domain_name, null)
 }
 
+output "custom_hostname_validation_tokens" {
+  description = "TXT record values for custom_hostnames (e.g. staging test.elysetindall.com)"
+  value       = { for name, domain in azurerm_static_web_app_custom_domain.hostname : name => domain.validation_token }
+  sensitive   = true
+}
+
 output "managed_identity_principal_id" {
   value = azurerm_static_web_app.main.identity[0].principal_id
 }

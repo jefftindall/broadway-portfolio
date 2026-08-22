@@ -1,8 +1,10 @@
 location        = "eastus2"
 subscription_id = "e601e59a-c7f4-41f0-8178-b59740fb1974"
 custom_domain   = ""
+# Subdomain only — do not set custom_domain (that would also bind www.test.elysetindall.com).
+custom_hostnames = ["test.elysetindall.com"]
 
-# Azure-generated SWA hostname is registered automatically.
+# Azure-generated SWA hostname + custom_hostnames are registered automatically.
 additional_auth_hostnames = []
 
 github_owner     = "jefftindall"

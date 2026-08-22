@@ -233,6 +233,8 @@ Prod example:
 | Custom apex | `https://elysetindall.com/.auth/login/aad/callback` |
 | Custom www | `https://www.elysetindall.com/.auth/login/aad/callback` (included automatically when `custom_domain` is set) |
 
+Staging example: Azure default plus `https://test.elysetindall.com/.auth/login/aad/callback` from `custom_hostnames` (do not set staging `custom_domain` — that would also bind `www.test…`).
+
 Add more via `additional_auth_hostnames` in `terraform.tfvars`.
 
 ### Assign Elyse to the app
@@ -249,7 +251,7 @@ Repeat for `elyse-portfolio-staging`. Apply order: **bootstrap** (creates `studi
 
 `https://login.microsoftonline.com/e78bb87b-bdca-4a5f-8f90-a1c388528a5f/v2.0`
 
-That value is `terraform output -raw entra_openid_issuer` from **either** environment — staging and prod are separate Entra apps (`AAD_CLIENT_ID` / secret per SWA) in the **same** tenant. Do not use `/common/v2.0`: the apps are `AzureADMyOrg`, and a `common` issuer makes SWA reject the tenant `iss` after login (redirect loop). Entra redirect URIs already cover the staging `*.azurestaticapps.net` hostname and prod apex/www ([above](#redirect-uris)). Cache-Control for `/studio` must stay `private, no-store` so the login 302 is not replayed after Entra returns — see [swa-caching.md](runbooks/swa-caching.md).
+That value is `terraform output -raw entra_openid_issuer` from **either** environment — staging and prod are separate Entra apps (`AAD_CLIENT_ID` / secret per SWA) in the **same** tenant. Do not use `/common/v2.0`: the apps are `AzureADMyOrg`, and a `common` issuer makes SWA reject the tenant `iss` after login (redirect loop). Entra redirect URIs already cover the staging `*.azurestaticapps.net` hostname, staging `test.elysetindall.com`, and prod apex/www ([above](#redirect-uris)). Cache-Control for `/studio` must stay `private, no-store` so the login 302 is not replayed after Entra returns — see [swa-caching.md](runbooks/swa-caching.md).
 
 ### Verify
 
@@ -257,22 +259,23 @@ That value is `terraform output -raw entra_openid_issuer` from **either** enviro
 2. Anonymous `POST /api/updateContent` returns 401/302
 3. Signing in as Elyse reaches Studio; any other account is rejected
 
-## 6. Custom domain / DNS cutover (prod only)
+## 6. Custom domain / DNS (prod apex + staging test)
 
-Full procedure (Namecheap EasyWP → Azure, legacy 301s, search consoles, decommission): [WordPress → Azure cutover runbook](runbooks/wordpress-to-azure-cutover.md).
+Full procedure (Namecheap EasyWP → Azure, legacy 301s, search consoles, decommission): [WordPress → Azure cutover runbook](runbooks/wordpress-to-azure-cutover.md). Staging subdomain: [dns-and-domain.md](runbooks/dns-and-domain.md#staging-testelysetindallcom).
 
 Summary:
 
 1. Prod Terraform already sets `custom_domain = "elysetindall.com"`
-2. Create the TXT validation record from `custom_domain_validation_token` (see [dns-and-domain runbook](runbooks/dns-and-domain.md))
-3. Deploy legacy WordPress 301s via `public/staticwebapp.config.json` (staging → smoke → prod) before flipping DNS
-4. In Namecheap Advanced DNS, replace EasyWP apex/`www` records with Azure SWA ALIAS/A + CNAME; apply Terraform so www is bound, then set apex as the default custom domain in Portal (www → apex 301)
-5. Verify HTTPS, redirects, and that EasyWP no longer serves apex traffic
-6. Smoke-test: home, shows, lessons, a `/for/...` page, and authenticated Studio publish
+2. Staging Terraform sets `custom_hostnames = ["test.elysetindall.com"]` (not `custom_domain`)
+3. Create the TXT validation records (`custom_domain_validation_token` on prod; `custom_hostname_validation_tokens` on staging) — see [dns-and-domain runbook](runbooks/dns-and-domain.md)
+4. Deploy legacy WordPress 301s via `public/staticwebapp.config.json` (staging → smoke → prod) before flipping **prod** DNS
+5. In Namecheap Advanced DNS, replace EasyWP apex/`www` records with Azure SWA ALIAS/A + CNAME; add `test` CNAME + `_dnsauth.test` TXT for staging; apply Terraform so www (prod) and test (staging) are bound, then set each environment’s preferred host as the default custom domain in Portal
+6. Verify HTTPS, redirects, and that EasyWP no longer serves apex traffic. Staging must return `X-Robots-Tag: noindex` and `robots.txt` `Disallow: /`
+7. Smoke-test: home, shows, lessons, a `/for/...` page, and authenticated Studio publish
 
 ## 7. First authenticated publish test
 
-1. Visit `https://elysetindall.com/studio` (prod) or the staging SWA hostname
+1. Visit `https://elysetindall.com/studio` (prod) or `https://test.elysetindall.com/studio` (staging)
 2. Sign in as Elyse
 3. Send: `Add a news post that I completed a showcase this week`
 4. Confirm a commit appears on `main` and GitHub Actions deploys within ~5 minutes

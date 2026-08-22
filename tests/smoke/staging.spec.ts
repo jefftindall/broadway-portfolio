@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { sampleCastingSlug, sampleShowTitle } from '../helpers/content';
-import { waitForOk, waitForRequestOk, isStaticWebAppHost } from '../helpers/propagation';
+import { waitForOk, waitForRequestOk, isStaticWebAppHost, expectsStagingNoIndex } from '../helpers/propagation';
 
 const castingSlug = sampleCastingSlug();
 const showTitle = sampleShowTitle();
@@ -80,8 +80,15 @@ test.describe('public smoke', () => {
   test('robots.txt and sitemap are served', async ({ request }) => {
     const robots = await waitForRequestOk(request, '/robots.txt');
     const robotsText = await robots.text();
-    expect(robotsText).toMatch(/Sitemap:/i);
-    expect(robotsText).toMatch(/Disallow:\s*\/studio/i);
+    if (expectsStagingNoIndex()) {
+      expect(robotsText).toMatch(/Disallow:\s*\/\s*$/m);
+      expect(robotsText).not.toMatch(/Sitemap:/i);
+      const home = await waitForRequestOk(request, '/');
+      expect(home.headers()['x-robots-tag'] ?? '').toMatch(/noindex/i);
+    } else {
+      expect(robotsText).toMatch(/Sitemap:/i);
+      expect(robotsText).toMatch(/Disallow:\s*\/studio/i);
+    }
 
     const sitemap = await waitForRequestOk(request, '/sitemap-index.xml');
     expect(sitemap.headers()['content-type'] ?? '').toMatch(/xml/i);

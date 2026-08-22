@@ -11,14 +11,14 @@
 | IaC | Terraform (`infra/terraform/`) |
 | Secrets | Azure Key Vault (source of truth); API secrets synced into SWA app settings; AAD secret via Key Vault reference |
 | Auth | Entra ID / Google via SWA; Elyse-only allowlist for `/studio` + `/api/*` |
-| Domain | elysetindall.com custom domain on SWA |
+| Domain | elysetindall.com (prod) + test.elysetindall.com (staging) |
 | CI/CD | GitHub Actions → SWA |
 
 ## Resources
 
 1. Bootstrap (once): `rg-elyse-tfstate` + `stelysetfstateeu2` / `tfstate` container in **East US 2**
 2. Per environment (`staging` / `prod`): resource group, Static Web App (Standard) with system-assigned managed identity, Key Vault (RBAC), role assignments, resolved API app settings from Key Vault (+ AAD Key Vault reference)
-3. Prod only: custom domain binding (`elysetindall.com`)
+3. Prod: custom domain binding (`elysetindall.com`). Staging: `test.elysetindall.com` via `custom_hostnames`.
 4. Names are environment-scoped (e.g. `rg-elyse-portfolio-staging`, `kv-elyse-prod`) to avoid collisions
 
 All resources are in **East US 2**.

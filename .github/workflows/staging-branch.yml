@@ -112,6 +112,9 @@ jobs:
       - name: Install API dependencies
         run: npm ci --prefix api
 
+      - name: Apply staging noindex (robots.txt + X-Robots-Tag)
+        run: node scripts/apply-staging-noindex.mjs dist
+
       - name: Resolve Static Web Apps deploy token
         id: swa
         run: |
@@ -194,14 +197,10 @@ jobs:
       - name: Resolve staging hostname
         id: host
         run: |
-          HOST=$(az staticwebapp show \
-            --name "${{ vars.AZURE_STATIC_WEB_APP_NAME }}" \
-            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
-            --query defaultHostname -o tsv)
-          if [ -z "$HOST" ]; then
-            echo "::error::Could not resolve staging Static Web App hostname"
-            exit 1
-          fi
+          chmod +x scripts/resolve-swa-hostname.sh
+          HOST=$(./scripts/resolve-swa-hostname.sh \
+            "${{ vars.AZURE_STATIC_WEB_APP_NAME }}" \
+            "${{ vars.AZURE_RESOURCE_GROUP }}")
           echo "hostname=$HOST" >> "$GITHUB_OUTPUT"
           echo "Staging URL: https://$HOST"
 
