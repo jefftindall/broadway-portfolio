@@ -7,13 +7,16 @@
 # Key Vault reference; the SWA auth platform resolves that one).
 #
 # Shared (bootstrap kv-elyse-shared): SITE-CONTACT-*, TURNSTILE-SECRET-KEY, ACS-*
-# Per-env vault: Gemini, GitHub App, allowlist, AAD
+# Per-env vault: Gemini, GitHub App, allowlist, AAD, Stripe
 #
 # Usage:
 #   ./scripts/sync-swa-api-secrets.sh staging
 #   ./scripts/sync-swa-api-secrets.sh prod
 #
 # Requires: az CLI logged in, jq, Key Vault Secrets Officer (or get) on both vaults.
+#
+# LESSON_PAYMENTS_ENABLED is Terraform-managed (staging true, prod false until go-live)
+# and is preserved here — this script does not overwrite that flag.
 
 set -euo pipefail
 
@@ -59,6 +62,11 @@ ACS_SMS_FROM="$(kv_value "$SHARED_VAULT" ACS-SMS-FROM)"
 NOTIFY_EMAIL="$(kv_value "$SHARED_VAULT" SITE-CONTACT-EMAIL)"
 NOTIFY_PHONE="$(kv_value "$SHARED_VAULT" SITE-CONTACT-PHONE)"
 TURNSTILE_SECRET="$(kv_value "$SHARED_VAULT" TURNSTILE-SECRET-KEY)"
+STRIPE_SECRET="$(kv_value "$VAULT" STRIPE-SECRET-KEY)"
+STRIPE_PUBLISHABLE="$(kv_value "$VAULT" STRIPE-PUBLISHABLE-KEY)"
+STRIPE_WEBHOOK="$(kv_value "$VAULT" STRIPE-WEBHOOK-SECRET)"
+STRIPE_LINK_30="$(kv_value "$VAULT" STRIPE-PAYMENT-LINK-30MIN)"
+STRIPE_LINK_60="$(kv_value "$VAULT" STRIPE-PAYMENT-LINK-60MIN)"
 AAD_REF="@Microsoft.KeyVault(SecretUri=https://${VAULT}.vault.azure.net/secrets/AAD-CLIENT-SECRET/)"
 
 CONFIG_URL="/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RG}/providers/Microsoft.Web/staticSites/${SWA}/config/appsettings?api-version=2023-01-01"
@@ -82,6 +90,11 @@ BODY="$(
     --arg acs_sms_from "$ACS_SMS_FROM" \
     --arg turnstile_secret "$TURNSTILE_SECRET" \
     --arg contact_sms_enabled "$CONTACT_SMS_ENABLED" \
+    --arg stripe_secret "$STRIPE_SECRET" \
+    --arg stripe_publishable "$STRIPE_PUBLISHABLE" \
+    --arg stripe_webhook "$STRIPE_WEBHOOK" \
+    --arg stripe_link_30 "$STRIPE_LINK_30" \
+    --arg stripe_link_60 "$STRIPE_LINK_60" \
     '
     ($current.properties // {}) as $p
     | {
@@ -100,7 +113,12 @@ BODY="$(
               CONTACT_NOTIFY_PHONE: $notify_phone,
               ACS_SMS_FROM: $acs_sms_from,
               CONTACT_SMS_ENABLED: $contact_sms_enabled,
-              TURNSTILE_SECRET: $turnstile_secret
+              TURNSTILE_SECRET: $turnstile_secret,
+              STRIPE_SECRET_KEY: $stripe_secret,
+              STRIPE_PUBLISHABLE_KEY: $stripe_publishable,
+              STRIPE_WEBHOOK_SECRET: $stripe_webhook,
+              STRIPE_PAYMENT_LINK_30MIN: $stripe_link_30,
+              STRIPE_PAYMENT_LINK_60MIN: $stripe_link_60
             }
         )
       }

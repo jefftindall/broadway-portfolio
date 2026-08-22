@@ -13,3 +13,6 @@ github_branch    = "main"
 
 # Requires: export GH_TOKEN="$(gh auth token)"
 manage_github_actions = true
+
+# Lesson payments: staging default is true (test-mode Stripe). Override only if hiding the flow.
+# lesson_payments_enabled = true

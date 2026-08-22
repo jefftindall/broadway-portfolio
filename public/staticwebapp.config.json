@@ -151,6 +151,13 @@
       }
     },
     {
+      "route": "/api/lessonPayConfig",
+      "allowedRoles": ["anonymous", "authenticated"],
+      "headers": {
+        "Cache-Control": "private, no-store"
+      }
+    },
+    {
       "route": "/api/*",
       "allowedRoles": ["authenticated"],
       "headers": {

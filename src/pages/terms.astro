@@ -3,7 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { site } from '../lib/site';
 
 const description =
-  'Terms and conditions for using elysetindall.com, including portfolio materials, inquiry forms, and private voice lesson requests.';
+  'Terms and conditions for using elysetindall.com, including portfolio materials, inquiry forms, and paid private voice lessons processed by Stripe.';
 ---
 
 <BaseLayout title="Terms" description={description} hideFooterCta>
@@ -12,7 +12,7 @@ const description =
     <h1 class="mt-3 font-display text-5xl text-spotlight md:text-6xl">Terms &amp; conditions</h1>
     <p class="mt-4 text-muted">
       Rules for using {site.name}’s website ({site.url.replace(/^https:\/\//, '')}). By using this
-      site, you agree to these terms.
+      site, you agree to these terms. Last updated August 22, 2026.
     </p>
 
     <div class="prose-site mt-12">
@@ -46,8 +46,10 @@ const description =
       <p>
         Casting and lesson forms are for genuine professional or lesson inquiries. Do not submit
         spam, abusive content, or false information. Submitting a form does not create a booking,
-        engagement, or employment relationship. Availability, rates, and lesson policies are
-        confirmed separately if we agree to work together.
+        engagement, or employment relationship. Availability and a lesson time are confirmed by
+        email (or another agreed channel) before a session. Rates on /lessons/book are current
+        session fees for private voice lessons; payment terms for prepaid sessions are in{' '}
+        <a href="#paid-lessons">Paid voice lessons</a> below.
       </p>
       <p>
         How we handle personal information is described in the{' '}
@@ -57,26 +59,54 @@ const description =
 
       <h2 id="lessons">Voice lessons</h2>
       <p>
-        Lesson inquiries may lead to private voice instruction. Schedules, fees, cancellation, and
-        studio policies will be communicated outside these website terms before you book. Nothing on
-        this site is medical advice; voice work is educational and artistic in nature.
+        Lesson inquiries may lead to private voice instruction (vocal pedagogy, vocal health, and
+        contemporary commercial music). The site does not offer acting lessons, monologue coaching,
+        or scene study. Nothing on this site is medical advice; voice work is educational and
+        artistic in nature.
+      </p>
+
+      <h2 id="paid-lessons">Paid voice lessons</h2>
+      <p>
+        When payment is offered on this site, it is for a scheduled (or about-to-start) private
+        voice lesson at the published 30-minute or 60-minute rate. Paying does not by itself lock a
+        calendar slot until {site.name} confirms the time. Pay the length that matches the session
+        you booked.
+      </p>
+      <p>
+        <strong>Processor.</strong> Payments are processed by Stripe. You also agree to Stripe’s
+        terms when you complete checkout. This site never asks you to type a card number into a form
+        we host.
+      </p>
+      <p>
+        <strong>Cancellation &amp; refunds.</strong> Cancel at least 24 hours before the confirmed
+        start time for a full refund to the original payment method. Cancellations inside 24 hours,
+        no-shows, and sessions cut short by late arrival may be non-refundable. {site.name} may
+        still issue a full or partial refund (for example weather, illness, or a studio
+        cancellation) via Stripe. Refund timing depends on the original payment method. Processing
+        fees charged by Stripe are typically not returned on refunds.
+      </p>
+      <p>
+        <strong>Disputes.</strong> Contact the studio first so we can refund or reschedule when
+        that’s the right fix. Chargebacks may incur Stripe’s dispute fee; keep your confirmation
+        emails.
       </p>
 
       <h2 id="third-parties">Third-party services</h2>
       <p>
-        The site may use third-party providers for hosting, form verification, email, SMS, and
-        analytics. Links to Instagram, YouTube, or other sites are provided for convenience; we are
-        not responsible for their content or policies.
+        The site may use third-party providers for hosting, form verification, email, SMS,
+        analytics, and payment processing (Stripe). Links to Instagram, YouTube, or other sites are
+        provided for convenience; we are not responsible for their content or policies.
       </p>
 
       <h2 id="disclaimers">Disclaimers</h2>
       <p>
         The site is provided “as is.” We strive for accuracy but do not warrant that content is
         complete, current, or uninterrupted. To the fullest extent permitted by law, {site.name} is
-        not liable for indirect or consequential damages arising from use of the site. Our total
-        liability for claims relating to the website itself is limited to the greater of zero (for
-        free site use) or amounts you paid specifically for website-related services in the three
-        months before the claim (if any).
+        not liable for indirect or consequential damages arising from use of the site. For claims
+        about a paid voice lesson, liability is limited to the amount you paid for that lesson. For
+        other claims relating to the website itself, our total liability is limited to the greater
+        of zero (for free site use) or amounts you paid specifically for website-related services in
+        the three months before the claim (if any).
       </p>
 
       <h2 id="indemnity">Indemnity</h2>

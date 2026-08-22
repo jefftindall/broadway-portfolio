@@ -19,6 +19,7 @@
     "test:api-studio-publish": "node --test api/src/lib/studioPublish.test.js",
     "test:api-github-commit": "node --test api/src/lib/github-commit.test.js",
     "test:api-gallery-meta": "node --test api/src/lib/gallery-meta.test.js",
+    "test:api-lesson-pay": "node --test api/src/lib/lessonPayConfig.test.js",
     "test:api-reel-poster": "node --test api/src/lib/reel-poster.test.js",
     "lint:actions-secrets": "node scripts/check-actions-secret-safety.mjs",
     "test:github-app-token": "bash scripts/test-github-app-token.sh",

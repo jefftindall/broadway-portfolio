@@ -6,7 +6,7 @@ Only Elyse should be able to publish.
 
 1. **Entra app registration** (Terraform) — single-tenant, and the enterprise app requires explicit user assignment
 2. **SWA Authentication** — only her identity provider account can sign in
-3. **Route rules** — `/studio`, `/studio/*` (including help), and `/api/*` require `authenticated`
+3. **Route rules** — `/studio`, `/studio/*` (including help), and `/api/*` require `authenticated`. Exceptions: `POST /api/contactInquiry` and `GET /api/lessonPayConfig` allow anonymous (same `private, no-store` cache).
 4. **Allowlist** — `ALLOWED-USER-IDS` in Key Vault must match her principal
 
 | Environment | Key Vault | Enterprise app |

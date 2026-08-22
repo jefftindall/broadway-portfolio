@@ -69,3 +69,9 @@ variable "monitor_upn" {
   default     = ""
 }
 
+variable "lesson_payments_enabled" {
+  type        = bool
+  description = "Show Stripe pay CTAs on /lessons/book via GET /api/lessonPayConfig. Prod stays false until go-live (`terraform apply -var='lesson_payments_enabled=true'`)."
+  default     = false
+}
+

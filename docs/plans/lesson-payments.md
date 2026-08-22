@@ -16,7 +16,9 @@ Private **voice** lessons are currently inquire-then-schedule: rates live on [`/
 6. Choose a vendor stack scored on complexity, cost, setup effort, and annual maintenance.
 7. Prefer a processor whose APIs/webhooks can later feed **Studio** (paid status, month rollups) without abandoning Phase 1 Payment Links.
 
-This plan compares options and recommends a phased path. It does **not** implement checkout or Studio finance UI yet.
+This plan compares options and recommends a phased path. Phase 1 Payment Links are **in progress**: Key Vault placeholders + runtime feature flag + Privacy/Terms are in repo; live CTAs wait on test-mode links in staging KV.
+
+_Last updated: 2026-08-22._
 
 ---
 
@@ -270,10 +272,10 @@ Venmo Business–heavy mix lowers processing % but **increases** reconciliation 
 
 ## Risks and policies to decide
 
-- **No-show / cancellation:** Written policy on `/lessons/book` and Terms (e.g. charge at booking vs charge day-of; refund window).
+- **No-show / cancellation:** Written on `/terms#paid-lessons` (24-hour full refund; inside 24 hours / no-shows may be non-refundable; studio may still refund). Pay CTAs on `/lessons/book` link to that section when the flag is on.
 - **Chargebacks:** Keep lesson notes/emails; Stripe chargeback fee (~$15) if disputed.
-- **Sales tax:** Voice lessons may be nontaxable in some jurisdictions; confirm with a tax pro before enabling Stripe Tax.
-- **Privacy:** Payment processors are separate controllers; update Privacy Policy when collecting payments (student email on Stripe receipts).
+- **Sales tax:** Voice lessons may be nontaxable in some jurisdictions; confirm with a tax pro before enabling Stripe Tax. **Do not** turn on Stripe Tax until that confirmation.
+- **Privacy:** Stripe is a separate controller; Privacy Policy covers paid lessons (`/privacy#payments`).
 - **Brand:** Payment CTAs must not imply acting lessons—voice lessons only.
 - **PCI:** Hosted Payment Links / Checkout keep PAN off this site (preferred). Never build a custom card form that touches raw card numbers.
 
@@ -308,14 +310,16 @@ Do not charge cards from unconfirmed voice prompts. Keep `/studio` and `/studio/
 
 ---
 
-## Implementation backlog (when approved)
+## Implementation backlog
 
-1. Stripe account + test-mode Payment Links for both rates.
-2. Privacy/Terms updates for paid lessons.
-3. `/lessons/book` (and optional home lessons module) Pay CTAs → live links.
-4. Operator runbook: day-of charge, refund, monthly CSV (new doc under `docs/runbooks/`).
-5. Journey test: pay CTA present; no acting-lesson copy regression (`LESSON-01`).
-6. Later: Checkout Session Function; webhook → paid status for Studio.
-7. Later: Studio schedule / paid / comms / reports per [`studio-teaching-business.md`](./studio-teaching-business.md).
+| # | Work | Status |
+|---|------|--------|
+| 1 | Stripe account + per-env Key Vault placeholders (`STRIPE-*`; staging test / prod live) | `done` (populate values in KV after apply) |
+| 2 | Privacy/Terms updates for paid lessons | `done` (`/privacy#payments`, `/terms#paid-lessons`) |
+| 3 | `/lessons/book` Pay CTAs gated by `LESSON_PAYMENTS_ENABLED` (staging **true**, prod **false**) | `in_progress` (UI wired; hidden on prod until go-live + live Payment Links) |
+| 4 | Operator runbook: day-of charge, refund, monthly CSV | `planned` |
+| 5 | Journey test: inquiry flow + legal copy; pay CTA when flag+links (`LESSON-01` / `LESSON-03`) | `done` |
+| 6 | Later: Checkout Session Function; webhook → paid status for Studio | `planned` |
+| 7 | Later: Studio schedule / paid / comms / reports per [`studio-teaching-business.md`](./studio-teaching-business.md) | `planned` |
 
-No infra/Terraform required for Phase 1 Payment Links (external SaaS). Phase 2 needs Function env secrets (`STRIPE_SECRET_KEY`, webhook signing secret) and Key Vault patterns consistent with existing Studio secrets.
+CD ships **one Astro artifact** to staging and prod, so the pay-flow flag and Payment Link URLs are **runtime** SWA app settings (`GET /api/lessonPayConfig`), not baked `PUBLIC_*` vars. Restricted API keys (`rk_test_` / `rk_live_`) and webhook secrets stay in the env vaults and are never returned by that endpoint. Populate commands: [rotate-secrets.md](../runbooks/rotate-secrets.md#stripe-lesson-payments). Go-live on production: `terraform apply -var='lesson_payments_enabled=true'` in `infra/environments/prod` after live Payment Links are set.

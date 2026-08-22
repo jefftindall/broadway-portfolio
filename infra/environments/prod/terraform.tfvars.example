@@ -14,3 +14,6 @@ github_branch    = "main"
 
 # Requires: export GH_TOKEN="$(gh auth token)"
 manage_github_actions = true
+
+# Lesson payments: prod default is false until go-live.
+# lesson_payments_enabled = false

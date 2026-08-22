@@ -197,6 +197,13 @@ resource "azurerm_static_web_app" "main" {
     CONTACT_SMS_ENABLED   = local.contact_sms_enabled
     ACS_SMS_FROM          = data.azurerm_key_vault_secret.acs_sms_from.value
     TURNSTILE_SECRET      = data.azurerm_key_vault_secret.turnstile_secret_key.value
+    # Lesson payments (Stripe). Secret/restricted key is server-side only.
+    LESSON_PAYMENTS_ENABLED   = local.lesson_payments_enabled_setting
+    STRIPE_SECRET_KEY         = data.azurerm_key_vault_secret.stripe_secret_key.value
+    STRIPE_PUBLISHABLE_KEY    = data.azurerm_key_vault_secret.stripe_publishable_key.value
+    STRIPE_WEBHOOK_SECRET     = data.azurerm_key_vault_secret.stripe_webhook_secret.value
+    STRIPE_PAYMENT_LINK_30MIN = data.azurerm_key_vault_secret.stripe_payment_link_30min.value
+    STRIPE_PAYMENT_LINK_60MIN = data.azurerm_key_vault_secret.stripe_payment_link_60min.value
   }
 
   depends_on = [

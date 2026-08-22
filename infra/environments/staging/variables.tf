@@ -69,3 +69,9 @@ variable "monitor_upn" {
   default     = ""
 }
 
+variable "lesson_payments_enabled" {
+  type        = bool
+  description = "Show Stripe pay CTAs on /lessons/book via GET /api/lessonPayConfig. Staging default is on (test-mode Payment Links)."
+  default     = true
+}
+

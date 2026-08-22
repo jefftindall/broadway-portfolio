@@ -5,6 +5,7 @@ import { site } from '../../lib/site';
 import GlassPanel from '../../components/GlassPanel.astro';
 import CtaLink from '../../components/CtaLink.astro';
 import InquiryForm from '../../components/InquiryForm.astro';
+import LessonPayCtas from '../../components/LessonPayCtas.astro';
 import OptimizedImg from '../../components/OptimizedImg.astro';
 
 const entry = await getEntry('pages', 'lessons-book');
@@ -109,6 +110,7 @@ const jsonLd = [
             )
           }
           <CtaLink class="mt-8" href="#lesson-inquiry">Send lesson inquiry</CtaLink>
+          <LessonPayCtas rates={rates} />
         </GlassPanel>
       </div>
       <div>

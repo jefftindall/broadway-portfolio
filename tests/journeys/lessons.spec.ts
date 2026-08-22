@@ -21,6 +21,13 @@ test.describe('lessons journeys', () => {
     await expect(page.getByTestId('lesson-submit')).toBeVisible();
     await expect(page.getByText(/not acting, monologue, or scene-study coaching/i)).toBeVisible();
     await expect(page.getByText(/voice lessons|vocal pedagogy|CCM/i).first()).toBeVisible();
+
+    const payCta = page.getByTestId('lesson-pay-30min');
+    if ((await payCta.count()) > 0) {
+      await expect(payCta).toBeVisible();
+      await expect(payCta).toHaveAttribute('href', /https:\/\/buy\.stripe\.com\//);
+      await expect(page.getByText(/private voice lessons only/i)).toBeVisible();
+    }
   });
 
   test('LESSON-02 lesson inquiry form', async ({ page }) => {
@@ -36,6 +43,19 @@ test.describe('lessons journeys', () => {
     await expect(page.locator('#casting-inquiry')).toBeVisible();
     await expect(page.locator('#lesson-inquiry')).toHaveCount(0);
     await expect(page.getByRole('link', { name: /Looking for lessons/i })).toBeVisible();
+  });
+
+  test('LESSON-03 paid-lesson legal copy', async ({ page }) => {
+    await waitForOk(page, '/privacy');
+    await expect(page.getByRole('heading', { name: 'Payments' })).toBeVisible();
+    await expect(page.getByText(/Stripe/i).first()).toBeVisible();
+    await expect(page.getByText(/does not sell acting lessons/i)).toBeVisible();
+
+    await waitForOk(page, '/terms');
+    await expect(page.getByRole('heading', { name: 'Paid voice lessons' })).toBeVisible();
+    await expect(page.getByText(/24 hours/i).first()).toBeVisible();
+    await expect(page.getByText(/Stripe/i).first()).toBeVisible();
+    await expect(page.getByText(/does not offer acting lessons/i)).toBeVisible();
   });
 
   test('LESSON-01 mobile book flow', { tag: '@mobile' }, async ({ page }) => {

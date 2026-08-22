@@ -78,6 +78,11 @@ variable "ga_measurement_id" {
   }
 }
 
+variable "lesson_payments_enabled" {
+  type        = bool
+  description = "When true, GET /api/lessonPayConfig may return Stripe Payment Links so /lessons/book can show pay CTAs. Staging should be true (test mode); prod stays false until go-live. Not baked into the shared Astro artifact."
+}
+
 variable "additional_auth_hostnames" {
   type        = list(string)
   description = "Extra hostnames allowed to complete Entra sign-in (e.g. www.elysetindall.com)"
