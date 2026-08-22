@@ -113,8 +113,9 @@ Then sign in once with the new password from KV (TOTP seed unchanged unless Entr
 |---------|-------------|
 | Smoke skips Studio login | `MONITOR-TOTP-SEED` still `REPLACE_ME`, or bootstrap user not created |
 | `client_credentials` skipped | Identifier URI not on the SWA app yet — apply env Terraform (`Monitor.Ping` + self-assignment) |
-| `client_credentials` fails | `AAD-CLIENT-SECRET` / `Monitor.Ping` self-assignment / identifier URI `api://{AAD_CLIENT_ID}` |
-| Entra “Need admin approval” | Identifier URI / `Monitor.Ping` made the login app an API. Grant admin consent (Terraform `azuread_application_pre_authorized` + delegated grants, or `az ad app permission admin-consent`) |
+| `client_credentials` fails `AADSTS501051` | Assignment required is on, and the SWA service principal is missing the **Monitor.Ping** self-assignment (`principalType: ServicePrincipal`). Staging/prod should both list that assignment on `appRoleAssignedTo`. `az ad app permission admin-consent` grants Graph `User.Read` but can **drop** application-type self-assignments that are not in the app’s API permissions. Restore with env `terraform apply` (resource `azuread_app_role_assignment.monitor_ping_self`), then re-run smoke. |
+| `client_credentials` fails (other) | `AAD-CLIENT-SECRET` / identifier URI `api://{AAD_CLIENT_ID}` |
+| Entra “Need admin approval” | Identifier URI / `Monitor.Ping` made the login app an API. Prefer Terraform `azuread_application_pre_authorized` plus a delegated Graph grant. If you use `az ad app permission admin-consent`, **re-apply env Terraform immediately** so `Monitor.Ping` self-assignment is restored. |
 | Redirect loop / AADSTS50011 | `terraform output entra_redirect_uris` vs hostname used in smoke |
 | Health 200 but URL stays `/studio` | SWA 401 override hardcodes `post_login_redirect_uri=/studio`; smoke asserts the canary via authenticated fetch |
 | Signed in but Studio deny + `Reference:` | Monitor was added to `ALLOWED-USER-IDS` — remove it |

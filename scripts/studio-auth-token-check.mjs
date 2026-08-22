@@ -46,6 +46,11 @@ if (!response.ok) {
     );
     process.exit(0);
   }
+  if (aadsts.includes("AADSTS501051")) {
+    fail(
+      "client_credentials failed (AADSTS501051): the SWA app is not assigned Monitor.Ping on itself. Assignment required is on, so client_credentials needs that app-role assignment. Re-apply env Terraform (azuread_app_role_assignment.monitor_ping_self). az ad app permission admin-consent can drop it.",
+    );
+  }
   fail(`client_credentials failed (${codes}). Check AAD-CLIENT-SECRET and Monitor.Ping app role.`);
 }
 

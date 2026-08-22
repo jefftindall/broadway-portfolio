@@ -136,6 +136,9 @@ resource "azuread_app_role_assignment" "monitor" {
 }
 
 # Same-app client_credentials needs the SWA SP assigned Monitor.Ping on itself.
+# Assignment required is true, so missing this yields AADSTS501051.
+# az ad app permission admin-consent can drop this application-type assignment
+# (it rewrites grants from required_resource_access, which is Graph User.Read only).
 resource "azuread_app_role_assignment" "monitor_ping_self" {
   app_role_id         = local.monitor_ping_role_id
   principal_object_id = azuread_service_principal.swa.object_id
