@@ -1,16 +1,33 @@
-name: Azure Static Web Apps CI/CD
+name: "CD: main"
 
 # Deploy only on merge to main when app or infra paths change. PRs run static analysis only.
-# Manual full CD from main: Actions → Azure Static Web Apps CI/CD (workflow_dispatch).
+# Scorecard-only / search-signal pushes (docs/ops artifacts) are paths-ignored so monthly
+# OPS / SEARCH refresh can commit to main without starting CD.
+# Manual full CD from main: Actions → CD: main (workflow_dispatch).
 # Manual dispatch from other branches runs staging only; prod stages are skipped.
-# Manual staging-only test: Actions → Staging branch (workflow_dispatch).
+# Manual staging-only test: Actions → CD: staging (workflow_dispatch).
+# Display names follow docs/runbooks/github-actions-naming.md (Scheme A).
 # After Deploy Staging: Smoke Staging (Playwright desktop + mobile) must pass before prod.
+# After Deploy Production: Smoke Production re-runs the same suite against prod; failure → Sev1
+# (SmokeFailed → ag-elyse-critical-prod: email + SMS + voice). No auto-rollback (TEST-D-003).
 # Build once per release; staging and prod deploy the same artifact that was verified.
+# Serialize CD with staging-branch.yml (shared group) so only one deploy runs at a time.
+# cancel-in-progress: false waits instead of cancelling; GitHub keeps one pending slot
+# (latest-wins if more runs arrive while one is queued).
 on:
   push:
     branches:
       - main
+    # Scorecard-only / search-signal pushes (Studio GitHub App → main) must not start CD.
+    paths-ignore:
+      - "docs/ops/operational-excellence-scorecard.md"
+      - "docs/ops/scorecard-evaluation.json"
+      - "docs/ops/search-signals/**"
   workflow_dispatch:
+
+concurrency:
+  group: portfolio-cd
+  cancel-in-progress: false
 
 permissions:
   id-token: write
@@ -48,6 +65,11 @@ jobs:
               - 'tsconfig.json'
               - 'scripts/generate-resume-pdf.mjs'
               - 'scripts/fetch-site-contact-secrets.sh'
+              - 'scripts/fetch-studio-auth-secrets.sh'
+              - 'scripts/studio-auth-token-check.mjs'
+              - 'tests/smoke/**'
+              - 'tests/helpers/**'
+              - 'playwright.smoke.config.ts'
               - '.azure/**'
             content:
               - 'src/content/**'
@@ -172,6 +194,7 @@ jobs:
     env:
       PUBLIC_APPINSIGHTS_CONNECTION_STRING: ${{ vars.APPINSIGHTS_CONNECTION_STRING }}
       PUBLIC_APPINSIGHTS_SAMPLE_PERCENT: "10"
+      PUBLIC_GA_MEASUREMENT_ID: ${{ vars.GA_MEASUREMENT_ID }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -207,7 +230,7 @@ jobs:
         run: npm ci --prefix api
 
       - name: Upload release artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-${{ github.sha }}
           path: |
@@ -234,7 +257,7 @@ jobs:
           lfs: false
 
       - name: Download release artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: release-${{ github.sha }}
 
@@ -350,11 +373,45 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
+      - name: Fetch Studio auth secrets
+        env:
+          AZURE_SHARED_KEY_VAULT_NAME: ${{ vars.AZURE_SHARED_KEY_VAULT_NAME }}
+          AZURE_KEY_VAULT_NAME: ${{ vars.AZURE_KEY_VAULT_NAME }}
+          AZURE_STATIC_WEB_APP_NAME: ${{ vars.AZURE_STATIC_WEB_APP_NAME }}
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          AAD_CLIENT_ID: ${{ vars.AAD_CLIENT_ID }}
+          AAD_MONITOR_TOKEN_SCOPE: ${{ vars.AAD_MONITOR_TOKEN_SCOPE }}
+          DEPLOY_ENVIRONMENT: staging
+        run: |
+          chmod +x scripts/fetch-studio-auth-secrets.sh
+          ./scripts/fetch-studio-auth-secrets.sh
+
+      - name: SWA client_credentials check
+        env:
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+        run: npm run test:studio-auth-token
+
       - name: Run staging smoke (desktop + mobile)
         env:
           BASE_URL: https://${{ steps.host.outputs.hostname }}
           CI: true
         run: npm run test:smoke
+
+      - name: Upload smoke traces (failure)
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: smoke-staging-playwright
+          path: test-results
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Lab FCP soft gate (OPS-P2-003)
+        continue-on-error: true
+        env:
+          BASE_URL: https://${{ steps.host.outputs.hostname }}
+          LAB_FCP_RUNS: "3"
+        run: npm run test:lab-fcp
 
       - name: Run full staging journeys
         if: needs.changes.outputs.test_profile == 'full'
@@ -448,7 +505,7 @@ jobs:
           lfs: false
 
       - name: Download release artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: release-${{ github.sha }}
 
@@ -515,3 +572,202 @@ jobs:
                 }
               }
             }]"
+
+  # OPS-P3-003 — Sev1 path when Deploy Production fails. Emits DeployFailed → App Insights;
+  # prod scheduled-query alert pages ag-elyse-critical-prod (email + SMS + voice).
+  notify_prod_deploy_failure:
+    name: Notify prod deploy failure
+    needs: [deploy_prod]
+    if: always() && !cancelled() && needs.deploy_prod.result == 'failure'
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - name: Emit DeployFailed to App Insights
+        continue-on-error: true
+        env:
+          APPINSIGHTS_CONNECTION_STRING: ${{ vars.APPINSIGHTS_CONNECTION_STRING }}
+          DEPLOY_ENVIRONMENT: prod
+          GIT_SHA: ${{ github.sha }}
+          JOB_NAME: Deploy Production
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$APPINSIGHTS_CONNECTION_STRING" ]; then
+            echo "No App Insights connection string; cannot emit DeployFailed."
+            exit 0
+          fi
+          IKEY=$(echo "$APPINSIGHTS_CONNECTION_STRING" | sed -n 's/.*InstrumentationKey=\([^;]*\).*/\1/p')
+          ENDPOINT=$(echo "$APPINSIGHTS_CONNECTION_STRING" | sed -n 's/.*IngestionEndpoint=\([^;]*\).*/\1/p')
+          ENDPOINT=${ENDPOINT:-https://dc.services.visualstudio.com}
+          ENDPOINT=${ENDPOINT%/}
+          TIME=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
+          curl -sS -X POST "${ENDPOINT}/v2/track" \
+            -H "Content-Type: application/json" \
+            -d "[{
+              \"name\": \"Microsoft.ApplicationInsights.Event\",
+              \"time\": \"${TIME}\",
+              \"iKey\": \"${IKEY}\",
+              \"data\": {
+                \"baseType\": \"EventData\",
+                \"baseData\": {
+                  \"ver\": 2,
+                  \"name\": \"DeployFailed\",
+                  \"properties\": {
+                    \"environment\": \"${DEPLOY_ENVIRONMENT}\",
+                    \"sha\": \"${GIT_SHA}\",
+                    \"job\": \"${JOB_NAME}\",
+                    \"runUrl\": \"${RUN_URL}\"
+                  }
+                }
+              }
+            }]"
+          echo "Emitted DeployFailed (Sev1 SLI). Critical Action Group alert evaluates within ~5m."
+
+  # TEST-D-003 — post-release prod smoke. Same Playwright suite as staging, against prod hostname.
+  # Failures page Sev1 (SMS + voice via critical AG); no auto-rollback.
+  smoke_prod:
+    name: Smoke Production
+    needs: [deploy_prod]
+    if: always() && !cancelled() && needs.deploy_prod.result == 'success'
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Azure login (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Resolve production hostname
+        id: host
+        run: |
+          # Prefer the Portal "default" custom domain (apex). When a custom domain is
+          # set as default, the *.azurestaticapps.net host 301s to it — including
+          # /studio — so auth Location is never /.auth/login and smoke fails.
+          # Matches availability synthetics (custom_domain when set).
+          # Note: JMESPath forbids ".(a || b)" after a dot (az --query fails to parse);
+          # pick with jq so flat CLI and nested ARM shapes both work.
+          SWA_NAME="${{ vars.AZURE_STATIC_WEB_APP_NAME }}"
+          SWA_RG="${{ vars.AZURE_RESOURCE_GROUP }}"
+          DEFAULT=$(az staticwebapp show \
+            --name "$SWA_NAME" \
+            --resource-group "$SWA_RG" \
+            --query defaultHostname -o tsv)
+          CUSTOM=$(az staticwebapp hostname list \
+            --name "$SWA_NAME" \
+            --resource-group "$SWA_RG" \
+            -o json | jq -r '
+              def domain: .domainName // .name // .properties.domainName // empty;
+              def ready_status: .status // .properties.status // empty;
+              def is_default: (.isDefault // .properties.isDefault // false) == true;
+              [ .[] | select(ready_status == "Ready") ] as $ready
+              | ($ready | map(select(is_default)) | .[0])
+                // ($ready | map(select((domain | ascii_downcase | startswith("www.") | not))) | .[0])
+                // $ready[0]
+                // empty
+              | if . == null then empty else domain end
+            ')
+          if [ "$CUSTOM" = "null" ] || [ "$CUSTOM" = "None" ]; then
+            CUSTOM=
+          fi
+          HOST=${CUSTOM:-$DEFAULT}
+          if [ -z "$HOST" ]; then
+            echo "::error::Could not resolve production Static Web App hostname"
+            exit 1
+          fi
+          echo "hostname=$HOST" >> "$GITHUB_OUTPUT"
+          echo "Production URL: https://$HOST (defaultHostname=$DEFAULT)"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Fetch Studio auth secrets
+        env:
+          AZURE_SHARED_KEY_VAULT_NAME: ${{ vars.AZURE_SHARED_KEY_VAULT_NAME }}
+          AZURE_KEY_VAULT_NAME: ${{ vars.AZURE_KEY_VAULT_NAME }}
+          AZURE_STATIC_WEB_APP_NAME: ${{ vars.AZURE_STATIC_WEB_APP_NAME }}
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          AAD_CLIENT_ID: ${{ vars.AAD_CLIENT_ID }}
+          AAD_MONITOR_TOKEN_SCOPE: ${{ vars.AAD_MONITOR_TOKEN_SCOPE }}
+          DEPLOY_ENVIRONMENT: prod
+        run: |
+          chmod +x scripts/fetch-studio-auth-secrets.sh
+          ./scripts/fetch-studio-auth-secrets.sh
+
+      - name: SWA client_credentials check
+        env:
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+        run: npm run test:studio-auth-token
+
+      - name: Run production smoke (desktop + mobile)
+        env:
+          BASE_URL: https://${{ steps.host.outputs.hostname }}
+          CI: true
+        run: npm run test:smoke
+
+      - name: Upload smoke traces (failure)
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: smoke-prod-playwright
+          path: test-results
+          retention-days: 7
+          if-no-files-found: ignore
+
+  notify_prod_smoke_failure:
+    name: Notify prod smoke failure
+    needs: [smoke_prod]
+    if: always() && !cancelled() && needs.smoke_prod.result == 'failure'
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - name: Emit SmokeFailed to App Insights
+        continue-on-error: true
+        env:
+          APPINSIGHTS_CONNECTION_STRING: ${{ vars.APPINSIGHTS_CONNECTION_STRING }}
+          DEPLOY_ENVIRONMENT: prod
+          GIT_SHA: ${{ github.sha }}
+          JOB_NAME: Smoke Production
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$APPINSIGHTS_CONNECTION_STRING" ]; then
+            echo "No App Insights connection string; cannot emit SmokeFailed."
+            exit 0
+          fi
+          IKEY=$(echo "$APPINSIGHTS_CONNECTION_STRING" | sed -n 's/.*InstrumentationKey=\([^;]*\).*/\1/p')
+          ENDPOINT=$(echo "$APPINSIGHTS_CONNECTION_STRING" | sed -n 's/.*IngestionEndpoint=\([^;]*\).*/\1/p')
+          ENDPOINT=${ENDPOINT:-https://dc.services.visualstudio.com}
+          ENDPOINT=${ENDPOINT%/}
+          TIME=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
+          curl -sS -X POST "${ENDPOINT}/v2/track" \
+            -H "Content-Type: application/json" \
+            -d "[{
+              \"name\": \"Microsoft.ApplicationInsights.Event\",
+              \"time\": \"${TIME}\",
+              \"iKey\": \"${IKEY}\",
+              \"data\": {
+                \"baseType\": \"EventData\",
+                \"baseData\": {
+                  \"ver\": 2,
+                  \"name\": \"SmokeFailed\",
+                  \"properties\": {
+                    \"environment\": \"${DEPLOY_ENVIRONMENT}\",
+                    \"sha\": \"${GIT_SHA}\",
+                    \"job\": \"${JOB_NAME}\",
+                    \"runUrl\": \"${RUN_URL}\"
+                  }
+                }
+              }
+            }]"
+          echo "Emitted SmokeFailed (Sev1 SLI). Critical Action Group alert evaluates within ~5m."

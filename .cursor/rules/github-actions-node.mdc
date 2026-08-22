@@ -1,0 +1,25 @@
+---
+description: Upgrade GitHub Actions off Node.js 20; prevent secret leaks in workflow logs
+globs: .github/workflows/**/*
+alwaysApply: true
+---
+
+# GitHub Actions Node.js runtime + secret safety
+
+Before committing or pushing any change to GitHub Actions workflows or composite actions:
+
+1. **Scan** every `uses:` entry for runtimes still on **Node.js 20**.
+2. **Upgrade** to a release that runs on **Node.js 24+** (or replace the action). Prefer current majors that advertise `node24` (example: `actions/create-github-app-token@v3`, not `@v2`).
+3. Prefer existing repo majors already on Node 24 (`actions/checkout@v7`, `actions/setup-node@v7`, `actions/upload-artifact@v7`, `actions/download-artifact@v8`).
+4. Run `npm run lint:actions-secrets` (also part of `npm run lint`) and fix failures before commit.
+
+## Secrets in workflow logs (non-negotiable)
+
+Follow [`.cursor/rules/never-echo-secrets.mdc`](never-echo-secrets.mdc) for all pipelines and scripts. In particular:
+
+- **Never** pass PEMs / private keys through an action `with:` input — those blocks are printed to the job log in cleartext.
+- **Never** `echo "::add-mask::$MULTILINE_VAR"` for a PEM. Only the first line is treated as a workflow command; **remaining lines dump to the log unmasked**. Mask **line-by-line from a file**.
+- GitHub App tokens: use only [`scripts/mint-github-app-token.sh`](scripts/mint-github-app-token.sh). Do not inline `GITHUB-APP-PRIVATE-KEY` fetches in workflows.
+- Checkout for App pushes: `persist-credentials: false`, then set `http.https://github.com/.extraheader` from the installation token. Do not push with the job `GITHUB_TOKEN` (`github-actions[bot]` cannot bypass Protect main).
+- Do not trust `GET /repos` `.permissions.push` for installation tokens (often all-false). Verify via mint response `permissions.contents == write` and/or `GET /installation/repositories`.
+- If a private key is ever printed in Actions logs, **rotate it immediately** ([rotate-secrets.md](docs/runbooks/rotate-secrets.md)) before re-running the job.

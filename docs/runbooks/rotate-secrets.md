@@ -6,13 +6,13 @@ Secrets live in Azure Key Vault as the source of truth. Managed Functions on SWA
 
 | Scope | Key Vault | Resource group | Purpose |
 |---|---|---|---|
-| **Shared (build + ACS)** | `kv-elyse-shared` | `rg-elyse-shared` | SITE-*, Turnstile, ACS email/SMS (identical across envs) |
+| **Shared (build + ACS + ops alerts + GA/GSC scorecard + Studio monitor)** | `kv-elyse-shared` | `rg-elyse-shared` | SITE-*, Turnstile, ACS email/SMS, `ALERT-*`, `GA-*`, `GSC-*`, `MONITOR-*` (identical across envs) |
 | Staging API | `kv-elyse-staging` | `rg-elyse-portfolio-staging` | Gemini, GitHub App, allowlist, AAD |
 | Production API | `kv-elyse-prod` | `rg-elyse-portfolio-prod` | Same as staging |
 
 Subscription: `e601e59a-c7f4-41f0-8178-b59740fb1974`
 
-After updating a vault secret used by the Studio / contact **API**, sync into SWA (commands below, **Actions → Sync SWA API secrets → Run workflow**, or `terraform apply`). Site-build secrets are read from **`kv-elyse-shared`** during the single Build release job.
+After updating a vault secret used by the Studio / contact **API**, sync into SWA (commands below, **Actions → Ops: sync SWA secrets → Run workflow**, or `terraform apply`). Site-build secrets are read from **`kv-elyse-shared`** during the single Build release job.
 
 ## Sync SWA API secrets (no redeploy)
 
@@ -40,10 +40,13 @@ Created by **bootstrap** Terraform (`infra/bootstrap/shared_kv.tf`). One Astro b
 | `SITE-CONTACT-PHONE` | `SITE_CONTACT_PHONE` | Resume PDF + SMS notify-to (not shown on site) |
 | `SITE-DATE-OF-BIRTH` | `SITE_DATE_OF_BIRTH` | `YYYY-MM-DD`; age only |
 | `TURNSTILE-SITE-KEY` | `PUBLIC_TURNSTILE_SITE_KEY` | Cloudflare widget site key (public) |
-| `TURNSTILE-SECRET-KEY` | `TURNSTILE_SECRET_KEY` | Synced into Functions (both envs) |
+| `TURNSTILE-SECRET-KEY` | `TURNSTILE_SECRET` | Synced into Functions (both envs) |
 | `ACS-CONNECTION-STRING` | `ACS_CONNECTION_STRING` | Terraform-managed from `acs-elyse-shared` |
 | `ACS-EMAIL-SENDER` | `ACS_EMAIL_SENDER` | Terraform-managed Azure-managed MailFrom |
-| `ACS-SMS-FROM` | `ACS_SMS_FROM` | Manual E.164; leave `REPLACE_ME` until toll-free is verified |
+| `ACS-SMS-FROM` | `ACS_SMS_FROM` | Manual E.164 toll-free; may be set in KV while verification is pending (~5 weeks). SMS sends only once ACS accepts the number |
+| `MONITOR-UPN` | `MONITOR_UPN` | Terraform-managed Studio smoke user; [studio-auth-monitoring.md](studio-auth-monitoring.md) |
+| `MONITOR-PASSWORD` | `MONITOR_PASSWORD` | Terraform-managed (`random_password`); also in bootstrap state |
+| `MONITOR-TOTP-SEED` | `MONITOR_TOTP_SEED` | Operator-set Base32 seed (`REPLACE_ME` until enrolled). **Never** Terraform |
 
 ```bash
 # Apply bootstrap once so kv-elyse-shared exists, then:
@@ -57,9 +60,61 @@ az keyvault secret set --vault-name kv-elyse-shared --name TURNSTILE-SECRET-KEY 
 # az keyvault secret show --vault-name kv-elyse-staging --name SITE-CONTACT-EMAIL --query value -o tsv
 ```
 
-Repo Actions variable `AZURE_SHARED_KEY_VAULT_NAME` is set by bootstrap. Static analysis job **Shared vault secrets** (pull requests only) emits warnings when any of these are missing / `REPLACE_ME` (does not fail the check).
+`MONITOR-UPN` / `MONITOR-PASSWORD` are set by bootstrap Terraform (`infra/bootstrap/monitor_user.tf`). Set `MONITOR-TOTP-SEED` from a file after software TOTP enrollment — never `--value` with the seed on the command line. Full capture, rotation, and diagnostics: [studio-auth-monitoring.md](studio-auth-monitoring.md).
 
-Locally: copy `.env.example` → `.env` and fill `SITE_*` plus `PUBLIC_TURNSTILE_SITE_KEY`.
+Repo Actions variable `AZURE_SHARED_KEY_VAULT_NAME` is set by bootstrap. **CI: static analysis** job **Shared vault secrets** (pull requests only) emits warnings when any of these are missing / `REPLACE_ME` (does not fail the check).
+
+Locally: copy `.env.example` → `.env` and fill `SITE_*` plus `PUBLIC_TURNSTILE_SITE_KEY`. Optional: `PUBLIC_GA_MEASUREMENT_ID` (defaults to `G-XEE29C0RRE` in code and Terraform when unset).
+
+## Google Analytics 4 (public Measurement ID)
+
+Not a Key Vault secret — the ID is public-by-design and embedded in the client bundle.
+
+| Source | Name | Notes |
+|---|---|---|
+| Terraform `ga_measurement_id` | GitHub Environment `GA_MEASUREMENT_ID` | Default `G-XEE29C0RRE`; applied per staging/prod |
+| Astro build | `PUBLIC_GA_MEASUREMENT_ID` | Workflows map from `vars.GA_MEASUREMENT_ID`; code falls back to the same default |
+
+To rotate the Measurement ID: `terraform apply -var='ga_measurement_id=G-…'` in each environment, then redeploy so the Astro bundle picks up the new value.
+
+### GA Data API (scorecard reads) — `OPS-P5-002`
+
+Browser collection does **not** need this. Automating **visits / top pages** into the monthly scorecard does. Bootstrap Terraform creates placeholders in `kv-elyse-shared`; set real values via CLI only.
+
+| Secret | Purpose |
+|--------|---------|
+| `GA-PROPERTY-ID` | Numeric GA4 property ID (`properties/{id}` — not `G-…`) |
+| `GA-DATA-API-SA-JSON` | Google Cloud service-account JSON key with **Viewer** on the GA4 property |
+
+```bash
+# After bootstrap apply — full GCP + GA Viewer checklist:
+#   docs/runbooks/ga-data-api-access.md
+az keyvault secret set --vault-name kv-elyse-shared --name GA-PROPERTY-ID --value "<numeric-property-id>"
+az keyvault secret set --vault-name kv-elyse-shared --name GA-DATA-API-SA-JSON --file ./ga-scorecard-sa.json
+rm -f ./ga-scorecard-sa.json
+```
+
+Never echo the JSON key; mask line-by-line in Actions; rotate the GCP key immediately if leaked. These secrets are **not** synced into SWA. Full operator checklist + rotate: [ga-data-api-access.md](ga-data-api-access.md).
+
+### GSC Search Analytics API (monthly search signals) — `SEARCH-P4-001`
+
+Automating GSC queries / CTR / page impressions for `SEARCH-P4-002` needs a Search Console property user (service account) plus the site URL string. Prefer **reusing** the GA scorecard SA after enabling `searchconsole.googleapis.com` and granting the SA on the GSC property.
+
+| Secret | Purpose |
+|--------|---------|
+| `GSC-SITE-URL` | Live default: `https://elysetindall.com/` (URL-prefix). KV optional — fetch/refresh fall back to this when missing/`REPLACE_ME` |
+| `GSC-DATA-API-SA-JSON` | Optional dedicated SA JSON; leave `REPLACE_ME` to fall back to `GA-DATA-API-SA-JSON` |
+
+```bash
+# After bootstrap apply — full checklist:
+#   docs/runbooks/gsc-data-api-access.md
+az keyvault secret set --vault-name kv-elyse-shared --name GSC-SITE-URL --value "https://elysetindall.com/"
+# Only if not reusing GA-DATA-API-SA-JSON:
+# az keyvault secret set --vault-name kv-elyse-shared --name GSC-DATA-API-SA-JSON --file ./gsc-search-sa.json
+# rm -f ./gsc-search-sa.json
+```
+
+Never echo the JSON key. These secrets are **not** synced into SWA. Workflow: `.github/workflows/search-ops-monthly.yml`.
 
 ## Contact forms (ACS email / SMS + Cloudflare Turnstile)
 
@@ -82,7 +137,7 @@ After bootstrap (or MailFrom change), sync both environments if apply did not al
 
 ### Shared SMS (manual toll-free)
 
-Both staging and prod set `CONTACT_SMS_ENABLED=true`. The API sends SMS only when `ACS-SMS-FROM` is a real E.164 number (not `REPLACE_ME`).
+Both staging and prod set `CONTACT_SMS_ENABLED=true`. The API sends SMS only when `ACS-SMS-FROM` is a real E.164 number (not `REPLACE_ME`) **and** ACS has accepted the number for SMS (after toll-free verification).
 
 ```bash
 az keyvault secret set --vault-name kv-elyse-shared --name ACS-SMS-FROM --value "+1XXXXXXXXXX"
@@ -90,13 +145,51 @@ az keyvault secret set --vault-name kv-elyse-shared --name ACS-SMS-FROM --value 
 ./scripts/sync-swa-api-secrets.sh prod
 ```
 
-Portal: Communication Service **`acs-elyse-shared`** → purchase toll-free + [toll-free verification](https://learn.microsoft.com/azure/communication-services/quickstarts/sms/apply-for-toll-free-verification). Leave `ACS-SMS-FROM` as `REPLACE_ME` until verified — email still works.
+Portal: Communication Service **`acs-elyse-shared`** → purchase toll-free + [toll-free verification](https://learn.microsoft.com/azure/communication-services/quickstarts/sms/apply-for-toll-free-verification). **Lease cost is ~$2/mo from purchase** (see [cost-and-quotas.md](cost-and-quotas.md)). Verification often takes **~5 weeks**; storing the E.164 in Key Vault during that wait is expected. Until SMS works end-to-end, inquiry **email** still delivers. You may keep `REPLACE_ME` instead if you prefer not to sync the number until verified.
 
 For the verification program brief, use the public SMS policy URL:
 
 `https://elysetindall.com/privacy#sms`
 
 (also linked from the site footer and inquiry forms). Opt-out: reply **STOP**; help: reply **HELP**.
+
+## Ops alert contacts (`ALERT-*`, shared vault)
+
+**Separate from contact-form notify.** `SITE-CONTACT-*` / ACS SMS deliver inquiry notifications. On-call / Sev1–Sev3 Azure Monitor Action Groups use dedicated **`ALERT-*`** secrets in **`kv-elyse-shared`** (same operator for staging + prod). Never commit real emails or phones — placeholders only in git.
+
+Created by **bootstrap** Terraform (`infra/bootstrap/shared_kv.tf`, `OPS-P0-002`). Env stacks read them at apply (`OPS-P1-*` done): `ag-elyse-notify-*` (email ± SMS) and `ag-elyse-critical-*` (email + SMS + voice). Leave values as `REPLACE_ME` until you are ready to receive pages — Terraform skips that receiver (and skips the Action Group entirely if every contact is still a placeholder).
+
+| Secret name | Vault | Format | Used by |
+|---|---|---|---|
+| `ALERT-EMAIL` | `kv-elyse-shared` | Email address | Notify + critical + watch Action Groups |
+| `ALERT-SMS-PHONE` | `kv-elyse-shared` | E.164 (`+1XXXXXXXXXX`) | SMS on notify + critical |
+| `ALERT-VOICE-PHONE` | `kv-elyse-shared` | E.164 (optional; may match SMS) | Voice on critical only |
+
+```bash
+# After bootstrap apply (secrets exist as REPLACE_ME):
+az keyvault secret set --vault-name kv-elyse-shared --name ALERT-EMAIL --value "<email>"
+az keyvault secret set --vault-name kv-elyse-shared --name ALERT-SMS-PHONE --value "+1XXXXXXXXXX"
+az keyvault secret set --vault-name kv-elyse-shared --name ALERT-VOICE-PHONE --value "+1XXXXXXXXXX"
+```
+
+These secrets are **not** synced into SWA app settings and are **not** required for CD Build (unlike SITE-*/Turnstile). Monitor reads them at `terraform apply` via data sources in `infra/modules/portfolio/shared_kv.tf`. After setting values, re-apply staging and/or prod so Action Groups pick them up.
+
+**Prove Sev1 (OPS-P1-003):** After prod apply with real `ALERT-*` values, in Azure Portal open `ag-elyse-critical-prod` → **Test action group** (email + SMS + voice). Optionally lower the homepage/materials availability alert threshold briefly, confirm a page, then restore. Confirm receipt on-device; **do not** record the email/phone or screenshots with PII in git, PRs, or the scorecard — note only “receipt confirmed YYYY-MM-DD” in the plan/scorecard evidence. Sev3 FCP watch uses `ag-elyse-watch-prod` (email only).
+
+Do **not** reuse `SITE-CONTACT-EMAIL`, `SITE-CONTACT-PHONE`, or `ACS-SMS-FROM` for ops paging.
+
+## Key Vault purge protection (`OPS-P3-006`)
+
+**Decision (accepted):** Enable purge protection on shared + prod vaults. Soft-delete retention stays **7 days** (Azure does not allow changing `soft_delete_retention_days` after the vault is created).
+
+| Vault | Scope |
+|-------|--------|
+| `kv-elyse-shared` | Bootstrap (`infra/bootstrap/shared_kv.tf`) — SITE-*, Turnstile, ACS, `ALERT-*`, `GA-*` |
+| `kv-elyse-prod` | Prod env module (`purge_protection_enabled = true`) |
+
+Staging env vault stays **without** purge protection so tear-down / experiment remains possible.
+
+Purge protection is **one-way** while soft-delete retention remains: you cannot purge a deleted vault/secret until the retention window elapses, and you cannot turn protection off without waiting out retention after disabling (Azure blocks disable while protection is on). Apply bootstrap then prod Terraform after merge; document only the decision here — never secret values.
 
 ## Rotate Gemini API key
 
@@ -108,11 +201,13 @@ az keyvault secret set --vault-name kv-elyse-staging --name GEMINI-API-KEY --val
 az keyvault secret set --vault-name kv-elyse-prod --name GEMINI-API-KEY --value "<new>"
 ```
 
-3. Sync both environments (script above or Sync SWA API secrets workflow)
+3. Sync both environments (script above or **Ops: sync SWA secrets** workflow)
 4. Revoke the old Gemini key
 5. Publish a harmless Studio update to verify
 
 ## Rotate the GitHub App private key
+
+**Rotate immediately** if the PEM appears in GitHub Actions logs (or any other log/chat/PR). Treat a leaked key as compromised even if the run failed afterward.
 
 1. GitHub App settings → **Private keys → Generate a private key**
 2. Upload to both Key Vaults:
@@ -122,12 +217,14 @@ az keyvault secret set --vault-name kv-elyse-staging --name GITHUB-APP-PRIVATE-K
 az keyvault secret set --vault-name kv-elyse-prod --name GITHUB-APP-PRIVATE-KEY --file ./new-key.pem
 ```
 
-3. Sync both environments (script above or Sync SWA API secrets workflow)
-4. Delete the previous private key in the GitHub App UI
+3. Sync both environments (script above or **Ops: sync SWA secrets** workflow)
+4. Delete the previous private key in the GitHub App UI (revokes the leaked material)
 5. Delete the local `.pem`
-6. Verify Studio can still commit
+6. Verify Studio can still commit; re-run **Ops: monthly scorecard** if that job needs the App
 
 App ID and installation ID rarely change; only update those Key Vault secrets if you recreate the App or reinstall it, then sync.
+
+Workflows that need a Studio App installation token must call [`scripts/mint-github-app-token.sh`](../../scripts/mint-github-app-token.sh) only. That script writes the PEM to a temp file, masks **each line** with `::add-mask::`, then discards the file — it never `echo`s a multiline PEM (that dumps the key body into the Actions log). `npm run lint:actions-secrets` (and CI job **Actions secret-safety**) fails the build if workflows reintroduce PEM `with:` inputs, inline `GITHUB-APP-PRIVATE-KEY` fetches, or unsafe multiline masks.
 
 ## Rotate the Entra client secret (Studio login)
 

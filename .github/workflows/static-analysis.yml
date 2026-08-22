@@ -1,4 +1,4 @@
-name: Static analysis
+name: "CI: static analysis"
 
 on:
   pull_request:
@@ -72,6 +72,8 @@ jobs:
       SITE_DATE_OF_BIRTH: "2000-01-01"
       # Cloudflare Turnstile always-passes test sitekey (public)
       PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA"
+      # GA4 Measurement ID (public; matches Terraform default)
+      PUBLIC_GA_MEASUREMENT_ID: "G-XEE29C0RRE"
     steps:
       - uses: actions/checkout@v7
 
@@ -99,6 +101,20 @@ jobs:
 
       - name: Syntax check
         run: npm run lint:api
+
+  actions_secrets:
+    name: Actions secret-safety
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Check workflows for secret-leak anti-patterns
+        run: npm run lint:actions-secrets
 
   shared_secrets:
     name: Shared vault secrets

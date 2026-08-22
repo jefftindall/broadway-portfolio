@@ -4,8 +4,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import MediaCard from '../components/MediaCard.astro';
 import { site } from '../lib/site';
 
+// Lower order = newer (Studio auto-assigns -Date.now() on upload). Missing order last.
 const items = (await getCollection('gallery')).sort(
-  (a, b) => (a.data.order ?? 99) - (b.data.order ?? 99),
+  (a, b) => (a.data.order ?? Number.POSITIVE_INFINITY) - (b.data.order ?? Number.POSITIVE_INFINITY),
 );
 
 const tags = ['all', ...new Set(items.flatMap((i) => i.data.tags))];

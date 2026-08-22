@@ -1,0 +1,10 @@
+# GitHub Actions naming (Scheme A)
+
+When adding or editing workflows under `.github/workflows/`:
+
+1. Follow **Scheme A** in [`docs/runbooks/github-actions-naming.md`](docs/runbooks/github-actions-naming.md).
+2. Display `name:` must be `"<Area>: <purpose>"` with Area in `{CI, CD, Ops, Search, Maint}`.
+3. New workflow **filenames** should use `<area>-<purpose>[-cadence].yml` (`ci-`, `cd-`, `ops-`, `search-`, `maint-`).
+4. Existing mismatched filenames are **tech debt** — do not rename casually; use the runbook table and update path filters, docs, and Studio copy in the same PR.
+5. Keep plan IDs (`OPS-*`, `SEARCH-*`) out of the workflow display `name:`; put them in comments/docs.
+6. Never reintroduce deleted ghost workflows (e.g. `terraform.yml` / “Terraform CI”).

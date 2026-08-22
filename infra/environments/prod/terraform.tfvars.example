@@ -2,7 +2,8 @@ location        = "eastus2"
 subscription_id = "e601e59a-c7f4-41f0-8178-b59740fb1974"
 custom_domain   = "elysetindall.com"
 
-# Azure-generated SWA hostname is registered automatically.
+# Azure-generated SWA hostname + apex/www (when custom_domain is set) are registered automatically.
+# Keep www here only if you need it without setting custom_domain, or for extra hosts.
 additional_auth_hostnames = ["www.elysetindall.com"]
 
 github_owner     = "jefftindall"

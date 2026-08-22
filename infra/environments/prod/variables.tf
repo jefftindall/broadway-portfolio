@@ -57,8 +57,15 @@ variable "manage_github_actions" {
   default     = true
 }
 
-variable "alert_email" {
+variable "ga_measurement_id" {
   type        = string
-  description = "Email for App Insights / availability alerts (empty skips metric alert action group)"
+  description = "GA4 Measurement ID for Astro builds (GitHub env var GA_MEASUREMENT_ID)"
+  default     = "G-XEE29C0RRE"
+}
+
+variable "monitor_upn" {
+  type        = string
+  description = "UPN of the bootstrap Studio smoke monitor user. Empty uses studio-monitor@<initial tenant domain>. Must match infra/bootstrap."
   default     = ""
 }
+

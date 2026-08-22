@@ -2,7 +2,7 @@
 title: Where the Sky Meets the Sea
 year: 2026
 role: Astra
-venue: Woodland HS, GA
+venue: Woodland High School - Cartersville, GA
 synopsis: Featured role as Astra in Where the Sky Meets the Sea at Woodland High School.
 featured: false
 order: 10

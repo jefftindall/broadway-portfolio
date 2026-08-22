@@ -143,7 +143,12 @@ const fieldClass =
 
     {
       siteKey ? (
-        <div data-turnstile-mount class="min-h-[65px]"></div>
+        <div
+          class="cf-turnstile min-h-[65px]"
+          data-turnstile-mount
+          data-sitekey={siteKey}
+          data-action="turnstile-spin-v2"
+        ></div>
       ) : (
         <p class="text-sm text-muted" data-testid="turnstile-missing">
           Form verification isn’t configured for this build.
@@ -177,6 +182,8 @@ const fieldClass =
 </form>
 
 <script>
+  import { trackGaEvent } from '../lib/analytics';
+
   type TurnstileApi = {
     render: (el: HTMLElement, opts: Record<string, unknown>) => string;
     reset: (widgetId?: string) => void;
@@ -256,7 +263,8 @@ const fieldClass =
     });
     syncPreferredContact(form);
 
-    if (siteKey) {
+    async function mountTurnstile() {
+      if (!siteKey || widgetId !== undefined) return;
       try {
         await loadTurnstile();
         const mount = form.querySelector<HTMLElement>('[data-turnstile-mount]');
@@ -265,6 +273,7 @@ const fieldClass =
           widgetId = api.render(mount, {
             sitekey: siteKey,
             theme: 'dark',
+            action: 'turnstile-spin-v2',
           });
         }
       } catch {
@@ -272,6 +281,13 @@ const fieldClass =
         if (submitBtn) submitBtn.disabled = true;
       }
     }
+
+    form.addEventListener('focusin', () => {
+      void mountTurnstile();
+    }, { once: true });
+    form.addEventListener('pointerdown', () => {
+      void mountTurnstile();
+    }, { once: true });
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -349,6 +365,10 @@ const fieldClass =
           'Thanks — your message was sent. Elyse will follow up using your preferred contact method.',
           'ok',
         );
+
+        trackGaEvent('generate_lead', {
+          form_type: type === 'lesson' ? 'lesson' : 'casting',
+        });
       } catch {
         setStatus(statusEl, 'Network error — please try again.', 'err');
         if (widgetId !== undefined && api) api.reset(widgetId);

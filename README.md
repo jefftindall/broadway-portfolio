@@ -5,7 +5,7 @@ Astro portfolio for [elysetindall.com](https://elysetindall.com) with an authent
 ## Features
 
 - Public site: Shows, Materials, Lessons, About, News, Contact (Gallery linked from About + footer); private voice Lessons (vocal pedagogy / CCM)
-- Casting SEO landing pages at `/for/[slug]`
+- Casting SEO landing pages at `/for/[slug]` (inbound from search; not linked from site chrome)
 - Private `/studio` companion (auth required) — natural language updates via Gemini → GitHub commits → SWA rebuild
 - Terraform for Azure (bootstrap + staging/prod, Key Vault, Entra auth, GitHub Actions OIDC)
 - Studio publishes via **GitHub App** installation tokens (no PAT)
@@ -40,21 +40,25 @@ func start
 ## Documentation
 
 - [Initial setup](docs/setup.md) — Terraform, secrets, GitHub App, OIDC, DNS cutover
-- [Casting discoverability backlog](docs/casting-discoverability.md) — assessment rubric, scores, and `DISC-*` action IDs for SEO/casting work
+- [Casting discoverability backlog](docs/plans/casting-discoverability.md) — assessment rubric, scores, and `DISC-*` action IDs for SEO/casting work
+- [Search Console & Analytics plan](docs/plans/search-and-analytics.md) — phased GSC + GA4 work (`SEARCH-*` action IDs)
 - [Brand & UI style guide](docs/style-guide.md) — tokens, type, components (visual: `/style-guide`)
 - Plans:
   - [Lesson payments](docs/plans/lesson-payments.md) — vendor comparison and phased checkout
   - [Studio as teaching business](docs/plans/studio-teaching-business.md) — auth-only ops north star (schedule, paid, comms, reports)
 - Runbooks:
+  - [GitHub Actions naming (Scheme A)](docs/runbooks/github-actions-naming.md) — display names + file-rename tech debt
   - [GitHub App (Studio)](docs/runbooks/github-app.md)
   - [Rotate secrets](docs/runbooks/rotate-secrets.md)
   - [Deploy and rollback](docs/runbooks/deploy-and-rollback.md)
+  - [SWA caching](docs/runbooks/swa-caching.md) — Cache-Control, why deploys stay fresh, when to flush
   - [Manage access](docs/runbooks/manage-access.md)
   - [Add casting page](docs/runbooks/add-casting-page.md)
   - [Troubleshoot build](docs/runbooks/troubleshoot-build.md)
   - [DNS and domain](docs/runbooks/dns-and-domain.md)
   - [WordPress (EasyWP) → Azure cutover](docs/runbooks/wordpress-to-azure-cutover.md)
   - [Cost and quotas](docs/runbooks/cost-and-quotas.md)
+  - [Monthly site check-in email](docs/runbooks/monthly-site-check-in.md) — how to read the monthly digest (for Elyse)
   - [Observability](docs/runbooks/observability.md)
   - [Refine Studio Gemini instructions](docs/runbooks/refine-studio-gemini.md)
 

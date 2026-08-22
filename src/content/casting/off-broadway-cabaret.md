@@ -1,6 +1,6 @@
 ---
 keyword: off-Broadway cabaret actress
-title: Off-Broadway Cabaret Actress | Elyse Tindall
+title: Off-Broadway Cabaret Actress
 description: Elyse Tindall’s NYC cabaret debut at Ripley-Grier Studios — Stage Kiss monologue and musical theatre presence.
 relatedSkills:
   - Cabaret

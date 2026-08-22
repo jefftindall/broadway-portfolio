@@ -2,7 +2,7 @@
 
 Move `elysetindall.com` from Namecheap **EasyWP** to the Astro site on Azure Static Web Apps (SWA) without leaving dead links for users or crawlers.
 
-Related: [DNS and domain](dns-and-domain.md), [Deploy and rollback](deploy-and-rollback.md), [Casting discoverability](../casting-discoverability.md) (`DISC-P0-001`–`003`).
+Related: [DNS and domain](dns-and-domain.md), [Deploy and rollback](deploy-and-rollback.md), [Casting discoverability](../plans/casting-discoverability.md) (`DISC-P0-001`–`003`).
 
 ## Current stack (source)
 
@@ -71,7 +71,7 @@ Notes:
 
 ## 3. Redirect rules (repo)
 
-Rules live in [`public/staticwebapp.config.json`](../../public/staticwebapp.config.json) (copied into `dist/` on build). Keep the same redirect block mirrored in root [`staticwebapp.config.json`](../../staticwebapp.config.json) so auth + redirects stay aligned.
+Rules live in [`public/staticwebapp.config.json`](../../public/staticwebapp.config.json) (copied into `dist/` on build). Keep that file identical to root [`staticwebapp.config.json`](../../staticwebapp.config.json) (auth issuer, cache headers, redirects) — SWA deploys `dist/`, not the repo-root copy.
 
 Requirements:
 
@@ -119,7 +119,7 @@ Namecheap → Domain List → `elysetindall.com` → **Manage** → **Advanced D
    |------|------|-------|
    | CNAME | `www` | `<swa-default-hostname>.azurestaticapps.net` |
 
-   Then add `www.elysetindall.com` as a custom domain on the SWA (Portal or later Terraform) so TLS works. Optional follow-up: configure www → apex redirect once both hostnames are bound.
+   Terraform binds `www.elysetindall.com` via `cname-delegation` when `custom_domain` is set. After both domains are Ready, set the apex as the **default** custom domain in Portal so www 301s to apex — see [dns-and-domain.md](dns-and-domain.md).
 
 6. Save. Propagation is often minutes; allow up to 48–72 hours in the worst case.
 
@@ -162,13 +162,15 @@ Also check:
 
 ## 6. Search consoles (`DISC-P0-002`)
 
-After apex serves Astro:
+Apex serves Astro; GSC and GA4 properties for `elysetindall.com` are registered (`DISC-P0-002` done). Residual checklist:
 
-- [ ] Google Search Console property for `elysetindall.com` verified
-- [ ] Submit `https://elysetindall.com/sitemap-index.xml`
-- [ ] Request indexing for `/`, `/materials`, `/shows`, and key `/for/...` pages
-- [ ] Bing Webmaster Tools: submit the same sitemap (recommended)
-- [ ] Monitor index coverage for `/for/*` for ~2 weeks; fix any surprise 404s with new 301s
+- [x] Google Search Console property for `elysetindall.com` verified
+- [x] GA4 property for `elysetindall.com` collecting traffic
+- [ ] Confirm sitemap `https://elysetindall.com/sitemap-index.xml` is submitted/accepted in GSC (if not already)
+- [ ] Request indexing for `/`, `/materials`, `/shows`, and key `/for/...` pages (`SEARCH-P0-004`)
+- [ ] Bing Webmaster Tools: submit the same sitemap (optional)
+- [ ] Monitor index coverage for `/for/*`; fix any surprise 404s with new 301s
+- [ ] Continue phased GSC/GA work per [search-and-analytics.md](../plans/search-and-analytics.md)
 
 ---
 

@@ -5,6 +5,7 @@ import {
   newCorrelationId,
   publisherIdentity,
 } from '../lib/auth.js';
+import { studioPublishMode } from '../lib/studioPublish.js';
 import { flush, trackEvent } from '../lib/telemetry.js';
 
 app.http('publisherStatus', {
@@ -12,10 +13,11 @@ app.http('publisherStatus', {
   authLevel: 'anonymous',
   route: 'publisherStatus',
   handler: async (request, context) => {
+    const publishMode = studioPublishMode();
     if (process.env.AZURE_FUNCTIONS_ENVIRONMENT === 'Development') {
       return {
         status: 200,
-        jsonBody: { authorized: true, reason: 'development' },
+        jsonBody: { authorized: true, reason: 'development', publishMode },
       };
     }
 
@@ -52,6 +54,7 @@ app.http('publisherStatus', {
         authorized: true,
         userId: identity.userId || undefined,
         userDetails: identity.userDetails || undefined,
+        publishMode,
       },
     };
   },

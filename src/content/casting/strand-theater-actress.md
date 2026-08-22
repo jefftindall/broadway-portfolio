@@ -1,6 +1,6 @@
 ---
 keyword: Strand Theater actress
-title: Strand Theater — Anastasia Cast | Elyse Tindall
+title: Strand Theater — Anastasia Cast
 description: Elyse Tindall appeared as Lily in Anastasia at the Strand Theater, Marietta, Georgia.
 relatedSkills:
   - Regional theatre

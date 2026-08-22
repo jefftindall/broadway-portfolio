@@ -2,7 +2,7 @@
 title: Mary Poppins
 year: 2025
 role: Dance Captain
-venue: Rome Little Theater, GA
+venue: Rome Little Theater - Rome, GA
 synopsis: Dance captain for Mary Poppins at Rome Little Theater — three-week performance run.
 featured: false
 order: 15

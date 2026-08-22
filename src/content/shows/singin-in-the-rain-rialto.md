@@ -2,8 +2,8 @@
 title: "Singin' In The Rain"
 year: 2018
 role: Ensemble
-venue: Camp Broadway at the Rialto, Georgia State University
-synopsis: Ensemble in Singin' In The Rain with Camp Broadway at the Rialto, GSU.
+venue: Georgia State University - Atlanta, GA
+synopsis: Ensemble in Singin' In The Rain at Georgia State University (Camp Broadway at the Rialto).
 featured: false
 order: 40
 category: musical

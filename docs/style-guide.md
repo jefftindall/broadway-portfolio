@@ -80,6 +80,7 @@ Contrast rule: primary CTAs use **gold on ink**. Muted text is secondary only.
 | `MediaCard` | `src/components/MediaCard.astro` | Gallery / media thumbnails |
 | `VideoEmbed` | `src/components/VideoEmbed.astro` | YouTube / Vimeo reel embeds |
 | `LessonCta` | `src/components/LessonCta.astro` | Compact “Study with Elyse” embed |
+| `PerformerFacts` | `src/components/PerformerFacts.astro` | Casting facts from `site.performer` — full labeled table on About and Materials |
 
 ### CTA variants (`CtaLink`)
 
@@ -101,9 +102,10 @@ Use sparingly for presence:
 
 - Prefer real photos under `public/images/photos/`, `gallery/`, `shows/`
 - Hero: `site.heroImage` (portrait, object-top / upper crop)
-- Reel poster + `site.reelUrl` for performance embeds
+- Reel poster: `site.reelPoster` (`/images/photos/reel-poster.jpg`) + `site.reelUrl` for performance embeds. Studio overwrites that original on reel publish; display uses derived WebP. Gallery cabaret still (`cabaret-reel-poster.jpg`) is a separate photo.
+- Reel embed accessible title: `site.reelTitle` (play button / iframe name only — not show or Materials copy)
 - Lessons atmosphere: `/images/lessons/lessons-banner.jpg`
-- OG default: `/images/og-default.jpg`
+- OG default: `/images/og-default.jpg` (1200×630 JPEG; width/height/alt emitted when used as the default path)
 - Always set meaningful `alt` (decorative images: empty `alt` + `aria-hidden` when appropriate)
 
 ## Accessibility
@@ -116,10 +118,14 @@ Use sparingly for presence:
 
 ## SEO / schema notes
 
-- Default `Person` in `Seo.astro` (jobTitle, knowsAbout, sameAs Instagram)
-- Home: `Person` + `WebSite` (+ `VideoObject` for reel)
-- Lessons: `EducationalOrganization` + `Offer`s
-- Shows: `VideoObject` for cabaret reel
+- **Titles:** Pass bare page titles; `BaseLayout` appends ` · Elyse Tindall` (do not embed `| Elyse Tindall` in casting frontmatter)
+- Default `Person` in `Seo.astro` via `buildPersonJsonLd` (`src/lib/personSchema.ts`) — jobTitle, performance + coaching `knowsAbout`, `sameAs` (Instagram + YouTube), `alumniOf`, performer `additionalProperty` / height — prepended when custom `jsonLd` has no top-level / `@graph` Person
+- Home: `Person` + `WebSite` (+ `VideoObject` for the Studio reel when URL + title exist) via `@graph` (already includes Person — no duplicate default)
+- Lessons: `EducationalOrganization` + `Offer`s (+ default Person prepended)
+- Shows: `VideoObject` for the Studio reel (`buildReelVideoJsonLd` — title, watch URL, poster, embed URL when YouTube/Vimeo; no invented description or uploadDate) (+ default Person prepended)
+- Prefer slashless URLs in canonicals and JSON-LD (`/materials`, not `/materials/`)
+- Studio: `noIndex`, sitemap filter, `Disallow: /studio` in robots.txt
+- See [search-and-analytics.md](plans/search-and-analytics.md) (`SEARCH-*`) for the measurement + technical SEO backlog
 
 ## Do / don’t
 

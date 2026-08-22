@@ -9,7 +9,7 @@ This guide provisions Azure with Terraform (bootstrap + staging/prod), connects 
 - Terraform >= 1.5
 - Ability to register these Resource Providers on the subscription (or have an Owner do it once): `Microsoft.Resources`, `Microsoft.Storage`, `Microsoft.KeyVault`, `Microsoft.Web`, `Microsoft.Authorization`
 - GitHub repo for this project
-- Gemini API key ([Google AI Studio](https://aistudio.google.com/apikey)). Studio defaults to model `gemini-3.6-flash` (`GEMINI_MODEL`); do not use shut-down IDs such as `gemini-2.0-flash`.
+- Gemini API key ([Google AI Studio](https://aistudio.google.com/apikey)). Studio defaults to `gemini-3.6-flash` (`GEMINI_MODEL`); search-ops / lander drafts use `GEMINI_MODEL_SEARCH_OPS` (default `gemini-3.5-flash`) with independent quotas. Do not use shut-down IDs such as `gemini-2.0-flash`.
 - Permission to create a GitHub App on the account that owns this repo (Studio writes via App installation tokens — see [github-app.md](runbooks/github-app.md))
 - `gh` CLI authenticated (so Terraform can set Actions environment variables via `GH_TOKEN`)
 - Access to DNS for `elysetindall.com`
@@ -144,7 +144,7 @@ az keyvault secret set --vault-name kv-elyse-prod --name GITHUB-APP-PRIVATE-KEY 
 
 After first login to `/studio`, check `/.auth/me` while signed in to copy the exact `userId` / email into the allowlist.
 
-**Important:** SWA managed Functions do **not** resolve `@Microsoft.KeyVault(...)` app settings. After populating the vault (or whenever you change API secrets), sync resolved values into SWA with `./scripts/sync-swa-api-secrets.sh <staging|prod>`, the **Sync SWA API secrets** workflow, or `terraform apply` for that environment. `AAD_CLIENT_SECRET` stays a Key Vault reference (auth platform only). See [rotate-secrets.md](runbooks/rotate-secrets.md).
+**Important:** SWA managed Functions do **not** resolve `@Microsoft.KeyVault(...)` app settings. After populating the vault (or whenever you change API secrets), sync resolved values into SWA with `./scripts/sync-swa-api-secrets.sh <staging|prod>`, the **Ops: sync SWA secrets** workflow, or `terraform apply` for that environment. `AAD_CLIENT_SECRET` stays a Key Vault reference (auth platform only). See [rotate-secrets.md](runbooks/rotate-secrets.md).
 
 Contact forms and the single CD build use **shared** Key Vault `kv-elyse-shared` (SITE-*, Turnstile, ACS). Env vaults keep Gemini / GitHub App / allowlist / AAD. Apply bootstrap first (shared ACS in `rg-elyse-shared`), populate shared secrets, then sync SWA — see [rotate-secrets.md](runbooks/rotate-secrets.md).
 
@@ -170,21 +170,24 @@ Bootstrap creates `elyse-portfolio-gha-terraform` with subscription Contributor 
 
 Terraform also manages GitHub Environment variables. The default Actions `GITHUB_TOKEN` cannot read those, so add a repository secret **`TF_GITHUB_TOKEN`**: a classic PAT with `repo` scope, or a fine-grained PAT with Environments + Variables read/write on this repo. Workflows override `GITHUB_TOKEN` with that secret for Terraform steps.
 
-| Workflow | When | What |
-|---|---|---|
-| [static-analysis.yml](../.github/workflows/static-analysis.yml) | Every PR / push to `main` | fmt, TFLint, validate, Astro check, API syntax; then (on PRs that touch `infra/`) `terraform plan` for staging and prod after those checks succeed — **no deploys** |
-| [azure-static-web-apps.yml](../.github/workflows/azure-static-web-apps.yml) | Push / merge to `main` when app or infra paths change; manual (`workflow_dispatch`) from `main` runs full CD | Single **Build release**; if `infra/` changed: apply staging (parallel with build) → deploy staging → change-aware smoke/journeys → apply prod → deploy prod (same artifact); if only app paths changed: build → deploy staging → verify → prod; docs-only pushes skip CD; manual dispatch from non-`main` branches runs staging only |
-| [staging-branch.yml](../.github/workflows/staging-branch.yml) | Manual (`workflow_dispatch`) | Apply staging Terraform from the selected branch, deploy the staging SWA, then run Playwright smoke + journeys (async test; no prod) |
+| Workflow | Display name | When | What |
+|---|---|---|---|
+| [static-analysis.yml](../.github/workflows/static-analysis.yml) | **CI: static analysis** | Every PR / push to `main` | fmt, TFLint, validate, Astro check, API syntax; then (on PRs that touch `infra/`) `terraform plan` for staging and prod after those checks succeed — **no deploys**; CI runs in parallel across PRs (no concurrency group) |
+| [azure-static-web-apps.yml](../.github/workflows/azure-static-web-apps.yml) | **CD: main** | Push / merge to `main` when app or infra paths change; manual (`workflow_dispatch`) from `main` runs full CD | Single **Build release**; if `infra/` changed: apply staging (parallel with build) → deploy staging → change-aware smoke/journeys → apply prod → deploy prod (same artifact); if only app paths changed: build → deploy staging → verify → prod; docs-only pushes skip CD; manual dispatch from non-`main` branches runs staging only. Shares `concurrency: portfolio-cd` with **CD: staging** (`cancel-in-progress: false`) so only one CD run deploys at a time |
+| [staging-branch.yml](../.github/workflows/staging-branch.yml) | **CD: staging** | Manual (`workflow_dispatch`) | Apply staging Terraform from the selected branch, deploy the staging SWA, then run Playwright smoke + journeys (async test; no prod). Same `portfolio-cd` concurrency group as main CD. Use this to preview Studio `staging-studio-YYYYMMDD` branches before merging their PR |
+| [cleanup-staging-studio-branches.yml](../.github/workflows/cleanup-staging-studio-branches.yml) | **Maint: cleanup Studio branches** | Daily cron + manual | Deletes `staging-studio-YYYYMMDD` branches older than 28 days (UTC) |
+
+Naming SoT: [runbooks/github-actions-naming.md](runbooks/github-actions-naming.md) (Scheme A). File renames are tracked as tech debt there.
 
 Promotion path:
 
-- Pull requests → **Static analysis** only (plan when infra changes); no app or infra deploy
-- Push / merge to `main` → CD runs only when app or infra paths change (`src/`, `public/`, `api/`, build config, `infra/`, etc.); **docs-only** and other non-release paths skip deploy jobs. Terraform apply runs when `infra/` changes; **Smoke Staging** after staging deploy; prod only if staging deploy **and** verification succeeded
-- Manual branch test → Actions → **Staging branch** → pick the branch → Run workflow (includes smoke + journeys)
+- Pull requests → **CI: static analysis** only (plan when infra changes); no app or infra deploy
+- Push / merge to `main` → **CD: main** runs only when app or infra paths change (`src/`, `public/`, `api/`, build config, `infra/`, etc.); **docs-only** and other non-release paths skip deploy jobs. Terraform apply runs when `infra/` changes; **Smoke Staging** after staging deploy; prod only if staging deploy **and** verification succeeded; **Smoke Production** after prod deploy (failure → Sev1 SMS+voice, no auto-rollback)
+- Manual branch test → Actions → **CD: staging** → pick the branch → Run workflow (includes smoke + journeys)
 
 See [runbooks/testing-strategy.md](runbooks/testing-strategy.md) for persona journeys, local commands, and phased backlog.
 
-Branch protection should require **Static analysis** (Terraform lint / Site check / API syntax) before merge. Optionally add required reviewers on the `prod` environment for a manual gate after staging smoke.
+Branch protection should require **CI: static analysis** jobs (Terraform lint / Site check / API syntax) before merge. Optionally add required reviewers on the `prod` environment for a manual gate after staging smoke.
 
 Verify subjects if login fails (must match GitHub’s assertion, including numeric IDs):
 
@@ -199,11 +202,7 @@ cd infra/bootstrap && terraform output terraform_oidc_subjects
 
 If Actions reports `AADSTS700213` with a different subject, update `github_owner_id` / `github_repo_id` and re-apply.
 
-Terraform also provisions Application Insights + Log Analytics per environment, sets `APPLICATIONINSIGHTS_CONNECTION_STRING` on the SWA, and publishes GitHub Environment variable `APPINSIGHTS_CONNECTION_STRING` for the browser SDK and deploy telemetry. Optional alerts:
-
-```bash
-terraform apply -var="alert_email=you@example.com"
-```
+Terraform also provisions Application Insights + Log Analytics per environment, sets `APPLICATIONINSIGHTS_CONNECTION_STRING` on the SWA, and publishes GitHub Environment variable `APPINSIGHTS_CONNECTION_STRING` for the browser SDK and deploy telemetry. It also publishes `GA_MEASUREMENT_ID` (default `G-XEE29C0RRE`) for Google Analytics 4 builds (`PUBLIC_GA_MEASUREMENT_ID`). Metric alerts use shared Key Vault `ALERT-*` contacts (see [runbooks/rotate-secrets.md](runbooks/rotate-secrets.md)); set those secrets then `terraform apply` — do not pass emails/phones as Terraform variables.
 
 See [runbooks/observability.md](runbooks/observability.md).
 
@@ -230,7 +229,7 @@ Prod example:
 |---|---|
 | Azure default | `https://<name>.azurestaticapps.net/.auth/login/aad/callback` |
 | Custom apex | `https://elysetindall.com/.auth/login/aad/callback` |
-| Custom www | `https://www.elysetindall.com/.auth/login/aad/callback` |
+| Custom www | `https://www.elysetindall.com/.auth/login/aad/callback` (included automatically when `custom_domain` is set) |
 
 Add more via `additional_auth_hostnames` in `terraform.tfvars`.
 
@@ -240,16 +239,15 @@ Because `require_app_role_assignment = true`, she must be assigned before she ca
 
 Azure Portal → **Entra ID → Enterprise applications → `elyse-portfolio-prod` → Users and groups → Add user**.
 
-### Pin the token issuer (recommended)
+Repeat for `elyse-portfolio-staging`. Apply order: **bootstrap** (creates `studio-monitor@…` + `MONITOR-*` in `kv-elyse-shared`) then **env** stacks (assign that user to both SWA apps). Do **not** add the monitor UPN to `ALLOWED-USER-IDS`. Enroll software TOTP and set `MONITOR-TOTP-SEED` per [studio-auth-monitoring.md](runbooks/studio-auth-monitoring.md) (`TEST-C-005`).
 
-[`staticwebapp.config.json`](../staticwebapp.config.json) ships with a tenant-agnostic issuer so first deploy works. Harden it by replacing `common` with your tenant:
+### Token issuer (same tenant for staging and prod)
 
-```bash
-terraform output -raw entra_openid_issuer
-# https://login.microsoftonline.com/<tenant-id>/v2.0
-```
+[`staticwebapp.config.json`](../staticwebapp.config.json) (mirrored under `public/`, which is what Astro copies into `dist/` for SWA) pins `openIdIssuer` to this directory:
 
-The registration is single-tenant and the API enforces the Key Vault allowlist, so publishing stays locked to Elyse either way.
+`https://login.microsoftonline.com/e78bb87b-bdca-4a5f-8f90-a1c388528a5f/v2.0`
+
+That value is `terraform output -raw entra_openid_issuer` from **either** environment — staging and prod are separate Entra apps (`AAD_CLIENT_ID` / secret per SWA) in the **same** tenant. Do not use `/common/v2.0`: the apps are `AzureADMyOrg`, and a `common` issuer makes SWA reject the tenant `iss` after login (redirect loop). Entra redirect URIs already cover the staging `*.azurestaticapps.net` hostname and prod apex/www ([above](#redirect-uris)). Cache-Control for `/studio` must stay `private, no-store` so the login 302 is not replayed after Entra returns — see [swa-caching.md](runbooks/swa-caching.md).
 
 ### Verify
 
@@ -266,7 +264,7 @@ Summary:
 1. Prod Terraform already sets `custom_domain = "elysetindall.com"`
 2. Create the TXT validation record from `custom_domain_validation_token` (see [dns-and-domain runbook](runbooks/dns-and-domain.md))
 3. Deploy legacy WordPress 301s via `public/staticwebapp.config.json` (staging → smoke → prod) before flipping DNS
-4. In Namecheap Advanced DNS, replace EasyWP apex/`www` records with Azure SWA ALIAS/A + CNAME
+4. In Namecheap Advanced DNS, replace EasyWP apex/`www` records with Azure SWA ALIAS/A + CNAME; apply Terraform so www is bound, then set apex as the default custom domain in Portal (www → apex 301)
 5. Verify HTTPS, redirects, and that EasyWP no longer serves apex traffic
 6. Smoke-test: home, shows, lessons, a `/for/...` page, and authenticated Studio publish
 

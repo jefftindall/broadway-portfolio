@@ -1,36 +1,76 @@
 ---
+import OptimizedImg from './OptimizedImg.astro';
+import { videoEmbedUrl, youtubeVideoId } from '../lib/reelPoster';
+
 interface Props {
   url: string;
   title?: string;
+  /** Public path for the click-to-play poster. YouTube falls back to the hqdefault thumb. */
+  poster?: string;
 }
 
-const { url, title = 'Performance video' } = Astro.props;
+const { url, title = 'Performance video', poster } = Astro.props;
 
-function toEmbed(raw: string): string | null {
-  try {
-    const u = new URL(raw);
-    if (u.hostname.includes('youtu.be')) {
-      return `https://www.youtube.com/embed/${u.pathname.slice(1)}`;
-    }
-    if (u.hostname.includes('youtube.com')) {
-      const id = u.searchParams.get('v');
-      return id ? `https://www.youtube.com/embed/${id}` : null;
-    }
-    if (u.hostname.includes('vimeo.com')) {
-      const id = u.pathname.split('/').filter(Boolean).pop();
-      return id ? `https://player.vimeo.com/video/${id}` : null;
-    }
-  } catch {
-    return null;
-  }
-  return null;
-}
-
-const embed = toEmbed(url);
+const ytId = youtubeVideoId(url);
+const embed = videoEmbedUrl(url);
+const localPoster = poster?.startsWith('/') ? poster : undefined;
+const remotePoster = localPoster
+  ? undefined
+  : poster || (ytId ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg` : undefined);
+const posterSrc = localPoster || remotePoster;
+const useFacade = Boolean(embed && posterSrc);
 ---
 
 {
-  embed ? (
+  useFacade ? (
+    <div
+      class="relative aspect-video overflow-hidden rounded-sm border border-line bg-panel"
+      data-video-facade
+      data-embed-src={embed}
+      data-video-title={title}
+    >
+      <button
+        type="button"
+        class="group relative block h-full w-full cursor-pointer"
+        aria-label={`Play ${title}`}
+      >
+        {
+          localPoster ? (
+            <OptimizedImg
+              src={localPoster}
+              alt=""
+              width={1280}
+              height={720}
+              class="h-full w-full object-cover"
+              sizes="(min-width: 1024px) 560px, 100vw"
+              loading="lazy"
+              ariaHidden
+            />
+          ) : (
+            <img
+              src={remotePoster}
+              alt=""
+              width={1280}
+              height={720}
+              class="h-full w-full object-cover"
+              loading="lazy"
+              decoding="async"
+            />
+          )
+        }
+        <span
+          class="absolute inset-0 bg-ink/25 transition group-hover:bg-ink/35"
+          aria-hidden="true"
+        ></span>
+        <span
+          class="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-gold text-ink shadow-lg transition group-hover:scale-105"
+          aria-hidden="true"
+        >
+          <span class="ml-1 border-y-[10px] border-l-[16px] border-y-transparent border-l-ink"></span>
+        </span>
+      </button>
+    </div>
+  ) : embed ? (
     <div class="aspect-video overflow-hidden rounded-sm border border-line bg-panel">
       <iframe
         src={embed}
@@ -49,3 +89,32 @@ const embed = toEmbed(url);
     </p>
   )
 }
+
+<script>
+  function activateFacade(root: HTMLElement) {
+    const embed = root.dataset.embedSrc;
+    if (!embed || root.dataset.activated === '1') return;
+    root.dataset.activated = '1';
+    const title = root.dataset.videoTitle || 'Performance video';
+    const iframe = document.createElement('iframe');
+    const joiner = embed.includes('?') ? '&' : '?';
+    iframe.src = `${embed}${joiner}autoplay=1`;
+    iframe.title = title;
+    iframe.className = 'h-full w-full';
+    iframe.allow =
+      'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+    iframe.setAttribute('allowfullscreen', '');
+    root.replaceChildren(iframe);
+  }
+
+  function bindFacades() {
+    document.querySelectorAll<HTMLElement>('[data-video-facade]').forEach((root) => {
+      if (root.dataset.bound === '1') return;
+      root.dataset.bound = '1';
+      root.querySelector('button')?.addEventListener('click', () => activateFacade(root));
+    });
+  }
+
+  bindFacades();
+  document.addEventListener('astro:page-load', bindFacades);
+</script>

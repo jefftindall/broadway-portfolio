@@ -1,45 +1,86 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { getEntry } from 'astro:content';
+import { site } from '../lib/site';
+import { buildPublicImageHashIndex } from '../lib/imageContentHashes';
+import { GALLERY_TAG_VALUES } from '../lib/galleryStudio';
+
+const book = await getEntry('pages', 'lessons-book');
+const bookRates = book?.data.rates ?? [];
+const rate30 =
+  bookRates.find((r) => r.id === '30min')?.priceAmount ??
+  bookRates.find((r) => /30/.test(r.label || ''))?.priceAmount;
+const rate60 =
+  bookRates.find((r) => r.id === '60min')?.priceAmount ??
+  bookRates.find((r) => /60/.test(r.label || ''))?.priceAmount;
+const bookFormat = book?.data.format ?? '';
+const bookScheduling = book?.data.scheduling ?? '';
+const performer = site.performer;
+const reelUrl = site.reelUrl;
+const reelTitle = site.reelTitle;
+const shortBio = site.shortBio;
+const pressQuote = site.pressQuote;
+const siteLocation = site.location;
+const siteAge = String(site.age);
+
+const galleryTagOptions = GALLERY_TAG_VALUES;
+const imageHashIndex = buildPublicImageHashIndex();
 ---
 
 <BaseLayout
   title="Studio"
   description="Private content studio for Elyse Tindall."
   hideFooterCta={true}
+  noIndex={true}
 >
-  <section class="mx-auto max-w-xl px-4 py-8 md:py-12">
-    <p class="text-sm uppercase tracking-[0.2em] text-gel">Private</p>
-    <h1 class="mt-2 font-display text-4xl text-spotlight">Studio</h1>
-    <p class="mt-3 text-sm text-muted">
-      Draft a change (type or speak), optionally add a photo, preview and edit the post, then
-      publish. Updates go live after the site rebuilds (usually a few minutes).
-      <a
-        href="/studio/help"
-        class="text-gel underline-offset-2 hover:text-gold hover:underline"
+  <section class="mx-auto max-w-xl px-4 py-5 md:py-8">
+    <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+      <h1 class="font-display text-3xl text-spotlight md:text-4xl">Studio</h1>
+      <div
+        id="auth-user"
+        class="hidden flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted"
       >
-        Studio help</a
-      >
-      covers voice on iPhone and example prompts.
-    </p>
-
-    <div
-      id="auth-user"
-      class="mt-8 hidden flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4 text-sm text-muted"
-    >
-      <p>
-        Signed in as <span id="auth-user-name" class="text-spotlight"></span>
-      </p>
-      <div class="flex flex-wrap items-center gap-4">
+        <span class="max-w-[12rem] truncate sm:max-w-none">
+          <span id="auth-user-name" class="text-spotlight"></span>
+        </span>
         <a
           href="/studio/help"
-          class="text-sm text-gel underline-offset-2 hover:text-gold hover:underline"
+          class="inline-flex items-center gap-1.5 text-gel underline-offset-2 hover:text-gold hover:underline"
         >
+          <svg
+            class="size-3.5 shrink-0"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.75"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M9.5 9.5a2.5 2.5 0 1 1 3.8 2.1c-.7.4-1.3 1-1.3 1.9"></path>
+            <circle cx="12" cy="16.5" r="0.75" fill="currentColor" stroke="none"></circle>
+          </svg>
           Help
         </a>
         <a
           href="/.auth/logout?post_logout_redirect_uri=/"
-          class="text-sm text-gel underline-offset-2 hover:text-gold hover:underline"
+          class="inline-flex items-center gap-1.5 text-gel underline-offset-2 hover:text-gold hover:underline"
         >
+          <svg
+            class="size-3.5 shrink-0"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.75"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
           Sign out
         </a>
       </div>
@@ -47,14 +88,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
     <div
       id="access-check"
-      class="mt-8 rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted"
+      class="mt-6 rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted"
       role="status"
       aria-live="polite"
     >
       <p>Checking access…</p>
     </div>
 
-    <div id="auth-gate" class="mt-8 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted">
+    <div id="auth-gate" class="mt-6 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted">
       <p>Sign in required to publish.</p>
       <a
         id="login-link"
@@ -65,7 +106,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       </a>
     </div>
 
-    <div id="publisher-gate" class="mt-8 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted">
+    <div id="publisher-gate" class="mt-6 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted">
       <p id="publisher-denied-msg">You’re signed in, but this account can’t publish updates.</p>
       <p id="publisher-correlation-wrap" class="mt-3">
         Share this reference with an admin:&nbsp;<code
@@ -73,29 +114,141 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           class="break-all text-spotlight"></code>
       </p>
       <p class="mt-4">
-        You can still read how Studio works — voice, example prompts, and the preview flow — in
+        You can still read how Studio works — voice, example prompts, and the preview flow — in{' '}
         <a
           href="/studio/help"
           class="text-gel underline-offset-2 hover:text-gold hover:underline"
         >
-          Studio help</a
-        >.
+          Studio help
+        </a>
+        .
       </p>
     </div>
 
-    <div id="studio-app" class="mt-8 hidden space-y-6">
-      <ol class="flex flex-wrap gap-x-4 gap-y-1 text-xs uppercase tracking-[0.15em] text-muted" aria-hidden="true">
-        <li id="step-indicator-compose" class="text-gel">1. Compose</li>
-        <li id="step-indicator-preview">2. Preview</li>
-        <li id="step-indicator-done">3. Done</li>
-      </ol>
+    <div
+      id="studio-app"
+      class="mt-6 hidden space-y-5"
+      data-site-location={siteLocation}
+      data-site-age={siteAge}
+      data-book-format={bookFormat}
+      data-book-scheduling={bookScheduling}
+      data-image-hashes={JSON.stringify(imageHashIndex)}
+    >
+      <div id="hub-step" class="space-y-4">
+        <p class="text-sm text-muted">What do you want to update?</p>
+        <div class="grid gap-3">
+          <button
+            type="button"
+            data-hub-task="ask"
+            class="hub-tile rounded-sm border border-gold/50 bg-gold/10 px-4 py-4 text-left transition hover:bg-gold/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+          >
+            <span class="block font-display text-2xl text-spotlight">Speak or type an update</span>
+            <span class="mt-1 block text-sm text-muted"
+              >Credits, news, lessons copy — say it or type it.</span
+            >
+          </button>
+          <div class="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              data-hub-task="gallery"
+              class="hub-tile rounded-sm border border-line bg-panel/40 px-3 py-4 text-left transition hover:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            >
+              <span class="block text-sm font-semibold text-spotlight">Gallery photo</span>
+              <span class="mt-1 block text-xs text-muted">Add an image</span>
+            </button>
+            <button
+              type="button"
+              data-hub-task="rates"
+              class="hub-tile rounded-sm border border-line bg-panel/40 px-3 py-4 text-left transition hover:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            >
+              <span class="block text-sm font-semibold text-spotlight">Lesson rates</span>
+              <span class="mt-1 block text-xs text-muted">Dollar amounts</span>
+            </button>
+            <button
+              type="button"
+              data-hub-task="facts"
+              class="hub-tile rounded-sm border border-line bg-panel/40 px-3 py-4 text-left transition hover:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            >
+              <span class="block text-sm font-semibold text-spotlight">Performer facts</span>
+              <span class="mt-1 block text-xs text-muted">Range, availability…</span>
+            </button>
+            <button
+              type="button"
+              data-hub-task="reel"
+              class="hub-tile rounded-sm border border-line bg-panel/40 px-3 py-4 text-left transition hover:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            >
+              <span class="block text-sm font-semibold text-spotlight">Reel link</span>
+              <span class="mt-1 block text-xs text-muted">YouTube URL</span>
+            </button>
+            <button
+              type="button"
+              data-hub-task="bio"
+              class="hub-tile rounded-sm border border-line bg-panel/40 px-3 py-4 text-left transition hover:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            >
+              <span class="block text-sm font-semibold text-spotlight">Short bio</span>
+              <span class="mt-1 block text-xs text-muted">About lead</span>
+            </button>
+            <button
+              type="button"
+              data-hub-task="quote"
+              class="hub-tile rounded-sm border border-line bg-panel/40 px-3 py-4 text-left transition hover:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+            >
+              <span class="block text-sm font-semibold text-spotlight">Press quote</span>
+              <span class="mt-1 block text-xs text-muted">Homepage quote</span>
+            </button>
+          </div>
+          <div class="pt-1">
+            <a
+              href="/studio/help"
+              class="inline-flex items-center gap-2 text-sm text-muted underline-offset-2 hover:text-gold hover:underline"
+            >
+              <svg
+                class="size-4 shrink-0 text-gel"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="9"></circle>
+                <path d="M9.5 9.5a2.5 2.5 0 1 1 3.8 2.1c-.7.4-1.3 1-1.3 1.9"></path>
+                <circle cx="12" cy="16.5" r="0.75" fill="currentColor" stroke="none"></circle>
+              </svg>
+              Help
+            </a>
+          </div>
+        </div>
+      </div>
 
-      <div id="compose-step" class="space-y-4">
+      <div id="task-chrome" class="hidden space-y-3">
+        <button
+          id="hub-back-btn"
+          type="button"
+          class="text-sm text-gel underline-offset-2 hover:text-gold hover:underline"
+        >
+          ← All updates
+        </button>
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 id="task-title" class="font-display text-2xl text-spotlight">Update</h2>
+          <ol
+            class="flex flex-wrap gap-x-3 gap-y-1 text-xs uppercase tracking-[0.15em] text-muted"
+            aria-hidden="true"
+          >
+            <li id="step-indicator-compose" class="text-gel">1. Edit</li>
+            <li id="step-indicator-preview">2. Preview</li>
+            <li id="step-indicator-done">3. Done</li>
+          </ol>
+        </div>
+      </div>
+
+      <div id="compose-step" class="hidden space-y-4">
         <label class="block text-sm text-muted">
           Message
           <textarea
             id="message"
-            rows="4"
+            rows="5"
             class="mt-2 w-full rounded-sm border border-line bg-ink px-3 py-3 text-spotlight outline-none focus:border-gold"
             placeholder='e.g. "I just booked Lily in Anastasia at the Strand, July 2025"'
           ></textarea>
@@ -127,15 +280,389 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             class="max-h-40 rounded-sm border border-line object-cover"
           />
         </div>
+        <p
+          id="photo-dup-warn"
+          class="hidden rounded-sm border border-gold/40 bg-gold/10 px-3 py-2 text-sm text-spotlight"
+          role="status"
+        ></p>
 
         <button
           id="preview-btn"
           type="button"
           data-label="Preview update"
-          class="rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 disabled:hover:brightness-100"
+          class="w-full rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 disabled:hover:brightness-100 sm:w-auto"
         >
           Preview update
         </button>
+      </div>
+
+      <div id="compose-gallery" class="hidden space-y-4">
+        <p class="text-sm text-muted">
+          Choose a photo and tags from the list below. New photos appear first in the gallery.
+          Captions stay empty — the public gallery does not show them.
+        </p>
+        <label class="block text-sm text-muted">
+          Photo
+          <input
+            id="gallery-photo"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            class="mt-2 block w-full text-sm text-muted file:mr-3 file:rounded-sm file:border-0 file:bg-stage file:px-3 file:py-2 file:text-spotlight"
+          />
+        </label>
+        <div id="gallery-photo-preview-wrap" class="hidden">
+          <img
+            id="gallery-photo-preview"
+            alt="Selected gallery photo preview"
+            class="max-h-48 w-full rounded-sm border border-line object-cover"
+            style="object-position: center"
+          />
+        </div>
+        <p
+          id="gallery-dup-warn"
+          class="hidden rounded-sm border border-gold/40 bg-gold/10 px-3 py-2 text-sm text-spotlight"
+          role="status"
+        ></p>
+        <fieldset>
+          <legend class="text-sm text-muted">Tags</legend>
+          <p class="mt-1 text-xs text-muted">
+            Pick from existing gallery filters only — new custom tags can’t be added here.
+          </p>
+          <div id="gallery-tag-chips" class="mt-2 flex flex-wrap gap-2">
+            {
+              galleryTagOptions.map((tag) => (
+                <label class="inline-flex cursor-pointer items-center gap-2 rounded-sm border border-line px-3 py-2 text-sm text-spotlight has-[:checked]:border-gold has-[:checked]:bg-gold/15">
+                  <input
+                    type="checkbox"
+                    name="gallery-tag"
+                    value={tag}
+                    class="accent-gold"
+                  />
+                  <span class="capitalize">{tag}</span>
+                </label>
+              ))
+            }
+          </div>
+        </fieldset>
+        <label class="block text-sm text-muted">
+          Crop focus
+          <select
+            id="gallery-focus"
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          >
+            <option value="center">Center</option>
+            <option value="center top">Center top (faces higher)</option>
+            <option value="50% 35%">Mid-upper (50% 35%)</option>
+            <option value="50% 55%">Lower (50% 55%)</option>
+            <option value="center bottom">Center bottom</option>
+            <option value="custom">Custom…</option>
+          </select>
+        </label>
+        <label id="gallery-focus-custom-wrap" class="hidden block text-sm text-muted">
+          Custom object-position
+          <input
+            id="gallery-focus-custom"
+            type="text"
+            placeholder='e.g. 50% 28%'
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <div>
+          <label class="block text-sm text-muted" for="gallery-slug">
+            Gallery file name (optional)
+          </label>
+          <p id="gallery-slug-help" class="mt-1 text-xs text-muted">
+            Sets the markdown file name in the repo
+            (<code class="text-spotlight">src/content/gallery/&lt;name&gt;.md</code>). A stable name
+            makes this photo easy to find in git history and Studio commits. Leave blank to auto-name
+            from the photo. You can omit <code class="text-spotlight">.md</code> — Studio adds it.
+          </p>
+          <input
+            id="gallery-slug"
+            type="text"
+            inputmode="text"
+            autocomplete="off"
+            spellcheck="false"
+            maxlength="83"
+            placeholder="e.g. nyc-winter-headshot"
+            aria-describedby="gallery-slug-help gallery-slug-hint gallery-slug-error"
+            class="mt-2 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          />
+          <p id="gallery-slug-hint" class="mt-1 text-xs text-muted" aria-live="polite"></p>
+          <p
+            id="gallery-slug-error"
+            class="mt-1 hidden text-sm text-red-300"
+            role="alert"
+            aria-live="assertive"
+          ></p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <button
+            id="gallery-preview-btn"
+            type="button"
+            data-label="Preview gallery photo"
+            class="w-full rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 sm:w-auto"
+          >
+            Preview gallery photo
+          </button>
+          <button
+            id="gallery-reset-btn"
+            type="button"
+            class="rounded-sm border border-line px-4 py-3 text-sm text-spotlight hover:border-gold disabled:cursor-wait disabled:opacity-60"
+          >
+            Clear form
+          </button>
+        </div>
+      </div>
+
+      <div id="compose-rates" class="hidden space-y-4">
+        <p class="text-sm text-muted">Change the dollar amounts, then preview.</p>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <label class="block text-sm text-muted">
+            30-minute session ($)
+            <input
+              id="quick-rate-30"
+              type="number"
+              min="1"
+              step="1"
+              value={rate30 != null ? String(rate30) : ''}
+              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+            />
+          </label>
+          <label class="block text-sm text-muted">
+            60-minute session ($)
+            <input
+              id="quick-rate-60"
+              type="number"
+              min="1"
+              step="1"
+              value={rate60 != null ? String(rate60) : ''}
+              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+            />
+          </label>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <button
+            id="quick-rates-btn"
+            type="button"
+            data-label="Preview rate update"
+            class="w-full rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 sm:w-auto"
+          >
+            Preview rate update
+          </button>
+          <button
+            id="rates-reset-btn"
+            type="button"
+            class="rounded-sm border border-line px-4 py-3 text-sm text-spotlight hover:border-gold disabled:cursor-wait disabled:opacity-60"
+          >
+            Reset to live
+          </button>
+        </div>
+      </div>
+
+      <div id="compose-facts" class="hidden space-y-4">
+        <p class="text-sm text-muted">Edit casting facts shown on About and Materials.</p>
+        <label class="block text-sm text-muted">
+          Availability
+          <input
+            id="fact-availability"
+            type="text"
+            value={performer.availability}
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <label class="block text-sm text-muted">
+          Vocal type
+          <input
+            id="fact-vocalType"
+            type="text"
+            value={performer.vocalType}
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <label class="block text-sm text-muted">
+          Vocal range
+          <input
+            id="fact-vocalRange"
+            type="text"
+            value={performer.vocalRange}
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <label class="block text-sm text-muted">
+          Union
+          <input
+            id="fact-union"
+            type="text"
+            value={performer.union}
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <label class="block text-sm text-muted">
+          Playing age
+          <input
+            id="fact-playingAge"
+            type="text"
+            value={performer.playingAge ?? ''}
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <label class="block text-sm text-muted">
+          Height
+          <input
+            id="fact-height"
+            type="text"
+            value={performer.height ?? ''}
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <label class="block text-sm text-muted">
+          Ethnicity
+          <textarea
+            id="fact-ethnicity"
+            rows="3"
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          >{performer.ethnicity ?? ''}</textarea>
+        </label>
+        <div class="flex flex-wrap gap-3">
+          <button
+            id="facts-preview-btn"
+            type="button"
+            data-label="Preview facts update"
+            class="w-full rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 sm:w-auto"
+          >
+            Preview facts update
+          </button>
+          <button
+            id="facts-reset-btn"
+            type="button"
+            class="rounded-sm border border-line px-4 py-3 text-sm text-spotlight hover:border-gold disabled:cursor-wait disabled:opacity-60"
+          >
+            Reset to live
+          </button>
+        </div>
+      </div>
+
+      <div id="compose-reel" class="hidden space-y-4">
+        <p class="text-sm text-muted">
+          Paste the YouTube (or video) link. Title is the name on the play button (not show or Materials copy).
+        </p>
+        <label class="block text-sm text-muted">
+          Reel title
+          <input
+            id="reel-title"
+            type="text"
+            maxlength="120"
+            value={reelTitle}
+            placeholder="NYC Cabaret — Stage Kiss reel"
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <label class="block text-sm text-muted">
+          Reel link
+          <input
+            id="reel-url"
+            type="url"
+            inputmode="url"
+            autocomplete="url"
+            value={reelUrl}
+            placeholder="https://youtu.be/…"
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <div class="flex flex-wrap gap-3">
+          <button
+            id="reel-preview-btn"
+            type="button"
+            data-label="Preview reel update"
+            class="w-full rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 sm:w-auto"
+          >
+            Preview reel update
+          </button>
+          <button
+            id="reel-reset-btn"
+            type="button"
+            class="rounded-sm border border-line px-4 py-3 text-sm text-spotlight hover:border-gold disabled:cursor-wait disabled:opacity-60"
+          >
+            Reset to live
+          </button>
+        </div>
+      </div>
+
+      <div id="compose-bio" class="hidden space-y-4">
+        <p class="text-sm text-muted">
+          Short lead on the About page (one or two sentences). Longer Background/Philosophy stay
+          as-is.
+        </p>
+        <label class="block text-sm text-muted">
+          Short bio
+          <textarea
+            id="short-bio"
+            rows="4"
+            maxlength="600"
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          >{shortBio}</textarea>
+        </label>
+        <div class="flex flex-wrap gap-3">
+          <button
+            id="bio-preview-btn"
+            type="button"
+            data-label="Preview bio update"
+            class="w-full rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 sm:w-auto"
+          >
+            Preview bio update
+          </button>
+          <button
+            id="bio-reset-btn"
+            type="button"
+            class="rounded-sm border border-line px-4 py-3 text-sm text-spotlight hover:border-gold disabled:cursor-wait disabled:opacity-60"
+          >
+            Reset to live
+          </button>
+        </div>
+      </div>
+
+      <div id="compose-quote" class="hidden space-y-4">
+        <p class="text-sm text-muted">
+          Homepage press quote under the hero. Keep it short — quotation marks are added by the
+          layout.
+        </p>
+        <label class="block text-sm text-muted">
+          Quote
+          <textarea
+            id="press-quote-text"
+            rows="3"
+            maxlength="280"
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          >{pressQuote.quote}</textarea>
+        </label>
+        <label class="block text-sm text-muted">
+          Attribution
+          <input
+            id="press-quote-attribution"
+            type="text"
+            maxlength="120"
+            value={pressQuote.attribution}
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <div class="flex flex-wrap gap-3">
+          <button
+            id="quote-preview-btn"
+            type="button"
+            data-label="Preview quote update"
+            class="w-full rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 sm:w-auto"
+          >
+            Preview quote update
+          </button>
+          <button
+            id="quote-reset-btn"
+            type="button"
+            class="rounded-sm border border-line px-4 py-3 text-sm text-spotlight hover:border-gold disabled:cursor-wait disabled:opacity-60"
+          >
+            Reset to live
+          </button>
+        </div>
       </div>
 
       <div id="preview-step" class="hidden space-y-4">
@@ -165,11 +692,21 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <p class="text-sm font-semibold text-spotlight">Update accepted</p>
           <p id="done-reply" class="text-sm text-gel"></p>
           <p id="done-sha" class="text-xs text-muted"></p>
+          <p id="done-branch" class="hidden text-xs text-muted"></p>
+          <p id="done-pr" class="hidden text-sm"></p>
         </div>
 
-        <div class="space-y-2">
+        <div id="pipeline-section" class="space-y-2">
           <p class="text-xs uppercase tracking-[0.15em] text-muted">Publishing pipeline</p>
           <ul id="pipeline-list" class="space-y-2 text-sm text-muted"></ul>
+        </div>
+
+        <div id="staging-test-section" class="hidden space-y-2">
+          <p class="text-xs uppercase tracking-[0.15em] text-muted">Test on staging</p>
+          <p class="text-sm text-gel">
+            GitHub → Actions → <span class="text-spotlight">CD: staging</span> → Run workflow on
+            this branch. Prod stays unchanged until the pull request merges.
+          </p>
         </div>
 
         <div class="space-y-2">
@@ -192,14 +729,48 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
   <script>
     import { flush, trackEvent, trackException, trackMetric } from '../scripts/app-insights';
+    import { validateGallerySlug } from '../lib/galleryStudio';
 
     type PhotoPayload = { name: string; contentType: string; dataBase64: string };
+    type DiscretePreview =
+      | {
+          kind: 'rates';
+          rates: Array<{ id: string; label: string; price?: string; priceAmount: number }>;
+        }
+      | { kind: 'reel'; reelUrl: string; reelTitle?: string }
+      | { kind: 'shortBio'; shortBio: string }
+      | { kind: 'pressQuote'; quote: string; attribution: string }
+      | {
+          kind: 'performer';
+          performer: Record<string, string>;
+          patchedKeys?: string[];
+        }
+      | {
+          kind: 'casting';
+          slug: string;
+          keyword?: string;
+          title?: string;
+          description?: string;
+          cta?: string;
+          relatedShows?: string[];
+          relatedSkills?: string[];
+        }
+      | {
+          kind: 'gallery';
+          slug: string;
+          image: string;
+          tags: string[];
+          focus?: string;
+        };
     type ContentChange = {
       tool?: string;
       path: string;
       content: string;
       commitMessage: string;
       summary?: string;
+      livePath?: string;
+      preview?: DiscretePreview;
+      commitParams?: Record<string, unknown>;
     };
     type PublishAction = {
       tool?: string;
@@ -207,6 +778,16 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       path?: string;
       url?: string | null;
     };
+
+    const DISCRETE_TOOLS = new Set([
+      'add_gallery_photo',
+      'update_lesson_rates',
+      'update_reel_url',
+      'update_performer_facts',
+      'update_short_bio',
+      'update_press_quote',
+      'update_casting_fields',
+    ]);
 
     const BUSY_CLASS = 'opacity-60';
     const POLL_MS = 5000;
@@ -216,21 +797,84 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     const photoEl = document.getElementById('photo') as HTMLInputElement;
     const photoPreviewWrap = document.getElementById('photo-preview-wrap')!;
     const photoPreview = document.getElementById('photo-preview') as HTMLImageElement;
+    const photoDupWarn = document.getElementById('photo-dup-warn')!;
     const previewBtn = document.getElementById('preview-btn') as HTMLButtonElement;
     const publishBtn = document.getElementById('publish-btn') as HTMLButtonElement;
     const backBtn = document.getElementById('back-btn') as HTMLButtonElement;
     const anotherBtn = document.getElementById('another-btn') as HTMLButtonElement;
+    const hubBackBtn = document.getElementById('hub-back-btn') as HTMLButtonElement;
     const micBtn = document.getElementById('mic') as HTMLButtonElement;
+    const quickRatesBtn = document.getElementById('quick-rates-btn') as HTMLButtonElement;
+    const ratesResetBtn = document.getElementById('rates-reset-btn') as HTMLButtonElement;
+    const quickRate30 = document.getElementById('quick-rate-30') as HTMLInputElement;
+    const quickRate60 = document.getElementById('quick-rate-60') as HTMLInputElement;
+    const factsPreviewBtn = document.getElementById('facts-preview-btn') as HTMLButtonElement;
+    const factsResetBtn = document.getElementById('facts-reset-btn') as HTMLButtonElement;
+    const reelPreviewBtn = document.getElementById('reel-preview-btn') as HTMLButtonElement;
+    const reelResetBtn = document.getElementById('reel-reset-btn') as HTMLButtonElement;
+    const bioPreviewBtn = document.getElementById('bio-preview-btn') as HTMLButtonElement;
+    const bioResetBtn = document.getElementById('bio-reset-btn') as HTMLButtonElement;
+    const quotePreviewBtn = document.getElementById('quote-preview-btn') as HTMLButtonElement;
+    const quoteResetBtn = document.getElementById('quote-reset-btn') as HTMLButtonElement;
+    const galleryPreviewBtn = document.getElementById('gallery-preview-btn') as HTMLButtonElement;
+    const galleryResetBtn = document.getElementById('gallery-reset-btn') as HTMLButtonElement;
+    const galleryPhotoEl = document.getElementById('gallery-photo') as HTMLInputElement;
+    const galleryPhotoPreviewWrap = document.getElementById('gallery-photo-preview-wrap')!;
+    const galleryPhotoPreview = document.getElementById(
+      'gallery-photo-preview',
+    ) as HTMLImageElement;
+    const galleryDupWarn = document.getElementById('gallery-dup-warn')!;
+    const galleryFocusSelect = document.getElementById('gallery-focus') as HTMLSelectElement;
+    const galleryFocusCustomWrap = document.getElementById('gallery-focus-custom-wrap')!;
+    const galleryFocusCustom = document.getElementById('gallery-focus-custom') as HTMLInputElement;
+    const gallerySlugInput = document.getElementById('gallery-slug') as HTMLInputElement;
+    const gallerySlugHint = document.getElementById('gallery-slug-hint')!;
+    const gallerySlugError = document.getElementById('gallery-slug-error')!;
+    const factAvailability = document.getElementById('fact-availability') as HTMLInputElement;
+    const factVocalType = document.getElementById('fact-vocalType') as HTMLInputElement;
+    const factVocalRange = document.getElementById('fact-vocalRange') as HTMLInputElement;
+    const factUnion = document.getElementById('fact-union') as HTMLInputElement;
+    const factPlayingAge = document.getElementById('fact-playingAge') as HTMLInputElement;
+    const factHeight = document.getElementById('fact-height') as HTMLInputElement;
+    const factEthnicity = document.getElementById('fact-ethnicity') as HTMLTextAreaElement;
+    const reelUrlInput = document.getElementById('reel-url') as HTMLInputElement;
+    const reelTitleInput = document.getElementById('reel-title') as HTMLInputElement;
+    const shortBioInput = document.getElementById('short-bio') as HTMLTextAreaElement;
+    const pressQuoteInput = document.getElementById('press-quote-text') as HTMLTextAreaElement;
+    const pressAttributionInput = document.getElementById(
+      'press-quote-attribution',
+    ) as HTMLInputElement;
     const statusEl = document.getElementById('status')!;
+    const hubStep = document.getElementById('hub-step')!;
+    const taskChrome = document.getElementById('task-chrome')!;
+    const taskTitle = document.getElementById('task-title')!;
     const composeStep = document.getElementById('compose-step')!;
+    const composeGallery = document.getElementById('compose-gallery')!;
+    const composeRates = document.getElementById('compose-rates')!;
+    const composeFacts = document.getElementById('compose-facts')!;
+    const composeReel = document.getElementById('compose-reel')!;
+    const composeBio = document.getElementById('compose-bio')!;
+    const composeQuote = document.getElementById('compose-quote')!;
     const previewStep = document.getElementById('preview-step')!;
     const doneStep = document.getElementById('done-step')!;
     const changesEditor = document.getElementById('changes-editor')!;
     const previewReply = document.getElementById('preview-reply')!;
     const doneReply = document.getElementById('done-reply')!;
     const doneSha = document.getElementById('done-sha')!;
+    const doneBranch = document.getElementById('done-branch')!;
+    const donePr = document.getElementById('done-pr')!;
+    const pipelineSection = document.getElementById('pipeline-section')!;
+    const stagingTestSection = document.getElementById('staging-test-section')!;
     const pipelineList = document.getElementById('pipeline-list')!;
     const pageLinks = document.getElementById('page-links')!;
+
+    function applyPublishModeUi(mode: 'pr' | 'direct') {
+      const label = mode === 'pr' ? 'Publish to staging branch' : 'Publish to site';
+      publishBtn.dataset.label = label;
+      if (!publishBtn.disabled || publishBtn.textContent !== 'Publishing…') {
+        publishBtn.textContent = label;
+      }
+    }
     const stepCompose = document.getElementById('step-indicator-compose')!;
     const stepPreview = document.getElementById('step-indicator-preview')!;
     const stepDone = document.getElementById('step-indicator-done')!;
@@ -244,9 +888,223 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     const authUserName = document.getElementById('auth-user-name')!;
     const studioApp = document.getElementById('studio-app')!;
 
+    type HubTask = 'ask' | 'gallery' | 'rates' | 'facts' | 'reel' | 'bio' | 'quote';
+    let activeTask: HubTask = 'ask';
+
+    type LiveDiscreteDefaults = {
+      rate30: string;
+      rate60: string;
+      availability: string;
+      vocalType: string;
+      vocalRange: string;
+      union: string;
+      playingAge: string;
+      height: string;
+      ethnicity: string;
+      reelUrl: string;
+      reelTitle: string;
+      shortBio: string;
+      pressQuote: string;
+      pressAttribution: string;
+    };
+
+    /** Snapshot of current live values for “Reset to live” on discrete forms. */
+    let liveDiscreteDefaults: LiveDiscreteDefaults = {
+      rate30: quickRate30.value,
+      rate60: quickRate60.value,
+      availability: factAvailability.value,
+      vocalType: factVocalType.value,
+      vocalRange: factVocalRange.value,
+      union: factUnion.value,
+      playingAge: factPlayingAge.value,
+      height: factHeight.value,
+      ethnicity: factEthnicity.value,
+      reelUrl: reelUrlInput.value,
+      reelTitle: reelTitleInput.value,
+      shortBio: shortBioInput.value,
+      pressQuote: pressQuoteInput.value,
+      pressAttribution: pressAttributionInput.value,
+    };
+
+    function captureLiveDiscreteDefaultsFromForm() {
+      liveDiscreteDefaults = {
+        rate30: quickRate30.value,
+        rate60: quickRate60.value,
+        availability: factAvailability.value,
+        vocalType: factVocalType.value,
+        vocalRange: factVocalRange.value,
+        union: factUnion.value,
+        playingAge: factPlayingAge.value,
+        height: factHeight.value,
+        ethnicity: factEthnicity.value,
+        reelUrl: reelUrlInput.value,
+        reelTitle: reelTitleInput.value,
+        shortBio: shortBioInput.value,
+        pressQuote: pressQuoteInput.value,
+        pressAttribution: pressAttributionInput.value,
+      };
+    }
+
+    function applyLiveDiscreteDefaults(task: HubTask) {
+      const live = liveDiscreteDefaults;
+      if (task === 'gallery') {
+        resetGalleryForm();
+        return;
+      }
+      if (task === 'rates') {
+        quickRate30.value = live.rate30;
+        quickRate60.value = live.rate60;
+        return;
+      }
+      if (task === 'facts') {
+        factAvailability.value = live.availability;
+        factVocalType.value = live.vocalType;
+        factVocalRange.value = live.vocalRange;
+        factUnion.value = live.union;
+        factPlayingAge.value = live.playingAge;
+        factHeight.value = live.height;
+        factEthnicity.value = live.ethnicity;
+        return;
+      }
+      if (task === 'reel') {
+        reelUrlInput.value = live.reelUrl;
+        reelTitleInput.value = live.reelTitle;
+        return;
+      }
+      if (task === 'bio') {
+        shortBioInput.value = live.shortBio;
+        return;
+      }
+      if (task === 'quote') {
+        pressQuoteInput.value = live.pressQuote;
+        pressAttributionInput.value = live.pressAttribution;
+      }
+    }
+
+    function resetGalleryForm() {
+      galleryPhotoEl.value = '';
+      galleryPhotoPreviewWrap.classList.add('hidden');
+      galleryPhotoPreview.removeAttribute('src');
+      galleryPhotoPreview.style.objectPosition = 'center';
+      clearDuplicateWarning(galleryDupWarn);
+      galleryPhotoDuplicatePath = null;
+      galleryFocusSelect.value = 'center';
+      galleryFocusCustom.value = '';
+      galleryFocusCustomWrap.classList.add('hidden');
+      gallerySlugInput.value = '';
+      syncGallerySlugFeedback();
+      document.querySelectorAll<HTMLInputElement>('input[name="gallery-tag"]').forEach((el) => {
+        el.checked = false;
+      });
+    }
+
+    function parseImageHashIndex(): Record<string, string> {
+      try {
+        const raw = studioApp.dataset.imageHashes || '{}';
+        const parsed = JSON.parse(raw) as unknown;
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+        return parsed as Record<string, string>;
+      } catch {
+        return {};
+      }
+    }
+
+    const imageHashes = parseImageHashIndex();
+
+    async function sha256Hex(buffer: ArrayBuffer): Promise<string> {
+      const digest = await crypto.subtle.digest('SHA-256', buffer);
+      return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function clearDuplicateWarning(el: HTMLElement) {
+      el.classList.add('hidden');
+      el.textContent = '';
+    }
+
+    function showDuplicateWarning(el: HTMLElement, existingPath: string) {
+      el.textContent = `This exact photo is already on the site (${existingPath}). Publishing again will create a duplicate. Choose a different file, or continue if you mean to.`;
+      el.classList.remove('hidden');
+    }
+
+    async function checkPhotoDuplicate(file: File): Promise<string | null> {
+      if (!Object.keys(imageHashes).length) return null;
+      try {
+        const hash = await sha256Hex(await file.arrayBuffer());
+        const hit = imageHashes[hash];
+        return typeof hit === 'string' && hit ? hit : null;
+      } catch {
+        return null;
+      }
+    }
+
+    function confirmIfDuplicate(existingPath: string | null): boolean {
+      if (!existingPath) return true;
+      return window.confirm(
+        `This exact photo is already on the site (${existingPath}). Publish a duplicate anyway?`,
+      );
+    }
+
+    function resetDiscreteFormToLive(task: HubTask) {
+      applyLiveDiscreteDefaults(task);
+      setStatus('Restored current live values.');
+    }
+
+    function syncLiveDefaultsFromPublishedChanges(changes: ContentChange[]) {
+      let touched = false;
+      for (const change of changes) {
+        const preview = change.preview;
+        if (change.tool === 'update_lesson_rates' && preview?.kind === 'rates') {
+          for (const rate of preview.rates) {
+            if (rate.id === '30min') quickRate30.value = String(rate.priceAmount ?? '');
+            if (rate.id === '60min') quickRate60.value = String(rate.priceAmount ?? '');
+          }
+          touched = true;
+        }
+        if (change.tool === 'update_performer_facts' && preview?.kind === 'performer') {
+          const p = preview.performer;
+          factAvailability.value = String(p.availability || '');
+          factVocalType.value = String(p.vocalType || '');
+          factVocalRange.value = String(p.vocalRange || '');
+          factUnion.value = String(p.union || '');
+          factPlayingAge.value = String(p.playingAge || '');
+          factHeight.value = String(p.height || '');
+          factEthnicity.value = String(p.ethnicity || '');
+          touched = true;
+        }
+        if (change.tool === 'update_reel_url' && preview?.kind === 'reel') {
+          reelUrlInput.value = preview.reelUrl || '';
+          reelTitleInput.value = preview.reelTitle || '';
+          touched = true;
+        }
+        if (change.tool === 'update_short_bio' && preview?.kind === 'shortBio') {
+          shortBioInput.value = preview.shortBio || '';
+          touched = true;
+        }
+        if (change.tool === 'update_press_quote' && preview?.kind === 'pressQuote') {
+          pressQuoteInput.value = preview.quote || '';
+          pressAttributionInput.value = preview.attribution || '';
+          touched = true;
+        }
+      }
+      if (touched) captureLiveDiscreteDefaultsFromForm();
+    }
+
+    const TASK_TITLES: Record<HubTask, string> = {
+      ask: 'Speak or type',
+      gallery: 'Gallery photo',
+      rates: 'Lesson rates',
+      facts: 'Performer facts',
+      reel: 'Reel link',
+      bio: 'Short bio',
+      quote: 'Press quote',
+    };
+
     let draftPhoto: PhotoPayload | undefined;
     let provisionalPhotoPath: string | null = null;
     let draftChanges: ContentChange[] = [];
+    /** Exact content-hash match against live gallery/photos (warn-only). */
+    let askPhotoDuplicatePath: string | null = null;
+    let galleryPhotoDuplicatePath: string | null = null;
     let pollTimer: number | null = null;
     let pollStartedAt = 0;
     let publishClickedAt = 0;
@@ -297,20 +1155,83 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     }
 
     function setComposeBusy(busy: boolean) {
-      setBusy(busy, previewBtn, 'Preparing preview…');
+      const primary =
+        activeTask === 'gallery'
+          ? galleryPreviewBtn
+          : activeTask === 'rates'
+            ? quickRatesBtn
+            : activeTask === 'facts'
+              ? factsPreviewBtn
+              : activeTask === 'reel'
+                ? reelPreviewBtn
+                : activeTask === 'bio'
+                  ? bioPreviewBtn
+                  : activeTask === 'quote'
+                    ? quotePreviewBtn
+                    : previewBtn;
+      setBusy(busy, primary, 'Preparing preview…');
       previewBtn.disabled = busy;
+      galleryPreviewBtn.disabled = busy;
+      galleryResetBtn.disabled = busy;
+      quickRatesBtn.disabled = busy;
+      ratesResetBtn.disabled = busy;
+      factsPreviewBtn.disabled = busy;
+      factsResetBtn.disabled = busy;
+      reelPreviewBtn.disabled = busy;
+      reelResetBtn.disabled = busy;
+      bioPreviewBtn.disabled = busy;
+      bioResetBtn.disabled = busy;
+      quotePreviewBtn.disabled = busy;
+      quoteResetBtn.disabled = busy;
       messageEl.disabled = busy;
       photoEl.disabled = busy;
+      galleryPhotoEl.disabled = busy;
+      galleryFocusSelect.disabled = busy;
+      galleryFocusCustom.disabled = busy;
+      gallerySlugInput.disabled = busy;
+      document.querySelectorAll<HTMLInputElement>('input[name="gallery-tag"]').forEach((el) => {
+        el.disabled = busy;
+      });
       micBtn.disabled = busy || !micSupported;
+      quickRate30.disabled = busy;
+      quickRate60.disabled = busy;
+      factAvailability.disabled = busy;
+      factVocalType.disabled = busy;
+      factVocalRange.disabled = busy;
+      factUnion.disabled = busy;
+      factPlayingAge.disabled = busy;
+      factHeight.disabled = busy;
+      factEthnicity.disabled = busy;
+      reelUrlInput.disabled = busy;
+      reelTitleInput.disabled = busy;
+      shortBioInput.disabled = busy;
+      pressQuoteInput.disabled = busy;
+      pressAttributionInput.disabled = busy;
+      hubBackBtn.disabled = busy;
+      document.querySelectorAll<HTMLButtonElement>('.hub-tile').forEach((el) => {
+        el.disabled = busy;
+      });
     }
 
     function setPreviewBusy(busy: boolean) {
       setBusy(busy, publishBtn, 'Publishing…');
       publishBtn.disabled = busy;
       backBtn.disabled = busy;
+      // Keep hub escape available unless we're mid-publish.
+      hubBackBtn.disabled = busy;
       changesEditor.querySelectorAll('input, textarea').forEach((el) => {
         (el as HTMLInputElement | HTMLTextAreaElement).disabled = busy;
       });
+    }
+
+    /** Clear compose + preview busy locks (labels, disabled controls, opacity). */
+    function unlockStudioUi() {
+      setComposeBusy(false);
+      setPreviewBusy(false);
+    }
+
+    function isDoneVisible() {
+      return !doneStep.classList.contains('hidden');
     }
 
     function hideAccessCheck() {
@@ -322,8 +1243,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       authGate.classList.add('hidden');
       publisherGate.classList.add('hidden');
       studioApp.classList.remove('hidden');
-      setComposeBusy(false);
-      setPreviewBusy(false);
+      unlockStudioUi();
+      showHub();
+      void loadDiscreteDefaults();
     }
 
     function showSignInGate() {
@@ -366,26 +1288,90 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       }
     }
 
-    function showCompose() {
-      stopPolling();
-      composeStep.classList.remove('hidden');
+    function hideAllTaskPanels() {
+      composeStep.classList.add('hidden');
+      composeGallery.classList.add('hidden');
+      composeRates.classList.add('hidden');
+      composeFacts.classList.add('hidden');
+      composeReel.classList.add('hidden');
+      composeBio.classList.add('hidden');
+      composeQuote.classList.add('hidden');
       previewStep.classList.add('hidden');
       doneStep.classList.add('hidden');
+    }
+
+    function showHub() {
+      stopPolling();
+      hubStep.classList.remove('hidden');
+      taskChrome.classList.add('hidden');
+      hideAllTaskPanels();
+      setStatus('');
+    }
+
+    function showTask(task: HubTask, hint?: string) {
+      stopPolling();
+      activeTask = task;
+      hubStep.classList.add('hidden');
+      taskChrome.classList.remove('hidden');
+      taskTitle.textContent = TASK_TITLES[task];
+      hideAllTaskPanels();
+      if (task === 'ask') {
+        composeStep.classList.remove('hidden');
+        if (hint === 'credits') {
+          messageEl.placeholder =
+            'e.g. "Add my Anastasia credit" or "Write a news post about BroadwayWorld"';
+          if (!messageEl.value.trim()) {
+            setStatus('Describe a credit or news update — type or hold to speak.');
+          }
+        } else {
+          messageEl.placeholder =
+            'e.g. "I just booked Lily in Anastasia at the Strand, July 2025"';
+        }
+      } else if (task === 'gallery') {
+        composeGallery.classList.remove('hidden');
+      } else if (task === 'rates') {
+        composeRates.classList.remove('hidden');
+      } else if (task === 'facts') {
+        composeFacts.classList.remove('hidden');
+      } else if (task === 'reel') {
+        composeReel.classList.remove('hidden');
+      } else if (task === 'bio') {
+        composeBio.classList.remove('hidden');
+      } else if (task === 'quote') {
+        composeQuote.classList.remove('hidden');
+      }
       setStepIndicators('compose');
     }
 
+    function showCompose() {
+      unlockStudioUi();
+      showTask(activeTask);
+    }
+
     function showPreview() {
-      composeStep.classList.add('hidden');
+      unlockStudioUi();
+      hubStep.classList.add('hidden');
+      taskChrome.classList.remove('hidden');
+      hideAllTaskPanels();
       previewStep.classList.remove('hidden');
-      doneStep.classList.add('hidden');
       setStepIndicators('preview');
     }
 
     function showDone() {
-      composeStep.classList.add('hidden');
-      previewStep.classList.add('hidden');
+      unlockStudioUi();
+      hubStep.classList.add('hidden');
+      taskChrome.classList.remove('hidden');
+      hideAllTaskPanels();
       doneStep.classList.remove('hidden');
       setStepIndicators('done');
+    }
+
+    function resetToHub() {
+      stopPolling();
+      resetComposeForm();
+      unlockStudioUi();
+      showHub();
+      setStatus('');
     }
 
     function formatApiError(data: { error?: string; correlationId?: string }, fallback: string) {
@@ -595,10 +1581,36 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       }, POLL_MS);
     }
 
-    function startProgressTracking(sha: string | undefined, actions: PublishAction[]) {
+    function startProgressTracking(
+      sha: string | undefined,
+      actions: PublishAction[],
+      meta?: { publishMode?: string; branch?: string; prUrl?: string },
+    ) {
+      const mode = meta?.publishMode === 'pr' ? 'pr' : 'direct';
       prodLatencyEmitted = false;
-      renderPipeline({ status: 'queued', jobs: [] });
       renderPageLinks(actions);
+
+      if (mode === 'pr') {
+        pipelineSection.classList.add('hidden');
+        stagingTestSection.classList.remove('hidden');
+        pipelineList.replaceChildren();
+        // Page links on this host may still be yesterday's build — don't poll for "live".
+        for (const link of Array.from(pageLinks.querySelectorAll('a'))) {
+          const a = link as HTMLAnchorElement;
+          a.textContent = 'After staging deploy / merge';
+          a.className = 'pointer-events-none text-xs text-muted opacity-50';
+        }
+        setStatus(
+          meta?.prUrl
+            ? 'Saved on a staging branch. Open the pull request, or run CD: staging to test.'
+            : 'Saved on a staging branch. Run Actions → CD: staging to test.',
+        );
+        return;
+      }
+
+      pipelineSection.classList.remove('hidden');
+      stagingTestSection.classList.add('hidden');
+      renderPipeline({ status: 'queued', jobs: [] });
       void refreshLiveLinks();
 
       if (!sha) {
@@ -615,14 +1627,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       authorized: boolean;
       correlationId?: string;
       apiUnavailable?: boolean;
+      publishMode?: 'pr' | 'direct';
     }> {
       try {
         const res = await fetch('/api/publisherStatus');
         if (!res.ok) return { authorized: false, apiUnavailable: true };
         const data = await res.json();
+        const mode = data?.publishMode === 'pr' ? 'pr' : 'direct';
         return {
           authorized: Boolean(data?.authorized),
           correlationId: typeof data?.correlationId === 'string' ? data.correlationId : undefined,
+          publishMode: mode,
         };
       } catch {
         return { authorized: false, apiUnavailable: true };
@@ -649,7 +1664,12 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       authUserName.textContent = displayNameFromPrincipal(clientPrincipal);
       authUser.classList.remove('hidden');
 
-      let status: { authorized: boolean; correlationId?: string; apiUnavailable?: boolean } = {
+      let status: {
+        authorized: boolean;
+        correlationId?: string;
+        apiUnavailable?: boolean;
+        publishMode?: 'pr' | 'direct';
+      } = {
         authorized: false,
       };
       try {
@@ -663,33 +1683,414 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         return false;
       }
 
+      applyPublishModeUi(status.publishMode === 'pr' ? 'pr' : 'direct');
       showStudioApp();
       return true;
     }
 
-    async function resizeImage(file: File): Promise<PhotoPayload | null> {
-      const bitmap = await createImageBitmap(file);
-      const max = 1600;
-      const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
-      const w = Math.round(bitmap.width * scale);
-      const h = Math.round(bitmap.height * scale);
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return null;
-      ctx.drawImage(bitmap, 0, 0, w, h);
-      const blob: Blob | null = await new Promise((resolve) =>
-        canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.85),
-      );
-      if (!blob) return null;
-      const buffer = await blob.arrayBuffer();
+    /** Transport cap only — do not bake display sizes here. Derived variants are build-time. */
+    const STUDIO_PHOTO_MAX_BYTES = 12 * 1024 * 1024;
+
+    function photoTooLarge(file: File): boolean {
+      return file.size > STUDIO_PHOTO_MAX_BYTES;
+    }
+
+    async function photoPayloadFromFile(file: File): Promise<PhotoPayload | null> {
+      const type =
+        file.type === 'image/png' || file.type === 'image/webp' || file.type === 'image/jpeg'
+          ? file.type
+          : '';
+      if (!type) return null;
+      const buffer = await file.arrayBuffer();
       let binary = '';
       const bytes = new Uint8Array(buffer);
       for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]!);
       const dataBase64 = btoa(binary);
-      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/\.\w+$/, '.jpg');
-      return { name: safe, contentType: 'image/jpeg', dataBase64 };
+      const ext = type === 'image/png' ? '.png' : type === 'image/webp' ? '.webp' : '.jpg';
+      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/\.\w+$/, ext);
+      return { name: safe, contentType: type, dataBase64 };
+    }
+
+    function fieldClass(readOnly = false) {
+      return readOnly
+        ? 'mt-1 w-full cursor-default rounded-sm border border-line/70 bg-ink/50 px-3 py-2 text-sm text-spotlight outline-none'
+        : 'mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold';
+    }
+
+    function appendLabeledInput(
+      wrap: HTMLElement,
+      labelText: string,
+      field: string,
+      value: string,
+      opts?: { type?: string; rows?: number; readOnly?: boolean },
+    ) {
+      const readOnly = Boolean(opts?.readOnly);
+      const label = document.createElement('label');
+      label.className = 'block text-sm text-muted';
+      label.textContent = labelText;
+      if (opts?.rows) {
+        const area = document.createElement('textarea');
+        area.rows = opts.rows;
+        area.value = value;
+        area.dataset.field = field;
+        area.readOnly = readOnly;
+        area.className = fieldClass(readOnly);
+        label.appendChild(area);
+      } else {
+        const input = document.createElement('input');
+        // Read-only confirmation: avoid number steppers that look editable.
+        input.type = readOnly ? 'text' : opts?.type || 'text';
+        if (!readOnly && opts?.type === 'number') {
+          input.min = '1';
+          input.step = '1';
+        }
+        input.value = value;
+        input.dataset.field = field;
+        input.readOnly = readOnly;
+        input.className = fieldClass(readOnly);
+        label.appendChild(input);
+      }
+      wrap.appendChild(label);
+    }
+
+    function discreteWillPublishCopy(change: ContentChange): string {
+      const path = change.livePath || '';
+      switch (change.tool) {
+        case 'add_gallery_photo':
+          return path
+            ? `If you publish, this photo will appear on ${path}:`
+            : 'If you publish, this photo will appear in the gallery:';
+        case 'update_lesson_rates':
+          return path
+            ? `If you publish, the rates block on ${path} will look like this:`
+            : 'If you publish, the rates block will look like this:';
+        case 'update_reel_url':
+          return path
+            ? `If you publish, the reel on ${path} will look like this:`
+            : 'If you publish, the reel will look like this:';
+        case 'update_short_bio':
+          return path
+            ? `If you publish, the About lead on ${path} will look like this:`
+            : 'If you publish, the About lead will look like this:';
+        case 'update_press_quote':
+          return path
+            ? `If you publish, the press quote on ${path} will look like this:`
+            : 'If you publish, the homepage press quote will look like this:';
+        case 'update_performer_facts':
+          return path
+            ? `If you publish, Performer facts on ${path} will look like this:`
+            : 'If you publish, Performer facts will look like this:';
+        case 'update_casting_fields':
+          return path
+            ? `If you publish, casting fields on ${path} will become:`
+            : 'If you publish, casting fields will become:';
+        default:
+          return path
+            ? `If you publish, this will update ${path}:`
+            : 'If you publish, this will update the site:';
+      }
+    }
+
+    function youtubeOrVimeoEmbed(raw: string): string | null {
+      try {
+        const u = new URL(raw);
+        if (u.hostname.includes('youtu.be')) {
+          return `https://www.youtube.com/embed/${u.pathname.slice(1)}`;
+        }
+        if (u.hostname.includes('youtube.com')) {
+          const id = u.searchParams.get('v');
+          return id ? `https://www.youtube.com/embed/${id}` : null;
+        }
+        if (u.hostname.includes('vimeo.com')) {
+          const id = u.pathname.split('/').filter(Boolean).pop();
+          return id ? `https://player.vimeo.com/video/${id}` : null;
+        }
+      } catch {
+        return null;
+      }
+      return null;
+    }
+
+    function formatRatePrice(rate: { price?: string; priceAmount: number }): string {
+      if (rate.price && String(rate.price).trim()) return String(rate.price).trim();
+      return `$${Math.round(Number(rate.priceAmount) || 0)}`;
+    }
+
+    function renderRatesSitePreview(
+      wrap: HTMLElement,
+      rates: Array<{ id: string; label: string; price?: string; priceAmount: number }>,
+    ) {
+      const panel = document.createElement('div');
+      panel.className = 'rounded-sm border border-line bg-panel/60 p-5';
+      const title = document.createElement('h3');
+      title.className = 'font-display text-2xl text-spotlight';
+      title.textContent = 'Rates';
+      panel.appendChild(title);
+
+      const list = document.createElement('ul');
+      list.className = 'mt-5 space-y-4';
+      for (const rate of rates) {
+        const li = document.createElement('li');
+        li.className = 'flex items-baseline justify-between gap-4 border-b border-line pb-3';
+        const label = document.createElement('span');
+        label.className = 'text-muted';
+        label.textContent = rate.label || rate.id;
+        const price = document.createElement('span');
+        price.className = 'font-display text-2xl text-gold';
+        price.textContent = formatRatePrice(rate);
+        li.append(label, price);
+        list.appendChild(li);
+      }
+      panel.appendChild(list);
+
+      const format = studioApp.dataset.bookFormat || '';
+      const scheduling = studioApp.dataset.bookScheduling || '';
+      if (format) {
+        const p = document.createElement('p');
+        p.className = 'mt-5 text-sm text-muted';
+        p.textContent = format;
+        panel.appendChild(p);
+      }
+      if (scheduling) {
+        const p = document.createElement('p');
+        p.className = 'mt-3 text-sm text-muted';
+        p.textContent = scheduling;
+        panel.appendChild(p);
+      }
+      wrap.appendChild(panel);
+    }
+
+    function renderReelSitePreview(wrap: HTMLElement, url: string, title?: string) {
+      const embed = youtubeOrVimeoEmbed(url);
+      if (embed) {
+        const frameWrap = document.createElement('div');
+        frameWrap.className = 'aspect-video overflow-hidden rounded-sm border border-line bg-panel';
+        const iframe = document.createElement('iframe');
+        iframe.src = embed;
+        iframe.title = title || 'Casting reel preview';
+        iframe.className = 'h-full w-full';
+        iframe.loading = 'lazy';
+        iframe.allow =
+          'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+        iframe.setAttribute('allowfullscreen', '');
+        frameWrap.appendChild(iframe);
+        wrap.appendChild(frameWrap);
+      } else {
+        const p = document.createElement('p');
+        p.className = 'text-sm text-muted';
+        const a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.className = 'text-gel underline';
+        a.textContent = url || 'Watch video';
+        p.appendChild(a);
+        wrap.appendChild(p);
+      }
+    }
+
+    function renderPerformerFactsSitePreview(wrap: HTMLElement, performer: Record<string, string>) {
+      const aside = document.createElement('aside');
+      aside.className = 'rounded-sm border border-line p-5';
+      aside.setAttribute('aria-label', 'Performer facts preview');
+
+      const heading = document.createElement('h3');
+      heading.className = 'font-display text-2xl text-spotlight';
+      heading.textContent = 'Performer facts';
+      aside.appendChild(heading);
+
+      const dl = document.createElement('dl');
+      dl.className = 'mt-5 grid gap-3 sm:grid-cols-[11rem_1fr] sm:gap-x-4 sm:gap-y-2';
+
+      type FactRow = { label: string; value: string };
+      const rows: FactRow[] = [];
+      if (performer.playingAge) rows.push({ label: 'Playing age', value: performer.playingAge });
+      if (performer.vocalType) rows.push({ label: 'Type', value: performer.vocalType });
+      if (performer.vocalRange) rows.push({ label: 'Vocal range', value: performer.vocalRange });
+      if (performer.ethnicity) {
+        rows.push({ label: 'Ethnicity / presenting', value: performer.ethnicity });
+      }
+      if (performer.union) rows.push({ label: 'Union', value: performer.union });
+      const location = studioApp.dataset.siteLocation || '';
+      if (location) rows.push({ label: 'Based in', value: location });
+      const age = studioApp.dataset.siteAge || '';
+      if (age) rows.push({ label: 'Age', value: age });
+      if (performer.height) rows.push({ label: 'Height', value: performer.height });
+      if (performer.availability) {
+        rows.push({ label: 'Availability', value: performer.availability });
+      }
+
+      for (const row of rows) {
+        const dt = document.createElement('dt');
+        dt.className = 'text-sm uppercase tracking-[0.12em] text-gel';
+        dt.textContent = row.label;
+        const dd = document.createElement('dd');
+        dd.className = 'text-spotlight';
+        dd.textContent = row.value;
+        dl.append(dt, dd);
+      }
+      aside.appendChild(dl);
+      wrap.appendChild(aside);
+    }
+
+    function renderShortBioSitePreview(wrap: HTMLElement, bio: string) {
+      const p = document.createElement('p');
+      p.className = 'text-lg text-spotlight/90';
+      p.textContent = bio;
+      wrap.appendChild(p);
+    }
+
+    function renderPressQuoteSitePreview(wrap: HTMLElement, quote: string, attribution: string) {
+      const figure = document.createElement('figure');
+      figure.className = 'border-l-2 border-l-gold pl-6';
+      const blockquote = document.createElement('blockquote');
+      blockquote.className = 'font-display text-2xl leading-snug text-spotlight md:text-3xl';
+      blockquote.textContent = `“${quote}”`;
+      const figcaption = document.createElement('figcaption');
+      figcaption.className = 'mt-3 text-sm uppercase tracking-[0.2em] text-muted';
+      figcaption.textContent = `— ${attribution}`;
+      figure.append(blockquote, figcaption);
+      wrap.appendChild(figure);
+    }
+
+    function photoPayloadToObjectUrl(photo: PhotoPayload): string {
+      const binary = atob(photo.dataBase64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)!;
+      return URL.createObjectURL(new Blob([bytes], { type: photo.contentType || 'image/jpeg' }));
+    }
+
+    function renderGallerySitePreview(
+      wrap: HTMLElement,
+      preview: {
+        image: string;
+        tags: string[];
+        focus?: string;
+        slug?: string;
+      },
+    ) {
+      const focus = preview.focus || 'center';
+      const src =
+        draftPhoto && (preview.image.startsWith('/images/photos/pending-') || !preview.image)
+          ? photoPayloadToObjectUrl(draftPhoto)
+          : preview.image;
+
+      const tile = document.createElement('figure');
+      tile.className = 'overflow-hidden rounded-sm border border-line';
+      const frame = document.createElement('div');
+      frame.className = 'relative aspect-[3/4] overflow-hidden bg-panel';
+      const img = document.createElement('img');
+      img.src = src;
+      img.alt = preview.slug ? `Gallery preview (${preview.slug})` : 'Gallery photo preview';
+      img.className = 'h-full w-full object-cover';
+      img.style.objectPosition = focus;
+      img.loading = 'lazy';
+      frame.appendChild(img);
+      tile.appendChild(frame);
+      wrap.appendChild(tile);
+
+      const meta = document.createElement('div');
+      meta.className = 'mt-3 space-y-2 text-sm text-muted';
+      if (preview.tags?.length) {
+        const tagsLine = document.createElement('p');
+        tagsLine.textContent = `Tags: ${preview.tags.join(', ')}`;
+        meta.appendChild(tagsLine);
+      }
+      const focusLine = document.createElement('p');
+      focusLine.textContent = `Focus: ${focus}`;
+      meta.appendChild(focusLine);
+      wrap.appendChild(meta);
+    }
+
+    function renderDiscretePreview(wrap: HTMLElement, change: ContentChange) {
+      const preview = change.preview;
+      const tool = change.tool || '';
+      const ro = { readOnly: true as const };
+
+      if (tool === 'add_gallery_photo' || preview?.kind === 'gallery') {
+        const gallery =
+          preview && preview.kind === 'gallery'
+            ? preview
+            : { image: '', tags: [] as string[], focus: 'center' };
+        renderGallerySitePreview(wrap, gallery);
+        return;
+      }
+
+      if (tool === 'update_lesson_rates' || preview?.kind === 'rates') {
+        const rates =
+          preview && preview.kind === 'rates'
+            ? preview.rates
+            : [
+                { id: '30min', label: '30-minute session', priceAmount: 0 },
+                { id: '60min', label: '60-minute session', priceAmount: 0 },
+              ];
+        renderRatesSitePreview(wrap, rates);
+        return;
+      }
+
+      if (tool === 'update_reel_url' || preview?.kind === 'reel') {
+        const url = preview && preview.kind === 'reel' ? preview.reelUrl : '';
+        const title = preview && preview.kind === 'reel' ? preview.reelTitle : '';
+        renderReelSitePreview(wrap, url, title);
+        return;
+      }
+
+      if (tool === 'update_short_bio' || preview?.kind === 'shortBio') {
+        const bio = preview && preview.kind === 'shortBio' ? preview.shortBio : '';
+        renderShortBioSitePreview(wrap, bio);
+        return;
+      }
+
+      if (tool === 'update_press_quote' || preview?.kind === 'pressQuote') {
+        const quote = preview && preview.kind === 'pressQuote' ? preview.quote : '';
+        const attribution = preview && preview.kind === 'pressQuote' ? preview.attribution : '';
+        renderPressQuoteSitePreview(wrap, quote, attribution);
+        return;
+      }
+
+      if (tool === 'update_performer_facts' || preview?.kind === 'performer') {
+        const performer =
+          preview && preview.kind === 'performer' ? preview.performer : ({} as Record<string, string>);
+        renderPerformerFactsSitePreview(wrap, performer);
+        return;
+      }
+
+      if (tool === 'update_casting_fields' || preview?.kind === 'casting') {
+        const casting =
+          preview && preview.kind === 'casting'
+            ? preview
+            : {
+                slug: '',
+                keyword: '',
+                title: '',
+                description: '',
+                cta: '',
+                relatedShows: [] as string[],
+                relatedSkills: [] as string[],
+              };
+        wrap.dataset.castingSlug = casting.slug || '';
+        appendLabeledInput(wrap, 'Keyword', 'keyword', String(casting.keyword || ''), { ...ro });
+        appendLabeledInput(wrap, 'Title', 'title', String(casting.title || ''), { ...ro });
+        appendLabeledInput(wrap, 'Description', 'description', String(casting.description || ''), {
+          rows: 3,
+          ...ro,
+        });
+        appendLabeledInput(wrap, 'Button label (CTA)', 'cta', String(casting.cta || ''), { ...ro });
+        appendLabeledInput(
+          wrap,
+          'Related shows (one per line)',
+          'relatedShows',
+          (casting.relatedShows || []).join('\n'),
+          { rows: 3, ...ro },
+        );
+        appendLabeledInput(
+          wrap,
+          'Related skills (one per line)',
+          'relatedSkills',
+          (casting.relatedSkills || []).join('\n'),
+          { rows: 3, ...ro },
+        );
+      }
     }
 
     function renderChangesEditor(changes: ContentChange[]) {
@@ -698,80 +2099,156 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         const wrap = document.createElement('div');
         wrap.className = 'space-y-2 rounded-sm border border-line bg-panel/40 p-4';
         wrap.dataset.index = String(index);
+        wrap.dataset.tool = change.tool || '';
 
-        const meta = document.createElement('p');
-        meta.className = 'text-xs text-muted';
-        meta.textContent = [change.tool, change.path].filter(Boolean).join(' · ');
-        wrap.appendChild(meta);
+        const isDiscrete = Boolean(change.tool && DISCRETE_TOOLS.has(change.tool));
 
-        if (change.summary) {
-          const summary = document.createElement('p');
-          summary.className = 'text-sm text-spotlight';
-          summary.textContent = change.summary;
-          wrap.appendChild(summary);
+        if (isDiscrete) {
+          const headline = document.createElement('p');
+          headline.className = 'text-sm text-spotlight';
+          headline.textContent = discreteWillPublishCopy(change);
+          wrap.appendChild(headline);
+          renderDiscretePreview(wrap, change);
+        } else {
+          const meta = document.createElement('p');
+          meta.className = 'text-xs text-muted';
+          const liveHint = change.livePath || '';
+          meta.textContent = liveHint
+            ? `Will update ${liveHint}`
+            : change.summary || 'Website update';
+          wrap.appendChild(meta);
+
+          if (change.summary) {
+            const summary = document.createElement('p');
+            summary.className = 'text-sm text-spotlight';
+            summary.textContent = change.summary;
+            wrap.appendChild(summary);
+          }
+
+          const contentLabel = document.createElement('label');
+          contentLabel.className = 'block text-sm text-muted';
+          contentLabel.textContent = 'Content';
+          const contentArea = document.createElement('textarea');
+          contentArea.rows = 12;
+          contentArea.value = change.content;
+          contentArea.dataset.field = 'content';
+          contentArea.className =
+            'mt-1 w-full rounded-sm border border-line bg-ink px-3 py-3 font-mono text-xs text-spotlight outline-none focus:border-gold';
+          contentLabel.appendChild(contentArea);
+          wrap.appendChild(contentLabel);
         }
-
-        const pathLabel = document.createElement('label');
-        pathLabel.className = 'block text-sm text-muted';
-        pathLabel.textContent = 'Path';
-        const pathInput = document.createElement('input');
-        pathInput.type = 'text';
-        pathInput.value = change.path;
-        pathInput.dataset.field = 'path';
-        pathInput.className =
-          'mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 font-mono text-xs text-spotlight outline-none focus:border-gold';
-        pathLabel.appendChild(pathInput);
-        wrap.appendChild(pathLabel);
-
-        const contentLabel = document.createElement('label');
-        contentLabel.className = 'block text-sm text-muted';
-        contentLabel.textContent = 'Content';
-        const contentArea = document.createElement('textarea');
-        contentArea.rows = 12;
-        contentArea.value = change.content;
-        contentArea.dataset.field = 'content';
-        contentArea.className =
-          'mt-1 w-full rounded-sm border border-line bg-ink px-3 py-3 font-mono text-xs text-spotlight outline-none focus:border-gold';
-        contentLabel.appendChild(contentArea);
-        wrap.appendChild(contentLabel);
-
-        const msgLabel = document.createElement('label');
-        msgLabel.className = 'block text-sm text-muted';
-        msgLabel.textContent = 'Commit message';
-        const msgInput = document.createElement('input');
-        msgInput.type = 'text';
-        msgInput.value = change.commitMessage;
-        msgInput.dataset.field = 'commitMessage';
-        msgInput.className =
-          'mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold';
-        msgLabel.appendChild(msgInput);
-        wrap.appendChild(msgLabel);
 
         changesEditor.appendChild(wrap);
       });
     }
 
-    function readEditedChanges(): ContentChange[] {
+    async function composeDiscrete(
+      tool: string,
+      args: Record<string, unknown>,
+      photo?: PhotoPayload,
+    ): Promise<{ changes: ContentChange[]; provisionalPhotoPath: string | null }> {
+      const res = await fetch('/api/updateContent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'compose', tool, args, photo }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(formatApiError(data, 'Could not prepare that update.'));
+      }
+      const changes = Array.isArray(data.changes) ? (data.changes as ContentChange[]) : [];
+      if (!changes.length) {
+        throw new Error('No website update was prepared.');
+      }
+      return {
+        changes: changes.map((c) => ({
+          tool: c.tool,
+          path: c.path,
+          content: c.content,
+          commitMessage: c.commitMessage,
+          summary: c.summary,
+          livePath: c.livePath,
+          preview: c.preview,
+          commitParams: c.commitParams,
+        })),
+        provisionalPhotoPath:
+          typeof data.provisionalPhotoPath === 'string' ? data.provisionalPhotoPath : null,
+      };
+    }
+
+    async function readEditedChanges(): Promise<ContentChange[]> {
       const blocks = Array.from(changesEditor.children) as HTMLElement[];
-      return blocks.map((block, index) => {
+      const out: ContentChange[] = [];
+      for (let index = 0; index < blocks.length; index++) {
+        const block = blocks[index];
         const base = draftChanges[index] || { path: '', content: '', commitMessage: '' };
-        const path =
-          (block.querySelector('[data-field="path"]') as HTMLInputElement | null)?.value.trim() ||
-          base.path;
+        // Discrete Preview is confirmation-only (read-only). Publish the composed draft as-is.
+        if (base.tool && DISCRETE_TOOLS.has(base.tool)) {
+          out.push(base);
+          continue;
+        }
         const content =
           (block.querySelector('[data-field="content"]') as HTMLTextAreaElement | null)?.value ??
           base.content;
-        const commitMessage =
-          (block.querySelector('[data-field="commitMessage"]') as HTMLInputElement | null)?.value.trim() ||
-          base.commitMessage;
-        return {
+        out.push({
           tool: base.tool,
           summary: base.summary,
-          path,
+          path: base.path,
           content,
-          commitMessage,
-        };
-      });
+          commitMessage: base.commitMessage,
+          livePath: base.livePath,
+          preview: base.preview,
+          commitParams: base.commitParams,
+        });
+      }
+      return out;
+    }
+
+    async function loadDiscreteDefaults() {
+      try {
+        const res = await fetch('/api/studioDiscrete');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data?.authorized) return;
+        const rates = Array.isArray(data.rates) ? data.rates : [];
+        for (const rate of rates) {
+          if (rate.id === '30min' && rate.priceAmount != null) {
+            quickRate30.value = String(rate.priceAmount);
+          }
+          if (rate.id === '60min' && rate.priceAmount != null) {
+            quickRate60.value = String(rate.priceAmount);
+          }
+        }
+        const performer = data.performer && typeof data.performer === 'object' ? data.performer : null;
+        if (performer) {
+          factAvailability.value = String(performer.availability || '');
+          factVocalType.value = String(performer.vocalType || '');
+          factVocalRange.value = String(performer.vocalRange || '');
+          factUnion.value = String(performer.union || '');
+          factPlayingAge.value = String(performer.playingAge || '');
+          factHeight.value = String(performer.height || '');
+          factEthnicity.value = String(performer.ethnicity || '');
+        }
+        if (typeof data.reelUrl === 'string' && data.reelUrl) {
+          reelUrlInput.value = data.reelUrl;
+        }
+        if (typeof data.reelTitle === 'string' && data.reelTitle) {
+          reelTitleInput.value = data.reelTitle;
+        }
+        if (typeof data.shortBio === 'string' && data.shortBio) {
+          shortBioInput.value = data.shortBio;
+        }
+        const press = data.pressQuote && typeof data.pressQuote === 'object' ? data.pressQuote : null;
+        if (press) {
+          if (typeof press.quote === 'string') pressQuoteInput.value = press.quote;
+          if (typeof press.attribution === 'string') {
+            pressAttributionInput.value = press.attribution;
+          }
+        }
+        captureLiveDiscreteDefaultsFromForm();
+      } catch {
+        /* non-fatal */
+      }
     }
 
     function resetComposeForm() {
@@ -780,18 +2257,77 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       draftPhoto = undefined;
       provisionalPhotoPath = null;
       draftChanges = [];
+      askPhotoDuplicatePath = null;
+      galleryPhotoDuplicatePath = null;
       photoPreviewWrap.classList.add('hidden');
       photoPreview.removeAttribute('src');
+      clearDuplicateWarning(photoDupWarn);
+      clearDuplicateWarning(galleryDupWarn);
+      resetGalleryForm();
       changesEditor.replaceChildren();
       previewReply.textContent = '';
       doneReply.textContent = '';
       doneSha.textContent = '';
+      doneBranch.textContent = '';
+      doneBranch.classList.add('hidden');
+      donePr.replaceChildren();
+      donePr.classList.add('hidden');
+      pipelineSection.classList.remove('hidden');
+      stagingTestSection.classList.add('hidden');
       pipelineList.replaceChildren();
       pageLinks.replaceChildren();
     }
 
+    function readGalleryFocus(): string {
+      if (galleryFocusSelect.value === 'custom') {
+        return galleryFocusCustom.value.trim() || 'center';
+      }
+      return galleryFocusSelect.value || 'center';
+    }
+
+    function readGalleryTags(): string[] {
+      return [
+        ...new Set(
+          Array.from(
+            document.querySelectorAll<HTMLInputElement>('input[name="gallery-tag"]:checked'),
+          ).map((el) => el.value.trim()),
+        ),
+      ].filter(Boolean);
+    }
+
+    function syncGallerySlugFeedback(): boolean {
+      const result = validateGallerySlug(gallerySlugInput.value);
+      gallerySlugInput.setAttribute('aria-invalid', result.ok ? 'false' : 'true');
+      if (result.ok) {
+        gallerySlugError.textContent = '';
+        gallerySlugError.classList.add('hidden');
+        gallerySlugInput.classList.remove('border-red-400');
+        gallerySlugHint.textContent = result.empty
+          ? 'Will auto-name from the photo; Studio adds .md automatically.'
+          : `Will save as ${result.repoPath}`;
+        return true;
+      }
+      gallerySlugHint.textContent = '';
+      gallerySlugError.textContent = result.error || 'That file name isn’t valid.';
+      gallerySlugError.classList.remove('hidden');
+      gallerySlugInput.classList.add('border-red-400');
+      return false;
+    }
+
+    function syncGalleryFocusPreview() {
+      const focus = readGalleryFocus();
+      galleryPhotoPreview.style.objectPosition = focus;
+      if (galleryFocusSelect.value === 'custom') {
+        galleryFocusCustomWrap.classList.remove('hidden');
+      } else {
+        galleryFocusCustomWrap.classList.add('hidden');
+      }
+    }
+
     photoEl.addEventListener('change', () => {
       const file = photoEl.files?.[0];
+      askPhotoDuplicatePath = null;
+      clearDuplicateWarning(photoDupWarn);
       if (!file) {
         photoPreviewWrap.classList.add('hidden');
         photoPreview.removeAttribute('src');
@@ -800,6 +2336,267 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       const url = URL.createObjectURL(file);
       photoPreview.src = url;
       photoPreviewWrap.classList.remove('hidden');
+      void checkPhotoDuplicate(file).then((hit) => {
+        if (photoEl.files?.[0] !== file) return;
+        askPhotoDuplicatePath = hit;
+        if (hit) {
+          showDuplicateWarning(photoDupWarn, hit);
+          setStatus(`Duplicate photo warning — already on the site as ${hit}.`);
+        }
+      });
+    });
+
+    galleryPhotoEl.addEventListener('change', () => {
+      const file = galleryPhotoEl.files?.[0];
+      galleryPhotoDuplicatePath = null;
+      clearDuplicateWarning(galleryDupWarn);
+      if (!file) {
+        galleryPhotoPreviewWrap.classList.add('hidden');
+        galleryPhotoPreview.removeAttribute('src');
+        return;
+      }
+      const url = URL.createObjectURL(file);
+      galleryPhotoPreview.src = url;
+      galleryPhotoPreviewWrap.classList.remove('hidden');
+      syncGalleryFocusPreview();
+      void checkPhotoDuplicate(file).then((hit) => {
+        if (galleryPhotoEl.files?.[0] !== file) return;
+        galleryPhotoDuplicatePath = hit;
+        if (hit) {
+          showDuplicateWarning(galleryDupWarn, hit);
+          setStatus(`Duplicate photo warning — already on the site as ${hit}.`);
+        }
+      });
+    });
+
+    galleryFocusSelect.addEventListener('change', () => {
+      syncGalleryFocusPreview();
+    });
+    galleryFocusCustom.addEventListener('input', () => {
+      syncGalleryFocusPreview();
+    });
+    gallerySlugInput.addEventListener('input', () => {
+      syncGallerySlugFeedback();
+    });
+    gallerySlugInput.addEventListener('blur', () => {
+      const result = validateGallerySlug(gallerySlugInput.value);
+      if (result.ok && !result.empty && gallerySlugInput.value.trim() !== result.filename) {
+        // Normalize casing and ensure .md is visible when the user typed a basename only.
+        gallerySlugInput.value = result.filename;
+      }
+      syncGallerySlugFeedback();
+    });
+    syncGallerySlugFeedback();
+
+    async function runDiscretePreview(
+      tool: string,
+      args: Record<string, unknown>,
+      emptyMessage: string,
+      photo?: PhotoPayload,
+    ) {
+      setComposeBusy(true);
+      setStatus('Preparing preview…');
+      try {
+        const { changes, provisionalPhotoPath: provisional } = await composeDiscrete(
+          tool,
+          args,
+          photo,
+        );
+        draftChanges = changes;
+        draftPhoto = photo;
+        provisionalPhotoPath = provisional;
+        previewReply.textContent = 'Confirm the values below, then publish to the site.';
+        renderChangesEditor(draftChanges);
+        showPreview();
+        setStatus('Confirm, then publish — or go Back to edit.');
+      } catch (err) {
+        setStatus(err instanceof Error ? err.message : emptyMessage);
+        trackException(err, { operation: 'studioDiscretePreview', tool });
+        flush();
+      } finally {
+        if (!studioApp.classList.contains('hidden')) {
+          // Always clear compose lock — success already showed Preview; failure stays on Edit.
+          unlockStudioUi();
+        }
+      }
+    }
+
+    studioApp.querySelectorAll('[data-hub-task]').forEach((el) => {
+      el.addEventListener('click', () => {
+        const task = (el as HTMLElement).dataset.hubTask as HubTask | undefined;
+        const hint = (el as HTMLElement).dataset.hubHint;
+        if (!task || !TASK_TITLES[task]) return;
+        showTask(task, hint);
+      });
+    });
+
+    hubBackBtn.addEventListener('click', () => {
+      // From Done, hub escape is a full reset (no re-publish of the same draft).
+      if (isDoneVisible()) {
+        resetToHub();
+        return;
+      }
+      unlockStudioUi();
+      showHub();
+      setStatus('');
+    });
+
+    galleryPreviewBtn.addEventListener('click', async () => {
+      const file = galleryPhotoEl.files?.[0];
+      if (!file) {
+        setStatus('Choose a photo first.');
+        return;
+      }
+      if (!galleryPhotoDuplicatePath) {
+        galleryPhotoDuplicatePath = await checkPhotoDuplicate(file);
+        if (galleryPhotoDuplicatePath) {
+          showDuplicateWarning(galleryDupWarn, galleryPhotoDuplicatePath);
+        }
+      }
+      if (!confirmIfDuplicate(galleryPhotoDuplicatePath)) {
+        setStatus('Choose a different photo, or confirm when ready to publish a duplicate.');
+        return;
+      }
+      if (photoTooLarge(file)) {
+        setStatus('That photo is larger than 12 MB. Choose a smaller file.');
+        return;
+      }
+      const photo = await photoPayloadFromFile(file);
+      if (!photo) {
+        setStatus('Could not read that photo. Try a JPEG, PNG, or WebP.');
+        return;
+      }
+      const tags = readGalleryTags();
+      const focus = readGalleryFocus();
+      if (!syncGallerySlugFeedback()) {
+        setStatus(gallerySlugError.textContent || 'Fix the gallery file name, then try again.');
+        gallerySlugInput.focus();
+        return;
+      }
+      const slugResult = validateGallerySlug(gallerySlugInput.value);
+      const args: Record<string, unknown> = {
+        tags,
+        focus,
+      };
+      if (!slugResult.empty) args.slug = slugResult.slug;
+      await runDiscretePreview(
+        'add_gallery_photo',
+        args,
+        'Could not prepare gallery photo.',
+        photo,
+      );
+    });
+
+    galleryResetBtn.addEventListener('click', () => {
+      resetGalleryForm();
+      setStatus('Cleared gallery form.');
+    });
+
+    quickRatesBtn.addEventListener('click', async () => {
+      const amount30 = Number(quickRate30.value);
+      const amount60 = Number(quickRate60.value);
+      if (!Number.isFinite(amount30) || amount30 <= 0 || !Number.isFinite(amount60) || amount60 <= 0) {
+        setStatus('Enter dollar amounts for both 30- and 60-minute sessions.');
+        return;
+      }
+      await runDiscretePreview(
+        'update_lesson_rates',
+        {
+          rates: [
+            {
+              id: '30min',
+              label: '30-minute session',
+              price: `$${Math.round(amount30)}`,
+              priceAmount: amount30,
+            },
+            {
+              id: '60min',
+              label: '60-minute session',
+              price: `$${Math.round(amount60)}`,
+              priceAmount: amount60,
+            },
+          ],
+        },
+        'Could not prepare rate update.',
+      );
+    });
+
+    ratesResetBtn.addEventListener('click', () => {
+      resetDiscreteFormToLive('rates');
+    });
+
+    factsPreviewBtn.addEventListener('click', async () => {
+      const performer = {
+        availability: factAvailability.value.trim(),
+        vocalType: factVocalType.value.trim(),
+        vocalRange: factVocalRange.value.trim(),
+        union: factUnion.value.trim(),
+        playingAge: factPlayingAge.value.trim(),
+        height: factHeight.value.trim(),
+        ethnicity: factEthnicity.value.trim(),
+      };
+      if (!Object.values(performer).some(Boolean)) {
+        setStatus('Enter at least one performer fact.');
+        return;
+      }
+      await runDiscretePreview('update_performer_facts', performer, 'Could not prepare facts update.');
+    });
+
+    factsResetBtn.addEventListener('click', () => {
+      resetDiscreteFormToLive('facts');
+    });
+
+    reelPreviewBtn.addEventListener('click', async () => {
+      const reelUrl = reelUrlInput.value.trim();
+      const nextTitle = reelTitleInput.value.trim();
+      if (!reelUrl) {
+        setStatus('Paste a reel link first.');
+        return;
+      }
+      if (!nextTitle) {
+        setStatus('Enter a reel title first.');
+        return;
+      }
+      await runDiscretePreview(
+        'update_reel_url',
+        { reelUrl, reelTitle: nextTitle },
+        'Could not prepare reel update.',
+      );
+    });
+
+    reelResetBtn.addEventListener('click', () => {
+      resetDiscreteFormToLive('reel');
+    });
+
+    bioPreviewBtn.addEventListener('click', async () => {
+      const shortBio = shortBioInput.value.trim();
+      if (!shortBio) {
+        setStatus('Enter a short bio first.');
+        return;
+      }
+      await runDiscretePreview('update_short_bio', { shortBio }, 'Could not prepare bio update.');
+    });
+
+    bioResetBtn.addEventListener('click', () => {
+      resetDiscreteFormToLive('bio');
+    });
+
+    quotePreviewBtn.addEventListener('click', async () => {
+      const quote = pressQuoteInput.value.trim();
+      const attribution = pressAttributionInput.value.trim();
+      if (!quote || !attribution) {
+        setStatus('Enter both the quote and attribution.');
+        return;
+      }
+      await runDiscretePreview(
+        'update_press_quote',
+        { quote, attribution },
+        'Could not prepare quote update.',
+      );
+    });
+
+    quoteResetBtn.addEventListener('click', () => {
+      resetDiscreteFormToLive('quote');
     });
 
     previewBtn.addEventListener('click', async () => {
@@ -808,14 +2605,30 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         setStatus('Write a message first.');
         return;
       }
+      if (photoEl.files?.[0]) {
+        if (photoTooLarge(photoEl.files[0])) {
+          setStatus('That photo is larger than 12 MB. Choose a smaller file.');
+          return;
+        }
+        if (!askPhotoDuplicatePath) {
+          askPhotoDuplicatePath = await checkPhotoDuplicate(photoEl.files[0]);
+          if (askPhotoDuplicatePath) {
+            showDuplicateWarning(photoDupWarn, askPhotoDuplicatePath);
+          }
+        }
+        if (!confirmIfDuplicate(askPhotoDuplicatePath)) {
+          setStatus('Choose a different photo, or confirm when ready to publish a duplicate.');
+          return;
+        }
+      }
 
       setComposeBusy(true);
       setStatus('Preparing preview…');
 
       draftPhoto = undefined;
       if (photoEl.files?.[0]) {
-        const resized = await resizeImage(photoEl.files[0]);
-        if (resized) draftPhoto = resized;
+        const photo = await photoPayloadFromFile(photoEl.files[0]);
+        if (photo) draftPhoto = photo;
       }
 
       try {
@@ -861,45 +2674,63 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           content: String(c.content ?? ''),
           commitMessage: String(c.commitMessage || ''),
           summary: c.summary ? String(c.summary) : undefined,
+          livePath: c.livePath ? String(c.livePath) : undefined,
+          preview: c.preview,
+          commitParams:
+            c.commitParams && typeof c.commitParams === 'object' ? c.commitParams : undefined,
         }));
         provisionalPhotoPath =
           typeof data.provisionalPhotoPath === 'string' ? data.provisionalPhotoPath : null;
-        previewReply.textContent =
-          typeof data.reply === 'string' && data.reply.trim()
+        const allDiscrete =
+          draftChanges.length > 0 &&
+          draftChanges.every((c) => c.tool && DISCRETE_TOOLS.has(c.tool));
+        previewReply.textContent = allDiscrete
+          ? 'Confirm the values below, then publish to the site.'
+          : typeof data.reply === 'string' && data.reply.trim()
             ? data.reply.trim()
             : 'Review the draft below, edit if needed, then publish.';
         renderChangesEditor(draftChanges);
         showPreview();
-        setStatus('Review the draft, edit if needed, then publish.');
+        setStatus(
+          allDiscrete
+            ? 'Confirm, then publish — or go Back to edit.'
+            : 'Review the draft, edit if needed, then publish.',
+        );
       } catch (err) {
         setStatus('Network error — try again.');
         trackException(err, { operation: 'studioDraft' });
         flush();
       } finally {
-        if (!studioApp.classList.contains('hidden') && !composeStep.classList.contains('hidden')) {
-          setComposeBusy(false);
-        } else if (!studioApp.classList.contains('hidden')) {
-          setBusy(false);
-          studioApp.classList.remove(BUSY_CLASS);
+        if (!studioApp.classList.contains('hidden')) {
+          unlockStudioUi();
         }
       }
     });
 
     backBtn.addEventListener('click', () => {
       showCompose();
-      setStatus('');
+      setStatus('Edit, then preview again — or go back to all updates.');
     });
 
     publishBtn.addEventListener('click', async () => {
-      const changes = readEditedChanges();
+      setPreviewBusy(true);
+      setStatus('Preparing…');
+      let changes: ContentChange[];
+      try {
+        changes = await readEditedChanges();
+      } catch (err) {
+        unlockStudioUi();
+        setStatus(err instanceof Error ? err.message : 'Could not prepare that update.');
+        return;
+      }
       if (!changes.length) {
+        unlockStudioUi();
         setStatus('Nothing to publish.');
         return;
       }
 
       publishClickedAt = Date.now();
       prodLatencyEmitted = false;
-      setPreviewBusy(true);
       setStatus('Publishing…');
 
       try {
@@ -936,17 +2767,44 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
         const actions = Array.isArray(data.actions) ? (data.actions as PublishAction[]) : [];
         const commitSha = typeof data.commitSha === 'string' ? data.commitSha : undefined;
+        const publishMode = data.publishMode === 'pr' ? 'pr' : 'direct';
+        const branch = typeof data.branch === 'string' ? data.branch : undefined;
+        const prUrl = typeof data.prUrl === 'string' ? data.prUrl : undefined;
         doneReply.textContent =
           typeof data.reply === 'string' && data.reply.trim()
             ? data.reply.trim()
-            : 'Your update was committed. The site will rebuild shortly.';
+            : publishMode === 'pr'
+              ? 'Your update was saved on a staging branch.'
+              : 'Your update was committed. The site will rebuild shortly.';
         doneSha.textContent = commitSha ? `Commit ${commitSha.slice(0, 7)}` : '';
+        if (publishMode === 'pr' && branch) {
+          doneBranch.textContent = `Branch ${branch}`;
+          doneBranch.classList.remove('hidden');
+        } else {
+          doneBranch.textContent = '';
+          doneBranch.classList.add('hidden');
+        }
+        donePr.replaceChildren();
+        if (publishMode === 'pr' && prUrl) {
+          const a = document.createElement('a');
+          a.href = prUrl;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.className = 'text-gel underline-offset-2 hover:text-gold hover:underline';
+          a.textContent =
+            typeof data.prNumber === 'number' ? `Open pull request #${data.prNumber}` : 'Open pull request';
+          donePr.appendChild(a);
+          donePr.classList.remove('hidden');
+        } else {
+          donePr.classList.add('hidden');
+        }
         showDone();
-        setBusy(false);
-        studioApp.classList.remove(BUSY_CLASS);
-        startProgressTracking(commitSha, actions);
+        syncLiveDefaultsFromPublishedChanges(changes);
+        startProgressTracking(commitSha, actions, { publishMode, branch, prUrl });
         trackEvent('StudioPublishUiSuccess', {
+          publishMode,
           ...(commitSha ? { commitSha } : {}),
+          ...(branch ? { branch } : {}),
         });
         flush();
       } catch (err) {
@@ -954,18 +2812,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         trackException(err, { operation: 'studioPublish' });
         flush();
       } finally {
-        if (!studioApp.classList.contains('hidden') && !previewStep.classList.contains('hidden')) {
-          setPreviewBusy(false);
+        if (!studioApp.classList.contains('hidden')) {
+          unlockStudioUi();
         }
       }
     });
 
     anotherBtn.addEventListener('click', () => {
-      stopPolling();
-      resetComposeForm();
-      showCompose();
-      setComposeBusy(false);
-      setStatus('');
+      resetToHub();
     });
 
     type StudioSpeechRecognition = {

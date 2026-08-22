@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { z } from 'zod';
 
@@ -11,10 +11,14 @@ const OUT_PATH = join(ROOT, 'public', 'downloads', 'elyse-tindall-resume.pdf');
 
 const showCategory = z.enum(['musical', 'play', 'cabaret', 'film']).default('musical');
 
+/** Expected venue shape on the resume: "[Theater Name] - [City], [ST]" */
+const VENUE_FORMAT = /^.+ - .+, [A-Z]{2}$/;
+
 const showFrontmatterSchema = z.object({
   title: z.string().min(1),
   year: z.number(),
   role: z.string().optional(),
+  /** Displayed as-is on the right column; keep "[Theater] - [City], [ST]". */
   venue: z.string().optional(),
   synopsis: z.string().min(1),
   category: showCategory,
@@ -22,18 +26,30 @@ const showFrontmatterSchema = z.object({
   order: z.number().optional(),
 });
 
-const resumeMetaSchema = z.object({
+export const resumeMetaSchema = z.object({
   name: z.string().min(1),
   location: z.string().min(1),
   specs: z.string().min(1),
   training: z.array(z.string()).min(1),
   specialSkills: z.array(z.string()).min(1),
-  residency: z.string().min(1),
+  residencies: z
+    .array(
+      z.object({
+        years: z.string().min(1),
+        company: z.string().min(1),
+      }),
+    )
+    .min(1),
   contactFallbacks: z.object({
     email: z.string().min(1),
     phone: z.string().min(1),
   }),
 });
+
+/** One unordered-list item: year range, then theater company. */
+export function formatResidencyItem(entry) {
+  return `${entry.years}  ${entry.company}`;
+}
 
 /**
  * Parse YAML-like frontmatter without gray-matter (root has no gray-matter dep).
@@ -91,8 +107,16 @@ function fitText(text, font, size, maxWidth) {
   return `${t}…`;
 }
 
-const meta = resumeMetaSchema.parse(JSON.parse(readFileSync(META_PATH, 'utf8')));
+async function main() {
+  const meta = resumeMetaSchema.parse(JSON.parse(readFileSync(META_PATH, 'utf8')));
 const shows = loadShows();
+for (const s of shows) {
+  if (s.venue && !VENUE_FORMAT.test(s.venue)) {
+    console.warn(
+      `Resume venue should be "[Theater] - [City], [ST]"; got "${s.venue}" (${s.title})`,
+    );
+  }
+}
 const theater = shows
   .filter((s) => s.category !== 'film')
   .sort(sortCredits);
@@ -122,6 +146,11 @@ function drawCentered(text, size, f = bold) {
 
 function line(text, size = 9, f = font) {
   page.drawText(text, { x: left, y, size, font: f, color: ink });
+  y -= size + 4;
+}
+
+function bulletLine(text, size = 9, f = font) {
+  page.drawText(`• ${text}`, { x: left, y, size, font: f, color: ink });
   y -= size + 4;
 }
 
@@ -179,11 +208,18 @@ for (const t of meta.training) line(t);
 section('SPECIAL SKILLS');
 for (const s of meta.specialSkills) line(s);
 
-section('CURRENT RESIDENCY');
-line(meta.residency);
+section('PAST RESIDENCIES');
+for (const residency of meta.residencies) {
+  bulletLine(formatResidencyItem(residency));
+}
 
 const bytes = await pdf.save();
 writeFileSync(OUT_PATH, bytes);
 console.log(
   `Wrote resume PDF (${theater.length} theater, ${film.length} film) → ${OUT_PATH} (${bytes.length} bytes)`,
 );
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  await main();
+}

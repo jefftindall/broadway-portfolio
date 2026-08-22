@@ -1,6 +1,7 @@
 # Shared ACS (bootstrap) — email + SMS secrets live in kv-elyse-shared.
 # Per-env Terraform only wires SWA app settings; CONTACT_SMS_ENABLED is on for both
-# environments (API still skips SMS while ACS-SMS-FROM is REPLACE_ME / empty).
+# environments (API still skips SMS while ACS-SMS-FROM is REPLACE_ME / empty,
+# or until toll-free verification completes — lease may still bill ~$2/mo).
 
 locals {
   contact_sms_enabled = "true"

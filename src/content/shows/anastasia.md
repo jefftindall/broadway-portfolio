@@ -2,7 +2,7 @@
 title: Anastasia
 year: 2025
 role: Lily
-venue: Strand Theater, Marietta, GA
+venue: Strand Theater - Marietta, GA
 synopsis: Lily in Anastasia at the historic Strand Theater — comic sparkle in a grand musical romance.
 featured: true
 order: 2

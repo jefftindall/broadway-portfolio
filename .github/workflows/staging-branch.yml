@@ -1,10 +1,17 @@
-name: Staging branch
+name: "CD: staging"
 
 # Manual async test: apply staging Terraform + deploy the staging app from any branch.
 # Runs Playwright smoke against staging afterward (does not promote to prod).
-# Automated deploys run only on merge to main (azure-static-web-apps.yml).
+# Automated deploys run only on merge to main (azure-static-web-apps.yml / CD: main).
+# Shares concurrency group portfolio-cd with azure-static-web-apps.yml so manual
+# staging deploys cannot overlap main CD.
+# Display names follow docs/runbooks/github-actions-naming.md (Scheme A).
 on:
   workflow_dispatch:
+
+concurrency:
+  group: portfolio-cd
+  cancel-in-progress: false
 
 permissions:
   id-token: write
@@ -70,6 +77,7 @@ jobs:
     env:
       PUBLIC_APPINSIGHTS_CONNECTION_STRING: ${{ vars.APPINSIGHTS_CONNECTION_STRING }}
       PUBLIC_APPINSIGHTS_SAMPLE_PERCENT: "25"
+      PUBLIC_GA_MEASUREMENT_ID: ${{ vars.GA_MEASUREMENT_ID }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -130,7 +138,7 @@ jobs:
           APPINSIGHTS_CONNECTION_STRING: ${{ vars.APPINSIGHTS_CONNECTION_STRING }}
           DEPLOY_ENVIRONMENT: staging
           GIT_SHA: ${{ github.sha }}
-          JOB_NAME: Staging branch
+          JOB_NAME: "CD: staging"
         run: |
           if [ -z "$APPINSIGHTS_CONNECTION_STRING" ]; then
             echo "No App Insights connection string; skipping."
@@ -203,11 +211,45 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
+      - name: Fetch Studio auth secrets
+        env:
+          AZURE_SHARED_KEY_VAULT_NAME: ${{ vars.AZURE_SHARED_KEY_VAULT_NAME }}
+          AZURE_KEY_VAULT_NAME: ${{ vars.AZURE_KEY_VAULT_NAME }}
+          AZURE_STATIC_WEB_APP_NAME: ${{ vars.AZURE_STATIC_WEB_APP_NAME }}
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          AAD_CLIENT_ID: ${{ vars.AAD_CLIENT_ID }}
+          AAD_MONITOR_TOKEN_SCOPE: ${{ vars.AAD_MONITOR_TOKEN_SCOPE }}
+          DEPLOY_ENVIRONMENT: staging
+        run: |
+          chmod +x scripts/fetch-studio-auth-secrets.sh
+          ./scripts/fetch-studio-auth-secrets.sh
+
+      - name: SWA client_credentials check
+        env:
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+        run: npm run test:studio-auth-token
+
       - name: Run staging smoke (desktop + mobile)
         env:
           BASE_URL: https://${{ steps.host.outputs.hostname }}
           CI: true
         run: npm run test:smoke
+
+      - name: Upload smoke traces (failure)
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: smoke-staging-branch-playwright
+          path: test-results
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Lab FCP soft gate (OPS-P2-003)
+        continue-on-error: true
+        env:
+          BASE_URL: https://${{ steps.host.outputs.hostname }}
+          LAB_FCP_RUNS: "3"
+        run: npm run test:lab-fcp
 
       - name: Run staging journeys (desktop + mobile subset)
         env:

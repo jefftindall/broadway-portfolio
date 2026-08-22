@@ -1,6 +1,6 @@
 ---
 keyword: Atlanta to NYC actress
-title: Atlanta to NYC Actress | Elyse Tindall
+title: Atlanta to NYC Actress
 description: Atlanta-raised actress Elyse Tindall, now based in New York City for school and musical theatre training.
 relatedSkills:
   - Musical theatre

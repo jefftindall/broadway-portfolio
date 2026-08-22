@@ -72,7 +72,12 @@ module "portfolio" {
   github_repo_id            = var.github_repo_id
   github_branch             = var.github_branch
   manage_github_actions     = var.manage_github_actions
-  alert_email               = var.alert_email
+  ga_measurement_id         = var.ga_measurement_id
+  monitor_upn               = var.monitor_upn
+  # OPS-P3-006 — irreversible while soft-delete retention remains; staging stays off.
+  # soft_delete_retention_days is immutable after create (prod vault already at 7).
+  purge_protection_enabled   = true
+  soft_delete_retention_days = 7
 }
 
 output "resource_group_name" {
@@ -103,6 +108,10 @@ output "key_vault_uri" {
 output "custom_domain_validation_token" {
   value     = module.portfolio.custom_domain_validation_token
   sensitive = true
+}
+
+output "www_custom_domain" {
+  value = module.portfolio.www_custom_domain
 }
 
 output "managed_identity_principal_id" {

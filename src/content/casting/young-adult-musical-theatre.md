@@ -1,6 +1,6 @@
 ---
 keyword: casting musical theatre young adult
-title: Young Adult Musical Theatre Casting | Elyse Tindall
+title: Young Adult Musical Theatre Casting
 description: Available for young adult musical theatre casting — Elyse Tindall, NYC-based actress with feature credits.
 relatedSkills:
   - Young adult roles

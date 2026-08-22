@@ -2,7 +2,7 @@
 title: Seussical
 year: 2019
 role: First Cat
-venue: Mission Road Theater, GA
+venue: Mission Road Theater - Cartersville, GA
 synopsis: First Cat in Seussical at Mission Road Theater — featured comic track.
 featured: false
 order: 41

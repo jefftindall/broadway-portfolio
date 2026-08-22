@@ -2,7 +2,7 @@
 
 **Status:** Phase 1 implemented (smoke + journey E2E). Phases 2–4 are planned backlog.
 
-This document defines how we validate user experience before production deploys. Automated **authenticated Studio flows are intentionally out of scope** (Gemini cost, Entra test users, publish side effects). Studio is covered by manual checklists and App Insights — see [refine-studio-gemini.md](refine-studio-gemini.md) and [observability.md](observability.md).
+This document defines how we validate user experience before production deploys. Authenticated **publisher** Studio flows (compose / Gemini / publish) stay out of the hard CD gate until `TEST-C-003`. A **read-only** sign-in check against `/studio/health` runs in smoke when the monitor TOTP seed is set (`TEST-C-005`) — see [studio-auth-monitoring.md](studio-auth-monitoring.md).
 
 ---
 
@@ -19,14 +19,16 @@ This document defines how we validate user experience before production deploys.
 
 | Layer | When | Command / job | What it validates |
 |-------|------|---------------|-------------------|
-| Static analysis | Every PR + `main` | `npm run lint` | Terraform, Astro check, API syntax |
+| CI: static analysis | Every PR + `main` | `npm run lint` | Terraform, Astro check, API syntax |
 | Terraform plan | PRs touching `infra/` | CI **Plan staging/prod** | Infra diff review |
 | **Build release** | Once per CD run (parallel with staging Terraform) | Job **Build release** | Single `npm run build` + API install; artifact promoted to staging and prod |
-| **Smoke** | After staging deploy | `npm run test:smoke` — job **Smoke Staging** | Route availability, SEO shell, downloads, anonymous `/studio` redirect (desktop + mobile) |
+| **Smoke** | After staging deploy | `npm run test:smoke` — job **Smoke Staging** | Route availability, SEO shell, downloads, anonymous `/studio` redirect (desktop + mobile); `client_credentials` token check; signed-in `/studio/health` when `MONITOR-TOTP-SEED` is set (`TEST-C-005`) |
+| **Lab FCP** | After smoke (soft) | `npm run test:lab-fcp` | Homepage median FCP vs 1.5s policy (`OPS-P2-003`); warn-only unless `LAB_FCP_HARD=1` |
 | **Journeys** | After smoke (profile-dependent) | `npm run test:journey` or `test:journey:content` | Persona flows; scope depends on what changed (see below) |
-| Prod availability | Continuous | App Insights synthetic (prod) | Homepage ping every 10 minutes |
+| **Smoke Production** | After prod deploy | `npm run test:smoke` — job **Smoke Production** (`TEST-D-003`) | Same Tier A suite against the public prod host (Ready custom domain when set, else default SWA hostname), plus token check + `/studio/health` when TOTP is enrolled; failure → Sev1 SMS+voice (`SmokeFailed`); **no** auto-rollback |
+| Prod availability | Continuous | App Insights synthetics (prod) | Homepage + resume PDF + theatrical headshot every 10 minutes |
 
-Production deploy (`deploy_prod`) reuses the **same build artifact** verified on staging — no second site build.
+Production deploy (`deploy_prod`) reuses the **same build artifact** verified on staging — no second site build. **Smoke Production** is a post-release canary (does not block the deploy that already finished); when it fails, CD emits `SmokeFailed` and the critical Action Group pages email + SMS + voice.
 
 ### Verification profiles (change-aware)
 
@@ -38,7 +40,7 @@ The CD workflow sets a `test_profile` from path filters:
 | **content** | Only `src/content/**` and `public/**` (non-config) | `@content`-tagged journeys (`casting`, `visitor`) via `npm run test:journey:content` |
 | **smoke** | Only `api/**` | Smoke only (studio redirect covered there) |
 
-Smoke always runs after staging deploy regardless of profile.
+Smoke always runs after staging deploy regardless of profile. After a successful **Deploy Production**, **Smoke Production** re-runs the same smoke suite against the live public prod host (prefers the Portal **default** custom domain such as `elysetindall.com`; the `*.azurestaticapps.net` hostname 301s there when a default custom domain is set, which would otherwise break the anonymous `/studio` → `/.auth/login` assertion).
 
 ---
 
@@ -50,7 +52,8 @@ tests/
     content.ts       # Read slugs/titles from src/content (no hard-coded credits)
     propagation.ts   # waitForOk — SWA CDN propagation polling
   smoke/
-    staging.spec.ts  # Tier A — fast availability
+    staging.spec.ts      # Tier A — fast availability + unauth /studio
+    studio-auth.spec.ts  # TEST-C-005 — skips until MONITOR-TOTP-SEED is set
   journeys/
     casting.spec.ts  # CAST-01 … CAST-04
     lessons.spec.ts  # LESSON-01 … LESSON-02
@@ -66,7 +69,8 @@ playwright.journey.config.ts
 - Extended routes: `/news`, `/lessons/book`, sample `/for/{slug}`
 - Assets: resume PDF, theatrical headshot JPG
 - SEO: `robots.txt`, `sitemap-index.xml`
-- Auth boundary: anonymous `GET /studio` returns redirect on SWA hosts (skipped locally — `astro preview` has no Easy Auth)
+- Auth boundary: anonymous `GET /studio` returns redirect on SWA hosts (skipped locally — `astro preview` has no Easy Auth); that 302 must be `Cache-Control: private, no-store` (staging hostname and prod apex)
+- Signed-in canary (`TEST-C-005`): desktop Playwright logs in as the bootstrap monitor user and asserts `/studio/health` (`studio-health-ok`). Skips while `MONITOR-TOTP-SEED` is `REPLACE_ME`. Same jobs also run `npm run test:studio-auth-token` (`client_credentials`). See [studio-auth-monitoring.md](studio-auth-monitoring.md).
 - Shows list: at least one credit title from content (not fixed show names)
 - Viewports: desktop + mobile (parallel)
 
@@ -78,6 +82,7 @@ playwright.journey.config.ts
 | `CAST-02` | Shows → filter “Musical” → credits update | Desktop |
 | `CAST-03` | `/for/{slug}` → CTA + contact link | Desktop |
 | `CAST-04` | Mobile: materials in ≤2 taps from home | Mobile (`@mobile`) |
+| `CAST-05` | Public chrome does not link to `/for/*` | Desktop |
 | `LESSON-01` | Lessons → Book → rates → lesson inquiry mailto; no acting-lesson copy | Desktop + mobile |
 | `LESSON-02` | Contact → Book a lesson | Desktop |
 | `VISIT-01` | News list → article | Desktop |
@@ -105,11 +110,13 @@ Brand rule enforced in `LESSON-01`: copy must not advertise acting lessons, mono
 
 | Item | Reason | Alternative |
 |------|--------|-------------|
-| Entra sign-in for Studio | Test user + session maintenance | Manual checklist on Studio changes |
-| Gemini draft / publish in CI | API cost + GitHub commits | [refine-studio-gemini.md](refine-studio-gemini.md) staging smoke |
+| Entra **publisher** compose / publish | Gemini cost, allowlist side effects | [refine-studio-gemini.md](refine-studio-gemini.md); `TEST-C-003` still planned |
+| Gemini draft / publish in CI | API cost + GitHub commits | Staging smoke checklist |
 | Weekly Studio cron | Same | Manual + App Insights `StudioPublishFailed` |
 
-**Anonymous API auth gates** (no Gemini) are planned for **Phase 2**: `GET /studio` redirect, `GET /api/publisherStatus` → 401/302.
+Read-only Entra login against `/studio/health` **is** in smoke (`TEST-C-005`) once `MONITOR-TOTP-SEED` is set.
+
+**Anonymous API auth gates** (no Gemini) are planned for **Phase 2**: `GET /studio` redirect (done), `GET /api/publisherStatus` → 401/302.
 
 ---
 
@@ -134,12 +141,12 @@ For local preview, propagation polling is usually instant; `waitForOk` still wor
 
 ## CI integration
 
-**Azure Static Web Apps CI/CD** and **Staging branch** workflows:
+**CD: main** and **CD: staging** workflows:
 
 1. **Build release** once (`npm run build` + API install); artifact uploaded for reuse
 2. Deploy staging from that artifact
 3. Resolve staging hostname via Azure CLI
-4. `npm run test:smoke`
+4. `npm run test:studio-auth-token` then `npm run test:smoke` (Studio login spec skips until TOTP is enrolled)
 5. Journeys per `test_profile` (`full`, `content`, or skip for API-only)
 6. Prod deploy downloads the **same artifact** — no second site build
 
@@ -159,8 +166,15 @@ On failure: Playwright retains **trace on first retry** (`trace: 'on-first-retry
 ### Phase 2 — API + post-prod safety net
 
 - Anonymous API contract tests (`/api/publisherStatus`, etc.)
-- Post-deploy prod subset (home, materials, lessons/book, one `/for/` page) with retries
-- Expand Terraform availability tests beyond homepage
+- ~~Post-deploy prod smoke with Sev1 alert~~ — **done** (`TEST-D-003`: full Tier A suite vs prod; `SmokeFailed` → critical AG; no auto-rollback)
+- ~~Expand Terraform availability tests beyond homepage~~ — **done** (`OPS-P2-001`: resume PDF + headshot)
+
+### Lab FCP policy (`OPS-P2-003`)
+
+- **Target:** homepage median lab FCP **&lt; 1.5 s** (mobile viewport, cold loads).
+- **Soft (default):** `BASE_URL=… npm run test:lab-fcp` warns and exits 0 when over budget; CI runs this after staging smoke with `continue-on-error: true`.
+- **Hard (optional):** set `LAB_FCP_HARD=1` to fail the process. Prefer soft until the site has a stable lab baseline.
+- Field FCP (real users → App Insights `HomepageFcpMs`) is the committed SLO-6 signal; lab is a staging canary only.
 
 ### Phase 3 — Shift left on PRs
 
@@ -181,8 +195,8 @@ On failure: Playwright retains **trace on first retry** (`trace: 'on-first-retry
 |------|------------|
 | SWA CDN propagation | `waitForOk` polls up to 4 minutes |
 | Brittle copy assertions | Prefer roles, `href`, and content fixtures |
-| Suite duration | Smoke parallel; journeys ~15 min cap; no Studio in CI |
-| Failed run | Check trace; re-run **Staging branch** workflow on the same branch |
+| Suite duration | Smoke parallel; journeys ~15 min cap; Studio **login** is desktop-only in smoke; publisher E2E still not in CI |
+| Failed run | Check trace; re-run **CD: staging** workflow on the same branch |
 
 ---
 
@@ -190,5 +204,6 @@ On failure: Playwright retains **trace on first retry** (`trace: 'on-first-retry
 
 - [deploy-and-rollback.md](deploy-and-rollback.md) — promotion path and manual staging workflow
 - [setup.md](../setup.md) — CI workflow table
-- [casting-discoverability.md](../casting-discoverability.md) — mobile materials UX (`DISC-RUB-06`)
+- [casting-discoverability.md](../plans/casting-discoverability.md) — mobile materials UX (`DISC-RUB-06`)
 - [observability.md](observability.md) — prod synthetics and Studio events
+- [studio-auth-monitoring.md](studio-auth-monitoring.md) — monitor user, TOTP seed, `TEST-C-005`

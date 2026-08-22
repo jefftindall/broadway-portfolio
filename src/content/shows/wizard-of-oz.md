@@ -2,7 +2,7 @@
 title: Wizard of Oz
 year: 2022
 role: Ensemble
-venue: The Grand Theater, GA
+venue: The Grand Theater - Cartersville, GA
 synopsis: Ensemble in The Wizard of Oz at The Grand Theater.
 featured: false
 order: 23

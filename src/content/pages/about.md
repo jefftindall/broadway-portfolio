@@ -1,7 +1,7 @@
 ---
 title: About
 description: Musical theatre actress and vocal coach Elyse Tindall — Atlanta roots, New York stage, private voice lessons in vocal pedagogy, vocal health, and CCM.
-updated: 2026-08-01
+updated: 2026-08-16
 ---
 
 ## Background

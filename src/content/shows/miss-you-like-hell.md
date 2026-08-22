@@ -2,7 +2,7 @@
 title: Miss You Like Hell
 year: 2023
 role: Ensemble / Olivia Understudy
-venue: Woodstock Arts, GA
+venue: Woodstock Arts - Woodstock, GA
 synopsis: Ensemble and Olivia understudy in the inaugural Miss You Like Hell at Woodstock Arts.
 featured: true
 order: 21

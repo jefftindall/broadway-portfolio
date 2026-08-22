@@ -2,7 +2,7 @@
 title: Little Women
 year: 2022
 role: Amy
-venue: Cartersville HS, GA
+venue: Cartersville High School - Cartersville, GA
 synopsis: Amy March in Little Women at Cartersville High School.
 featured: false
 order: 20

@@ -28,6 +28,7 @@ run("Astro check", ["check"], {
   SITE_DATE_OF_BIRTH: process.env.SITE_DATE_OF_BIRTH || "2000-01-01",
 });
 run("API syntax", ["lint:api"]);
+run("Actions secret-safety", ["lint:actions-secrets"]);
 
 if (failed) {
   console.error("\nStatic analysis failed. Fix the issues above before committing.");

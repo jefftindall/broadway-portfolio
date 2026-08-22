@@ -1,6 +1,6 @@
 ---
 keyword: stage actress New York
-title: Stage Actress in New York | Elyse Tindall
+title: Stage Actress in New York
 description: Stage actress Elyse Tindall based in New York — plays, musicals, cabaret, and casting-ready materials.
 relatedSkills:
   - Stage acting

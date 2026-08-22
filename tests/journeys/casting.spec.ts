@@ -8,7 +8,7 @@ import {
 import { waitForOk, waitForRequestOk } from '../helpers/propagation';
 
 const castingSlug = sampleCastingSlug();
-const { title: castingTitle, cta: castingCta } = castingPageExpectations(castingSlug);
+const { title: castingTitle } = castingPageExpectations(castingSlug);
 const musicalTitle = musicalShowTitle();
 const filmTitle = filmShowTitle();
 
@@ -18,7 +18,10 @@ test.describe('casting journeys', () => {
     await page.getByRole('link', { name: /Request materials/i }).click();
     await expect(page).toHaveURL(/\/materials\/?$/);
     await expect(page.getByRole('heading', { name: 'Materials', level: 1 })).toBeVisible();
-    await expect(page.locator('iframe[title*="reel" i], iframe[src*="youtube"]').first()).toBeVisible();
+    await expect(page.locator('#reel')).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: /Play.*reel/i }).or(page.locator('iframe[title*="reel" i]')).first(),
+    ).toBeVisible();
 
     const resumeLink = page.getByRole('link', { name: /Resume \(PDF\)/i });
     await expect(resumeLink).toBeVisible();
@@ -54,18 +57,18 @@ test.describe('casting journeys', () => {
     await expect(filmCredit).toBeHidden();
   });
 
-  test('CAST-03 casting landing CTA and contact', { tag: '@content' }, async ({ page }) => {
+  test('CAST-03 casting landing footer CTA to contact', { tag: '@content' }, async ({ page }) => {
     await waitForOk(page, `/for/${castingSlug}`);
     await expect(page.getByRole('heading', { level: 1 })).toContainText(
-      castingTitle.replace(/\s*\|\s*Elyse Tindall$/i, ''),
+      castingTitle.replace(/\s*[|·]\s*Elyse Tindall$/i, '').trim(),
     );
 
-    const cta = page.getByRole('link', { name: castingCta });
-    await expect(cta).toBeVisible();
-    await expect(cta).toHaveAttribute('href', /\/contact#casting-inquiry/);
+    const contact = page.locator('footer').getByRole('link', { name: 'Contact', exact: true });
+    await expect(contact).toBeVisible();
+    await expect(contact).toHaveAttribute('href', /\/contact\/?$/);
 
-    await cta.click();
-    await expect(page).toHaveURL(/\/contact\/?#casting-inquiry/);
+    await contact.click();
+    await expect(page).toHaveURL(/\/contact\/?$/);
     await expect(page.getByRole('heading', { name: 'Contact', level: 1 })).toBeVisible();
     await expect(page.locator('#casting-inquiry')).toBeVisible();
   });
@@ -76,5 +79,14 @@ test.describe('casting journeys', () => {
     await expect(page).toHaveURL(/\/materials\/?$/);
     await expect(page.getByRole('heading', { name: 'Materials', level: 1 })).toBeVisible();
     await expect(page.getByRole('link', { name: /Resume \(PDF\)/i })).toBeVisible();
+  });
+
+  test('CAST-05 public chrome does not link to /for landers', { tag: '@content' }, async ({
+    page,
+  }) => {
+    for (const path of ['/', '/about', '/shows', '/materials', '/contact']) {
+      await waitForOk(page, path);
+      await expect(page.locator('a[href^="/for"]')).toHaveCount(0);
+    }
   });
 });

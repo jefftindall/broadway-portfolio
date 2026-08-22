@@ -23,12 +23,12 @@ export const studioCapabilities: StudioCapability[] = [
     tool: 'upsert_show',
     title: 'Show & credit updates',
     summary:
-      'Add or update a performance credit (role, venue, year, synopsis). Mark headline credits as featured so they can appear on the homepage.',
+      'Add or update a performance credit (role, venue, year, synopsis). Venue should be “[Theater] - [City], [ST]”; put room/program detail in the description. Mark headline credits as featured so they can appear on the homepage.',
     livePath: '/shows',
     examplePrompts: [
-      'I just booked Lily in Anastasia at the Strand, July 2025.',
-      'Update my Singin’ in the Rain credit — I was Ensemble at the Rialto in 2024.',
-      'Add a cabaret credit: Don’t Tell Mama, spring cabaret, featured true.',
+      'I just booked Lily in Anastasia at the Strand Theater in Marietta, July 2025.',
+      'Update Listen so the venue is Alliance Theatre - Atlanta, GA, and mention the Farideh & Al Azadi Gallery in the description.',
+      'Add a cabaret credit at Don’t Tell Mama in New York — spring cabaret, featured true.',
     ],
   },
   {
@@ -45,21 +45,62 @@ export const studioCapabilities: StudioCapability[] = [
     tool: 'add_gallery_photo',
     title: 'Gallery photos',
     summary:
-      'Attach a JPEG, PNG, or WebP photo and ask to add it to the gallery. Captions stay empty — the public gallery does not show them.',
+      'From the Studio hub, open Gallery photo — attach a JPEG, PNG, or WebP (the original file is what gets published; the site build creates smaller display versions), pick tags from the fixed filter list (custom tags can’t be added), set crop focus, and optionally set a stable gallery file name (Studio adds .md). Confirm a site-style tile Preview before publishing. New photos always appear first in the public gallery. You can still attach a photo under Speak or type and ask to add it. Captions stay empty — the public gallery does not show them. If the exact file is already on the site, Studio warns before preview so you can avoid duplicates.',
     livePath: '/gallery',
     examplePrompts: [
       'Add this photo to my gallery.',
-      'Put this headshot in the gallery.',
+      'Put this headshot in the gallery with tags headshot and portrait.',
     ],
   },
   {
-    tool: 'update_about',
-    title: 'About page',
-    summary: 'Rewrite your biography and performer background on the About page.',
+    tool: 'update_short_bio',
+    title: 'Short bio (About)',
+    summary:
+      'Update the short lead paragraph at the top of About. Edit in the Studio hub (or by voice), then confirm in read-only Preview before publishing. Longer About sections stay PR-only.',
     livePath: '/about',
     examplePrompts: [
-      'Refresh my About page to emphasize Atlanta roots and New York musical theatre work.',
-      'Update my bio to mention private voice lessons and CCM coaching.',
+      'Update my short bio on About to: Elyse Tindall is a musical theatre actress and vocal coach from Atlanta, now based in New York City.',
+      'Change my About short bio to emphasize Atlanta roots and New York musical theatre work.',
+    ],
+  },
+  {
+    tool: 'update_press_quote',
+    title: 'Press quote (Home)',
+    summary:
+      'Update the homepage press quote and attribution under the hero. Edit in the Studio hub (or by voice), then confirm with a site-style quote Preview before publishing.',
+    livePath: '/',
+    examplePrompts: [
+      'Change my homepage quote to: The funniest actor you’ve never seen. Attribution Tiffany King.',
+      'Update the press quote attribution to Tiffany King.',
+    ],
+  },
+  {
+    tool: 'update_performer_facts',
+    title: 'Performer facts',
+    summary:
+      'Update casting facts shown on About and Materials (availability, vocal type/range, union, playing age, height, ethnicity). Edit in the Studio hub (or by voice), then confirm in a site-style Performer facts Preview before publishing.',
+    livePath: '/materials',
+    examplePrompts: [
+      'Mark me unavailable until September.',
+      'Set availability to Available.',
+      'Update my vocal range to D3-G6 (Belt: G5).',
+      'Change my vocal type to Mezzo-Soprano with an extended range.',
+      'Set my union status to Non-union.',
+      'Update my playing age to 15–28.',
+      'Set my height to 5\'3" (160 cm).',
+      'Update my ethnicity line to White; olive skin presents as Mediterranean and ethnically ambiguous.',
+    ],
+  },
+  {
+    tool: 'update_reel_url',
+    title: 'Reel link',
+    summary:
+      'Change the casting reel video link and the video embed title (play button / iframe name) on Materials, Shows, and home. Publishing also refreshes the reel poster still from YouTube or Vimeo. Does not change show credits or Materials page copy. Edit in the Studio hub (or by voice), then confirm with an embedded video Preview before publishing.',
+    livePath: '/materials',
+    examplePrompts: [
+      'Update my reel to this YouTube link: https://youtu.be/41jdPTkN_Sw',
+      'Rename the reel play-button title to NYC Cabaret — Stage Kiss reel.',
+      'Change the reel on Materials to my newest Stage Kiss video.',
     ],
   },
   {
@@ -80,16 +121,18 @@ export const studioCapabilities: StudioCapability[] = [
     livePath: '/lessons',
     examplePrompts: [
       'Change the Lessons page search title to Private Voice Lessons in NYC.',
+      'Update the Lessons page meta description for vocal coaching in New York.',
     ],
   },
   {
     tool: 'update_lesson_rates',
     title: 'Lesson rates',
-    summary: 'Update session prices on the book-a-lesson page. Provide the full rate list.',
+    summary:
+      'Update session prices on the book-a-lesson page. From the Studio hub, open Lesson rates and enter dollar amounts — or say a prompt under Speak or type. Preview shows the rates block as it will appear on the book page.',
     livePath: '/lessons/book',
     examplePrompts: [
-      'Set my lesson rates to $60 for 30 minutes and $100 for 60 minutes.',
       'Raise my 60-minute rate to $120 and keep the 30-minute rate at $60.',
+      'Set 30 minutes to $65 and 60 minutes to $110.',
     ],
   },
   {
@@ -110,17 +153,18 @@ export const studioCapabilities: StudioCapability[] = [
     livePath: '/lessons/book',
     examplePrompts: [
       'Update the book page meta description for NYC private voice lessons.',
+      'Change the book-a-lesson page title to Book a Voice Lesson in NYC.',
     ],
   },
   {
-    tool: 'create_or_update_casting_page',
-    title: 'Casting / “for” pages',
+    tool: 'update_casting_fields',
+    title: 'Casting page fields',
     summary:
-      'Create or refresh an SEO casting landing page under /for/… with helpful copy (not thin keyword spam).',
+      'Update title, description, CTA, keyword, or related shows/skills on an existing /for/… page. New casting pages are added by hand (see the casting runbook) — Studio does not create them. These pages are inbound SEO landers: do not add links to them from About, Shows, footer, or credits. Do not add links or CTAs below Related credits; the footer already has Materials / Contact / Lessons.',
     livePath: '/for',
     examplePrompts: [
-      'Create a casting page for musical theatre actress in New York.',
-      'Update my Broadway actress casting page with current credits and a clear CTA.',
+      'Change the CTA on my musical theatre actress page to Request materials.',
+      'Add Anastasia to related shows on my musical theatre actress casting page.',
     ],
   },
 ];
@@ -131,5 +175,6 @@ export const studioVoiceNotes = {
     'Press and hold Hold to speak while you talk. Lift your finger when you finish. Your words appear in the Message box — same as typing.',
   replacesNotAppends:
     'Each hold-to-speak pass replaces the Message box. If you need to edit, type after speaking, or speak again with the full request.',
-  fallback: 'If voice is unavailable, type your request — Preview update works the same either way.',
+  fallback:
+    'If voice is unavailable, type your request — or open Gallery photo / Lesson rates / Performer facts from the Studio hub. Preview works the same either way.',
 };

@@ -2,7 +2,7 @@
 title: BAA Spring Cabaret
 year: 2025
 role: Performer
-venue: Don't Tell Mama, New York City
+venue: Don't Tell Mama - New York, NY
 synopsis: Broadway Artists Alliance spring cabaret at Don't Tell Mama off-Broadway.
 featured: false
 order: 8

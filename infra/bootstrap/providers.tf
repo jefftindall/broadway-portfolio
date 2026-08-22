@@ -14,6 +14,10 @@ terraform {
       source  = "integrations/github"
       version = "~> 6.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
+    }
   }
 
   # Local state only — this stack creates the remote backend used by staging/prod.
@@ -32,6 +36,8 @@ provider "azurerm" {
     "Microsoft.Web",
     "Microsoft.Authorization",
     "Microsoft.Communication",
+    "Microsoft.Consumption",
+    "Microsoft.CostManagement",
   ]
   features {}
 }

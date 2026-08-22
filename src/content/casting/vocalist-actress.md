@@ -1,6 +1,6 @@
 ---
 keyword: vocalist actress musical
-title: Vocalist & Musical Theatre Actress | Elyse Tindall
+title: Vocalist & Musical Theatre Actress
 description: Vocalist and musical theatre actress Elyse Tindall — song storytelling, feature roles, NYC training.
 relatedSkills:
   - Vocals

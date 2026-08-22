@@ -17,7 +17,7 @@ Schemas live in `src/content.config.ts`. Fix the markdown fields (types, require
 
 1. Check GitHub `main` for the commit
 2. Check Actions status — still running vs failed
-3. Hard-refresh / CDN cache: wait 1–2 minutes more
+3. Hard-refresh / wait ~30s for HTML revalidation. HTML is short-cached; hashed `/_astro/*` and derived images use new URLs after deploy. If a **stable original** under `/images/` still looks old, follow [swa-caching.md](swa-caching.md) rather than guessing at CDN.
 4. Confirm you are looking at the custom domain that points to SWA (not EasyWP / old WordPress DNS)
 
 ## Studio publish errors

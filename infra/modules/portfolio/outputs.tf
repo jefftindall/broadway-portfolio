@@ -28,9 +28,14 @@ output "key_vault_uri" {
 }
 
 output "custom_domain_validation_token" {
-  description = "TXT record value for domain validation (when custom_domain is set)"
+  description = "TXT record value for apex domain validation (when custom_domain is set)"
   value       = try(azurerm_static_web_app_custom_domain.apex[0].validation_token, null)
   sensitive   = true
+}
+
+output "www_custom_domain" {
+  description = "www hostname bound when custom_domain is set (CNAME validation)"
+  value       = try(azurerm_static_web_app_custom_domain.www[0].domain_name, null)
 }
 
 output "managed_identity_principal_id" {
@@ -62,6 +67,16 @@ output "entra_openid_issuer" {
 output "entra_redirect_uris" {
   description = "Redirect URIs registered for this environment (Azure hostname + custom domains)"
   value       = local.redirect_uris
+}
+
+output "entra_monitor_token_scope" {
+  description = "client_credentials scope for the Monitor.Ping app role"
+  value       = "${local.monitor_identifier_uri}/.default"
+}
+
+output "monitor_upn" {
+  description = "Studio smoke monitor UPN (assigned to this SWA app once the bootstrap user exists)"
+  value       = local.monitor_upn
 }
 
 output "github_actions_client_id" {

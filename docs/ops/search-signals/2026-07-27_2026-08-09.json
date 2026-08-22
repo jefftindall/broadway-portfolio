@@ -1,0 +1,449 @@
+{
+  "$schemaComment": "SEARCH-P4-002 search signals since last run. Paths, query themes, numeric bands only. No emails/phones/secrets. No Gemini.",
+  "actionId": "SEARCH-P4-002",
+  "period": "2026-07-27_2026-08-09",
+  "generatedAt": "2026-08-10T01:36:52.054Z",
+  "window": {
+    "from": "2026-07-27",
+    "toExclusive": "2026-08-10",
+    "toInclusive": "2026-08-09",
+    "source": "lookback"
+  },
+  "castingLandersInRepo": [
+    "/for/anastasia-lily",
+    "/for/atlanta-to-nyc-actress",
+    "/for/available-casting-nyc",
+    "/for/belt-vocalist-musical-theatre",
+    "/for/broadway-artists-alliance",
+    "/for/comedic-actress",
+    "/for/ethnically-ambiguous-actress",
+    "/for/georgia-musical-theatre",
+    "/for/ingenue-musical-theatre",
+    "/for/mezzo-soprano-musical-theatre",
+    "/for/miss-you-like-hell",
+    "/for/musical-comedy-actress",
+    "/for/musical-theatre-actress-nyc",
+    "/for/off-broadway-cabaret",
+    "/for/stage-actress-new-york",
+    "/for/strand-theater-actress",
+    "/for/teenage-musical-theatre",
+    "/for/triple-threat-actress-nyc",
+    "/for/vocalist-actress",
+    "/for/young-adult-musical-theatre"
+  ],
+  "coverage": [
+    {
+      "id": 1,
+      "title": "GSC Performance",
+      "status": "ok",
+      "note": "GSC 4 query row(s), 13 page row(s); 2 theme(s)."
+    },
+    {
+      "id": 2,
+      "title": "GSC Pages / indexing anomalies",
+      "status": "ok",
+      "note": "Unexpected indexed paths with impressions — check 301/noIndex/sitemap."
+    },
+    {
+      "id": 3,
+      "title": "GA organic landings",
+      "status": "ok",
+      "note": "GA organic 3 landing(s); 1 conversion landing(s)."
+    },
+    {
+      "id": 4,
+      "title": "GA events by landing",
+      "status": "ok",
+      "note": "1 conversion landing(s)"
+    },
+    {
+      "id": 5,
+      "title": "GA ↔ GSC join",
+      "status": "ok",
+      "note": "Joined 13 path(s) across GSC pages and GA organic landings."
+    }
+  ],
+  "gsc": {
+    "ok": true,
+    "queryCount": 4,
+    "pageCount": 13,
+    "brandVsNonBrand": {
+      "brand": {
+        "impressions": 5,
+        "clicks": 0,
+        "impressionBand": "1-9"
+      },
+      "nonBrand": {
+        "impressions": 1,
+        "clicks": 0,
+        "impressionBand": "1-9"
+      }
+    },
+    "themes": [
+      {
+        "id": "brand",
+        "impressions": 5,
+        "clicks": 0,
+        "impressionBand": "1-9",
+        "brandShare": 100
+      },
+      {
+        "id": "other",
+        "impressions": 1,
+        "clicks": 0,
+        "impressionBand": "1-9",
+        "brandShare": 0
+      }
+    ],
+    "topQueries": [
+      {
+        "themePrimary": "other",
+        "brand": false,
+        "query": "alexis tyndall",
+        "clicks": 0,
+        "impressions": 1,
+        "impressionBand": "1-9",
+        "ctrPct": 0,
+        "ctrBand": "lt1pct",
+        "position": 32
+      },
+      {
+        "themePrimary": "brand",
+        "brand": true,
+        "query": "ashley tindall",
+        "clicks": 0,
+        "impressions": 2,
+        "impressionBand": "1-9",
+        "ctrPct": 0,
+        "ctrBand": "lt1pct",
+        "position": 27
+      },
+      {
+        "themePrimary": "brand",
+        "brand": true,
+        "query": "jessica tindall",
+        "clicks": 0,
+        "impressions": 1,
+        "impressionBand": "1-9",
+        "ctrPct": 0,
+        "ctrBand": "lt1pct",
+        "position": 24
+      },
+      {
+        "themePrimary": "brand",
+        "brand": true,
+        "query": "selina tindall",
+        "clicks": 0,
+        "impressions": 2,
+        "impressionBand": "1-9",
+        "ctrPct": 0,
+        "ctrBand": "lt1pct",
+        "position": 18.5
+      }
+    ],
+    "pages": [
+      {
+        "path": "/",
+        "clicks": 6,
+        "impressions": 22,
+        "impressionBand": "10-49",
+        "ctrPct": 27.3,
+        "ctrBand": "10pct+",
+        "position": 13.1,
+        "label": "Homepage"
+      },
+      {
+        "path": "/about-me",
+        "clicks": 1,
+        "impressions": 14,
+        "impressionBand": "10-49",
+        "ctrPct": 7.1,
+        "ctrBand": "5-10pct",
+        "position": 2.6,
+        "label": "About"
+      },
+      {
+        "path": "/about",
+        "clicks": 0,
+        "impressions": 3,
+        "impressionBand": "1-9",
+        "ctrPct": 0,
+        "ctrBand": "lt1pct",
+        "position": 2,
+        "label": "About"
+      },
+      {
+        "path": "/category/acting",
+        "clicks": 0,
+        "impressions": 7,
+        "impressionBand": "1-9",
+        "ctrPct": 0,
+        "ctrBand": "lt1pct",
+        "position": 5.7,
+        "label": "Old blog category: Acting"
+      },
+      {
+        "path": "/category/uncategorized",
+        "clicks": 0,
+        "impressions": 6,
+        "impressionBand": "1-9",
+        "ctrPct": 0,
+        "ctrBand": "lt1pct",
+        "position": 5.7,
+        "label": "Old blog category: Uncategorized"
+      },
+      {
+        "path": "/contact",
+        "clicks": 0,
+        "impressions": 9,
+        "impressionBand": "1-9",
+        "ctrPct": 0,
+        "ctrBand": "lt1pct",
+        "position": 2.7,
+        "label": "Contact"
+      },
+      {
+        "path": "/elyse-tindall-has-just-completed-a-broadway-artists-alliance-musical-theatre-intensive-in-new-york-city",
+        "clicks": 0,
+        "impressions": 8,
+        "impressionBand": "1-9",
+        "ctrPct": 0,
+        "ctrBand": "lt1pct",
+        "position": 7.5,
+        "label": "Elyse Tindall Has Just Completed A Broadway Artists Alliance Musical Theatre Intensive In New York City"
+      },
+      {
+        "path": "/elyse-tindall-shines-as-lily-in-anastasia-at-the-strand-theater",
+        "clicks": 0,
+        "impressions": 6,
+        "impressionBand": "1-9",
+        "ctrPct": 0,
+        "ctrBand": "lt1pct",
+        "position": 3.2,
+        "label": "Elyse Tindall Shines as Lily in Anastasia at the Strand Theater"
+      },
+      {
+        "path": "/gallery",
+        "clicks": 0,
+        "impressions": 1,
+        "impressionBand": "1-9",
+        "ctrPct": 0,
+        "ctrBand": "lt1pct",
+        "position": 8,
+        "label": "Gallery"
+      },
+      {
+        "path": "/lessons/book",
+        "clicks": 0,
+        "impressions": 3,
+        "impressionBand": "1-9",
+        "ctrPct": 0,
+        "ctrBand": "lt1pct",
+        "position": 6,
+        "label": "Book a voice lesson"
+      },
+      {
+        "path": "/materials",
+        "clicks": 0,
+        "impressions": 3,
+        "impressionBand": "1-9",
+        "ctrPct": 0,
+        "ctrBand": "lt1pct",
+        "position": 7,
+        "label": "Materials (resume & headshots)"
+      },
+      {
+        "path": "/news",
+        "clicks": 0,
+        "impressions": 9,
+        "impressionBand": "1-9",
+        "ctrPct": 0,
+        "ctrBand": "lt1pct",
+        "position": 1.7,
+        "label": "News"
+      },
+      {
+        "path": "/terms",
+        "clicks": 0,
+        "impressions": 3,
+        "impressionBand": "1-9",
+        "ctrPct": 0,
+        "ctrBand": "lt1pct",
+        "position": 8.3,
+        "label": "Terms"
+      }
+    ],
+    "focusPages": [],
+    "indexing": {
+      "studioPathsWithImpressions": [],
+      "legacyPathsWithImpressions": [
+        "/about-me"
+      ],
+      "sitemapCount": 0,
+      "sitemapErrors": 0,
+      "note": "Unexpected indexed paths with impressions — check 301/noIndex/sitemap."
+    },
+    "note": "GSC 4 query row(s), 13 page row(s); 2 theme(s)."
+  },
+  "ga": {
+    "ok": true,
+    "landings": [
+      {
+        "path": "/",
+        "sessions": 2,
+        "engagementRatePct": 100,
+        "label": "Homepage"
+      },
+      {
+        "path": "/about",
+        "sessions": 2,
+        "engagementRatePct": 0,
+        "label": "About"
+      },
+      {
+        "path": "/about-me",
+        "sessions": 1,
+        "engagementRatePct": 100,
+        "label": "About"
+      }
+    ],
+    "conversionsByLanding": [
+      {
+        "path": "/",
+        "events": {
+          "file_download": 4
+        },
+        "total": 4,
+        "label": "Homepage"
+      }
+    ],
+    "landingCount": 3,
+    "conversionLandingCount": 1,
+    "note": "GA organic 3 landing(s); 1 conversion landing(s)."
+  },
+  "join": {
+    "ok": true,
+    "rows": [
+      {
+        "path": "/",
+        "label": "Homepage",
+        "gscImpressions": 22,
+        "gscClicks": 6,
+        "gscCtrBand": "10pct+",
+        "gaSessions": 2,
+        "events": {
+          "file_download": 4
+        }
+      },
+      {
+        "path": "/about-me",
+        "label": "About",
+        "gscImpressions": 14,
+        "gscClicks": 1,
+        "gscCtrBand": "5-10pct",
+        "gaSessions": 1,
+        "events": {}
+      },
+      {
+        "path": "/about",
+        "label": "About",
+        "gscImpressions": 3,
+        "gscClicks": 0,
+        "gscCtrBand": "lt1pct",
+        "gaSessions": 2,
+        "events": {}
+      },
+      {
+        "path": "/contact",
+        "label": "Contact",
+        "gscImpressions": 9,
+        "gscClicks": 0,
+        "gscCtrBand": "lt1pct",
+        "gaSessions": 0,
+        "events": {}
+      },
+      {
+        "path": "/news",
+        "label": "News",
+        "gscImpressions": 9,
+        "gscClicks": 0,
+        "gscCtrBand": "lt1pct",
+        "gaSessions": 0,
+        "events": {}
+      },
+      {
+        "path": "/elyse-tindall-has-just-completed-a-broadway-artists-alliance-musical-theatre-intensive-in-new-york-city",
+        "label": "Elyse Tindall Has Just Completed A Broadway Artists Alliance Musical Theatre Intensive In New York City",
+        "gscImpressions": 8,
+        "gscClicks": 0,
+        "gscCtrBand": "lt1pct",
+        "gaSessions": 0,
+        "events": {}
+      },
+      {
+        "path": "/category/acting",
+        "label": "Old blog category: Acting",
+        "gscImpressions": 7,
+        "gscClicks": 0,
+        "gscCtrBand": "lt1pct",
+        "gaSessions": 0,
+        "events": {}
+      },
+      {
+        "path": "/category/uncategorized",
+        "label": "Old blog category: Uncategorized",
+        "gscImpressions": 6,
+        "gscClicks": 0,
+        "gscCtrBand": "lt1pct",
+        "gaSessions": 0,
+        "events": {}
+      },
+      {
+        "path": "/elyse-tindall-shines-as-lily-in-anastasia-at-the-strand-theater",
+        "label": "Elyse Tindall Shines as Lily in Anastasia at the Strand Theater",
+        "gscImpressions": 6,
+        "gscClicks": 0,
+        "gscCtrBand": "lt1pct",
+        "gaSessions": 0,
+        "events": {}
+      },
+      {
+        "path": "/lessons/book",
+        "label": "Book a voice lesson",
+        "gscImpressions": 3,
+        "gscClicks": 0,
+        "gscCtrBand": "lt1pct",
+        "gaSessions": 0,
+        "events": {}
+      },
+      {
+        "path": "/materials",
+        "label": "Materials (resume & headshots)",
+        "gscImpressions": 3,
+        "gscClicks": 0,
+        "gscCtrBand": "lt1pct",
+        "gaSessions": 0,
+        "events": {}
+      },
+      {
+        "path": "/terms",
+        "label": "Terms",
+        "gscImpressions": 3,
+        "gscClicks": 0,
+        "gscCtrBand": "lt1pct",
+        "gaSessions": 0,
+        "events": {}
+      },
+      {
+        "path": "/gallery",
+        "label": "Gallery",
+        "gscImpressions": 1,
+        "gscClicks": 0,
+        "gscCtrBand": "lt1pct",
+        "gaSessions": 0,
+        "events": {}
+      }
+    ],
+    "note": "Joined 13 path(s) across GSC pages and GA organic landings."
+  }
+}

@@ -6,7 +6,7 @@ if (!baseURL) {
 }
 
 /**
- * Post-deploy smoke against a live environment (staging).
+ * Post-deploy smoke against a live environment (staging or production).
  * Desktop + mobile Chromium projects; public routes only.
  */
 export default defineConfig({
@@ -21,6 +21,8 @@ export default defineConfig({
   use: {
     baseURL,
     trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
     // SWA can take a short time to serve the new deployment.
     navigationTimeout: 45_000,
   },

@@ -42,3 +42,6 @@ Thumbs.db
 test-results/
 playwright-report/
 playwright/.cache/
+
+# Local OPS digest HTML preview (npm run ops:scorecard-email:preview)
+tmp-scorecard-digest-preview.html

@@ -1,5 +1,6 @@
 ---
 import { site } from '../lib/site';
+import { buildPersonJsonLd } from '../lib/personSchema';
 
 interface Props {
   title: string;
@@ -11,38 +12,54 @@ interface Props {
 }
 
 const { title, description, image, canonicalPath, jsonLd, noIndex = false } = Astro.props;
-const canonical = new URL(canonicalPath, site.url).href;
-const ogImage = image
-  ? new URL(image, site.url).href
-  : new URL('/images/og-default.jpg', site.url).href;
+const normalizedPath =
+  canonicalPath.length > 1 && canonicalPath.endsWith('/')
+    ? canonicalPath.slice(0, -1)
+    : canonicalPath;
+const canonical = new URL(normalizedPath, site.url).href;
+const usesDefaultOg = !image;
+const ogImage = usesDefaultOg
+  ? new URL('/images/og-default.jpg', site.url).href
+  : new URL(image, site.url).href;
+/** Default OG asset dimensions after SEARCH-P2-004 resize (1200×630 JPEG). */
+const DEFAULT_OG_WIDTH = 1200;
+const DEFAULT_OG_HEIGHT = 630;
+const ogImageAlt = `${site.name} — ${site.jobTitle}`;
 
-const defaultPerson = {
-  '@context': 'https://schema.org',
-  '@type': 'Person',
-  name: site.name,
-  url: site.url,
-  jobTitle: site.jobTitle,
-  description: site.description,
-  image: new URL(site.heroImage, site.url).href,
-  sameAs: [site.instagram],
-  knowsAbout: site.knowsAbout,
-  homeLocation: {
-    '@type': 'Place',
-    name: 'New York, NY',
-  },
-  address: {
-    '@type': 'PostalAddress',
-    addressLocality: 'New York',
-    addressRegion: 'NY',
-    addressCountry: 'US',
-  },
-};
+const defaultPerson = buildPersonJsonLd();
 
-const structured = jsonLd
-  ? Array.isArray(jsonLd)
-    ? jsonLd
-    : [jsonLd]
-  : [defaultPerson];
+function isPersonType(type: unknown): boolean {
+  if (type === 'Person') return true;
+  return Array.isArray(type) && type.includes('Person');
+}
+
+/** Top-level or `@graph` Person only — nested `about` / `founder` do not count. */
+function hasTopLevelPerson(nodes: Record<string, unknown>[]): boolean {
+  for (const node of nodes) {
+    if (isPersonType(node['@type'])) return true;
+    const graph = node['@graph'];
+    if (Array.isArray(graph)) {
+      for (const entry of graph) {
+        if (
+          entry &&
+          typeof entry === 'object' &&
+          isPersonType((entry as Record<string, unknown>)['@type'])
+        ) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+const customNodes = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
+const structured =
+  customNodes.length === 0
+    ? [defaultPerson]
+    : hasTopLevelPerson(customNodes)
+      ? customNodes
+      : [defaultPerson, ...customNodes];
 ---
 
 <title>{title}</title>
@@ -55,6 +72,9 @@ const structured = jsonLd
 <meta property="og:description" content={description} />
 <meta property="og:url" content={canonical} />
 <meta property="og:image" content={ogImage} />
+{usesDefaultOg && <meta property="og:image:width" content={String(DEFAULT_OG_WIDTH)} />}
+{usesDefaultOg && <meta property="og:image:height" content={String(DEFAULT_OG_HEIGHT)} />}
+<meta property="og:image:alt" content={ogImageAlt} />
 <meta property="og:site_name" content={site.name} />
 
 <meta name="twitter:card" content="summary_large_image" />

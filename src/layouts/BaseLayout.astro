@@ -3,6 +3,7 @@ import '../styles/global.css';
 import Seo from '../components/Seo.astro';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
+import StickyMobileCastingBar from '../components/StickyMobileCastingBar.astro';
 import { site } from '../lib/site';
 
 interface Props {
@@ -25,7 +26,19 @@ const {
   noIndex = false,
 } = Astro.props;
 
-const pageTitle = title ? `${title} · ${site.name}` : `${site.name} · ${site.tagline}`;
+/** Pages pass bare titles; BaseLayout owns the brand suffix (` · Elyse Tindall`). */
+function barePageTitle(raw: string): string {
+  const pipe = ` | ${site.name}`;
+  const dot = ` · ${site.name}`;
+  let cleaned = raw.trim();
+  if (cleaned.endsWith(pipe)) cleaned = cleaned.slice(0, -pipe.length).trimEnd();
+  if (cleaned.endsWith(dot)) cleaned = cleaned.slice(0, -dot.length).trimEnd();
+  return cleaned;
+}
+
+const pageTitle = title
+  ? `${barePageTitle(title)} · ${site.name}`
+  : `${site.name} · ${site.tagline}`;
 ---
 
 <!doctype html>
@@ -35,6 +48,7 @@ const pageTitle = title ? `${title} · ${site.name}` : `${site.name} · ${site.t
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <Seo
       title={pageTitle}
       description={description}
@@ -56,8 +70,28 @@ const pageTitle = title ? `${title} · ${site.name}` : `${site.name} · ${site.t
       <slot />
     </main>
     <Footer hideCta={hideFooterCta} />
+    <StickyMobileCastingBar />
     <script>
-      import '../scripts/app-insights.ts';
+      const path = location.pathname.replace(/\/+$/, '') || '/';
+      const immediate = path === '/' || path.startsWith('/studio');
+      const load = () => import('../scripts/app-insights.ts');
+      if (immediate) {
+        void load();
+      } else {
+        const kick = () => {
+          void load();
+        };
+        window.addEventListener('pointerdown', kick, { once: true });
+        window.addEventListener('keydown', kick, { once: true });
+        if (typeof requestIdleCallback === 'function') {
+          requestIdleCallback(kick, { timeout: 4000 });
+        } else {
+          setTimeout(kick, 2500);
+        }
+      }
+    </script>
+    <script>
+      import '../scripts/ga.ts';
     </script>
   </body>
 </html>

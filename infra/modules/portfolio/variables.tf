@@ -46,14 +46,36 @@ variable "github_repo_id" {
 
 variable "github_branch" {
   type        = string
-  description = "Branch Studio commits to"
+  description = "Base git branch for Studio (catalog reads + direct publish). Staging SWA uses STUDIO_PUBLISH_MODE=pr to commit to staging-studio-YYYYMMDD instead."
   default     = "main"
+}
+
+variable "studio_publish_mode" {
+  type        = string
+  description = "Studio publish target: \"direct\" commits to github_branch; \"pr\" commits to staging-studio-YYYYMMDD and opens/updates a PR into github_branch."
+  default     = ""
+
+  validation {
+    condition     = var.studio_publish_mode == "" || contains(["direct", "pr"], var.studio_publish_mode)
+    error_message = "studio_publish_mode must be \"\", \"direct\", or \"pr\"."
+  }
 }
 
 variable "gemini_model" {
   type        = string
   description = "Gemini model ID used by Studio publish (override without redeploying API code)"
   default     = "gemini-3.6-flash"
+}
+
+variable "ga_measurement_id" {
+  type        = string
+  description = "Google Analytics 4 Measurement ID embedded in the Astro client bundle (public-by-design). Published as GitHub Environment variable GA_MEASUREMENT_ID → PUBLIC_GA_MEASUREMENT_ID at build time."
+  default     = "G-XEE29C0RRE"
+
+  validation {
+    condition     = can(regex("^G-[A-Z0-9]+$", var.ga_measurement_id))
+    error_message = "ga_measurement_id must look like a GA4 Measurement ID (e.g. G-XEE29C0RRE)."
+  }
 }
 
 variable "additional_auth_hostnames" {
@@ -66,6 +88,12 @@ variable "require_app_role_assignment" {
   type        = bool
   description = "Require explicit Entra app assignment to sign in (extra lockdown on top of the API allowlist)"
   default     = true
+}
+
+variable "monitor_upn" {
+  type        = string
+  description = "UPN of the bootstrap Studio smoke monitor user. Empty uses studio-monitor@<initial tenant domain>."
+  default     = ""
 }
 
 variable "entra_secret_lifetime" {
@@ -86,15 +114,26 @@ variable "manage_github_actions" {
   default     = true
 }
 
-variable "alert_email" {
-  type        = string
-  description = "Email for App Insights failed-request and availability alerts (empty skips action group + metric alerts)"
-  default     = ""
+variable "purge_protection_enabled" {
+  type        = bool
+  description = "Enable Key Vault purge protection (cannot be turned off while retention remains). Enable for prod (OPS-P3-006); leave false on staging."
+  default     = false
+}
+
+variable "soft_delete_retention_days" {
+  type        = number
+  description = "Key Vault soft-delete retention (7–90). Immutable after vault create — keep aligned with the live vault."
+  default     = 7
+
+  validation {
+    condition     = var.soft_delete_retention_days >= 7 && var.soft_delete_retention_days <= 90
+    error_message = "soft_delete_retention_days must be between 7 and 90."
+  }
 }
 
 variable "shared_key_vault_name" {
   type        = string
-  description = "Bootstrap foundational Key Vault for SITE-* and Turnstile secrets (shared by staging/prod builds)"
+  description = "Bootstrap foundational Key Vault for SITE-*, Turnstile, ACS, and ALERT-* ops contacts (shared by staging/prod)"
   default     = "kv-elyse-shared"
 }
 

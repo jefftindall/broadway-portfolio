@@ -1,18 +1,23 @@
 {
   "name": "ELYSE TINDALL",
-  "location": "New York, NY",
+  "location": "New York, NY and Atlanta, GA",
   "specs": "Height: 5'3\"   Hair/Eyes: Brown   Vocal Range: D3-G6 (Belt: G5)",
   "training": [
     "Voice: Sharon Erman",
     "Acting / Musical Theatre: Randy Graff",
-    "Dance: Christina Wienstele, Julie Reeves, Emily Stockinger"
+    "Dance: Christina Weinzetl, Julie Reeves, Emily Stockinger"
   ],
   "specialSkills": [
     "Piano, sight reading, music theory, chorus, jazz, tap, ballet, opera,",
     "hand-to-hand stage combat, basic stage make-up, creative writing, passport,",
     "certified scuba diver"
   ],
-  "residency": "Alliance Theater Mainstage Teen Ensemble",
+  "residencies": [
+    {
+      "years": "2025–2026",
+      "company": "Alliance Theatre Mainstage Teen Ensemble"
+    }
+  ],
   "contactFallbacks": {
     "email": "elyse.tindall@gmail.com",
     "phone": "678-878-1999"

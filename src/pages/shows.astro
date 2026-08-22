@@ -5,28 +5,25 @@ import CreditList from '../components/CreditList.astro';
 import VideoEmbed from '../components/VideoEmbed.astro';
 import GlassPanel from '../components/GlassPanel.astro';
 import { site } from '../lib/site';
+import { buildReelVideoJsonLd } from '../lib/reelPoster';
 
 const shows = (await getCollection('shows')).sort((a, b) => {
   if (b.data.year !== a.data.year) return b.data.year - a.data.year;
   return (a.data.order ?? 99) - (b.data.order ?? 99);
 });
 
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'VideoObject',
-  name: 'NYC Cabaret — Stage Kiss',
-  description: 'Elyse Tindall performs Stage Kiss at Ripley-Grier Studios, New York City.',
-  thumbnailUrl: new URL('/images/photos/cabaret-reel-poster.jpg', site.url).href,
-  uploadDate: '2024-08-01',
+const jsonLd = buildReelVideoJsonLd({
+  name: site.reelTitle,
   contentUrl: site.reelUrl,
-  embedUrl: 'https://www.youtube.com/embed/41jdPTkN_Sw',
-};
+  posterPath: site.reelPoster,
+  siteUrl: site.url,
+});
 ---
 
 <BaseLayout
   title="Shows"
   description="Credits for Elyse Tindall — musicals, plays, film, and NYC cabaret."
-  image="/images/photos/cabaret-reel-poster.jpg"
+  image={site.reelPoster}
   jsonLd={jsonLd}
 >
   <section class="mx-auto max-w-6xl px-6 py-16 md:py-24">
@@ -38,7 +35,11 @@ const jsonLd = {
 
     <div id="reel" class="mt-12">
       <GlassPanel strong class="overflow-hidden p-2 md:grid md:grid-cols-[1.2fr_0.8fr] md:gap-6 md:p-3">
-        <VideoEmbed url={site.reelUrl} title="NYC Cabaret — Stage Kiss reel" />
+        <VideoEmbed
+          url={site.reelUrl}
+          title={site.reelTitle}
+          poster={site.reelPoster}
+        />
         <div class="flex flex-col justify-center px-4 py-5 md:px-2">
           <p class="text-sm uppercase tracking-[0.2em] text-gold">Reel</p>
           <h2 class="mt-2 font-display text-3xl text-spotlight">Stage Kiss — NYC Cabaret</h2>

@@ -3,7 +3,7 @@
     "identityProviders": {
       "azureActiveDirectory": {
         "registration": {
-          "openIdIssuer": "https://login.microsoftonline.com/common/v2.0",
+          "openIdIssuer": "https://login.microsoftonline.com/e78bb87b-bdca-4a5f-8f90-a1c388528a5f/v2.0",
           "clientIdSettingName": "AAD_CLIENT_ID",
           "clientSecretSettingName": "AAD_CLIENT_SECRET"
         }
@@ -112,24 +112,60 @@
       "statusCode": 301
     },
     {
+      "route": "/_astro/*",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
+      "route": "/images/_derived/*",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
+      "route": "/images/*",
+      "headers": {
+        "Cache-Control": "public, max-age=604800"
+      }
+    },
+    {
       "route": "/studio",
-      "allowedRoles": ["authenticated"]
+      "allowedRoles": ["authenticated"],
+      "headers": {
+        "Cache-Control": "private, no-store"
+      }
     },
     {
       "route": "/studio/*",
-      "allowedRoles": ["authenticated"]
+      "allowedRoles": ["authenticated"],
+      "headers": {
+        "Cache-Control": "private, no-store"
+      }
     },
     {
       "route": "/api/contactInquiry",
-      "allowedRoles": ["anonymous", "authenticated"]
+      "allowedRoles": ["anonymous", "authenticated"],
+      "headers": {
+        "Cache-Control": "private, no-store"
+      }
     },
     {
       "route": "/api/*",
-      "allowedRoles": ["authenticated"]
+      "allowedRoles": ["authenticated"],
+      "headers": {
+        "Cache-Control": "private, no-store"
+      }
     },
     {
       "route": "/.auth/login/github",
       "statusCode": 404
+    },
+    {
+      "route": "/*",
+      "headers": {
+        "Cache-Control": "public, must-revalidate, max-age=30"
+      }
     }
   ],
   "responseOverrides": {
@@ -140,7 +176,8 @@
   },
   "globalHeaders": {
     "X-Content-Type-Options": "nosniff",
-    "Referrer-Policy": "strict-origin-when-cross-origin"
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Cache-Control": "private, no-store"
   },
   "platform": {
     "apiRuntime": "node:20"

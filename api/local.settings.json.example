@@ -6,6 +6,7 @@
     "AZURE_FUNCTIONS_ENVIRONMENT": "Development",
     "GEMINI_API_KEY": "",
     "GEMINI_MODEL": "gemini-3.6-flash",
+    "GEMINI_MODEL_SEARCH_OPS": "gemini-3.5-flash",
     "SITE_URL": "https://elysetindall.com",
     "GITHUB_APP_ID": "",
     "GITHUB_APP_INSTALLATION_ID": "",
@@ -13,6 +14,7 @@
     "GITHUB_OWNER": "jefftindall",
     "GITHUB_REPO": "broadway-portfolio",
     "GITHUB_BRANCH": "main",
+    "STUDIO_PUBLISH_MODE": "direct",
     "ALLOWED_USER_IDS": "elyse@example.com",
     "ACS_CONNECTION_STRING": "",
     "ACS_EMAIL_SENDER": "",
@@ -20,6 +22,6 @@
     "CONTACT_NOTIFY_PHONE": "",
     "CONTACT_SMS_ENABLED": "false",
     "ACS_SMS_FROM": "",
-    "TURNSTILE_SECRET_KEY": "1x0000000000000000000000000000000AA"
+    "TURNSTILE_SECRET": "1x0000000000000000000000000000000AA"
   }
 }

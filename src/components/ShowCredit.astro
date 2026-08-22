@@ -1,6 +1,7 @@
 ---
 import { render } from 'astro:content';
 import type { CollectionEntry } from 'astro:content';
+import OptimizedImg from './OptimizedImg.astro';
 
 interface Props {
   show: CollectionEntry<'shows'>;
@@ -22,15 +23,15 @@ const imgStyle = `object-position: ${imageFocus}`;
     {
       image && (
         <div class="overflow-hidden rounded-sm border border-line bg-panel">
-          <img
+          <OptimizedImg
             src={image}
             alt=""
             class="aspect-[3/4] h-full w-full object-cover md:aspect-auto md:min-h-[10rem]"
             style={imgStyle}
             loading="lazy"
-            decoding="async"
-            width="280"
-            height="360"
+            width={280}
+            height={360}
+            sizes="140px"
           />
         </div>
       )

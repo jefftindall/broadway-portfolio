@@ -6,7 +6,9 @@ import {
   newsFrontmatterSchema,
   pagesFrontmatterSchema,
   showFrontmatterSchema,
+  siteSettingsSchema,
 } from './contentSchemas.js';
+import { SITE_SETTINGS_PATH } from './siteSettings.js';
 
 const LESSONS_BOOK_PAGE = 'src/content/pages/lessons-book.md';
 
@@ -28,33 +30,36 @@ export class StudioContentValidationError extends Error {
 
 /**
  * @param {string} path
- * @returns {{ schema: import('zod').ZodTypeAny } | null}
+ * @returns {{ schema: import('zod').ZodTypeAny, kind?: 'json' | 'markdown' } | null}
  */
 function schemaForContentPath(path) {
   const p = String(path || '').replace(/\\/g, '/');
+  if (p === SITE_SETTINGS_PATH) {
+    return { schema: siteSettingsSchema, kind: 'json' };
+  }
   if (/^src\/content\/shows\/[^/]+\.md$/.test(p)) {
-    return { schema: showFrontmatterSchema };
+    return { schema: showFrontmatterSchema, kind: 'markdown' };
   }
   if (/^src\/content\/news\/[^/]+\.md$/.test(p)) {
-    return { schema: newsFrontmatterSchema };
+    return { schema: newsFrontmatterSchema, kind: 'markdown' };
   }
   if (/^src\/content\/gallery\/[^/]+\.md$/.test(p)) {
-    return { schema: galleryFrontmatterSchema };
+    return { schema: galleryFrontmatterSchema, kind: 'markdown' };
   }
   if (p === LESSONS_BOOK_PAGE) {
-    return { schema: lessonsBookFrontmatterSchema };
+    return { schema: lessonsBookFrontmatterSchema, kind: 'markdown' };
   }
-  if (/^src\/content\/pages\/[^/]+\.md$/.test(p)) {
-    return { schema: pagesFrontmatterSchema };
+  if (p === 'src/content/pages/lessons.md') {
+    return { schema: pagesFrontmatterSchema, kind: 'markdown' };
   }
   if (/^src\/content\/casting\/[^/]+\.md$/.test(p)) {
-    return { schema: castingFrontmatterSchema };
+    return { schema: castingFrontmatterSchema, kind: 'markdown' };
   }
   return null;
 }
 
 /**
- * Validate markdown content against the same Zod schemas used by Astro build.
+ * Validate markdown or site-settings JSON against Zod schemas.
  * @param {string} path
  * @param {string} content
  */
@@ -62,6 +67,30 @@ export function validateContentFile(path, content) {
   const normalizedPath = String(path || '').replace(/\\/g, '/');
   const rule = schemaForContentPath(normalizedPath);
   if (!rule) return;
+
+  if (rule.kind === 'json') {
+    let data;
+    try {
+      data = JSON.parse(String(content ?? ''));
+    } catch {
+      throw new StudioContentValidationError(
+        'Settings could not be parsed. Review the preview fields before publishing.',
+        { path: normalizedPath },
+      );
+    }
+    const result = rule.schema.safeParse(data);
+    if (result.success) return;
+    throw new StudioContentValidationError(
+      'Some settings fields are invalid. Review the preview and fix missing or incorrect values before publishing.',
+      {
+        path: normalizedPath,
+        issues: result.error.issues.map((issue) => ({
+          path: issue.path,
+          message: issue.message,
+        })),
+      },
+    );
+  }
 
   let parsed;
   try {

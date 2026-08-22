@@ -31,6 +31,11 @@ locals {
   kv_name  = "kv-elyse-${local.name_suffix}"
   swa_name = "swa-elyse-portfolio-${local.name_suffix}"
 
+  # Staging Studio isolates publishes on dated branches + PRs; prod commits to github_branch.
+  studio_publish_mode = var.studio_publish_mode != "" ? var.studio_publish_mode : (
+    var.environment == "staging" ? "pr" : "direct"
+  )
+
   tags = merge(var.tags, {
     environment = var.environment
     project     = "elyse-tindall-portfolio"
@@ -45,13 +50,14 @@ resource "azurerm_resource_group" "main" {
 }
 
 resource "azurerm_key_vault" "main" {
-  name                       = local.kv_name
-  location                   = azurerm_resource_group.main.location
-  resource_group_name        = azurerm_resource_group.main.name
-  tenant_id                  = data.azurerm_client_config.current.tenant_id
-  sku_name                   = "standard"
-  soft_delete_retention_days = 7
-  purge_protection_enabled   = false
+  name                = local.kv_name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  tenant_id           = data.azurerm_client_config.current.tenant_id
+  sku_name            = "standard"
+  # OPS-P3-006 — prod enables purge protection + longer soft-delete; staging keeps defaults.
+  soft_delete_retention_days = var.soft_delete_retention_days
+  purge_protection_enabled   = var.purge_protection_enabled
   rbac_authorization_enabled = true
   tags                       = local.tags
 }
@@ -181,6 +187,7 @@ resource "azurerm_static_web_app" "main" {
     GITHUB_OWNER                          = var.github_owner
     GITHUB_REPO                           = var.github_repo
     GITHUB_BRANCH                         = var.github_branch
+    STUDIO_PUBLISH_MODE                   = local.studio_publish_mode
     APPLICATIONINSIGHTS_CONNECTION_STRING = azurerm_application_insights.main.connection_string
     # Contact inquiry API (shared ACS; SMS when ACS_SMS_FROM is a real E.164 number)
     ACS_CONNECTION_STRING = data.azurerm_key_vault_secret.acs_connection_string.value
@@ -189,7 +196,7 @@ resource "azurerm_static_web_app" "main" {
     CONTACT_NOTIFY_PHONE  = data.azurerm_key_vault_secret.site_contact_phone.value
     CONTACT_SMS_ENABLED   = local.contact_sms_enabled
     ACS_SMS_FROM          = data.azurerm_key_vault_secret.acs_sms_from.value
-    TURNSTILE_SECRET_KEY  = data.azurerm_key_vault_secret.turnstile_secret_key.value
+    TURNSTILE_SECRET      = data.azurerm_key_vault_secret.turnstile_secret_key.value
   }
 
   depends_on = [
@@ -215,4 +222,13 @@ resource "azurerm_static_web_app_custom_domain" "apex" {
   static_web_app_id = azurerm_static_web_app.main.id
   domain_name       = var.custom_domain
   validation_type   = "dns-txt-token"
+}
+
+# www CNAME must already point at the SWA default hostname (Namecheap).
+# After apply: Portal → Custom domains → set apex as default so www 301s to apex.
+resource "azurerm_static_web_app_custom_domain" "www" {
+  count             = var.custom_domain == "" ? 0 : 1
+  static_web_app_id = azurerm_static_web_app.main.id
+  domain_name       = "www.${var.custom_domain}"
+  validation_type   = "cname-delegation"
 }

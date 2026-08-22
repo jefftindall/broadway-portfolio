@@ -1,0 +1,35 @@
+name: "Maint: cleanup Studio branches"
+
+# Delete staging-studio-YYYYMMDD branches older than 28 days (UTC).
+# Studio staging publishes reuse one branch per UTC day; stale branches are removed daily.
+# Display names follow docs/runbooks/github-actions-naming.md (Scheme A).
+on:
+  schedule:
+    - cron: "15 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: cleanup-staging-studio-branches
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    name: Delete expired staging-studio branches
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          check-latest: true
+
+      - name: Delete expired branches
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/cleanup-staging-studio-branches.mjs
