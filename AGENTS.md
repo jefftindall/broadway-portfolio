@@ -43,10 +43,11 @@ When editing `.github/workflows/**` or composite actions: **before commit**, sca
 - Do **not** advertise acting lessons, monologue coaching, or scene study. Studio Gemini prompts in [`api/src/lib/gemini.js`](api/src/lib/gemini.js) encode the same rules — keep them aligned when editing copy or prompts.
 - See [`docs/style-guide.md`](docs/style-guide.md) and [`docs/runbooks/refine-studio-gemini.md`](docs/runbooks/refine-studio-gemini.md).
 
-### Studio help (authenticated)
-- User guide: [`/studio/help`](src/pages/studio/help.astro) — linked only from `/studio`, SWA `authenticated` on `/studio` and `/studio/*`, `noIndex`, excluded from sitemap via the existing `/studio` filter. Read-only canary: [`/studio/health`](src/pages/studio/health.astro) (`TEST-C-005`).
+### Studio (authenticated · personalized)
+- **North star:** login-protected workspace for **running the teaching business** (content publish today; later schedule, payment status, communications, financial summaries). Always `/studio` and `/studio/*` only—SWA `authenticated`, personalized to the signed-in user, `noIndex`, excluded from sitemap. See [`docs/plans/studio-teaching-business.md`](docs/plans/studio-teaching-business.md) and lesson payments in [`docs/plans/lesson-payments.md`](docs/plans/lesson-payments.md).
+- User guide: [`/studio/help`](src/pages/studio/help.astro) — linked only from `/studio`. Document only shipped capabilities. Read-only canary: [`/studio/health`](src/pages/studio/health.astro) (`TEST-C-005`).
 - Capability catalog + example prompts: [`src/lib/studioHelp.ts`](src/lib/studioHelp.ts). **When changing Gemini tools or Studio voice UX, update this catalog and the help page in the same PR** (see [`.cursor/rules/studio-help.mdc`](.cursor/rules/studio-help.mdc) and the refine-studio-gemini checklist).
-- Signed-in users may open help even if they are not on `ALLOWED_USER_IDS` yet.
+- Signed-in users may open Studio/help even if they are not on `ALLOWED_USER_IDS` yet (publish remains allowlisted).
 - Device reference for mic/screenshots: **iPhone 17 · Safari**.
 
 ### Public site (primary service)
