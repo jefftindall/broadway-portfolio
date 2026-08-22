@@ -85,6 +85,7 @@ playwright.journey.config.ts
 | `CAST-05` | Public chrome does not link to `/for/*` | Desktop |
 | `LESSON-01` | Lessons → Book → rates → lesson inquiry mailto; no acting-lesson copy | Desktop + mobile |
 | `LESSON-02` | Contact → Book a lesson | Desktop |
+| `LESSON-03` | Privacy Payments + Terms paid-lesson copy (Stripe, 24h refund, voice-only) | Desktop |
 | `VISIT-01` | News list → article | Desktop |
 | `VISIT-02` | Gallery images load | Desktop |
 | `VISIT-03` | Primary nav from home (all items) | Desktop |
