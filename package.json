@@ -24,6 +24,7 @@
     "test:github-app-token": "bash scripts/test-github-app-token.sh",
     "lint:terraform": "node scripts/lint-terraform.mjs",
     "resume:pdf": "node scripts/generate-resume-pdf.mjs",
+    "test:resume-pdf": "node --test scripts/generate-resume-pdf.test.mjs",
     "ops:scorecard-email": "node scripts/ops-scorecard-email.mjs",
     "ops:scorecard-email:preview": "node scripts/ops-scorecard-email.mjs --preview-file=tmp-scorecard-digest-preview.html",
     "search:signals": "node scripts/search-ops-signals-refresh.mjs",
