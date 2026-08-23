@@ -275,6 +275,9 @@ test('classifyCrmError keeps validation copy and maps config/not-found', () => {
 
   const gone = classifyCrmError(Object.assign(new Error('not found'), { name: 'CrmNotFoundError' }));
   assert.equal(gone.status, 404);
+
+  const forbidden = classifyCrmError(Object.assign(new Error('nope'), { name: 'CrmForbiddenError' }));
+  assert.equal(forbidden.status, 403);
 });
 
 test('persona vocabulary stays the planned set', () => {

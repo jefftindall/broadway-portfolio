@@ -40,6 +40,17 @@ import {
     </div>
 
     <div
+      id="people-gate"
+      class="mt-4 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted"
+      role="alert"
+    >
+      <p id="people-gate-msg">You’re signed in, but this account cannot view People.</p>
+      <p class="mt-4">
+        <a href="/studio" class="text-gel underline-offset-2 hover:text-gold hover:underline">Back to Studio</a>
+      </p>
+    </div>
+
+    <div
       id="people-error"
       class="mt-4 hidden rounded-sm border border-line bg-panel/60 p-3 text-sm text-muted"
       role="alert"
@@ -251,6 +262,11 @@ import {
 
 <script>
   import { STUDIO_RELATED_LABELS, studioPersonPath } from '../../../lib/studioPeople';
+  import {
+    STUDIO_PERMISSION,
+    fetchStudioSession,
+    hasStudioPermission,
+  } from '../../../lib/studioSession';
 
   type Related = { id: string; relation: string };
   type Contact = {
@@ -288,6 +304,8 @@ import {
   const relatedPick = document.getElementById('related-pick') as HTMLSelectElement;
   const relatedRelation = document.getElementById('related-relation') as HTMLSelectElement;
   const archiveBtn = document.getElementById('archive-btn') as HTMLButtonElement;
+  const peopleGate = document.getElementById('people-gate') as HTMLElement;
+  let canWrite = true;
 
   let current: Contact | null = null;
   let directory: Contact[] = [];
@@ -416,6 +434,7 @@ import {
   }
 
   async function save(extra: Partial<Contact> = {}) {
+    if (!canWrite) return false;
     clearError();
     const payload = { ...formPayload(), ...extra };
     const res = await fetch(`/api/contacts/${encodeURIComponent(contactId)}`, {
@@ -484,5 +503,23 @@ import {
     }
   }
 
-  void load();
+  async function bootstrap() {
+    const session = await fetchStudioSession();
+    if (!session.apiUnavailable && !hasStudioPermission(session, STUDIO_PERMISSION.PEOPLE_READ)) {
+      peopleGate.classList.remove('hidden');
+      statusEl.textContent = '';
+      return;
+    }
+    canWrite =
+      session.apiUnavailable || hasStudioPermission(session, STUDIO_PERMISSION.PEOPLE_WRITE);
+    if (!canWrite) {
+      archiveBtn.classList.add('hidden');
+      form.querySelectorAll('input, textarea, select, button[type="submit"]').forEach((el) => {
+        (el as HTMLInputElement).disabled = true;
+      });
+    }
+    await load();
+  }
+
+  void bootstrap();
 </script>

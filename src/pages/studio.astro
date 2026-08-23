@@ -64,10 +64,18 @@ const imageHashIndex = buildPublicImageHashIndex();
           Help
         </a>
         <a
+          id="nav-people"
           href="/studio/people"
-          class="inline-flex items-center gap-1.5 text-gel underline-offset-2 hover:text-gold hover:underline"
+          class="hidden inline-flex items-center gap-1.5 text-gel underline-offset-2 hover:text-gold hover:underline"
         >
           People
+        </a>
+        <a
+          id="nav-access"
+          href="/studio/access"
+          class="hidden inline-flex items-center gap-1.5 text-gel underline-offset-2 hover:text-gold hover:underline"
+        >
+          Access
         </a>
         <a
           href="/.auth/logout?post_logout_redirect_uri=/"
@@ -102,7 +110,7 @@ const imageHashIndex = buildPublicImageHashIndex();
     </div>
 
     <div id="auth-gate" class="mt-6 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted">
-      <p>Sign in required to publish.</p>
+      <p>Sign in to use Studio.</p>
       <a
         id="login-link"
         href="/.auth/login/aad"
@@ -113,21 +121,14 @@ const imageHashIndex = buildPublicImageHashIndex();
     </div>
 
     <div id="publisher-gate" class="mt-6 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted">
-      <p id="publisher-denied-msg">You’re signed in, but this account can’t publish updates.</p>
-      <p id="publisher-correlation-wrap" class="mt-3">
+      <p id="publisher-denied-msg">You’re signed in, but this account doesn’t have Studio permissions yet.</p>
+      <p id="publisher-correlation-wrap" class="mt-3 hidden">
         Share this reference with an admin:&nbsp;<code
           id="publisher-correlation"
           class="break-all text-spotlight"></code>
       </p>
       <p class="mt-4">
-        You can still open{' '}
-        <a
-          href="/studio/people"
-          class="text-gel underline-offset-2 hover:text-gold hover:underline"
-        >
-          People
-        </a>
-        {' '}and read how Studio works in{' '}
+        You can still read how Studio works in{' '}
         <a
           href="/studio/help"
           class="text-gel underline-offset-2 hover:text-gold hover:underline"
@@ -150,14 +151,26 @@ const imageHashIndex = buildPublicImageHashIndex();
       <div id="hub-step" class="space-y-4">
         <p class="text-sm text-muted">Teaching business</p>
         <a
+          id="hub-people"
           href="/studio/people"
-          class="block rounded-sm border border-line bg-panel/40 px-4 py-4 hover:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+          class="hidden block rounded-sm border border-line bg-panel/40 px-4 py-4 hover:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
         >
           <span class="block font-display text-2xl text-spotlight">People</span>
           <span class="mt-1 block text-sm text-muted"
             >Students, parents, agents, and casting — notes and personas.</span
           >
         </a>
+        <a
+          id="hub-access"
+          href="/studio/access"
+          class="hidden block rounded-sm border border-line bg-panel/40 px-4 py-4 hover:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+        >
+          <span class="block font-display text-2xl text-spotlight">Access</span>
+          <span class="mt-1 block text-sm text-muted"
+            >Roles and discrete permissions for Studio users.</span
+          >
+        </a>
+        <div id="hub-publish" class="hidden space-y-4">
         <p class="pt-2 text-sm text-muted">What do you want to update on the site?</p>
         <div class="grid gap-3">
           <button
@@ -242,6 +255,7 @@ const imageHashIndex = buildPublicImageHashIndex();
               Help
             </a>
           </div>
+        </div>
         </div>
       </div>
 
@@ -753,6 +767,12 @@ const imageHashIndex = buildPublicImageHashIndex();
   <script>
     import { flush, trackEvent, trackException, trackMetric } from '../scripts/app-insights';
     import { validateGallerySlug } from '../lib/galleryStudio';
+    import {
+      STUDIO_PERMISSION,
+      fetchStudioSession,
+      hasStudioPermission,
+      type StudioSession,
+    } from '../lib/studioSession';
 
     type PhotoPayload = { name: string; contentType: string; dataBase64: string };
     type DiscretePreview =
@@ -910,6 +930,11 @@ const imageHashIndex = buildPublicImageHashIndex();
     const authUser = document.getElementById('auth-user')!;
     const authUserName = document.getElementById('auth-user-name')!;
     const studioApp = document.getElementById('studio-app')!;
+    const navPeople = document.getElementById('nav-people')!;
+    const navAccess = document.getElementById('nav-access')!;
+    const hubPeople = document.getElementById('hub-people')!;
+    const hubAccess = document.getElementById('hub-access')!;
+    const hubPublish = document.getElementById('hub-publish')!;
 
     type HubTask = 'ask' | 'gallery' | 'rates' | 'facts' | 'reel' | 'bio' | 'quote';
     let activeTask: HubTask = 'ask';
@@ -1279,6 +1304,18 @@ const imageHashIndex = buildPublicImageHashIndex();
       studioApp.classList.add('hidden');
     }
 
+    function applySessionCapabilities(session: StudioSession) {
+      const canPeople = hasStudioPermission(session, STUDIO_PERMISSION.PEOPLE_READ);
+      const canPublish = hasStudioPermission(session, STUDIO_PERMISSION.CONTENT_PUBLISH);
+      const canAccess = hasStudioPermission(session, STUDIO_PERMISSION.USERS_MANAGE);
+      navPeople.classList.toggle('hidden', !canPeople);
+      hubPeople.classList.toggle('hidden', !canPeople);
+      navAccess.classList.toggle('hidden', !canAccess);
+      hubAccess.classList.toggle('hidden', !canAccess);
+      hubPublish.classList.toggle('hidden', !canPublish);
+      return canPeople || canPublish || canAccess;
+    }
+
     function showPublisherDenied(
       correlationId?: string,
       opts: { apiUnavailable?: boolean } = {},
@@ -1288,13 +1325,17 @@ const imageHashIndex = buildPublicImageHashIndex();
       studioApp.classList.add('hidden');
       if (opts.apiUnavailable) {
         publisherDeniedMsg.textContent =
-          'You’re signed in, but we couldn’t verify publisher access. The Studio API may be temporarily unavailable — try again in a few minutes.';
+          'You’re signed in, but we couldn’t verify Studio permissions. The Studio API may be temporarily unavailable — try again in a few minutes.';
         publisherCorrelationWrap.classList.add('hidden');
       } else {
         publisherDeniedMsg.textContent =
-          'You’re signed in, but this account can’t publish updates.';
-        publisherCorrelationWrap.classList.remove('hidden');
-        publisherCorrelation.textContent = correlationId || 'unavailable';
+          'You’re signed in, but this account doesn’t have Studio permissions yet.';
+        if (correlationId) {
+          publisherCorrelationWrap.classList.remove('hidden');
+          publisherCorrelation.textContent = correlationId;
+        } else {
+          publisherCorrelationWrap.classList.add('hidden');
+        }
       }
       publisherGate.classList.remove('hidden');
     }
@@ -1646,27 +1687,6 @@ const imageHashIndex = buildPublicImageHashIndex();
       void pollOnce(sha);
     }
 
-    async function checkPublisherStatus(): Promise<{
-      authorized: boolean;
-      correlationId?: string;
-      apiUnavailable?: boolean;
-      publishMode?: 'pr' | 'direct';
-    }> {
-      try {
-        const res = await fetch('/api/publisherStatus');
-        if (!res.ok) return { authorized: false, apiUnavailable: true };
-        const data = await res.json();
-        const mode = data?.publishMode === 'pr' ? 'pr' : 'direct';
-        return {
-          authorized: Boolean(data?.authorized),
-          correlationId: typeof data?.correlationId === 'string' ? data.correlationId : undefined,
-          publishMode: mode,
-        };
-      } catch {
-        return { authorized: false, apiUnavailable: true };
-      }
-    }
-
     async function checkAuth() {
       let clientPrincipal: ClientPrincipal | null | undefined;
       try {
@@ -1675,6 +1695,12 @@ const imageHashIndex = buildPublicImageHashIndex();
         clientPrincipal = data?.clientPrincipal as ClientPrincipal | null | undefined;
       } catch {
         authUser.classList.add('hidden');
+        applySessionCapabilities({
+          signedIn: true,
+          authorized: true,
+          roles: ['owner'],
+          permissions: Object.values(STUDIO_PERMISSION),
+        });
         showStudioApp();
         return true;
       }
@@ -1687,26 +1713,19 @@ const imageHashIndex = buildPublicImageHashIndex();
       authUserName.textContent = displayNameFromPrincipal(clientPrincipal);
       authUser.classList.remove('hidden');
 
-      let status: {
-        authorized: boolean;
-        correlationId?: string;
-        apiUnavailable?: boolean;
-        publishMode?: 'pr' | 'direct';
-      } = {
-        authorized: false,
-      };
-      try {
-        status = await checkPublisherStatus();
-      } catch {
-        status = { authorized: false, apiUnavailable: true };
-      }
-
-      if (!status.authorized) {
-        showPublisherDenied(status.correlationId, { apiUnavailable: status.apiUnavailable });
+      const session = await fetchStudioSession();
+      if (session.apiUnavailable) {
+        showPublisherDenied(undefined, { apiUnavailable: true });
         return false;
       }
 
-      applyPublishModeUi(status.publishMode === 'pr' ? 'pr' : 'direct');
+      const hasCapability = applySessionCapabilities(session);
+      if (!hasCapability) {
+        showPublisherDenied(session.correlationId);
+        return false;
+      }
+
+      applyPublishModeUi(session.publishMode === 'pr' ? 'pr' : 'direct');
       showStudioApp();
       return true;
     }

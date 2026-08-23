@@ -77,17 +77,17 @@ User-facing messages stay short and non-technical. Full provider/SDK detail is o
 | Signal | Source |
 |--------|--------|
 | API requests / failures | SWA managed Functions + App Insights |
-| `StudioAccessDenied` | `api` publisherStatus (signed in, not allowlisted; includes `correlationId`) |
-| `StudioPublishDenied` | `api` updateContent / uploadMedia (allowlist deny; includes `correlationId`) |
+| `StudioAccessDenied` | `api` contacts / studioUsers / studioDiscrete (signed in, missing catalog permission; includes `correlationId`) |
+| `StudioPublishDenied` | `api` updateContent / uploadMedia / publishStatus (missing `content.publish`; includes `correlationId`) |
 | `StudioDraftRequested` / `StudioDraftFailed` | `api` updateContent `mode=draft` (Gemini preview; includes `correlationId`) |
-| `StudioPublishRequested` | `api` updateContent `mode=publish` (after allowlist; includes `correlationId`, `publishMode`, `branch`) |
+| `StudioPublishRequested` | `api` updateContent `mode=publish` (after `content.publish`; includes `correlationId`, `publishMode`, `branch`) |
 | `StudioStagingBranchCreated` / `StudioStagingBranchMergedBase` | `api` dated staging branch create / merge-from-main |
 | `StudioStagingPrCreated` / `StudioStagingPrReused` | `api` open or reuse PR for staging-studio branch |
 | `StudioPublishFailed` | `api` updateContent / uploadMedia catch path (`correlationId`, `errorKind`, `operation`) |
 | `StudioToolExecuted` | Gemini tool loop |
 | `GitHubCommitSucceeded` / `GitHubCommitFailed` | Git Data API single-commit publishes (`fileCount` on success/failure) |
 | `GitHubCommitRetry` | Transient GitHub/network or tip-race retry before success/failure |
-| `GET /api/publisherStatus` | Preflight allowlist check for Studio UI |
+| `GET /api/studioSession` (alias `publisherStatus`) | Session roles + discrete permissions for Studio UI (`authorized` = `content.publish`) |
 | `GET /api/publishStatus` | Studio Done-step pipeline poll (`sha` → Actions run status) |
 | `GET /api/lessonPayConfig` | Public pay-flow flag + Payment Link URLs (no secret keys; empty when prod flag is off) |
 | `StripeWebhookReceived` / `StripeWebhookRejected` | `POST /api/stripeWebhook` (`eventId` + `eventType` only on success; `errorKind` on reject; never payload/PII) |
@@ -194,7 +194,7 @@ customMetrics
 
 Run these in **prod** App Insights Logs (or let `node scripts/ops-scorecard-refresh.mjs --azure` probe them). Cite results in the monthly scorecard commit. Targets: **SLO-2** 95% / 28d (≥3 attempts); **SLO-3** p95 ≤ 20 minutes (1_200_000 ms) / 28d.
 
-**SLO-2 — Studio publish success** (exclude allowlist denials and draft-mode UI failures):
+**SLO-2 — Studio publish success** (exclude permission denials (`reason=unauthorized`) and draft-mode UI failures):
 
 ```kusto
 customEvents

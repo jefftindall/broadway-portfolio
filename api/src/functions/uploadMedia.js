@@ -1,10 +1,10 @@
 import { app } from '@azure/functions';
 import {
   newCorrelationId,
-  publisherGate,
   publisherIdentity,
   unauthorized,
 } from '../lib/auth.js';
+import { publisherGate } from '../lib/studioAccess.js';
 import { commitFile, ensurePullRequest, preparePublishTarget } from '../lib/github.js';
 import { studioFailureResponse } from '../lib/httpErrors.js';
 import { flush, trackEvent, trackException } from '../lib/telemetry.js';
@@ -15,7 +15,7 @@ app.http('uploadMedia', {
   authLevel: 'anonymous',
   route: 'uploadMedia',
   handler: async (request, context) => {
-    const gate = publisherGate(request);
+    const gate = await publisherGate(request);
     const principal = gate.principal;
     if (!gate.allowed) {
       const identity = publisherIdentity(principal);

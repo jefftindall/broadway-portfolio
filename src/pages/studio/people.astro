@@ -33,6 +33,13 @@ import {
           Hub
         </a>
         <a
+          id="nav-access"
+          href="/studio/access"
+          class="hidden text-gel underline-offset-2 hover:text-gold hover:underline"
+        >
+          Access
+        </a>
+        <a
           href="/studio/help#people"
           class="text-gel underline-offset-2 hover:text-gold hover:underline"
         >
@@ -50,6 +57,20 @@ import {
     <p class="mt-3 text-sm text-muted">{studioPeopleNotes.summary}</p>
 
     <div
+      id="people-gate"
+      class="mt-6 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted"
+      role="alert"
+    >
+      <p id="people-gate-msg">You’re signed in, but this account cannot view People.</p>
+      <p id="people-gate-ref" class="mt-3 hidden">
+        Reference: <code id="people-gate-id" class="break-all text-spotlight"></code>
+      </p>
+      <p class="mt-4">
+        <a href="/studio" class="text-gel underline-offset-2 hover:text-gold hover:underline">Back to Studio</a>
+      </p>
+    </div>
+
+    <div
       id="people-error"
       class="mt-4 hidden rounded-sm border border-line bg-panel/60 p-3 text-sm text-muted"
       role="alert"
@@ -60,6 +81,7 @@ import {
       </p>
     </div>
 
+    <div id="people-workspace">
     <div class="mt-6 flex flex-wrap items-center gap-2">
       <button
         id="add-person-btn"
@@ -198,11 +220,17 @@ import {
         Next
       </button>
     </nav>
+    </div>
   </section>
 </BaseLayout>
 
 <script>
   import { STUDIO_PERSONA_LABELS, studioPersonPath, type StudioPersona } from '../../lib/studioPeople';
+  import {
+    STUDIO_PERMISSION,
+    fetchStudioSession,
+    hasStudioPermission,
+  } from '../../lib/studioSession';
 
   type Contact = {
     id: string;
@@ -225,6 +253,12 @@ import {
   const archivedEl = document.getElementById('include-archived') as HTMLInputElement;
   const createForm = document.getElementById('create-form') as HTMLFormElement;
   const addBtn = document.getElementById('add-person-btn') as HTMLButtonElement;
+  const peopleGate = document.getElementById('people-gate') as HTMLElement;
+  const peopleGateMsg = document.getElementById('people-gate-msg') as HTMLElement;
+  const peopleGateRef = document.getElementById('people-gate-ref') as HTMLElement;
+  const peopleGateId = document.getElementById('people-gate-id') as HTMLElement;
+  const peopleWorkspace = document.getElementById('people-workspace') as HTMLElement;
+  const navAccess = document.getElementById('nav-access') as HTMLElement;
   const cancelBtn = document.getElementById('create-cancel') as HTMLButtonElement;
   const pagerEl = document.getElementById('people-pager') as HTMLElement;
   const pageLabelEl = document.getElementById('people-page-label') as HTMLElement;
@@ -416,6 +450,30 @@ import {
     }
   }
 
-  void loadIdentity();
-  void loadPeople();
+  async function bootstrap() {
+    await loadIdentity();
+    const session = await fetchStudioSession();
+    if (session.apiUnavailable) {
+      void loadPeople();
+      return;
+    }
+    navAccess.classList.toggle('hidden', !hasStudioPermission(session, STUDIO_PERMISSION.USERS_MANAGE));
+    if (!hasStudioPermission(session, STUDIO_PERMISSION.PEOPLE_READ)) {
+      peopleWorkspace.classList.add('hidden');
+      peopleGate.classList.remove('hidden');
+      peopleGateMsg.textContent = 'You’re signed in, but this account cannot view People.';
+      if (session.correlationId) {
+        peopleGateId.textContent = session.correlationId;
+        peopleGateRef.classList.remove('hidden');
+      }
+      statusEl.textContent = '';
+      return;
+    }
+    if (!hasStudioPermission(session, STUDIO_PERMISSION.PEOPLE_WRITE)) {
+      addBtn.classList.add('hidden');
+    }
+    void loadPeople();
+  }
+
+  void bootstrap();
 </script>

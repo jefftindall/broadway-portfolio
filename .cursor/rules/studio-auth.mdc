@@ -2,6 +2,9 @@
 description: Authentication is not authorization — enforce action checks on every Studio call
 globs:
   - api/src/lib/auth.js
+  - api/src/lib/permissions.js
+  - api/src/lib/studioAccess.js
+  - api/src/lib/users.js
   - api/src/functions/**/*.js
   - infra/modules/portfolio/entra.tf
   - infra/modules/portfolio/variables.tf
@@ -23,25 +26,29 @@ globs:
 - SWA still requires `authenticated` for `/studio`, `/studio/*`, and `/api/*` (except the documented public exceptions). That is a login gate, not an action grant.
 - Apps stay `AzureADMyOrg` with the tenant-specific `openIdIssuer`. Do not switch to `/common/v2.0`.
 
-## Authorization (independent)
+## Authorization (one catalog)
+
+Discrete permissions live in [`api/src/lib/permissions.js`](api/src/lib/permissions.js). Roles are named bundles. User profiles (`studioUsers` table) are the source of truth. `ALLOWED_USER_IDS` only bootstraps a missing **Owner** profile on first session — it is not a second publish gate.
 
 | Action | Check on every call |
 |--------|---------------------|
-| Publish / upload / discrete site values / publish status | `publisherGate()` / `isAuthorizedPublisher()` against `ALLOWED_USER_IDS` |
-| People / CRM | `isSignedInStudioUser()` **and** `studioOwnerKey(principal)` — never trust an owner id from the body |
+| Publish / upload / discrete / publish status | `permissionGate(..., 'content.publish')` (also `publisherGate()`) |
+| People / CRM | `permissionGate(..., 'people.read' \| 'people.write')` + `access.ownerKey` — never trust an owner id from the body |
+| Access admin | `permissionGate(..., 'users.read' \| 'users.manage')` |
 | Public `contactInquiry` | Turnstile + schema; no Studio principal |
 | Public `lessonPayConfig` | Flag + sanitized Payment Link URLs only |
 | Public `stripeWebhook` | Stripe signature verification |
 
-Azure Functions use `authLevel: 'anonymous'` because SWA presents the principal. That is **not** a skip — handlers must still call the gate above. Local `AZURE_FUNCTIONS_ENVIRONMENT=Development` is the only allowlist skip (`func start` without SWA headers).
+Azure Functions use `authLevel: 'anonymous'` because SWA presents the principal. That is **not** a skip — handlers must still call `permissionGate`. Local `AZURE_FUNCTIONS_ENVIRONMENT=Development` grants the full catalog (`func start` without SWA headers).
+
+Hub UI reads `GET /api/studioSession` (same payload as `publisherStatus`) and shows tiles from `permissions[]`. That is convenience only. The API remains the enforcement point.
 
 ## When adding a Studio API
 
-1. Decide the authorization model (publish allowlist vs signed-in owner vs public verifier).
-2. Call that check **before** reading secrets, calling Gemini, writing git, or touching Table Storage.
-3. Return a friendly error + `correlationId`. Do not leak whether the allowlist is empty.
-4. Update [`docs/runbooks/manage-access.md`](docs/runbooks/manage-access.md) if the layers change.
+1. Add a discrete permission ID to the catalog (and a role bundle if needed).
+2. Call `permissionGate(request, PERMISSION.…)` **before** reading secrets, calling Gemini, writing git, or touching Table Storage.
+3. Return a friendly error + `correlationId`. Do not leak whether the allowlist or profile table is empty.
+4. Gate matching Studio UI from the session permissions in the same PR.
+5. Update [`docs/runbooks/manage-access.md`](docs/runbooks/manage-access.md) if the layers change.
 
-UI publisher-status checks are convenience only. The API remains the enforcement point.
-
-See [`api/src/lib/auth.js`](api/src/lib/auth.js) and [`docs/runbooks/manage-access.md`](docs/runbooks/manage-access.md).
+See [`api/src/lib/studioAccess.js`](api/src/lib/studioAccess.js) and [`docs/runbooks/manage-access.md`](docs/runbooks/manage-access.md).

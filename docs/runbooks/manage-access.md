@@ -1,15 +1,16 @@
 # Runbook: Manage access
 
-Only Elyse should be able to **publish**. Anyone in the Entra tenant (members and guests) should be able to **sign in**. Sign-in is not permission to act.
+Sign-in is not permission to act. Studio authorization is one catalog of **discrete permissions**, bundled into **roles**, stored on **user profiles**. Publish and People use the same catalog — there is no separate publisher-only gate.
 
 ## Layers
 
-1. **Entra app registration** (Terraform) — single-tenant (`AzureADMyOrg`). Enterprise-app **Assignment required** is **off** (`require_app_role_assignment = false`) so login is not blocked with `AADSTS50105`. Do not turn assignment required on to “secure” publish.
+1. **Entra app registration** (Terraform) — single-tenant (`AzureADMyOrg`). Enterprise-app **Assignment required** is **off** (`require_app_role_assignment = false`) so login is not blocked with `AADSTS50105`. Do not turn assignment required on to “secure” publish or People.
 2. **SWA Authentication** — `/studio` and `/api/*` require a completed Entra login (`authenticated`). That only identifies the caller.
 3. **Route rules** — `/studio`, `/studio/*` (including help), and `/api/*` require `authenticated`. Exceptions: `POST /api/contactInquiry`, `GET /api/lessonPayConfig`, and `POST /api/stripeWebhook` allow anonymous (same `private, no-store` cache).
-4. **Authorization (application)** — every privileged Function re-checks independently of SWA:
-   - **Publish / upload / discrete / publish status** — `ALLOWED-USER-IDS` via `publisherGate()`
-   - **People / CRM** — signed-in principal + owner-scoped Table Storage (`studioOwnerKey`); never an owner id from the request body
+4. **Authorization (application)** — every privileged Function calls `permissionGate()` against the catalog in [`api/src/lib/permissions.js`](../../api/src/lib/permissions.js):
+   - **Publish / upload / discrete / publish status** — `content.publish`
+   - **People / CRM** — `people.read` / `people.write` (never an owner id from the request body)
+   - **Access admin** — `users.read` / `users.manage`
    - **Public exceptions** — Turnstile, sanitized Payment Links, or Stripe webhook signatures
 
 | Environment | Key Vault | Enterprise app |
@@ -17,24 +18,29 @@ Only Elyse should be able to **publish**. Anyone in the Entra tenant (members an
 | Staging | `kv-elyse-staging` | `elyse-portfolio-staging` |
 | Production | `kv-elyse-prod` | `elyse-portfolio-prod` |
 
-**Sign-in ≠ publish.** A user who can authenticate may open `/studio`, see their identity, open **`/studio/help`**, and use People for **their** partition. Publishing still requires the allowlist. Studio checks access before showing the editor; signed-in non-publishers see a friendly denial with a **correlation ID**, plus a link to help. Look up that ID in App Insights (`StudioAccessDenied` / `StudioPublishDenied`) for `userId` / `userDetails` to add to `ALLOWED-USER-IDS` (see [observability.md](./observability.md)).
+**Sign-in ≠ permission.** A user who can authenticate may open `/studio`, `/studio/help`, and `/studio/health`. Hub tiles, People, and publish forms appear only for the permissions on their profile. The API re-checks every call (`GET /api/studioSession` is UI convenience only).
 
-If a publisher shares a **reference** from a failed publish (not an access denial), look it up under `StudioPublishFailed` / exceptions in [observability.md](./observability.md) — that path is for diagnostics, not allowlist changes.
+Look up a shared reference in App Insights (`StudioAccessDenied` / `StudioPublishDenied`) for `userId` / `userDetails` — see [observability.md](./observability.md).
 
-## Grant or revoke sign-in
+## Source of truth: user profiles
 
-Sign-in follows the tenant directory, not an enterprise-app assignment list.
+Profiles live in Table Storage (`studioUsers` on the Studio CRM account). Each row has:
 
-- **Allow sign-in:** the account must be able to authenticate to this Entra tenant (member or invited guest). No Users and groups assignment is required.
-- **Block a specific person from Studio login:** remove or disable them in the tenant (or revoke their guest invite). Do **not** flip Assignment required on the SWA app — that blocks *everyone* who is not assigned (`AADSTS50105`) and is the wrong layer for authorization.
-- The monitor user assignment in Terraform is only a fallback if `require_app_role_assignment` is ever turned back on. Leave it; do not use the Portal Users and groups list as the live access model.
+- Identity (Entra `userId`, email / UPN)
+- **Roles** (`owner`, `publisher`, `people`, `people_reader`)
+- **Extra permissions** (grant one catalog ID without the whole role)
+- **Denied permissions** (strip an ID even if a role includes it)
+- Optional `crmOwnerKey` so a People operator shares Elyse’s contact partition
 
-## Find a principal for the publish allowlist
+Owners manage this at **`/studio/access`**. Adding a discrete permission in code (`api/src/lib/permissions.js`) is how new capabilities are defined; the Access page reads that catalog from the session.
 
-1. Sign in to `/studio`
-2. Open `/.auth/me` in the same browser session
-3. Note `userId`, `userDetails`, and email claims
-4. Set the allowlist (comma-separated, lowercase), e.g. `her@gmail.com,oid-guid-here`:
+### Bootstrap from `ALLOWED-USER-IDS`
+
+The Key Vault allowlist is **not** a second permission model. On the first Studio session for an allowlisted caller who has no profile yet, the API writes an **Owner** profile (all catalog permissions, including People and Access). After that, the profile is SoT:
+
+- Changing roles or extra/denied permissions on `/studio/access` is how you grant or revoke publish and People
+- Removing someone from `ALLOWED-USER-IDS` does **not** revoke a profile that already exists — disable or edit the profile
+- Adding a new token to `ALLOWED-USER-IDS` still bootstraps Owner on that person’s next sign-in (emergency publisher). Prefer `/studio/access` instead
 
 ```bash
 az keyvault secret set --vault-name kv-elyse-staging --name ALLOWED-USER-IDS --value "<ids>"
@@ -43,22 +49,40 @@ az keyvault secret set --vault-name kv-elyse-prod --name ALLOWED-USER-IDS --valu
 
 After updating the secret, sync into SWA ([rotate-secrets.md](./rotate-secrets.md#sync-swa-api-secrets-no-redeploy), **Actions → Ops: sync SWA secrets**, or `terraform apply`). Managed Functions do not read Key Vault references directly.
 
-## Add a temporary publisher (emergency only)
+## Grant or revoke sign-in
+
+Sign-in follows the tenant directory, not an enterprise-app assignment list.
+
+- **Allow sign-in:** the account must be able to authenticate to this Entra tenant (member or invited guest). No Users and groups assignment is required.
+- **Block a specific person from Studio login:** remove or disable them in the tenant (or revoke their guest invite). Do **not** flip Assignment required on the SWA app.
+- To keep sign-in but remove People or publish: edit or disable their profile on `/studio/access`.
+
+## Find a principal
+
+1. Sign in to `/studio`
+2. Open `/.auth/me` in the same browser session
+3. Note `userId`, `userDetails`, and email claims
+4. Paste the email or `userId` into `/studio/access` → Add person
+
+## Add a People operator or publisher
 
 1. Confirm they can complete Entra login (tenant member or guest)
-2. Add their ID/email to `ALLOWED-USER-IDS` in both vaults (commands above)
-3. Sync staging and prod ([rotate-secrets.md](./rotate-secrets.md#sync-swa-api-secrets-no-redeploy) or **Ops: sync SWA secrets** workflow once per environment)
-4. Remove them immediately after the emergency
+2. Open `/studio/access` as an Owner
+3. Add their email or user ID
+4. Assign:
+   - **People** — view and edit contacts (`people.read` + `people.write`)
+   - **People (view only)** — `people.read`
+   - **Publisher** — site updates only (`content.publish`)
+   - **Owner** — full catalog
+   - or tick **Extra permissions** for a single ID (for example `content.publish` without People)
+5. Leave CRM owner blank so they share the signed-in owner’s People partition (set automatically)
 
-## Remove publish access
+## Remove publish or People access
 
-1. Remove from `ALLOWED-USER-IDS` in `kv-elyse-staging` and `kv-elyse-prod`, then sync both SWAs
-2. Confirm they can still sign in (expected) but cannot publish
-3. Confirm anonymous `/api/updateContent` returns 401/302
-4. Confirm a signed-in non-allowlisted user sees the Studio publisher gate
-
-People data stays in that user’s partition; removing them from the allowlist does not grant access to anyone else’s contacts.
+1. On `/studio/access`, edit the profile: remove the role, deny the permission, or set status to **Disabled**
+2. Confirm they can still sign in (expected) but the hub hides tiles they cannot use
+3. Confirm `POST /api/updateContent` and `GET /api/contacts` return 401/403 for that account as appropriate
 
 ## Review
 
-Periodically check secret versions on `kv-elyse-staging` / `kv-elyse-prod` and IdP sign-in logs.
+Periodically open `/studio/access` and check IdP sign-in logs. Do not treat `ALLOWED-USER-IDS` secret versions as the live permission list once profiles exist.

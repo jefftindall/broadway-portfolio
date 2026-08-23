@@ -31,6 +31,12 @@ const MSG_CRM_CONFIG =
   'People isn’t configured right now. Please try again later or contact support.';
 const MSG_CRM_NOT_FOUND = 'That person isn’t in Studio.';
 const MSG_CRM_UNAUTHORIZED = 'Sign in to use Studio.';
+const MSG_CRM_FORBIDDEN = 'This account is signed in but cannot manage People.';
+const MSG_ACCESS_GENERIC =
+  'Something went wrong while loading access. Share the reference below with support.';
+const MSG_ACCESS_CONFIG =
+  'Access isn’t configured right now. Please try again later or contact support.';
+const MSG_ACCESS_NOT_FOUND = 'That access record isn’t in Studio.';
 
 /**
  * @param {unknown} err
@@ -177,6 +183,9 @@ export function classifyCrmError(err) {
   if (name === 'CrmUnauthorizedError') {
     return { errorKind: 'unauthorized', status: 401, error: MSG_CRM_UNAUTHORIZED };
   }
+  if (name === 'CrmForbiddenError') {
+    return { errorKind: 'forbidden', status: 403, error: message || MSG_CRM_FORBIDDEN };
+  }
   if (name === 'CrmValidationError') {
     return {
       errorKind: 'validation',
@@ -216,6 +225,61 @@ export function classifyCrmError(err) {
  */
 export function crmFailureResponse(err, correlationId) {
   const classified = classifyCrmError(err);
+  return {
+    status: classified.status,
+    jsonBody: {
+      error: classified.error,
+      correlationId,
+    },
+    errorKind: classified.errorKind,
+  };
+}
+
+/**
+ * @param {unknown} err
+ * @returns {{ errorKind: string, status: number, error: string }}
+ */
+export function classifyAccessError(err) {
+  const name = err instanceof Error ? err.name : '';
+  const message = err instanceof Error ? err.message : String(err || '');
+  const lower = message.toLowerCase();
+
+  if (name === 'AccessValidationError') {
+    return {
+      errorKind: 'validation',
+      status: 400,
+      error: message || 'Please check the access fields and try again.',
+    };
+  }
+  if (name === 'AccessNotFoundError') {
+    return { errorKind: 'not_found', status: 404, error: MSG_ACCESS_NOT_FOUND };
+  }
+  if (name === 'AccessConflictError') {
+    return {
+      errorKind: 'conflict',
+      status: 409,
+      error: message || 'Someone else updated this access record. Refresh and try again.',
+    };
+  }
+  if (name === 'AccessConfigError' || /missing studio_users|studio users/i.test(message)) {
+    return { errorKind: 'config', status: 500, error: MSG_ACCESS_CONFIG };
+  }
+  if (/429|throttl|timeout|temporar|unavailable|econnreset/i.test(lower)) {
+    return {
+      errorKind: 'storage_temporary',
+      status: 503,
+      error: 'Access is temporarily unavailable. Please try again in a few minutes.',
+    };
+  }
+  return { errorKind: 'unknown', status: 500, error: MSG_ACCESS_GENERIC };
+}
+
+/**
+ * @param {unknown} err
+ * @param {string} correlationId
+ */
+export function accessFailureResponse(err, correlationId) {
+  const classified = classifyAccessError(err);
   return {
     status: classified.status,
     jsonBody: {

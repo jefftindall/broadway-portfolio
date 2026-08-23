@@ -111,13 +111,13 @@ Brand rule enforced in `LESSON-01`: copy must not advertise acting lessons, mono
 
 | Item | Reason | Alternative |
 |------|--------|-------------|
-| Entra **publisher** compose / publish | Gemini cost, allowlist side effects | [refine-studio-gemini.md](refine-studio-gemini.md); `TEST-C-003` still planned |
+| Entra **publisher** compose / publish | Gemini cost, live-site side effects | [refine-studio-gemini.md](refine-studio-gemini.md); `TEST-C-003` still planned |
 | Gemini draft / publish in CI | API cost + GitHub commits | Staging smoke checklist |
 | Weekly Studio cron | Same | Manual + App Insights `StudioPublishFailed` |
 
 Read-only Entra login against `/studio/health` **is** in smoke (`TEST-C-005`) once `MONITOR-TOTP-SEED` is set.
 
-**Anonymous API auth gates** (no Gemini) are planned for **Phase 2**: `GET /studio` redirect (done), `GET /api/publisherStatus` → 401/302.
+**Anonymous API auth gates** (no Gemini) are planned for **Phase 2**: `GET /studio` redirect (done), `GET /api/studioSession` (and `publisherStatus`) → 401/302 when unauthenticated at SWA.
 
 ---
 
@@ -166,7 +166,7 @@ On failure: Playwright retains **trace on first retry** (`trace: 'on-first-retry
 
 ### Phase 2 — API + post-prod safety net
 
-- Anonymous API contract tests (`/api/publisherStatus`, etc.)
+- Anonymous API contract tests (`/api/studioSession`, `/api/publisherStatus`, etc.)
 - ~~Post-deploy prod smoke with Sev1 alert~~ — **done** (`TEST-D-003`: full Tier A suite vs prod; `SmokeFailed` → critical AG; no auto-rollback)
 - ~~Expand Terraform availability tests beyond homepage~~ — **done** (`OPS-P2-001`: resume PDF + headshot)
 

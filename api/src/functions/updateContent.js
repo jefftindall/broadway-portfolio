@@ -2,10 +2,10 @@ import { app } from '@azure/functions';
 import crypto from 'node:crypto';
 import {
   newCorrelationId,
-  publisherGate,
   publisherIdentity,
   unauthorized,
 } from '../lib/auth.js';
+import { publisherGate } from '../lib/studioAccess.js';
 import { ensurePullRequest, preparePublishTarget } from '../lib/github.js';
 import {
   applyContentChanges,
@@ -87,9 +87,9 @@ app.http('updateContent', {
   authLevel: 'anonymous',
   route: 'updateContent',
   handler: async (request, context) => {
-    const gate = publisherGate(request);
+    const gate = await publisherGate(request);
     const principal = gate.principal;
-    // SWA `authenticated` is not permission to publish — re-check the allowlist.
+    // SWA `authenticated` is not permission to publish — re-check content.publish.
     if (!gate.allowed) {
       const identity = publisherIdentity(principal);
       const correlationId = gate.correlationId;

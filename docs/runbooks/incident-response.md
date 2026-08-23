@@ -23,7 +23,7 @@ Examples: homepage or materials availability fail; **Deploy Production** failed 
 
 ## Sev2 / Sev3
 
-- **Sev2** (failed-request spike, Studio publish failures): email ± SMS via notify group. Correlate with Studio `correlationId` in [observability.md](./observability.md); allowlist denials are not Sev1.
+- **Sev2** (failed-request spike, Studio publish failures): email ± SMS via notify group. Correlate with Studio `correlationId` in [observability.md](./observability.md); permission denials are not Sev1.
 - **Sev3** (FCP p75 burn): email-only watch group. Score committed SLO-6 on the monthly scorecard (7d); the alert uses a shorter 2d watch window.
 
 ## Related
@@ -33,6 +33,6 @@ Examples: homepage or materials availability fail; **Deploy Production** failed 
 | [observability.md](./observability.md) | Kusto, Action Groups, SLO queries |
 | [deploy-and-rollback.md](./deploy-and-rollback.md) | Promote / revert |
 | [rotate-secrets.md](./rotate-secrets.md) | `ALERT-*` set + Sev1 prove-out |
-| [manage-access.md](./manage-access.md) | Studio allowlist / Entra |
+| [manage-access.md](./manage-access.md) | Studio roles / permissions / Entra |
 | [troubleshoot-build.md](./troubleshoot-build.md) | Build / CD OIDC failures |
 | [swa-caching.md](./swa-caching.md) | Browser / image cache after a successful deploy |

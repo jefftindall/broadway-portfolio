@@ -1,7 +1,7 @@
 # Plan: Studio as teaching-business ops
 
 **Artifact ID:** `ELYSE-STUDIO-001`  
-**Version:** 1.3  
+**Version:** 1.4  
 **Last updated:** 2026-08-23  
 **Audience:** Agents, implementers, operators  
 **Scope:** Auth-gated Studio (`/studio`) as the ops home for the teaching business **and** career relationships — CRM (people + personas + LTV), Google Calendar scheduling, contact automation, payment status, and reports. Public site stays the portfolio + inquire/book surface. Money movement stays in [`lesson-payments.md`](./lesson-payments.md).
@@ -33,8 +33,8 @@ Example PR title: `STUDIO-P1-003: Add /studio/people contact list`
 
 | Rule | Meaning |
 |------|---------|
-| **Auth-gated** | SWA `authenticated` on `/studio` and `/studio/*`; never public nav or sitemap. Entra Assignment required stays **off** so tenant users can sign in; APIs still authorize every call (publish allowlist ≠ login) |
-| **Personalized** | UI and data scoped to the signed-in user (identity from SWA / Entra). Publish allowlist remains separate from “can open Studio” |
+| **Auth-gated** | SWA `authenticated` on `/studio` and `/studio/*`; never public nav or sitemap. Entra Assignment required stays **off** so tenant users can sign in; APIs still authorize every call (`permissionGate` against the catalog — not login, not a separate publish allowlist) |
+| **Personalized** | UI and data scoped by the signed-in user’s **permissions**. Publish and People share one catalog; profiles are SoT |
 | **Teaching-first** | Voice lessons only (pedagogy, vocal health, CCM)—no acting-lesson ops or marketing |
 | **One home for ops** | Deepen Studio rather than scattering people/schedule/pay/comms across SaaS CRMs. Stripe stays money; Google Calendar stays time |
 | **No PII in git** | Student/agent names, emails, phones, notes, and tokens never land in the repo, scorecards, or PR bodies |
@@ -51,6 +51,7 @@ Example PR title: `STUDIO-P1-003: Add /studio/people contact list`
 | Financial reports | — | Month summary (gross / fees / net / refunds); deep ledger stays in Stripe/exports (`STUDIO-P5`) |
 | Public booking | Inquire-then-email | Optional slot picker that reads Google free/busy (`STUDIO-P5`) |
 | Help | `/studio/help` capability catalog | Expand as ops capabilities ship (never before) |
+| Access | Roles + discrete permissions (`STUDIO-P6`) | Grant People without publish (and the reverse) |
 
 Payments vendor choice and Phase 1 checkout live in [`lesson-payments.md`](./lesson-payments.md). That plan’s Studio section should stay aligned with this north star.
 
@@ -62,6 +63,7 @@ Payments vendor choice and Phase 1 checkout live in [`lesson-payments.md`](./les
 |--------------|--------|----------------|
 | Phase 0 — Plan + Action IDs + SoT | `done` | — |
 | Phase 1 — People & personas | `done` | Residual: `STUDIO-P1-006` async export |
+| Phase 6 — Roles, permissions, user profiles | `done` | Allowlist bootstraps Owner on first session; live grants on `/studio/access` |
 | Phase 2 — Lifetime value + pay status | `planned` | Stripe match + agent value |
 | Phase 3 — Google Calendar scheduling | `planned` | OAuth + two-way sync |
 | Phase 4 — Contact automation | `planned` | Inquiry ingest + reminders |
@@ -133,7 +135,7 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 
 ## Design constraints
 
-1. **Personalized, not multi-tenant SaaS UI** — One coach’s business. If more publishers are allowlisted later, each still sees only their own ops data unless we explicitly design shared access.
+1. **Personalized, not multi-tenant SaaS UI** — One coach’s business. Authorized operators share the studio People partition (`crmOwnerKey`); unsigned capabilities stay hidden. Do not invent a second CRM per signed-in user unless an Access profile sets a different owner key.
 2. **Mobile-first (iPhone 17 · Safari)** — Day-of pay status, “copy link,” and “who is next” must work on the phone.
 3. **Correlation / friendly errors** — Same Studio API contract (`httpErrors` + `correlationId`); never raw Stripe or Google API errors in the UI.
 4. **Content tools stay** — Rate and policy updates via Gemini remain valid; ops screens complement them, they don’t replace `/lessons` brand rules.
@@ -159,7 +161,7 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 
 - [x] North star names Studio as relationship SoT, Google Calendar as time SoT, Stripe as money SoT
 - [x] Personas table (`student`, `parent`, `agent`, `casting`, `alumni`) with distinct LTV models
-- [x] Discrete phases `STUDIO-P1`–`P5` with Action IDs and unchecked ACs for unbuilt work
+- [x] Discrete phases `STUDIO-P1`–`P6` with Action IDs and unchecked ACs for unbuilt work
 - [x] Cross-link from [`lesson-payments.md`](./lesson-payments.md) backlog item 8
 - [x] `AGENTS.md` Studio north star mentions people / calendar / automations
 
@@ -189,7 +191,7 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 - [x] Env accounts are Standard **RA-GRS** so People can read the paired region (eastus2 → Central US) if the primary is down; writes stay on the primary until an account failover
 - [x] If a new billable SKU is added: [`cost-and-quotas.md`](../runbooks/cost-and-quotas.md) + `budget.tf` + `SUBSCRIPTION_BUDGET_USD` updated in the same PR
 - [x] Contact record: id, display name, email, phone, personas[], notes, created/updated — **values never committed**
-- [x] Auth: only the signed-in Studio user; publish allowlist is not required to **read** people (same as opening `/studio`)
+- [x] Auth: People requires `people.read` / `people.write` (`STUDIO-P6`); signed-in is not enough. Publish uses the same catalog (`content.publish`).
 - [x] Staging seed (15 fictional rows) runs in CD **after Terraform apply and before SWA upload** (`scripts/seed-studio-people.sh`) — not inside Functions. Prod is not seeded. Local: `npm run studio:seed-people`
 - [ ] Sync CSV download — **removed**; data-not-hostage export is `STUDIO-P1-006`
 
@@ -252,6 +254,83 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 - [ ] No synchronous `GET /api/contacts?format=csv` (or equivalent) that builds the full file in the request
 - [ ] Operator can take a copy of People data without it living only in Table Storage (async job, emailed link, or similar)
 - [ ] Logs still use kinds + contact ids only — never email/phone/note bodies in the export job log
+
+</details>
+
+---
+
+### Phase 6 — Roles, permissions, and user profiles
+
+**Goal:** One permission catalog is the source of truth for Studio actions. Publish, People, and Access admin share the same roles and discrete IDs. Sign-in is identity only.
+
+| ID | Title | Status | Depends on | Primary files |
+|----|-------|--------|------------|---------------|
+| `STUDIO-P6-001` | Permission catalog + role bundles | `done` | `STUDIO-P1-001` | `api/src/lib/permissions.js` |
+| `STUDIO-P6-002` | User-profile store (`studioUsers` table) | `done` | `STUDIO-P6-001` | `api/src/lib/users.js`; `infra/modules/portfolio/studio_crm.tf` |
+| `STUDIO-P6-003` | Enforce catalog on People + publish APIs | `done` | `STUDIO-P6-002`; `STUDIO-P1-003` | `api/src/lib/studioAccess.js`; contacts + publish Functions |
+| `STUDIO-P6-004` | Session API + hub / People / Access UI | `done` | `STUDIO-P6-003` | `GET /api/studioSession`; `src/pages/studio.astro`; `/studio/access` |
+| `STUDIO-P6-005` | Allowlist → Owner bootstrap + runbook/help | `done` | `STUDIO-P6-004` | `ensureOwnerFromAllowlist`; `docs/runbooks/manage-access.md`; help |
+
+<details>
+<summary><code>STUDIO-P6-001</code> — Catalog</summary>
+
+**Acceptance criteria**
+
+- [x] Discrete IDs: `content.publish`, `people.read`, `people.write`, `users.read`, `users.manage`
+- [x] `people.write` implies `people.read`; `users.manage` implies `users.read`
+- [x] Roles: `owner` (all), `publisher` (publish only), `people` (read+write), `people_reader` (read)
+- [x] Profiles may add `extraPermissions` or subtract `deniedPermissions` (deny wins)
+- [x] New capabilities are added here — handlers do not invent ad-hoc checks
+
+</details>
+
+<details>
+<summary><code>STUDIO-P6-002</code> — Profiles</summary>
+
+**Acceptance criteria**
+
+- [x] Azure Table `studioUsers` on the existing CRM storage account (not a new SKU)
+- [x] Identity match on Entra `userId`, email / UPN
+- [x] Optional `crmOwnerKey` so a People operator shares the coach’s contact partition
+- [x] Disabled status grants no catalog IDs
+- [x] Logs: ids and kinds only — never emails or display names
+
+</details>
+
+<details>
+<summary><code>STUDIO-P6-003</code> — Enforcement</summary>
+
+**Acceptance criteria**
+
+- [x] Every privileged Function calls `permissionGate()` (publish uses `publisherGate()` = `content.publish`)
+- [x] People list/create/edit require `people.read` / `people.write` — signed-in is not enough
+- [x] Access admin requires `users.read` / `users.manage`
+- [x] Development (`AZURE_FUNCTIONS_ENVIRONMENT=Development`) grants the full catalog for `func start`
+- [x] Removing someone from `ALLOWED-USER-IDS` does not revoke an existing profile
+
+</details>
+
+<details>
+<summary><code>STUDIO-P6-004</code> — UI</summary>
+
+**Acceptance criteria**
+
+- [x] `GET /api/studioSession` (and `publisherStatus`) return roles + `permissions[]`; `authorized` means `content.publish`
+- [x] Hub shows People / Access / publish tiles from those permissions — missing publish does not hide People
+- [x] `/studio/access` lets Owners assign roles and extra/denied IDs
+- [x] Signed-in users with zero catalog permissions still open `/studio/help` and `/studio/health`
+
+</details>
+
+<details>
+<summary><code>STUDIO-P6-005</code> — Bootstrap + docs</summary>
+
+**Acceptance criteria**
+
+- [x] First session for an allowlisted caller with no profile writes an Owner row; later checks use the profile
+- [x] [`manage-access.md`](../runbooks/manage-access.md) documents the catalog, `/studio/access`, and allowlist-as-bootstrap
+- [x] Help Access section describes sign-in vs People vs publish vs Access
+- [x] Monitor user (`TEST-C-005`) stays off the allowlist and is not granted a profile
 
 </details>
 
@@ -512,6 +591,8 @@ STUDIO-P0-001 (done)
             ├─► P1-002 personas [done] ─► P1-003 UI [done] ─► P1-004 privacy [done]
             │                         ├─► P1-005 help [done]
             │                         └─► P1-006 export [planned]
+            ├─► P6-001 catalog [done] ─► P6-002 profiles [done]
+            │                         └─► P6-003 enforce [done] ─► P6-004 UI [done] ─► P6-005 bootstrap [done]
             ├─► P2-001 Stripe LTV ─► P2-002 offline ─► P2-004 pay status
             │         └─► P2-003 agent value ─► P4-004 tasks
             └─► P3-001 GCal OAuth ─► P3-002 free/busy ─► P3-003 write-back
@@ -520,6 +601,7 @@ STUDIO-P0-001 (done)
                                           │         └─► P4-005 templates
                                           └─► P5-001 public slots
 P1-003 + contactInquiry ─► P4-001 inquiry ingest
+P1-003 ─► P6-003 People gate
 P2-001 ─► P5-002 month summary
 lesson-payments #7 (Checkout / webhook polish) ║ P2-001 / P2-004
 ```
@@ -548,5 +630,6 @@ lesson-payments #7 (Checkout / webhook polish) ║ P2-001 / P2-004
 | [`lesson-payments.md`](./lesson-payments.md) | Stripe money SoT; backlog **#7** / **#8** point here (`STUDIO-P2`, `P3`, `P5`) |
 | [`rotate-secrets.md`](../runbooks/rotate-secrets.md) | Extend when `STUDIO-P3-001` OAuth names ship |
 | [`cost-and-quotas.md`](../runbooks/cost-and-quotas.md) | Recalc if Phase 1+ adds a billable Azure SKU |
+| [`manage-access.md`](../runbooks/manage-access.md) | Roles, discrete permissions, `/studio/access` |
 | [`.cursor/rules/studio-help.mdc`](../../.cursor/rules/studio-help.mdc) | Help catalog only after capabilities ship |
 | [`ux-release-testing-strategy.md`](./ux-release-testing-strategy.md) | Auth’d Studio journeys when People/Calendar exist |
