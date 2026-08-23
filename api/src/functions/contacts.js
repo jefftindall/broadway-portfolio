@@ -32,6 +32,8 @@ function crmLog(context, message, { correlationId, operation, contactId, errorKi
 }
 
 async function requireOwner(request, correlationId) {
+  // Sign-in is required; publish allowlist is not. Still never use another
+  // user's partition — owner key comes from the principal, not the body.
   const principal = getClientPrincipal(request);
   if (!isSignedInStudioUser(principal)) {
     return { error: signInRequired(correlationId) };

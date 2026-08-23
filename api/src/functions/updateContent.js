@@ -1,9 +1,8 @@
 import { app } from '@azure/functions';
 import crypto from 'node:crypto';
 import {
-  getClientPrincipal,
-  isAuthorizedPublisher,
   newCorrelationId,
+  publisherGate,
   publisherIdentity,
   unauthorized,
 } from '../lib/auth.js';
@@ -88,26 +87,25 @@ app.http('updateContent', {
   authLevel: 'anonymous',
   route: 'updateContent',
   handler: async (request, context) => {
-    const principal = getClientPrincipal(request);
-    // In production SWA, routes already require auth; still enforce allowlist.
-    if (process.env.AZURE_FUNCTIONS_ENVIRONMENT !== 'Development') {
-      if (!isAuthorizedPublisher(principal)) {
-        const identity = publisherIdentity(principal);
-        const correlationId = newCorrelationId();
-        context.warn('Rejected publish attempt', {
-          correlationId,
-          userId: identity.userId,
-          userDetails: identity.userDetails,
-          identityProvider: identity.identityProvider,
-        });
-        trackEvent('StudioPublishDenied', {
-          ...identity,
-          correlationId,
-          route: 'updateContent',
-        });
-        await flush();
-        return unauthorized(correlationId);
-      }
+    const gate = publisherGate(request);
+    const principal = gate.principal;
+    // SWA `authenticated` is not permission to publish — re-check the allowlist.
+    if (!gate.allowed) {
+      const identity = publisherIdentity(principal);
+      const correlationId = gate.correlationId;
+      context.warn('Rejected publish attempt', {
+        correlationId,
+        userId: identity.userId,
+        userDetails: identity.userDetails,
+        identityProvider: identity.identityProvider,
+      });
+      trackEvent('StudioPublishDenied', {
+        ...identity,
+        correlationId,
+        route: 'updateContent',
+      });
+      await flush();
+      return unauthorized(correlationId);
     }
 
     let body;

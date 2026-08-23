@@ -1,8 +1,7 @@
 import { app } from '@azure/functions';
 import {
-  getClientPrincipal,
-  isAuthorizedPublisher,
   newCorrelationId,
+  publisherGate,
   publisherIdentity,
 } from '../lib/auth.js';
 import { readLiveLessonRates } from '../lib/gemini.js';
@@ -20,21 +19,19 @@ app.http('studioDiscrete', {
   handler: async (request, context) => {
     const correlationId = newCorrelationId();
 
-    if (process.env.AZURE_FUNCTIONS_ENVIRONMENT !== 'Development') {
-      const principal = getClientPrincipal(request);
-      if (!isAuthorizedPublisher(principal)) {
-        const identity = publisherIdentity(principal);
-        trackEvent('StudioAccessDenied', {
-          ...identity,
-          correlationId,
-          route: 'studioDiscrete',
-        });
-        await flush();
-        return {
-          status: 200,
-          jsonBody: { authorized: false, correlationId },
-        };
-      }
+    const gate = publisherGate(request);
+    if (!gate.allowed) {
+      const identity = publisherIdentity(gate.principal);
+      trackEvent('StudioAccessDenied', {
+        ...identity,
+        correlationId,
+        route: 'studioDiscrete',
+      });
+      await flush();
+      return {
+        status: 200,
+        jsonBody: { authorized: false, correlationId },
+      };
     }
 
     try {

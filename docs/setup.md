@@ -213,7 +213,7 @@ See [runbooks/observability.md](runbooks/observability.md).
 The Entra app registration is **defined in Terraform** ([`infra/modules/portfolio/entra.tf`](../infra/modules/portfolio/entra.tf)), one per environment. Each apply creates:
 
 - `azuread_application` `elyse-portfolio-<env>` (single-tenant, `AzureADMyOrg`)
-- A service principal with **user assignment required**
+- A service principal with **Assignment required off** (`require_app_role_assignment = false`) so any tenant member or guest can sign in
 - A client secret stored in Key Vault as `AAD-CLIENT-SECRET`
 - SWA app settings `AAD_CLIENT_ID`, `AAD_TENANT_ID`, and a Key Vault reference for `AAD_CLIENT_SECRET` (Studio API secrets are written as resolved values from Key Vault at apply/sync time)
 
@@ -237,13 +237,13 @@ Staging example: Azure default plus `https://test.elysetindall.com/.auth/login/a
 
 Add more via `additional_auth_hostnames` in `terraform.tfvars`.
 
-### Assign Elyse to the app
+### Sign-in vs publish
 
-Because `require_app_role_assignment = true`, she must be assigned before she can sign in:
+`require_app_role_assignment` is **false**. Do not assign users in Enterprise applications → Users and groups to “allow login,” and do not turn Assignment required on — that yields `AADSTS50105` and blocks guests/members who are not assigned.
 
-Azure Portal → **Entra ID → Enterprise applications → `elyse-portfolio-prod` → Users and groups → Add user**.
+Apply order: **bootstrap** (creates `studio-monitor@…` + `MONITOR-*` in `kv-elyse-shared`) then **env** stacks. Terraform still assigns the monitor user as a fallback if assignment required is ever flipped on. Do **not** add the monitor UPN to `ALLOWED-USER-IDS`. Enroll software TOTP and set `MONITOR-TOTP-SEED` per [studio-auth-monitoring.md](runbooks/studio-auth-monitoring.md) (`TEST-C-005`).
 
-Repeat for `elyse-portfolio-staging`. Apply order: **bootstrap** (creates `studio-monitor@…` + `MONITOR-*` in `kv-elyse-shared`) then **env** stacks (assign that user to both SWA apps). Do **not** add the monitor UPN to `ALLOWED-USER-IDS`. Enroll software TOTP and set `MONITOR-TOTP-SEED` per [studio-auth-monitoring.md](runbooks/studio-auth-monitoring.md) (`TEST-C-005`).
+Publish permission is only `ALLOWED-USER-IDS` in the env vault, enforced on every Studio publish call. See [manage-access.md](runbooks/manage-access.md).
 
 ### Token issuer (same tenant for staging and prod)
 
@@ -257,7 +257,8 @@ That value is `terraform output -raw entra_openid_issuer` from **either** enviro
 
 1. Anonymous request to `/studio` redirects to Entra login
 2. Anonymous `POST /api/updateContent` returns 401/302
-3. Signing in as Elyse reaches Studio; any other account is rejected
+3. Any tenant member or guest can complete login and open Studio / help / People
+4. Only allowlisted publishers can compose or publish; a signed-in non-publisher sees the Studio gate (not `AADSTS50105`)
 
 ## 6. Custom domain / DNS (prod apex + staging test)
 

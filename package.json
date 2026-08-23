@@ -21,6 +21,7 @@
     "test:api-gallery-meta": "node --test api/src/lib/gallery-meta.test.js",
     "test:api-lesson-pay": "node --test api/src/lib/lessonPayConfig.test.js",
     "test:api-stripe-webhook": "node --test api/src/lib/stripeWebhook.test.js",
+    "test:api-auth": "node --test api/src/lib/auth.test.js",
     "test:api-contacts": "node --test api/src/lib/contacts.test.js api/src/lib/tableGeo.test.js scripts/lib/people-seed.test.mjs",
     "studio:seed-people": "node scripts/seed-studio-people.mjs",
     "test:lesson-rates": "node --test scripts/read-lesson-rates.test.mjs scripts/upsert-stripe-payment-links.test.mjs",

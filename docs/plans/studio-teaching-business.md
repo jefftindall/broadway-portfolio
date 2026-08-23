@@ -33,7 +33,7 @@ Example PR title: `STUDIO-P1-003: Add /studio/people contact list`
 
 | Rule | Meaning |
 |------|---------|
-| **Auth-gated** | SWA `authenticated` on `/studio` and `/studio/*`; never public nav or sitemap |
+| **Auth-gated** | SWA `authenticated` on `/studio` and `/studio/*`; never public nav or sitemap. Entra Assignment required stays **off** so tenant users can sign in; APIs still authorize every call (publish allowlist ≠ login) |
 | **Personalized** | UI and data scoped to the signed-in user (identity from SWA / Entra). Publish allowlist remains separate from “can open Studio” |
 | **Teaching-first** | Voice lessons only (pedagogy, vocal health, CCM)—no acting-lesson ops or marketing |
 | **One home for ops** | Deepen Studio rather than scattering people/schedule/pay/comms across SaaS CRMs. Stripe stays money; Google Calendar stays time |

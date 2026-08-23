@@ -1,8 +1,7 @@
 import { app } from '@azure/functions';
 import {
-  getClientPrincipal,
-  isAuthorizedPublisher,
-  newCorrelationId,
+  isDevelopmentEnvironment,
+  publisherGate,
   publisherIdentity,
 } from '../lib/auth.js';
 import { studioPublishMode } from '../lib/studioPublish.js';
@@ -14,19 +13,19 @@ app.http('publisherStatus', {
   route: 'publisherStatus',
   handler: async (request, context) => {
     const publishMode = studioPublishMode();
-    if (process.env.AZURE_FUNCTIONS_ENVIRONMENT === 'Development') {
+    if (isDevelopmentEnvironment()) {
       return {
         status: 200,
         jsonBody: { authorized: true, reason: 'development', publishMode },
       };
     }
 
-    const principal = getClientPrincipal(request);
-    const identity = publisherIdentity(principal);
-    const authorized = isAuthorizedPublisher(principal);
+    const gate = publisherGate(request);
+    const identity = publisherIdentity(gate.principal);
+    const authorized = gate.allowed;
 
     if (!authorized) {
-      const correlationId = newCorrelationId();
+      const correlationId = gate.correlationId;
       context.warn('Studio access denied', {
         correlationId,
         userId: identity.userId,
