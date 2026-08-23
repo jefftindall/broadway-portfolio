@@ -14,7 +14,7 @@ Region: **eastus2** (all environments). Rates: Azure Retail Prices API (`prices.
 | tfstate storage (`stelysetfstateeu2`) | Standard LRS, &lt;1 GB | $0.024 / GB-mo | **0.03** |
 | Studio CRM Table Storage (`STUDIO-P1-001`) | staging + prod Standard **RA-GRS** (`stelysecrmstaging`, `stelysecrmprod`); &lt;1 GB tables each; eastus2 → paired Central US | Tables RA-GRS data **$0.075** / GB-mo · ops **$0.00036** / 10K (Azure Tables list / eastus2, 2026-08-23) | **0.15** |
 | Log Analytics / App Insights | &lt;5 GB Analytics Logs; 30-day retention | First 5 GB/mo free; retention ≤31d free | **0.00** |
-| Azure Monitor system-log alerts | Prod `DeployFailed` **5 min** + homepage FCP **daily** (billed at ≤15-min meter) + failed-request **15 min** × staging+prod (`OPS-P6-001`) | $1.50 / 5-min rule · $0.50 / ≤15-min rule (eastus2 retail) | **3.00** |
+| Azure Monitor system-log alerts | Prod `DeployFailed` **5 min** + homepage FCP **daily** (billed at ≤15-min meter) + API error-budget **15 min** × staging+prod (`OPS-P6-002`; still the ≤15-min meter) | $1.50 / 5-min rule · $0.50 / ≤15-min rule (eastus2 retail) | **3.00** |
 | ACS Email | ~50–100 inquiry + OPS digest msgs | $0.00025 / email + $0.00012 / MB | **0.03** |
 | SWA bandwidth | Within included 100 GB / subscription | Overage $0.20 / GB | **0.00** |
 | Monitor Action Group SMS / voice | Steady-state idle | $0.00645 / SMS · $0.013 / voice (US) | **0.00** |
@@ -57,4 +57,4 @@ The monthly OPS scorecard digest also reports last-month spend and MoM trend to 
 - Monthly OPS scorecard ACS digest (spend + MoM + scores) → `ALERT-EMAIL` + `SITE-CONTACT-EMAIL` ([how to read it](monthly-site-check-in.md))
 - Gemini/Google billing alert (console; not in this repo)
 - GitHub Actions email on failed workflow
-- Application Insights: 1 GB/day cap, 30-day retention, failed-request 5xx (deploy-quiet, `OPS-P6-001`) + prod availability (homepage + materials) + FCP watch alerts (see [observability.md](observability.md))
+- Application Insights: 1 GB/day cap, 30-day retention, API error-budget Sev2 (99.9%/7d, deploy-quiet, `OPS-P6-002`) + prod availability (homepage + materials) + FCP watch alerts (see [observability.md](observability.md))

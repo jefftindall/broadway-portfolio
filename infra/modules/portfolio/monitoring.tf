@@ -242,12 +242,14 @@ resource "azurerm_monitor_action_group" "watch" {
   }
 }
 
-# Sev2 — 5xx spike outside a CD quiet window (OPS-P6-001).
-# SWA uploads recycle managed Functions; App Insights counts those as failed requests.
-# A count>0 metric alert therefore pages on every content publish. This query:
-#   * ignores 4xx (auth, Turnstile, validation — not a site outage)
-#   * ignores 15m before / 10m after the latest DeployStarted or DeployCompleted
-#   * pages only when 3+ remaining 5xx (or resultCode 0 / timeout) land in 15m
+# Sev2 — API error-budget burn vs SLO-7 99.9%/7d (OPS-P6-002).
+# 99.9% over 7d ≈ 10.08 minutes of "bad" API time. Azure scheduled-query max
+# lookback is P2D, so this alert uses the proportional 2d budget (~2.88 min)
+# and fires when BadMinutes > 2 (3+ minutes). A minute is bad only when it has
+# 2+ server errors (5xx / timeout) so a single stray 502 cannot page.
+# 4xx and every CD quiet window (15m before / 10m after each
+# DeployStarted/Completed) do not consume budget. Constants:
+# scripts/lib/api-error-budget.mjs (keep this query in sync).
 # CD emits DeployStarted immediately before SWA upload. Sev1 availability /
 # DeployFailed / SmokeFailed still page during a real outage.
 resource "azurerm_monitor_scheduled_query_rules_alert_v2" "failed_requests" {
@@ -257,28 +259,34 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "failed_requests" {
   resource_group_name     = azurerm_resource_group.main.name
   location                = azurerm_resource_group.main.location
   scopes                  = [azurerm_application_insights.main.id]
-  description             = "5xx spike on ${local.appi_name} outside deploy quiet window (Sev2 → notify)"
+  description             = "API error-budget burn vs 99.9%/7d (SLO-7) on ${local.appi_name} (Sev2 → notify; 2d window)"
   severity                = 2
   enabled                 = true
   evaluation_frequency    = "PT15M"
-  window_duration         = "PT15M"
+  window_duration         = "P2D"
   skip_query_validation   = true
   auto_mitigation_enabled = true
   tags                    = local.tags
 
   criteria {
     query                   = <<-QUERY
-      let lastDeployMarker = toscalar(
+      let quietMinutes =
         customEvents
         | where name in ("DeployStarted", "DeployCompleted")
-        | summarize max(timestamp)
-      );
+        | extend QuietStart = timestamp - 15m, QuietEnd = timestamp + 10m
+        | extend Minute = range(bin(QuietStart, 1m), bin(QuietEnd, 1m), 1m)
+        | mv-expand Minute to typeof(datetime)
+        | distinct Minute;
       requests
-      | where success == false
-      | where toint(resultCode) >= 500 or resultCode == "0" or isempty(resultCode)
-      | where isempty(lastDeployMarker) or timestamp < lastDeployMarker - 15m or timestamp > lastDeployMarker + 10m
+      | extend isServerError = success == false and (toint(resultCode) >= 500 or resultCode == "0" or isempty(resultCode))
+      | extend Minute = bin(timestamp, 1m)
+      | join kind=leftanti quietMinutes on Minute
+      | summarize Failed = countif(isServerError) by Minute
+      | summarize BadMinutes = countif(Failed >= 2)
+      | project BadMinutes
     QUERY
-    time_aggregation_method = "Count"
+    time_aggregation_method = "Total"
+    metric_measure_column   = "BadMinutes"
     operator                = "GreaterThan"
     threshold               = 2
 

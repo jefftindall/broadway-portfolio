@@ -3,8 +3,8 @@
  * OPS-P0-004 / OPS-P5 — Refresh the operational excellence scorecard.
  *
  * Reads docs/ops/scorecard-evaluation.json, optionally probes prod SLIs
- * (homepage + materials availability, homepage FCP p75, Studio SLO-2/3,
- * optional inquiry accept rate) plus previous-month site performance
+ * (homepage + materials availability, homepage FCP p75, API error budget SLO-7,
+ * Studio SLO-2/3, optional inquiry accept rate) plus previous-month site performance
  * (GA4 visits/top pages + App Insights contacts/Studio publishes) and
  * subscription spend via Azure CLI when logged in, recomputes weighted
  * overall, and regenerates docs/ops/operational-excellence-scorecard.md.
@@ -26,6 +26,13 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { BetaAnalyticsDataClient } from "@google-analytics/data";
 import { withPageLabel } from "./lib/page-labels.mjs";
+import {
+  API_ERROR_BUDGET_7D_MINUTES,
+  API_SLO_PCT,
+  API_SLO_WINDOW_MINUTES,
+  apiErrorBudgetKusto,
+  meetsApiSlo,
+} from "./lib/api-error-budget.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const EVAL_PATH = join(ROOT, "docs/ops/scorecard-evaluation.json");
@@ -484,6 +491,62 @@ availabilityResults
     return {
       ok: false,
       note: `Materials availability query failed; SLI left stale. (${redact(msg).slice(0, 200)})`,
+    };
+  }
+}
+
+/**
+ * API request success error budget over 7d (OPS-P6-002 / SLO-7).
+ * Wall-clock minutes with 2+ server errors (5xx / timeout), excluding the CD
+ * quiet window. 99.9% / 7d ≈ 10 minutes of bad time.
+ */
+function probeApiErrorBudget() {
+  if (!azureLoggedIn()) {
+    return {
+      ok: false,
+      note: "Azure CLI not logged in; API error-budget SLI left stale.",
+    };
+  }
+
+  const query = apiErrorBudgetKusto({ lookback: "7d" });
+
+  try {
+    const raw = runAz([
+      "monitor",
+      "app-insights",
+      "query",
+      "--app",
+      PROD_APPI,
+      "--resource-group",
+      PROD_RG,
+      "--analytics-query",
+      query,
+      "-o",
+      "json",
+    ]);
+    const parsed = JSON.parse(raw);
+    const row = parsed?.tables?.[0]?.rows?.[0];
+    const badMinutes = Number(row?.[0] ?? 0);
+    if (!Number.isFinite(badMinutes)) {
+      return {
+        ok: false,
+        note: "API error-budget query returned a non-numeric BadMinutes.",
+      };
+    }
+    const pct = round1((1 - badMinutes / API_SLO_WINDOW_MINUTES) * 100);
+    const meets = meetsApiSlo(badMinutes);
+    return {
+      ok: true,
+      pct,
+      badMinutes,
+      meets,
+      note: `API availability ${pct}% / 7d (${badMinutes} bad minute(s); target ${API_SLO_PCT}% ≈ ${API_ERROR_BUDGET_7D_MINUTES} min budget).`,
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return {
+      ok: false,
+      note: `API error-budget query failed; SLI left stale. (${redact(msg).slice(0, 200)})`,
     };
   }
 }
@@ -1121,6 +1184,7 @@ function applyAzureSlis(evaluation, probes) {
     homepage,
     materials,
     fcp,
+    apiBudget,
     studioSuccess,
     studioLatency,
     inquiry,
@@ -1163,6 +1227,17 @@ function applyAzureSlis(evaluation, probes) {
   } else {
     setSlo(evaluation, "SLO-6", { status: "stale", note: fcp.note });
     notes.push(fcp.note);
+  }
+
+  if (apiBudget?.ok) {
+    setSlo(evaluation, "SLO-7", {
+      status: apiBudget.meets ? "met" : "missed",
+      note: apiBudget.note,
+    });
+    notes.push(apiBudget.note);
+  } else if (apiBudget) {
+    setSlo(evaluation, "SLO-7", { status: "stale", note: apiBudget.note });
+    notes.push(apiBudget.note);
   }
 
   if (studioSuccess.ok) {
@@ -1283,6 +1358,7 @@ function applyAzureSlis(evaluation, probes) {
       homepage.ok ||
       materials.ok ||
       fcp.ok ||
+      apiBudget?.ok ||
       studioSuccess.ok ||
       studioLatency.ok;
     sloDim.sliStatus = anyOk ? "ok" : "stale";
@@ -1292,10 +1368,11 @@ function applyAzureSlis(evaluation, probes) {
         homepage,
         materials,
         fcp,
+        apiBudget,
         studioSuccess,
         studioLatency,
       ]
-        .filter((p) => p.ok)
+        .filter((p) => p?.ok)
         .map((p) => p.note);
       sloDim.evidence = `Field/synthetic SLIs: ${okNotes.join(" ")}`;
     }
@@ -1308,7 +1385,7 @@ function markSlisStaleSkipped(evaluation, reason) {
     sloDim.sliStatus = "stale";
     sloDim.sliNote = reason;
   }
-  for (const id of ["SLO-1", "SLO-2", "SLO-3", "SLO-4", "SLO-6"]) {
+  for (const id of ["SLO-1", "SLO-2", "SLO-3", "SLO-4", "SLO-6", "SLO-7"]) {
     const slo = evaluation.committedSlos.find((s) => s.id === id);
     if (slo && slo.status !== "blocked") {
       slo.status = "stale";
@@ -1519,6 +1596,7 @@ async function collectAzureProbes(anchorYmd) {
     homepage: probeHomepageAvailability(),
     materials: probeMaterialsAvailability(),
     fcp: probeHomepageFcp(),
+    apiBudget: probeApiErrorBudget(),
     studioSuccess: probeStudioPublishSuccess(),
     studioLatency: probeStudioPublishLatency(),
     inquiry: probeInquiryAcceptRate(),
@@ -1562,7 +1640,7 @@ async function main() {
 
     if (args.azure) {
       console.log(
-        "Probing prod homepage / materials / FCP / Studio / inquiry SLIs + site performance + subscription spend (read-only)…",
+        "Probing prod homepage / materials / FCP / API error budget / Studio / inquiry SLIs + site performance + subscription spend (read-only)…",
       );
       const probes = await collectAzureProbes(evaluation.lastReviewed);
       logProbes(probes);

@@ -35,15 +35,15 @@ Measurement-only checklist for the `elysetindall.com` property (`G-XEE29C0RRE`):
 
 Consent Mode / cookie banner: **not shipped** (`SEARCH-P1-006` = `wont_fix`). Privacy policy covers GA use without a consent gate.
 
-Availability (metric) and failed-request (scheduled query, `OPS-P6-001`) alerts wire to Key Vault–backed Action Groups when shared `ALERT-*` secrets are set (not `REPLACE_ME`). See [rotate-secrets.md](./rotate-secrets.md) ops section and [operational-excellence.md](../plans/operational-excellence.md).
+Availability (metric) and API error-budget (scheduled query, `OPS-P6-002`) alerts wire to Key Vault–backed Action Groups when shared `ALERT-*` secrets are set (not `REPLACE_ME`). See [rotate-secrets.md](./rotate-secrets.md) ops section and [operational-excellence.md](../plans/operational-excellence.md).
 
-**Operational excellence:** Living scorecard at [operational-excellence-scorecard.md](../ops/operational-excellence-scorecard.md). Backlog / SLOs / Sev1 SMS-voice plan: [operational-excellence.md](../plans/operational-excellence.md) (`OPS-*`). Private alert emails/phones must not be committed — only `ALERT-*` in `kv-elyse-shared`. Phase 0–6 done (except optional PagerDuty `OPS-P3-002`). **Phase 5 done in repo:** monthly site performance (GA4 visits/top pages + App Insights contact/Studio-update counts) in the scorecard + ACS digest — populate `GA-*` secrets per [ga-data-api-access.md](ga-data-api-access.md) before visits appear. **Phase 6:** failed-request Sev2 ignores SWA Function recycle during CD.
+**Operational excellence:** Living scorecard at [operational-excellence-scorecard.md](../ops/operational-excellence-scorecard.md). Backlog / SLOs / Sev1 SMS-voice plan: [operational-excellence.md](../plans/operational-excellence.md) (`OPS-*`). Private alert emails/phones must not be committed — only `ALERT-*` in `kv-elyse-shared`. Phase 0–6 done (except optional PagerDuty `OPS-P3-002`). **Phase 5 done in repo:** monthly site performance (GA4 visits/top pages + App Insights contact/Studio-update counts) in the scorecard + ACS digest — populate `GA-*` secrets per [ga-data-api-access.md](ga-data-api-access.md) before visits appear. **Phase 6:** API Sev2 pages on SLO-7 error-budget burn (99.9%/7d) and ignores SWA Function recycle during CD.
 
 ## Action Groups (OPS-P1 / OPS-P2 / OPS-P3 / OPS-P6)
 
 | Group | Name pattern | Channels | Wired alerts |
 |-------|--------------|----------|--------------|
-| Notify (Sev2) | `ag-elyse-notify-{env}` | Email ± SMS | 5xx spike **outside** a CD quiet window (`OPS-P6-001`) |
+| Notify (Sev2) | `ag-elyse-notify-{env}` | Email ± SMS | API error-budget burn vs SLO-7 99.9%/7d (`OPS-P6-002`) |
 | Critical (Sev1) | `ag-elyse-critical-{env}` | Email + SMS + voice | Prod homepage + materials availability; **DeployFailed** / **SmokeFailed** (`OPS-P3-003` / `TEST-D-003`) |
 | Watch (Sev3) | `ag-elyse-watch-{env}` | Email only | Homepage field FCP p75 burn (`HomepageFcpMs`; 2d watch window; SLO-6 scored over 7d in scorecard) |
 
@@ -115,21 +115,46 @@ requests
 | take 50
 ```
 
-Sev2 failed-request SLI (`OPS-P6-001`) — 5xx outside the CD quiet window. Use this to confirm a notify page is not just Function recycle:
+**SLO-7 — API request success** (99.9% / 7d; `OPS-P6-002`). A wall-clock minute is bad only with **2+** server errors (5xx / timeout). 4xx and every CD quiet window (15m before / 10m after each `DeployStarted` / `DeployCompleted`) are excluded. 7d budget ≈ **10 minutes**. Sev2 uses Azure’s max **P2D** lookback and fires when `BadMinutes > 2` (3+ bad minutes vs ~2.9 min proportional budget). Constants: [`scripts/lib/api-error-budget.mjs`](../../scripts/lib/api-error-budget.mjs).
+
+Scorecard / 7d probe (same query Azure Monitor uses, plus a 7d lookback):
 
 ```kusto
-let lastDeployMarker = toscalar(
+let quietMinutes =
+  customEvents
+  | where timestamp > ago(7d)
+  | where name in ("DeployStarted", "DeployCompleted")
+  | extend QuietStart = timestamp - 15m, QuietEnd = timestamp + 10m
+  | extend Minute = range(bin(QuietStart, 1m), bin(QuietEnd, 1m), 1m)
+  | mv-expand Minute to typeof(datetime)
+  | distinct Minute;
+requests
+| where timestamp > ago(7d)
+| extend isServerError = success == false and (toint(resultCode) >= 500 or resultCode == "0" or isempty(resultCode))
+| extend Minute = bin(timestamp, 1m)
+| join kind=leftanti quietMinutes on Minute
+| summarize Failed = countif(isServerError) by Minute
+| summarize BadMinutes = countif(Failed >= 2)
+| project BadMinutes
+```
+
+Sev2 burn window (drop the `ago(7d)` filters; Azure applies `window_duration = P2D`):
+
+```kusto
+let quietMinutes =
   customEvents
   | where name in ("DeployStarted", "DeployCompleted")
-  | where timestamp > ago(45m)
-  | summarize max(timestamp)
-);
+  | extend QuietStart = timestamp - 15m, QuietEnd = timestamp + 10m
+  | extend Minute = range(bin(QuietStart, 1m), bin(QuietEnd, 1m), 1m)
+  | mv-expand Minute to typeof(datetime)
+  | distinct Minute;
 requests
-| where timestamp > ago(15m)
-| where success == false
-| where toint(resultCode) >= 500 or resultCode == "0" or isempty(resultCode)
-| where isempty(lastDeployMarker) or timestamp < lastDeployMarker - 15m or timestamp > lastDeployMarker + 10m
-| order by timestamp desc
+| extend isServerError = success == false and (toint(resultCode) >= 500 or resultCode == "0" or isempty(resultCode))
+| extend Minute = bin(timestamp, 1m)
+| join kind=leftanti quietMinutes on Minute
+| summarize Failed = countif(isServerError) by Minute
+| summarize BadMinutes = countif(Failed >= 2)
+| project BadMinutes
 ```
 
 Allowlist denials (preferred for “signed in but cannot publish”). Studio shows a `correlationId` users can share with an admin:

@@ -23,7 +23,7 @@ Examples: homepage or materials availability fail; **Deploy Production** failed 
 
 ## Sev2 / Sev3
 
-- **Sev2** (5xx spike **outside** a CD quiet window, Studio publish failures): email ± SMS via notify group. A page that lands in the 15 minutes after **Deploy Staging** / **Deploy Production** is usually Function recycle, not an outage — check `DeployStarted` / `DeployCompleted` first ([observability.md](./observability.md)). Permission denials are not Sev1.
+- **Sev2** (API error-budget burn vs SLO-7 99.9%/7d, Studio publish failures): email ± SMS via notify group. A single 5xx does not page — a minute counts only with 2+ server errors, and Sev2 needs 3+ such minutes in 2 days. Check `DeployStarted` / `DeployCompleted` if the window overlaps a publish ([observability.md](./observability.md)). Permission denials are not Sev1.
 - **Sev3** (FCP p75 burn): email-only watch group. Score committed SLO-6 on the monthly scorecard (7d); the alert uses a shorter 2d watch window.
 
 ## Related

@@ -40,6 +40,7 @@
     "test:studio-auth-token": "node scripts/studio-auth-token-check.mjs",
     "test:azure-oidc-login": "node --test scripts/azure-oidc-login.test.mjs",
     "test:appinsights-event": "node --test scripts/emit-appinsights-event.test.mjs",
+    "test:api-error-budget": "node --test scripts/lib/api-error-budget.test.mjs",
     "test:smoke": "playwright test --config=playwright.smoke.config.ts",
     "test:journey": "playwright test --config=playwright.journey.config.ts",
     "test:journey:content": "playwright test --config=playwright.journey.config.ts --grep @content",

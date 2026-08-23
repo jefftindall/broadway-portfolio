@@ -133,6 +133,13 @@
       "target": "p95 ≤ 20m / 28d",
       "status": "stale",
       "note": "No StudioPublishToProdDurationMs samples in the last 28 days; SLO-3 left stale."
+    },
+    {
+      "id": "SLO-7",
+      "name": "API request success",
+      "target": "99.9% / 7d",
+      "status": "stale",
+      "note": "API error-budget SLI added (OPS-P6-002); scored on next monthly --azure probe."
     }
   ],
   "optionalSlos": [

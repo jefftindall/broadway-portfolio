@@ -78,7 +78,7 @@ SWA **static** files swap atomically. HTML revalidates after 30 seconds; hashed 
 
 The **managed Functions API** is recycled on every upload because CD always passes `api_location: api`. Omitting `api_location` (or setting it to `""`) is Azure’s documented step for **unlinking** managed Functions — do not skip the API on markdown-only publishes.
 
-During that recycle, in-flight `/api/*` calls can 5xx. That is expected and brief. CD emits `DeployStarted` immediately before upload and `DeployCompleted` after so the Sev2 failed-request alert ignores 15 minutes before / 10 minutes after the latest marker (`OPS-P6-001`). A real homepage/materials outage still pages Sev1. A failed **Deploy Production** or **Smoke Production** still pages Sev1.
+During that recycle, in-flight `/api/*` calls can 5xx. That is expected and brief. CD emits `DeployStarted` immediately before upload and `DeployCompleted` after so those minutes do not consume the SLO-7 API error budget (`OPS-P6-001` / `OPS-P6-002`). Sev2 pages only when 3+ “bad” minutes (each with 2+ 5xx/timeouts) land in 2 days — a single recycle 502 does not page. A real homepage/materials outage still pages Sev1. A failed **Deploy Production** or **Smoke Production** still pages Sev1.
 
 ## Browser / CDN cache after a good deploy
 
