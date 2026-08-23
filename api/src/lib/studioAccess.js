@@ -18,7 +18,6 @@ import {
   isSignedInStudioUser,
   newCorrelationId,
   publisherIdentity,
-  studioOwnerKey,
 } from './auth.js';
 import {
   PERMISSION,
@@ -38,19 +37,7 @@ function emptyAccess(principal, source) {
     permissions: [],
     source,
     profile: null,
-    ownerKey: '',
   };
-}
-
-function crmOwnerKeyFor(principal, profile, env) {
-  if (isDevelopmentEnvironment()) {
-    return String(env.STUDIO_CRM_DEV_OWNER || 'dev').trim() || 'dev';
-  }
-  const fromProfile = String(profile?.crmOwnerKey || '').trim();
-  if (fromProfile) return fromProfile;
-  const fromEnv = String(env.STUDIO_CRM_OWNER || '').trim();
-  if (fromEnv && fromEnv !== 'REPLACE_ME') return fromEnv;
-  return studioOwnerKey(principal);
 }
 
 function ownerInputFromPrincipal(principal) {
@@ -61,11 +48,10 @@ function ownerInputFromPrincipal(principal) {
     userId,
     userDetails,
     emails,
-    crmOwnerKey: userId,
   };
 }
 
-function accessFromProfile(principal, profile, env, source) {
+function accessFromProfile(principal, profile, source) {
   const disabled = profile?.status === 'disabled';
   const roles = disabled ? [] : profile.roles || [];
   const extraPermissions = disabled ? [] : profile.extraPermissions || [];
@@ -79,7 +65,6 @@ function accessFromProfile(principal, profile, env, source) {
       : resolvePermissions({ roles, extraPermissions, deniedPermissions }),
     source,
     profile,
-    ownerKey: crmOwnerKeyFor(principal, profile, env),
   };
 }
 
@@ -106,12 +91,6 @@ export async function resolveStudioAccess(principal, opts = {}) {
   if (isDevelopmentEnvironment()) {
     const roles = [ROLE.OWNER];
     const permissions = resolvePermissions({ roles });
-    let ownerKey = String(env.STUDIO_CRM_DEV_OWNER || 'dev').trim() || 'dev';
-    try {
-      if (principal?.userId) ownerKey = crmOwnerKeyFor(principal, null, env);
-    } catch {
-      // Local calls without a principal still get the dev partition.
-    }
     return {
       signedIn: true,
       principal: principal || null,
@@ -119,7 +98,6 @@ export async function resolveStudioAccess(principal, opts = {}) {
       permissions,
       source: 'development',
       profile: null,
-      ownerKey,
     };
   }
 
@@ -133,7 +111,6 @@ export async function resolveStudioAccess(principal, opts = {}) {
     return accessFromProfile(
       principal,
       profile,
-      env,
       profile.status === 'disabled' ? 'profile_disabled' : 'profile',
     );
   }
@@ -142,7 +119,7 @@ export async function resolveStudioAccess(principal, opts = {}) {
     try {
       const migrated = await store.ensureOwnerFromAllowlist(ownerInputFromPrincipal(principal));
       if (migrated) {
-        return accessFromProfile(principal, migrated, env, 'profile');
+        return accessFromProfile(principal, migrated, 'profile');
       }
     } catch {
       // Table missing or write failed — fall through to in-memory owner so
@@ -159,7 +136,6 @@ export async function resolveStudioAccess(principal, opts = {}) {
       permissions: resolvePermissions({ roles }),
       source: 'allowlist',
       profile: null,
-      ownerKey: crmOwnerKeyFor(principal, null, env),
     };
   }
 
@@ -170,7 +146,6 @@ export async function resolveStudioAccess(principal, opts = {}) {
     permissions: [],
     source: 'authenticated',
     profile: null,
-    ownerKey: studioOwnerKey(principal),
   };
 }
 

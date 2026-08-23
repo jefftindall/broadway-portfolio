@@ -1,7 +1,7 @@
 # Plan: Studio as teaching-business ops
 
 **Artifact ID:** `ELYSE-STUDIO-001`  
-**Version:** 1.4  
+**Version:** 1.5  
 **Last updated:** 2026-08-23  
 **Audience:** Agents, implementers, operators  
 **Scope:** Auth-gated Studio (`/studio`) as the ops home for the teaching business **and** career relationships — CRM (people + personas + LTV), Google Calendar scheduling, contact automation, payment status, and reports. Public site stays the portfolio + inquire/book surface. Money movement stays in [`lesson-payments.md`](./lesson-payments.md).
@@ -137,7 +137,7 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 
 ## Design constraints
 
-1. **Personalized, not multi-tenant SaaS UI** — One coach’s business. Authorized operators share the studio People partition (`crmOwnerKey`); unsigned capabilities stay hidden. Do not invent a second CRM per signed-in user unless an Access profile sets a different owner key.
+1. **Personalized, not multi-tenant SaaS UI** — One coach’s business and **one People CRM per deployment** (Table partition `people`; staging and prod already have separate accounts). Authorized operators share that CRM via the permission catalog; unsigned capabilities stay hidden. Do not invent a second CRM per signed-in user.
 2. **Mobile-first (iPhone 17 · Safari)** — Day-of pay status, “copy link,” and “who is next” must work on the phone.
 3. **Correlation / friendly errors** — Same Studio API contract (`httpErrors` + `correlationId`); never raw Stripe or Google API errors in the UI.
 4. **Content tools stay** — Rate and policy updates via Gemini remain valid; ops screens complement them, they don’t replace `/lessons` brand rules.
@@ -193,6 +193,7 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 - [x] Env accounts are Standard **RA-GRS** so People can read the paired region (eastus2 → Central US) if the primary is down; writes stay on the primary until an account failover
 - [x] If a new billable SKU is added: [`cost-and-quotas.md`](../runbooks/cost-and-quotas.md) + `budget.tf` + `SUBSCRIPTION_BUDGET_USD` updated in the same PR
 - [x] Contact record: id, display name, email, phone, personas[], notes, created/updated — **values never committed**
+- [x] Partition key is the constant `people` (`STUDIO_CONTACTS_PARTITION`) — not a CRM owner / Entra id. One CRM per environment.
 - [x] Auth: People requires `people.read` / `people.write` (`STUDIO-P6`); signed-in is not enough. Publish uses the same catalog (`content.publish`).
 - [x] Staging seed (15 fictional rows) runs in CD **after Terraform apply and before SWA upload** (`scripts/seed-studio-people.sh`) — not inside Functions. Prod is not seeded. Local: `npm run studio:seed-people`
 - [ ] Sync CSV download — **removed**; data-not-hostage export is `STUDIO-P1-006`
@@ -293,7 +294,7 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 
 - [x] Azure Table `studioUsers` on the existing CRM storage account (not a new SKU)
 - [x] Identity match on Entra `userId`, email / UPN
-- [x] Optional `crmOwnerKey` so a People operator shares the coach’s contact partition
+- [x] Contacts use a constant `people` partition — profiles do **not** carry `crmOwnerKey`
 - [x] Disabled status grants no catalog IDs
 - [x] Logs: ids and kinds only — never emails or display names
 

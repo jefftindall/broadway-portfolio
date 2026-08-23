@@ -5,7 +5,6 @@ import {
   identityCandidates,
   isAuthorizedPublisher,
   isSignedInStudioUser,
-  studioOwnerKey,
 } from './auth.js';
 
 function principal(overrides = {}) {
@@ -100,16 +99,4 @@ test('getClientPrincipal returns null for missing or invalid headers', () => {
     getClientPrincipal({ headers: new Map([['x-ms-client-principal', 'not-base64-json']]) }),
     null,
   );
-});
-
-test('studioOwnerKey is the signed-in userId and never a shared default in production', () => {
-  const prevEnv = process.env.AZURE_FUNCTIONS_ENVIRONMENT;
-  delete process.env.AZURE_FUNCTIONS_ENVIRONMENT;
-  try {
-    assert.equal(studioOwnerKey(principal()), 'oid-elyse');
-    assert.throws(() => studioOwnerKey({}), { name: 'CrmUnauthorizedError' });
-  } finally {
-    if (prevEnv === undefined) delete process.env.AZURE_FUNCTIONS_ENVIRONMENT;
-    else process.env.AZURE_FUNCTIONS_ENVIRONMENT = prevEnv;
-  }
 });

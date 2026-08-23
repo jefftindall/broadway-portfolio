@@ -51,7 +51,7 @@ async function requirePeople(request, correlationId, permission) {
         : 'This account is signed in but cannot view People.';
     return { error: forbidden(correlationId, error) };
   }
-  return { ownerKey: gate.access.ownerKey, access: gate.access };
+  return { access: gate.access };
 }
 
 async function fail(err, { context, correlationId, operation, contactId }) {
@@ -101,7 +101,7 @@ app.http('contacts', {
         const url = new URL(request.url);
         const includeArchived = flagEnabled(url.searchParams.get('includeArchived'));
         const directory = flagEnabled(url.searchParams.get('directory'));
-        const listed = await store.list(authed.ownerKey, {
+        const listed = await store.list({
           q: url.searchParams.get('q') || '',
           persona: url.searchParams.get('persona') || '',
           includeArchived,
@@ -119,7 +119,7 @@ app.http('contacts', {
       }
 
       const body = await request.json();
-      const contact = await store.create(authed.ownerKey, body || {});
+      const contact = await store.create(body || {});
       trackEvent('StudioCrmOp', { correlationId, operation: 'create', contactId: contact.id });
       await flush();
       return {
@@ -148,7 +148,7 @@ app.http('contactById', {
     try {
       const store = readStore();
       if (request.method === 'GET') {
-        const contact = await store.get(authed.ownerKey, contactId);
+        const contact = await store.get(contactId);
         trackEvent('StudioCrmOp', { correlationId, operation: 'get', contactId });
         await flush();
         return {
@@ -160,7 +160,7 @@ app.http('contactById', {
 
       const body = await request.json();
       const etag = request.headers.get('if-match') || body?.etag || '';
-      const contact = await store.update(authed.ownerKey, contactId, body || {}, { etag });
+      const contact = await store.update(contactId, body || {}, { etag });
       trackEvent('StudioCrmOp', { correlationId, operation: 'update', contactId });
       await flush();
       return {

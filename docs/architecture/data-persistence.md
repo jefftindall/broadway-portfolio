@@ -87,14 +87,14 @@ Connection string is written into SWA app settings at apply (`STUDIO_CRM_STORAGE
 
 ### 1.1 Contact (`contacts` table)
 
-One row = one person. Partition = CRM owner (`ownerKey`). Row key = contact id (UUID on create; `seed-people-NN` for staging seed).
+One row = one person. Partition = constant `people` (`STUDIO_CONTACTS_PARTITION`). Row key = contact id (UUID on create; `seed-people-NN` for staging seed). Staging and prod already use separate storage accounts — that is the environment boundary, not a per-user partition.
 
 | Property | Table column | Type | Notes |
 |----------|--------------|------|--------|
 | `id` | `RowKey` | string | UUID, or `seed-people-01`…`15` |
-| `ownerKey` | `PartitionKey` | string | Entra object id of the studio owner, or `dev` locally |
+| — | `PartitionKey` | `"people"` | Always. One CRM per deployment. |
 | `displayName` | `displayName` | string | Required; max 200 |
-| `email` | `email` | string | Optional; unique among **non-archived** rows in the same partition |
+| `email` | `email` | string | Optional; unique among **non-archived** rows in the CRM |
 | — | `emailKey` | string | Lowercased email for matching (not returned to the UI) |
 | `phone` | `phone` | string | Optional; max 40 |
 | `personas` | `personasJson` | string[] JSON | One or more of `student`, `parent`, `agent`, `casting`, `alumni` |
@@ -115,9 +115,9 @@ One row = one person. Partition = CRM owner (`ownerKey`). Row key = contact id (
 
 **Personas** are tags on one person, not separate tables. A parent who is also an alumni has `personas: ["parent", "alumni"]`.
 
-**Uniqueness:** Active (non-archived) emails are unique per `ownerKey`. Archived rows do not block reuse. List/search is in-partition scan + in-memory filter (`q` matches display name or email; `persona` is an exact tag). Default page size 10, max 50. `directory=1` returns the full filtered set (related-contact picker).
+**Uniqueness:** Active (non-archived) emails are unique in the CRM. Archived rows do not block reuse. List/search is in-partition scan + in-memory filter (`q` matches display name or email; `persona` is an exact tag). Default page size 10, max 50. `directory=1` returns the full filtered set (related-contact picker).
 
-**Seed:** Staging CD runs [`scripts/seed-studio-people.mjs`](../../scripts/seed-studio-people.mjs) **after Terraform apply and before SWA upload**. Fifteen fictional rows (`seed-people-01`…`15`), one of each persona mix, last names A–P so pagination is obvious. Prod is not seeded. Local: `npm run studio:seed-people` against Azurite / `STUDIO_CRM_DEV_OWNER=dev`.
+**Seed:** Staging CD runs [`scripts/seed-studio-people.mjs`](../../scripts/seed-studio-people.mjs) **after Terraform apply and before SWA upload**. Fifteen fictional rows (`seed-people-01`…`15`), one of each persona mix, last names A–P so pagination is obvious, all in the `people` partition. Prod is not seeded. Local: `npm run studio:seed-people` against Azurite.
 
 ### 1.2 Studio user profile (`studioUsers` table)
 
@@ -134,7 +134,6 @@ One row = one authorized operator. Single partition `studio`. Row key = profile 
 | `roles` | `rolesJson` | string[] JSON | `owner`, `publisher`, `people`, `people_reader` |
 | `extraPermissions` | `extraPermissionsJson` | string[] JSON | Grant one catalog ID without the role |
 | `deniedPermissions` | `deniedPermissionsJson` | string[] JSON | Strip an ID even if a role includes it |
-| `crmOwnerKey` | `crmOwnerKey` | string | People partition this operator uses |
 | `status` | `status` | `active` \| `disabled` | Disabled → empty permissions |
 | `createdAt` / `updatedAt` | same | ISO-8601 | Server-set |
 | `etag` | OData etag | string | Optimistic concurrency |
@@ -168,18 +167,16 @@ Catalog and implication rules live in [`api/src/lib/permissions.js`](../../api/s
 
 ```mermaid
 erDiagram
-  StudioUser ||--o{ Contact : "crmOwnerKey = PartitionKey"
   Contact ||--o{ Contact : "relatedContacts bidirectional"
   EntraPrincipal ||--o| StudioUser : "userId / emails match"
   StudioUser {
     string id PK
     string userId
-    string crmOwnerKey
     string roles
     string status
   }
   Contact {
-    string ownerKey PK
+    string partitionKey PK
     string id PK
     string personas
     string email
@@ -191,14 +188,7 @@ erDiagram
   }
 ```
 
-**`crmOwnerKey` → People partition.** Operators share the coach’s contacts. On create, `/api/studioUsers` defaults a blank `crmOwnerKey` to the caller’s `access.ownerKey`. Resolution order in [`studioAccess.js`](../../api/src/lib/studioAccess.js):
-
-1. Development → `STUDIO_CRM_DEV_OWNER` (default `dev`)
-2. Profile `crmOwnerKey` if set
-3. `STUDIO_CRM_OWNER` env if usable
-4. Signed-in Entra `userId`
-
-Handlers **never** take an owner id from the request body. `permissionGate` supplies `access.ownerKey`.
+**One CRM per deployment.** Contacts always use partition `people`. Operators who hold `people.read` / `people.write` see the same list. Staging vs prod isolation is the storage account, not a tenant key on the profile. Handlers do not take a partition or owner id from the request body.
 
 **Related contacts** are a bidirectional adjacency list on the same partition:
 
@@ -234,8 +224,8 @@ sequenceDiagram
   else signed in, no grants
     Gate-->>API: 403
   end
-  Gate-->>API: ownerKey + permissions
-  API->>CRM: list/get/create/update PartitionKey eq ownerKey
+  Gate-->>API: permissions
+  API->>CRM: list/get/create/update PartitionKey eq 'people'
   CRM-->>Operator: publicContact JSON + correlationId
 ```
 
@@ -501,7 +491,7 @@ Do not invent a second calendar or a Studio ledger that can drift from Stripe.
 |-------|----------------|
 | Tables | Azurite or a real storage connection in `api/local.settings.json`; `MemoryTableClient` in unit tests |
 | Git publish | GitHub App creds or `GITHUB_TOKEN`; `STUDIO_PUBLISH_MODE=direct` by default |
-| Authz | `AZURE_FUNCTIONS_ENVIRONMENT=Development` grants the **full catalog** and `ownerKey=dev` (or `STUDIO_CRM_DEV_OWNER`) |
+| Authz | `AZURE_FUNCTIONS_ENVIRONMENT=Development` grants the **full catalog**; contacts use partition `people` |
 | Stripe | Test keys + test Payment Links; webhook verify-only if the secret is a placeholder |
 | Inquiries | ACS settings in local.settings; Turnstile test keys |
 
