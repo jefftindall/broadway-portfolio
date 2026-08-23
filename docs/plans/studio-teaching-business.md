@@ -1,7 +1,7 @@
 # Plan: Studio as teaching-business ops
 
 **Artifact ID:** `ELYSE-STUDIO-001`  
-**Version:** 1.2  
+**Version:** 1.3  
 **Last updated:** 2026-08-23  
 **Audience:** Agents, implementers, operators  
 **Scope:** Auth-gated Studio (`/studio`) as the ops home for the teaching business **and** career relationships — CRM (people + personas + LTV), Google Calendar scheduling, contact automation, payment status, and reports. Public site stays the portfolio + inquire/book surface. Money movement stays in [`lesson-payments.md`](./lesson-payments.md).
@@ -61,7 +61,7 @@ Payments vendor choice and Phase 1 checkout live in [`lesson-payments.md`](./les
 | Phase / area | Status | Open residuals |
 |--------------|--------|----------------|
 | Phase 0 — Plan + Action IDs + SoT | `done` | — |
-| Phase 1 — People & personas | `done` | — |
+| Phase 1 — People & personas | `done` | Residual: `STUDIO-P1-006` async export |
 | Phase 2 — Lifetime value + pay status | `planned` | Stripe match + agent value |
 | Phase 3 — Google Calendar scheduling | `planned` | OAuth + two-way sync |
 | Phase 4 — Contact automation | `planned` | Inquiry ingest + reminders |
@@ -178,6 +178,7 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 | `STUDIO-P1-003` | `/studio/people` list + detail (create/edit) | `done` | `STUDIO-P1-002` | `src/pages/studio/people.astro`, `src/pages/studio/people/[id].astro` |
 | `STUDIO-P1-004` | Privacy + logging contract for CRM PII | `done` | `STUDIO-P1-001` | `src/pages/privacy.astro`; Functions logs |
 | `STUDIO-P1-005` | Help catalog for People (only once UI ships) | `done` | `STUDIO-P1-003` | `src/lib/studioHelp.ts`, `src/pages/studio/help.astro` |
+| `STUDIO-P1-006` | People export (not a sync in-request CSV) | `planned` | `STUDIO-P1-003` | Background / emailed file when ready |
 
 <details>
 <summary><code>STUDIO-P1-001</code> — Contact store</summary>
@@ -189,7 +190,7 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 - [x] If a new billable SKU is added: [`cost-and-quotas.md`](../runbooks/cost-and-quotas.md) + `budget.tf` + `SUBSCRIPTION_BUDGET_USD` updated in the same PR
 - [x] Contact record: id, display name, email, phone, personas[], notes, created/updated — **values never committed**
 - [x] Auth: only the signed-in Studio user; publish allowlist is not required to **read** people (same as opening `/studio`)
-- [x] Export path sketched (CSV download from Studio) so data is not hostage
+- [ ] Sync CSV download — **removed**; data-not-hostage export is `STUDIO-P1-006`
 
 </details>
 
@@ -213,6 +214,8 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 
 - [x] `/studio/people` and `/studio/people/{id}` (or query-id) are SWA `authenticated`, `noIndex`, not in sitemap
 - [x] List filterable by persona; search by name/email
+- [x] Default sort is last name, then first name
+- [x] Pagination: **10** people per page (not one long list)
 - [x] Create / edit / archive (soft-delete) on iPhone Safari
 - [x] Friendly errors + `correlationId` on API failure
 - [x] Journey or smoke: unauthenticated `/studio/people` redirects to login (same contract as `/studio`)
@@ -237,6 +240,17 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 
 - [x] `/studio/help` documents People only after `STUDIO-P1-003` ships
 - [x] No Gemini tools invented that mutate CRM without an explicit confirm UI
+
+</details>
+
+<details>
+<summary><code>STUDIO-P1-006</code> — People export</summary>
+
+**Acceptance criteria**
+
+- [ ] No synchronous `GET /api/contacts?format=csv` (or equivalent) that builds the full file in the request
+- [ ] Operator can take a copy of People data without it living only in Table Storage (async job, emailed link, or similar)
+- [ ] Logs still use kinds + contact ids only — never email/phone/note bodies in the export job log
 
 </details>
 
@@ -495,7 +509,8 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 STUDIO-P0-001 (done)
     └─► STUDIO-P1-001 store [done]
             ├─► P1-002 personas [done] ─► P1-003 UI [done] ─► P1-004 privacy [done]
-            │                         └─► P1-005 help [done]
+            │                         ├─► P1-005 help [done]
+            │                         └─► P1-006 export [planned]
             ├─► P2-001 Stripe LTV ─► P2-002 offline ─► P2-004 pay status
             │         └─► P2-003 agent value ─► P4-004 tasks
             └─► P3-001 GCal OAuth ─► P3-002 free/busy ─► P3-003 write-back

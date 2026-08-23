@@ -5,9 +5,11 @@ import {
   CrmValidationError,
   MemoryTableClient,
   STUDIO_PERSONAS,
+  compareContactsByName,
   contactsStoreFromEnv,
-  contactsToCsv,
   createContactsStore,
+  paginateContacts,
+  splitDisplayName,
   isUsableConnectionString,
   normalizeContactInput,
   normalizeEmail,
@@ -94,9 +96,10 @@ test('create/list/get/update/archive stay scoped to the owner partition', async 
   });
 
   const listA = await crm.list('owner-a');
-  assert.equal(listA.length, 1);
-  assert.equal(listA[0].id, created.id);
-  assert.equal(listA[0].email, 'riley@example.com');
+  assert.equal(listA.total, 1);
+  assert.equal(listA.contacts.length, 1);
+  assert.equal(listA.contacts[0].id, created.id);
+  assert.equal(listA.contacts[0].email, 'riley@example.com');
 
   const fetched = await crm.get('owner-a', created.id);
   assert.equal(fetched.displayName, 'Riley Student');
@@ -112,8 +115,8 @@ test('create/list/get/update/archive stay scoped to the owner partition', async 
   assert.equal(updated.notes.includes('Zoom'), true);
 
   await crm.archive('owner-a', created.id, true);
-  assert.equal((await crm.list('owner-a')).length, 0);
-  assert.equal((await crm.list('owner-a', { includeArchived: true })).length, 1);
+  assert.equal((await crm.list('owner-a')).total, 0);
+  assert.equal((await crm.list('owner-a', { includeArchived: true })).total, 1);
 });
 
 test('email uniqueness is per owner and ignores archived rows', async () => {
@@ -178,42 +181,68 @@ test('search and persona filters do not require a second store', async () => {
   });
 
   const students = await crm.list('owner-a', { persona: 'student' });
-  assert.equal(students.length, 1);
-  assert.equal(students[0].displayName, 'Jordan Voice');
+  assert.equal(students.total, 1);
+  assert.equal(students.contacts[0].displayName, 'Jordan Voice');
 
   const search = await crm.list('owner-a', { q: 'agency.test' });
-  assert.equal(search.length, 1);
-  assert.equal(search[0].personas[0], 'agent');
+  assert.equal(search.total, 1);
+  assert.equal(search.contacts[0].personas[0], 'agent');
 });
 
-test('CSV export includes ids and omits a partition key', async () => {
-  const csv = contactsToCsv([
-    {
-      id: 'abc',
-      displayName: 'Ada, "voice"',
-      email: 'ada@example.com',
-      phone: '',
-      personas: ['student'],
-      notes: 'line1\nline2',
-      studentRateCents: 6000,
-      studentFormat: 'zoom',
-      studentPackageRemaining: 2,
-      studentLastLesson: '2026-08-01',
-      agentAgency: '',
-      agentTerritory: '',
-      agentLastSubmission: '',
-      agentLastBooking: '',
-      agentNextStep: '',
-      relatedContacts: [{ id: 'parent-1', relation: 'parent' }],
-      archived: false,
-      createdAt: '2026-08-23T00:00:00.000Z',
-      updatedAt: '2026-08-23T00:00:00.000Z',
-    },
-  ]);
-  assert.match(csv, /^id,displayName,email/);
-  assert.match(csv, /"Ada, ""voice"""/);
-  assert.match(csv, /60.00/);
-  assert.equal(csv.includes('owner-'), false);
+test('default sort is last name then first name', async () => {
+  assert.deepEqual(splitDisplayName('Zara Adams'), { firstName: 'Zara', lastName: 'Adams' });
+  assert.ok(compareContactsByName({ displayName: 'Zara Adams' }, { displayName: 'Amy Brown' }) < 0);
+
+  const crm = store();
+  await crm.create('owner-a', { displayName: 'Zara Adams', personas: ['student'] });
+  await crm.create('owner-a', { displayName: 'Amy Brown', personas: ['agent'] });
+  await crm.create('owner-a', { displayName: 'Ben Adams', personas: ['parent'] });
+  const listed = await crm.list('owner-a');
+  assert.deepEqual(
+    listed.contacts.map((row) => row.displayName),
+    ['Ben Adams', 'Zara Adams', 'Amy Brown'],
+  );
+});
+
+test('list paginates 10 per page by default', async () => {
+  const crm = store();
+  for (const name of [
+    'Nia Abel',
+    'Omar Bond',
+    'Pia Cole',
+    'Quin Diaz',
+    'Remy Earl',
+    'Sage Ford',
+    'Tess Gray',
+    'Uma Hart',
+    'Vera Ives',
+    'Wes Jung',
+    'Xan Kane',
+  ]) {
+    await crm.create('owner-a', { displayName: name, personas: ['student'] });
+  }
+  const first = await crm.list('owner-a');
+  assert.equal(first.page, 1);
+  assert.equal(first.pageSize, 10);
+  assert.equal(first.total, 11);
+  assert.equal(first.totalPages, 2);
+  assert.equal(first.contacts.length, 10);
+  assert.equal(first.contacts[0].displayName, 'Nia Abel');
+
+  const second = await crm.list('owner-a', { page: 2 });
+  assert.equal(second.contacts.length, 1);
+  assert.equal(second.contacts[0].displayName, 'Xan Kane');
+
+  const directory = await crm.list('owner-a', { directory: true });
+  assert.equal(directory.contacts.length, 11);
+  assert.equal(directory.directory, true);
+
+  const page = paginateContacts(new Array(15).fill(0).map((_, i) => ({ id: String(i) })), {
+    page: 2,
+    pageSize: 10,
+  });
+  assert.equal(page.contacts.length, 5);
+  assert.equal(page.totalPages, 2);
 });
 
 test('publicContact never includes the owner partition key', () => {

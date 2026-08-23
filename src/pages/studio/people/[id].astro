@@ -461,7 +461,7 @@ const { id } = Astro.params;
     try {
       const [detailRes, listRes] = await Promise.all([
         fetch(`/api/contacts/${encodeURIComponent(contactId)}`, { headers: { Accept: 'application/json' } }),
-        fetch('/api/contacts?includeArchived=true', { headers: { Accept: 'application/json' } }),
+        fetch('/api/contacts?directory=1&includeArchived=true', { headers: { Accept: 'application/json' } }),
       ]);
       const detail = await detailRes.json().catch(() => ({}));
       const list = await listRes.json().catch(() => ({}));

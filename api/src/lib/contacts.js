@@ -8,6 +8,9 @@ import { createGeoRedundantTableClient } from './tableGeo.js';
 export const STUDIO_PERSONAS = ['student', 'parent', 'agent', 'casting', 'alumni'];
 export const STUDIO_STUDENT_FORMATS = ['nyc', 'zoom'];
 export const STUDIO_RELATED_RELATIONS = ['parent', 'student', 'related'];
+export const DEFAULT_PEOPLE_PAGE_SIZE = 10;
+export const MAX_PEOPLE_PAGE_SIZE = 50;
+export const SEED_CONTACT_ID_PATTERN = /^seed-people-\d{2}$/;
 
 const INVERSE_RELATION = {
   parent: 'student',
@@ -363,66 +366,53 @@ function isNotFound(err) {
   return err?.statusCode === 404 || /not found|resourcenotfound/i.test(err?.message || '');
 }
 
-export function contactsToCsv(contacts) {
-  const headers = [
-    'id',
-    'displayName',
-    'email',
-    'phone',
-    'personas',
-    'notes',
-    'studentRateUsd',
-    'studentFormat',
-    'studentPackageRemaining',
-    'studentLastLesson',
-    'agentAgency',
-    'agentTerritory',
-    'agentLastSubmission',
-    'agentLastBooking',
-    'agentNextStep',
-    'relatedContactIds',
-    'archived',
-    'createdAt',
-    'updatedAt',
-  ];
+/** Last whitespace token is the last name; the rest is the given name. */
+export function splitDisplayName(displayName) {
+  const parts = String(displayName || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (parts.length === 0) return { firstName: '', lastName: '' };
+  if (parts.length === 1) return { firstName: '', lastName: parts[0] };
+  return { firstName: parts.slice(0, -1).join(' '), lastName: parts[parts.length - 1] };
+}
 
-  const escape = (value) => {
-    const text = value === null || value === undefined ? '' : String(value);
-    if (/[",\n]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
-    return text;
-  };
-
-  const rows = contacts.map((c) => {
-    const rateUsd =
-      c.studentRateCents === null || c.studentRateCents === undefined
-        ? ''
-        : (Number(c.studentRateCents) / 100).toFixed(2);
-    return [
-      c.id,
-      c.displayName,
-      c.email,
-      c.phone,
-      (c.personas || []).join('|'),
-      c.notes,
-      rateUsd,
-      c.studentFormat,
-      c.studentPackageRemaining ?? '',
-      c.studentLastLesson,
-      c.agentAgency,
-      c.agentTerritory,
-      c.agentLastSubmission,
-      c.agentLastBooking,
-      c.agentNextStep,
-      (c.relatedContacts || []).map((rel) => `${rel.id}:${rel.relation}`).join('|'),
-      c.archived ? 'true' : 'false',
-      c.createdAt,
-      c.updatedAt,
-    ]
-      .map(escape)
-      .join(',');
+export function compareContactsByName(a, b) {
+  const left = splitDisplayName(a?.displayName);
+  const right = splitDisplayName(b?.displayName);
+  const last = left.lastName.localeCompare(right.lastName, 'en', { sensitivity: 'base' });
+  if (last !== 0) return last;
+  const first = left.firstName.localeCompare(right.firstName, 'en', { sensitivity: 'base' });
+  if (first !== 0) return first;
+  const display = String(a?.displayName || '').localeCompare(String(b?.displayName || ''), 'en', {
+    sensitivity: 'base',
   });
+  if (display !== 0) return display;
+  return String(a?.id || '').localeCompare(String(b?.id || ''));
+}
 
-  return `${headers.join(',')}\n${rows.join('\n')}${rows.length ? '\n' : ''}`;
+export function parsePeoplePageParams({ page, pageSize } = {}) {
+  const rawSize = Number.parseInt(pageSize, 10);
+  const size = Number.isFinite(rawSize)
+    ? Math.min(MAX_PEOPLE_PAGE_SIZE, Math.max(1, rawSize))
+    : DEFAULT_PEOPLE_PAGE_SIZE;
+  const rawPage = Number.parseInt(page, 10);
+  return { page: Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1, pageSize: size };
+}
+
+export function paginateContacts(contacts, params = {}) {
+  const parsed = parsePeoplePageParams(params);
+  const total = contacts.length;
+  const totalPages = Math.max(1, Math.ceil(total / parsed.pageSize) || 1);
+  const page = Math.min(parsed.page, totalPages);
+  const start = (page - 1) * parsed.pageSize;
+  return {
+    contacts: contacts.slice(start, start + parsed.pageSize),
+    page,
+    pageSize: parsed.pageSize,
+    total,
+    totalPages,
+  };
 }
 
 export function createContactsStore({ tableClient }) {
@@ -525,7 +515,10 @@ export function createContactsStore({ tableClient }) {
   }
 
   return {
-    async list(ownerKey, { q = '', persona = '', includeArchived = false } = {}) {
+    async list(
+      ownerKey,
+      { q = '', persona = '', includeArchived = false, page, pageSize, directory = false } = {},
+    ) {
       const personaFilter = String(persona || '')
         .trim()
         .toLowerCase();
@@ -533,12 +526,23 @@ export function createContactsStore({ tableClient }) {
         throw new CrmValidationError('Unknown persona filter.');
       }
       const records = await listOwner(ownerKey);
-      return records
+      const sorted = records
         .filter((row) => includeArchived || !row.archived)
         .filter((row) => matchesQuery(row, q))
         .filter((row) => !personaFilter || row.personas.includes(personaFilter))
-        .sort((a, b) => a.displayName.localeCompare(b.displayName, 'en', { sensitivity: 'base' }))
+        .sort(compareContactsByName)
         .map(publicContact);
+      if (directory) {
+        return {
+          contacts: sorted,
+          page: 1,
+          pageSize: sorted.length || DEFAULT_PEOPLE_PAGE_SIZE,
+          total: sorted.length,
+          totalPages: 1,
+          directory: true,
+        };
+      }
+      return paginateContacts(sorted, { page, pageSize });
     },
 
     async get(ownerKey, id) {
@@ -607,9 +611,39 @@ export function createContactsStore({ tableClient }) {
       return this.update(ownerKey, id, { archived: Boolean(archived) });
     },
 
-    async exportCsv(ownerKey, { includeArchived = true } = {}) {
-      const rows = await this.list(ownerKey, { includeArchived, q: '', persona: '' });
-      return contactsToCsv(rows);
+    async ensureSeed(ownerKey, input) {
+      const id = String(input?.id || '').trim();
+      if (!SEED_CONTACT_ID_PATTERN.test(id)) {
+        throw new CrmValidationError('Invalid seed id.');
+      }
+      try {
+        await getRecord(ownerKey, id);
+        return { created: false };
+      } catch (err) {
+        if (!(err instanceof CrmNotFoundError)) throw err;
+      }
+      const fields = normalizeContactInput(input, { partial: false });
+      try {
+        await assertUniqueEmail(ownerKey, fields.email);
+      } catch (err) {
+        if (err instanceof CrmValidationError) return { created: false };
+        throw err;
+      }
+      const now = new Date().toISOString();
+      const record = {
+        id,
+        ownerKey,
+        ...fields,
+        createdAt: now,
+        updatedAt: now,
+      };
+      try {
+        await tableClient.createEntity(recordToEntity(record));
+      } catch (err) {
+        if (err?.statusCode === 409) return { created: false };
+        throw err;
+      }
+      return { created: true };
     },
   };
 }

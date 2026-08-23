@@ -68,13 +68,6 @@ import {
       >
         Add person
       </button>
-      <a
-        id="export-csv"
-        href="/api/contacts?format=csv&includeArchived=true"
-        class="rounded-sm border border-line px-4 py-2 text-sm text-spotlight hover:border-gold"
-      >
-        Download CSV
-      </a>
     </div>
 
     <form id="create-form" class="mt-6 hidden space-y-4 rounded-sm border border-line bg-panel/40 p-4">
@@ -184,6 +177,27 @@ import {
 
     <p id="people-status" class="mt-4 text-sm text-muted" role="status">Loading people…</p>
     <ul id="people-list" class="mt-3 space-y-3"></ul>
+    <nav
+      id="people-pager"
+      class="mt-4 hidden items-center justify-between gap-3"
+      aria-label="People pages"
+    >
+      <button
+        id="people-prev"
+        type="button"
+        class="rounded-sm border border-line px-4 py-2 text-sm text-spotlight hover:border-gold disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        Previous
+      </button>
+      <p id="people-page-label" class="text-center text-sm text-muted"></p>
+      <button
+        id="people-next"
+        type="button"
+        class="rounded-sm border border-line px-4 py-2 text-sm text-spotlight hover:border-gold disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        Next
+      </button>
+    </nav>
   </section>
 </BaseLayout>
 
@@ -212,8 +226,14 @@ import {
   const createForm = document.getElementById('create-form') as HTMLFormElement;
   const addBtn = document.getElementById('add-person-btn') as HTMLButtonElement;
   const cancelBtn = document.getElementById('create-cancel') as HTMLButtonElement;
+  const pagerEl = document.getElementById('people-pager') as HTMLElement;
+  const pageLabelEl = document.getElementById('people-page-label') as HTMLElement;
+  const prevBtn = document.getElementById('people-prev') as HTMLButtonElement;
+  const nextBtn = document.getElementById('people-next') as HTMLButtonElement;
 
+  const PAGE_SIZE = 10;
   let personaFilter = '';
+  let page = 1;
 
   function showError(message: string, correlationId?: string) {
     errorMsg.textContent = message;
@@ -241,6 +261,8 @@ import {
     if (searchEl.value.trim()) params.set('q', searchEl.value.trim());
     if (personaFilter) params.set('persona', personaFilter);
     if (archivedEl.checked) params.set('includeArchived', 'true');
+    params.set('page', String(page));
+    params.set('pageSize', String(PAGE_SIZE));
     try {
       const res = await fetch(`/api/contacts?${params.toString()}`, { headers: { Accept: 'application/json' } });
       const data = await res.json().catch(() => ({}));
@@ -248,12 +270,23 @@ import {
         showError(data.error || 'Could not load people.', data.correlationId);
         statusEl.textContent = '';
         listEl.replaceChildren();
+        pagerEl.classList.add('hidden');
+        pagerEl.classList.remove('flex');
         return;
       }
       const contacts = (data.contacts || []) as Contact[];
-      statusEl.textContent = contacts.length
-        ? `${contacts.length} ${contacts.length === 1 ? 'person' : 'people'}`
+      const total = Number(data.total) || contacts.length;
+      const totalPages = Number(data.totalPages) || 1;
+      page = Number(data.page) || page;
+      statusEl.textContent = total
+        ? `${total} ${total === 1 ? 'person' : 'people'} · last name, then first`
         : 'No people match these filters yet.';
+      const showPager = total > PAGE_SIZE;
+      pagerEl.classList.toggle('hidden', !showPager);
+      pagerEl.classList.toggle('flex', showPager);
+      pageLabelEl.textContent = `Page ${page} of ${totalPages}`;
+      prevBtn.disabled = page <= 1;
+      nextBtn.disabled = page >= totalPages;
       listEl.replaceChildren(
         ...contacts.map((contact) => {
           const li = document.createElement('li');
@@ -280,6 +313,8 @@ import {
       showError('Could not load people. Try again in a moment.');
       statusEl.textContent = '';
       listEl.replaceChildren();
+      pagerEl.classList.add('hidden');
+      pagerEl.classList.remove('flex');
     }
   }
 
@@ -341,6 +376,7 @@ import {
         other.classList.toggle('border-line', !active);
         other.classList.toggle('text-muted', !active);
       });
+      page = 1;
       void loadPeople();
     });
   });
@@ -348,9 +384,24 @@ import {
   let searchTimer = 0;
   searchEl.addEventListener('input', () => {
     window.clearTimeout(searchTimer);
-    searchTimer = window.setTimeout(() => void loadPeople(), 200);
+    searchTimer = window.setTimeout(() => {
+      page = 1;
+      void loadPeople();
+    }, 200);
   });
-  archivedEl.addEventListener('change', () => void loadPeople());
+  archivedEl.addEventListener('change', () => {
+    page = 1;
+    void loadPeople();
+  });
+  prevBtn.addEventListener('click', () => {
+    if (page <= 1) return;
+    page -= 1;
+    void loadPeople();
+  });
+  nextBtn.addEventListener('click', () => {
+    page += 1;
+    void loadPeople();
+  });
 
   async function loadIdentity() {
     try {
