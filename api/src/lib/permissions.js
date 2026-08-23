@@ -50,17 +50,32 @@ export const PERMISSION_CATALOG = {
 };
 
 export const ROLE = {
-  OWNER: 'owner',
+  SUPER_ADMINISTRATOR: 'super_administrator',
+  /** @deprecated Stored id `owner` is still accepted; canonical id is `super_administrator`. */
+  OWNER: 'super_administrator',
   PUBLISHER: 'publisher',
   PEOPLE: 'people',
   PEOPLE_READER: 'people_reader',
 };
 
+/** Historic role ids still present on Table Storage rows. */
+export const LEGACY_ROLE_IDS = {
+  owner: ROLE.SUPER_ADMINISTRATOR,
+};
+
+export function canonicalizeRoleId(id) {
+  const raw = String(id || '')
+    .trim()
+    .toLowerCase();
+  return LEGACY_ROLE_IDS[raw] || raw;
+}
+
 export const ROLE_CATALOG = {
-  [ROLE.OWNER]: {
-    id: ROLE.OWNER,
-    label: 'Owner',
-    description: 'Full Studio access, including People and access management.',
+  [ROLE.SUPER_ADMINISTRATOR]: {
+    id: ROLE.SUPER_ADMINISTRATOR,
+    label: 'Super Administrator',
+    description:
+      'Full Studio access, including People and access management. Not an Azure / Entra Owner role.',
     permissions: Object.keys(PERMISSION_CATALOG),
   },
   [ROLE.PUBLISHER]: {
@@ -88,7 +103,7 @@ export function isKnownPermission(id) {
 }
 
 export function isKnownRole(id) {
-  return Object.prototype.hasOwnProperty.call(ROLE_CATALOG, String(id || ''));
+  return Object.prototype.hasOwnProperty.call(ROLE_CATALOG, canonicalizeRoleId(id));
 }
 
 export function permissionCatalogList() {
@@ -131,7 +146,7 @@ function expandImplied(permissionSet) {
 }
 
 /**
- * Resolve effective permission IDs for a profile (or implicit owner).
+ * Resolve effective permission IDs for a profile (or implicit Super Administrator).
  * Unknown role / permission IDs are ignored. Denied IDs win.
  *
  * @param {{ roles?: string[], extraPermissions?: string[], deniedPermissions?: string[] }} grant
@@ -139,7 +154,7 @@ function expandImplied(permissionSet) {
  */
 export function resolvePermissions(grant = {}) {
   const permissionSet = new Set();
-  for (const roleId of uniqueStrings(grant.roles)) {
+  for (const roleId of uniqueStrings(grant.roles).map(canonicalizeRoleId)) {
     const role = ROLE_CATALOG[roleId];
     if (!role) continue;
     for (const id of role.permissions) permissionSet.add(id);

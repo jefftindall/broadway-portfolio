@@ -251,7 +251,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
   function renderList() {
     if (!users.length) {
-      statusEl.textContent = 'No access records yet. Owner profiles are created on first sign-in.';
+      statusEl.textContent =
+        'No access records yet. Super Administrator profiles are created on first sign-in.';
       listEl.replaceChildren();
       return;
     }

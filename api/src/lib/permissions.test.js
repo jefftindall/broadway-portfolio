@@ -22,12 +22,14 @@ test('catalog IDs are discrete and stable', () => {
   ]);
   assert.equal(isKnownPermission('people.read'), true);
   assert.equal(isKnownPermission('people.delete'), false);
+  assert.equal(isKnownRole(ROLE.SUPER_ADMINISTRATOR), true);
   assert.equal(isKnownRole(ROLE.OWNER), true);
+  assert.equal(isKnownRole('owner'), true);
   assert.equal(isKnownRole('superadmin'), false);
 });
 
-test('owner role expands to every catalog permission', () => {
-  const perms = resolvePermissions({ roles: [ROLE.OWNER] });
+test('super administrator role expands to every catalog permission', () => {
+  const perms = resolvePermissions({ roles: [ROLE.SUPER_ADMINISTRATOR] });
   for (const row of permissionCatalogList()) {
     assert.equal(hasPermission(perms, row.id), true, row.id);
   }
@@ -63,7 +65,7 @@ test('extraPermissions grant discrete IDs without a role', () => {
 
 test('deniedPermissions win over roles and extras', () => {
   const perms = resolvePermissions({
-    roles: [ROLE.OWNER],
+    roles: [ROLE.SUPER_ADMINISTRATOR],
     deniedPermissions: [PERMISSION.PEOPLE_WRITE],
   });
   assert.equal(hasPermission(perms, PERMISSION.PEOPLE_WRITE), false);
@@ -79,7 +81,18 @@ test('unknown roles and permissions are ignored', () => {
   assert.deepEqual(perms, [PERMISSION.CONTENT_PUBLISH, PERMISSION.PEOPLE_READ]);
 });
 
+test('legacy owner role id aliases to super administrator', () => {
+  const fromLegacy = resolvePermissions({ roles: ['owner'] });
+  const fromCanonical = resolvePermissions({ roles: [ROLE.SUPER_ADMINISTRATOR] });
+  assert.deepEqual(fromLegacy, fromCanonical);
+  assert.equal(roleCatalogList().some((row) => row.id === 'owner'), false);
+  assert.equal(
+    roleCatalogList().find((row) => row.id === ROLE.SUPER_ADMINISTRATOR)?.label,
+    'Super Administrator',
+  );
+});
+
 test('role catalog lists the permissions each role grants', () => {
-  const owner = roleCatalogList().find((row) => row.id === ROLE.OWNER);
-  assert.ok(owner.permissions.includes(PERMISSION.USERS_MANAGE));
+  const superAdmin = roleCatalogList().find((row) => row.id === ROLE.SUPER_ADMINISTRATOR);
+  assert.ok(superAdmin.permissions.includes(PERMISSION.USERS_MANAGE));
 });

@@ -39,6 +39,7 @@ func start
 
 ## Documentation
 
+- [Authentication and authorization](docs/architecture/authentication-authorization.md) — login vs permission catalog, Super Administrator vs Azure/Entra Owner
 - [Data persistence](docs/architecture/data-persistence.md) — stores, models, relations, and access-flow diagrams (keep current when those change; [`.cursor/rules/data-persistence.mdc`](.cursor/rules/data-persistence.mdc))
 - [Initial setup](docs/setup.md) — Terraform, secrets, GitHub App, OIDC, DNS cutover
 - [Casting discoverability backlog](docs/plans/casting-discoverability.md) — assessment rubric, scores, and `DISC-*` action IDs for SEO/casting work
@@ -68,7 +69,7 @@ func start
 Authentication and authorization are separate. Anyone in the Entra tenant can sign in; actions require catalog permissions on a Studio user profile.
 
 1. SWA routes protect `/studio` and `/api/*` (`authenticated` login gate). Entra **Assignment required** stays off so login is not blocked with `AADSTS50105`.
-2. API never treats a signed-in principal as permission to act. Publish, People, and Access re-check `x-ms-client-principal` against the permission catalog (`content.publish`, `people.read` / `people.write`, `users.manage`). User profiles are the source of truth; `ALLOWED_USER_IDS` only bootstraps a missing Owner profile. Public exceptions use Turnstile, sanitized Payment Links, or Stripe signatures.
+2. API never treats a signed-in principal as permission to act. Publish, People, and Access re-check `x-ms-client-principal` against the permission catalog (`content.publish`, `people.read` / `people.write`, `users.manage`). User profiles are the source of truth; `ALLOWED_USER_IDS` only bootstraps a missing Super Administrator profile. Public exceptions use Turnstile, sanitized Payment Links, or Stripe signatures.
 3. GitHub writes use short-lived **GitHub App** installation tokens (private key in Key Vault, synced into SWA)
 4. GitHub Actions uses **OIDC** to Azure (separate identities for SWA deploy vs Terraform; no long-lived deploy token in repo secrets)
 

@@ -140,7 +140,7 @@ az keyvault secret set --vault-name kv-elyse-prod --name GITHUB-APP-INSTALLATION
 az keyvault secret set --vault-name kv-elyse-prod --name GITHUB-APP-PRIVATE-KEY --file ./path/to/app.pem
 ```
 
-`ALLOWED_USER_IDS` is a comma-separated list matching SWA principal `userId`, `userDetails`, or email claim (lowercase). It only **bootstraps** a missing Owner profile on first Studio session. Live grants for publish, People, and Access live on `/studio/access` — see [manage-access.md](runbooks/manage-access.md).
+`ALLOWED_USER_IDS` is a comma-separated list matching SWA principal `userId`, `userDetails`, or email claim (lowercase). It only **bootstraps** a missing Super Administrator profile on first Studio session. Live grants for publish, People, and Access live on `/studio/access` — see [manage-access.md](runbooks/manage-access.md).
 
 Stripe lesson-payment **API keys** (`STRIPE-TEST-*` / `STRIPE-LIVE-*` secret + publishable) are created on **bootstrap** apply in `kv-elyse-shared`. Staging initializes Stripe with test keys and owns the test catalog; prod uses live keys. Populate keys, then apply each environment for products/prices/webhooks, then sync: [rotate-secrets.md](runbooks/rotate-secrets.md#stripe-lesson-payments).
 
@@ -243,7 +243,7 @@ Add more via `additional_auth_hostnames` in `terraform.tfvars`.
 
 Apply order: **bootstrap** (creates `studio-monitor@…` + `MONITOR-*` in `kv-elyse-shared`) then **env** stacks. Terraform still assigns the monitor user as a fallback if assignment required is ever flipped on. Do **not** add the monitor UPN to `ALLOWED-USER-IDS`. Enroll software TOTP and set `MONITOR-TOTP-SEED` per [studio-auth-monitoring.md](runbooks/studio-auth-monitoring.md) (`TEST-C-005`).
 
-Authorization is the permission catalog on user profiles (`content.publish`, `people.read` / `people.write`, `users.manage`). `ALLOWED-USER-IDS` only seeds an Owner profile when none exists. See [manage-access.md](runbooks/manage-access.md).
+Authorization is the permission catalog on user profiles (`content.publish`, `people.read` / `people.write`, `users.manage`). `ALLOWED-USER-IDS` only seeds a Super Administrator profile when none exists. See [manage-access.md](runbooks/manage-access.md) and [authentication-authorization.md](architecture/authentication-authorization.md).
 
 ### Token issuer (same tenant for staging and prod)
 

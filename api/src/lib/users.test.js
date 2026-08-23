@@ -70,7 +70,15 @@ test('users store create/list/update and principal match', async () => {
   assert.equal(hasPermission(updated.permissions, PERMISSION.PEOPLE_READ), true);
 });
 
-test('ensureOwnerFromAllowlist is idempotent and grants owner', async () => {
+test('normalizeUserInput canonicalizes legacy owner to super_administrator', () => {
+  const ok = normalizeUserInput({
+    identity: 'legacy@example.com',
+    roles: ['owner'],
+  });
+  assert.deepEqual(ok.roles, [ROLE.SUPER_ADMINISTRATOR]);
+});
+
+test('ensureOwnerFromAllowlist is idempotent and grants super administrator', async () => {
   const users = store();
   const first = await users.ensureOwnerFromAllowlist({
     userId: 'oid-elyse',

@@ -131,7 +131,7 @@ One row = one authorized operator. Single partition `studio`. Row key = profile 
 | `userDetails` | `userDetails` | string | UPN / email-shaped claim |
 | `emails` | `emailsJson` | string[] JSON | Extra match keys |
 | `displayName` | `displayName` | string | Access UI only |
-| `roles` | `rolesJson` | string[] JSON | `owner`, `publisher`, `people`, `people_reader` |
+| `roles` | `rolesJson` | string[] JSON | `super_administrator` (legacy `owner` still accepted), `publisher`, `people`, `people_reader` |
 | `extraPermissions` | `extraPermissionsJson` | string[] JSON | Grant one catalog ID without the role |
 | `deniedPermissions` | `deniedPermissionsJson` | string[] JSON | Strip an ID even if a role includes it |
 | `status` | `status` | `active` \| `disabled` | Disabled → empty permissions |
@@ -154,14 +154,14 @@ Catalog and implication rules live in [`api/src/lib/permissions.js`](../../api/s
 
 | Role | Permissions |
 |------|-------------|
-| `owner` | Full catalog |
+| `super_administrator` | Full catalog (UI label **Super Administrator**; stored `owner` still expands to this bundle) |
 | `publisher` | `content.publish` |
 | `people` | `people.read`, `people.write` |
 | `people_reader` | `people.read` |
 
 **Identity match:** `findByPrincipal` lists the partition and matches any of `userId`, `userDetails`, `emails[]` (lowercased) against SWA principal candidates. There is no secondary index.
 
-**Bootstrap:** `ALLOWED-USER-IDS` (env Key Vault → `ALLOWED_USER_IDS`) is **not** a second permission model. The first session for an allowlisted caller with no profile writes an **Owner** row (`ensureOwnerFromAllowlist`). After that the table is SoT. Removing someone from the allowlist does not disable an existing profile.
+**Bootstrap:** `ALLOWED-USER-IDS` (env Key Vault → `ALLOWED_USER_IDS`) is **not** a second permission model. The first session for an allowlisted caller with no profile writes a **Super Administrator** row (`ensureOwnerFromAllowlist`). After that the table is SoT. Removing someone from the allowlist does not disable an existing profile. Authn vs authz: [`authentication-authorization.md`](./authentication-authorization.md).
 
 ### 1.3 Relations (Table Storage)
 
@@ -519,6 +519,7 @@ Do not invent a second calendar or a Studio ledger that can drift from Stripe.
 | Stripe catalog | `infra/modules/stripe_catalog/main.tf` |
 | People seed | `scripts/seed-studio-people.mjs` |
 | Access runbook | [`docs/runbooks/manage-access.md`](../runbooks/manage-access.md) |
+| Authn / authz architecture | [`authentication-authorization.md`](./authentication-authorization.md) |
 | Payments plan | [`docs/plans/lesson-payments.md`](../plans/lesson-payments.md) |
 | Studio backlog | [`docs/plans/studio-teaching-business.md`](../plans/studio-teaching-business.md) |
 | Keep-in-sync rule | [`.cursor/rules/data-persistence.mdc`](../../.cursor/rules/data-persistence.mdc) |
