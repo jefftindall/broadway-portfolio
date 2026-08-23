@@ -45,7 +45,7 @@ func start
 - [Brand & UI style guide](docs/style-guide.md) — tokens, type, components (visual: `/style-guide`)
 - Plans:
   - [Lesson payments](docs/plans/lesson-payments.md) — vendor comparison and phased checkout
-  - [Studio as teaching business](docs/plans/studio-teaching-business.md) — auth-only ops north star (schedule, paid, comms, reports)
+  - [Studio as teaching business](docs/plans/studio-teaching-business.md) — auth-only ops north star + `STUDIO-*` CRM / GCal / automation phases
 - Runbooks:
   - [GitHub Actions naming (Scheme A)](docs/runbooks/github-actions-naming.md) — display names + file-rename tech debt
   - [GitHub App (Studio)](docs/runbooks/github-app.md)
