@@ -103,6 +103,7 @@ test.describe('public smoke', () => {
   test('anonymous studio people requires sign-in', async ({ request }) => {
     test.skip(!isStaticWebAppHost(), 'SWA auth is only enforced on deployed hosts');
     await expectAnonymousStudioRedirect(request, '/studio/people');
+    await expectAnonymousStudioRedirect(request, '/studio/people/person');
   });
 });
 

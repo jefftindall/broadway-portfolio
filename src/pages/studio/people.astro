@@ -202,7 +202,7 @@ import {
 </BaseLayout>
 
 <script>
-  import { STUDIO_PERSONA_LABELS, type StudioPersona } from '../../lib/studioPeople';
+  import { STUDIO_PERSONA_LABELS, studioPersonPath, type StudioPersona } from '../../lib/studioPeople';
 
   type Contact = {
     id: string;
@@ -293,7 +293,7 @@ import {
           const archived = contact.archived ? ' · archived' : '';
           li.innerHTML = `
             <a
-              href="/studio/people/${encodeURIComponent(contact.id)}"
+              href="${studioPersonPath(contact.id)}"
               class="block rounded-sm border border-line bg-panel/40 px-4 py-3 hover:border-gold"
             >
               <span class="block font-semibold text-spotlight">${escapeHtml(contact.displayName)}</span>
@@ -358,7 +358,7 @@ import {
         showError(data.error || 'Could not save this person.', data.correlationId);
         return;
       }
-      window.location.href = `/studio/people/${encodeURIComponent(data.contact.id)}`;
+      window.location.href = studioPersonPath(data.contact.id);
     } catch {
       showError('Could not save this person. Try again in a moment.');
     }

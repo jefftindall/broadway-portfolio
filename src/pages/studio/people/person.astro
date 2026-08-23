@@ -9,7 +9,8 @@ import {
   STUDIO_STUDENT_FORMAT_LABELS,
 } from '../../../lib/studioPeople';
 
-const { id } = Astro.params;
+// Contact ids live in Table Storage. This static shell reads `?id=` in the
+// browser so `astro build` (`output: 'static'`) does not need getStaticPaths.
 ---
 
 <BaseLayout
@@ -18,7 +19,7 @@ const { id } = Astro.params;
   hideFooterCta={true}
   noIndex={true}
 >
-  <section class="mx-auto max-w-xl px-4 py-5 md:py-8" data-contact-id={id}>
+  <section class="mx-auto max-w-xl px-4 py-5 md:py-8">
     <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
       <div>
         <p class="text-sm uppercase tracking-[0.2em] text-gel">Studio</p>
@@ -249,7 +250,7 @@ const { id } = Astro.params;
 </BaseLayout>
 
 <script>
-  import { STUDIO_RELATED_LABELS } from '../../../lib/studioPeople';
+  import { STUDIO_RELATED_LABELS, studioPersonPath } from '../../../lib/studioPeople';
 
   type Related = { id: string; relation: string };
   type Contact = {
@@ -273,7 +274,7 @@ const { id } = Astro.params;
     etag?: string;
   };
 
-  const contactId = (document.querySelector('[data-contact-id]') as HTMLElement).dataset.contactId || '';
+  const contactId = new URLSearchParams(window.location.search).get('id') || '';
   const titleEl = document.getElementById('person-title') as HTMLElement;
   const statusEl = document.getElementById('people-status') as HTMLElement;
   const form = document.getElementById('edit-form') as HTMLFormElement;
@@ -361,7 +362,7 @@ const { id } = Astro.params;
         const label = other?.displayName || 'Linked person';
         const relation = STUDIO_RELATED_LABELS[rel.relation as keyof typeof STUDIO_RELATED_LABELS] || rel.relation;
         li.innerHTML = `
-          <a href="/studio/people/${encodeURIComponent(rel.id)}" class="text-gel underline-offset-2 hover:text-gold hover:underline">${escapeHtml(label)}</a>
+          <a href="${studioPersonPath(rel.id)}" class="text-gel underline-offset-2 hover:text-gold hover:underline">${escapeHtml(label)}</a>
           <span class="text-xs text-muted">${escapeHtml(relation)}</span>
           <button type="button" data-unlink="${escapeHtml(rel.id)}" class="text-xs text-muted underline-offset-2 hover:text-gold hover:underline">Unlink</button>
         `;
@@ -458,6 +459,11 @@ const { id } = Astro.params;
   });
 
   async function load() {
+    if (!contactId) {
+      showError('Open a person from the People list.');
+      statusEl.textContent = '';
+      return;
+    }
     try {
       const [detailRes, listRes] = await Promise.all([
         fetch(`/api/contacts/${encodeURIComponent(contactId)}`, { headers: { Accept: 'application/json' } }),
