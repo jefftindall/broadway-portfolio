@@ -39,6 +39,7 @@ func start
 
 ## Documentation
 
+- [Data persistence](docs/architecture/data-persistence.md) — stores, models, relations, and access-flow diagrams
 - [Initial setup](docs/setup.md) — Terraform, secrets, GitHub App, OIDC, DNS cutover
 - [Casting discoverability backlog](docs/plans/casting-discoverability.md) — assessment rubric, scores, and `DISC-*` action IDs for SEO/casting work
 - [Search Console & Analytics plan](docs/plans/search-and-analytics.md) — phased GSC + GA4 work (`SEARCH-*` action IDs)
