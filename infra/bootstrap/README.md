@@ -10,8 +10,12 @@
 #   Resource group:    rg-elyse-tfstate
 #   Storage account:   stelysetfstateeu2
 #   Container:         tfstate
-#   Shared RG/vault:   rg-elyse-shared / kv-elyse-shared (SITE-*, Turnstile, ACS, ALERT-*, GA-*, GSC-*, MONITOR-*)
+#   Shared RG/vault:   rg-elyse-shared / kv-elyse-shared (SITE-*, Turnstile, ACS, ALERT-*, GA-*, GSC-*, MONITOR-*, Stripe TEST/LIVE API keys)
 #   Shared ACS:        acs-elyse-shared + email-elyse-shared (one MailFrom / SMS number)
+#   Stripe API keys:   STRIPE-TEST-SECRET-KEY / PUBLISHABLE-KEY and STRIPE-LIVE-* placeholders.
+#                      Staging/prod initialize the Stripe provider from these secrets and own
+#                      the catalog (products, prices, webhooks, Payment Links).
+#                      Do not data-source env vaults from bootstrap.
 #   Studio monitor:    azuread_user studio-monitor@<initial domain> + MONITOR-UPN/PASSWORD/TOTP-SEED
 #                      Apply requires User Administrator (or Global Administrator). TOTP seed:
 #                      docs/runbooks/studio-auth-monitoring.md

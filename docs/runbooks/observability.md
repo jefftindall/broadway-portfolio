@@ -90,6 +90,7 @@ User-facing messages stay short and non-technical. Full provider/SDK detail is o
 | `GET /api/publisherStatus` | Preflight allowlist check for Studio UI |
 | `GET /api/publishStatus` | Studio Done-step pipeline poll (`sha` → Actions run status) |
 | `GET /api/lessonPayConfig` | Public pay-flow flag + Payment Link URLs (no secret keys; empty when prod flag is off) |
+| `StripeWebhookReceived` / `StripeWebhookRejected` | `POST /api/stripeWebhook` (`eventId` + `eventType` only on success; `errorKind` on reject; never payload/PII) |
 | Page views / client errors / fetch | Browser SDK in `BaseLayout` |
 | `StudioPublishUiSuccess` / `StudioPublishUiFailed` | Studio UI (always sampled; `reason` + optional `correlationId` on failures) |
 | `StudioPublishToProdCompleted` | Studio Done-step when Deploy Production succeeds (`durationMs` from Publish click; always sampled) |

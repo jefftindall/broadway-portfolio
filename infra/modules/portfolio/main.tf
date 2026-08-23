@@ -18,6 +18,14 @@ terraform {
       source  = "integrations/github"
       version = "~> 6.0"
     }
+    stripe = {
+      source  = "stripe/stripe"
+      version = "~> 0.2.2"
+    }
+    external = {
+      source  = "hashicorp/external"
+      version = "~> 2.3"
+    }
   }
 }
 

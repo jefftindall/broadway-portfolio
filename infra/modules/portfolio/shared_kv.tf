@@ -1,6 +1,6 @@
-# Shared foundation vault (bootstrap) — site-build, Turnstile, ACS, and ALERT-* ops
-# contacts identical across staging and prod so a single release artifact / one SMS
-# number / one on-call set is shared.
+# Shared foundation vault (bootstrap) — site-build, Turnstile, ACS, ALERT-* ops
+# contacts, and Stripe TEST/LIVE API keys. Staging/prod initialize the Stripe
+# provider from those keys and store webhook secrets / Payment Links in the env vault.
 # Deploy OIDC principals get Key Vault Secrets User on this vault from bootstrap
 # (not here) so Build release (prod identity) is not blocked on prod Terraform apply.
 

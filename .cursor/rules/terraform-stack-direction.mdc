@@ -1,0 +1,18 @@
+---
+description: Bootstrap may feed environments; environments must never feed bootstrap
+alwaysApply: true
+---
+
+# Terraform stack direction
+
+**Only bootstrap → environments.** Bootstrap creates shared resources (`kv-elyse-shared`, ACS, OIDC, budget, Stripe API keys). Staging/prod **consume** them by well-known name (`data.azurerm_key_vault.shared`). That is the allowed dependency. Stripe products, prices, webhooks, and Payment Links belong in the environment stacks (test keys on staging, live keys on prod) so catalog changes promote with the rest of the env.
+
+**Never environments → bootstrap.** Do not add to `infra/bootstrap/`:
+
+- `terraform_remote_state` of staging/prod
+- `data` sources on `kv-elyse-staging` / `kv-elyse-prod` or other env-stack resources
+- variables/outputs that must be filled from env Terraform
+
+One-off copy scripts (e.g. env vault → shared KV) may use Azure CLI. They are not Terraform dependencies.
+
+Existing exception: bootstrap looks up Entra apps `elyse-portfolio-gha-staging` / `elyse-portfolio-gha-prod` **by display name** so shared-KV RBAC is not blocked on env apply. That is a directory lookup, not env state. Do not extend it to Key Vaults or remote state.

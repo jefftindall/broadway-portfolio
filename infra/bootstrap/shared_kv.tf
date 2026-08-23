@@ -1,7 +1,7 @@
 # Shared foundation Key Vault — site-build, Turnstile, ACS (email/SMS), ops
-# ALERT-*, and GA Data API scorecard reads (OPS-P5). ALERT-* / GA-* are
-# identical across staging and prod. Env vaults keep Gemini / GitHub App /
-# allowlist / AAD.
+# ALERT-*, GA Data API scorecard reads (OPS-P5), and Stripe TEST/LIVE keys
+# (see stripe.tf). ALERT-* / GA-* are identical across staging and prod mappings.
+# Stripe API keys (TEST + LIVE) also live here; each env stack owns its catalog.
 
 locals {
   shared_kv_name = "kv-elyse-shared"
@@ -195,6 +195,7 @@ resource "github_actions_variable" "azure_shared_key_vault_name" {
 
 # Build release uses the prod deploy identity; staging-branch uses staging.
 # Grant both here so CD is not blocked waiting for the other env’s Terraform apply.
+# Directory lookup by display name — not env Terraform state or env Key Vaults.
 data "azuread_service_principal" "gha_staging" {
   display_name = "elyse-portfolio-gha-staging"
 }

@@ -6,8 +6,9 @@
 # then copy resolved values into SWA configuration (AAD_CLIENT_SECRET stays a
 # Key Vault reference; the SWA auth platform resolves that one).
 #
-# Shared (bootstrap kv-elyse-shared): SITE-CONTACT-*, TURNSTILE-SECRET-KEY, ACS-*
-# Per-env vault: Gemini, GitHub App, allowlist, AAD, Stripe
+# Shared (bootstrap kv-elyse-shared): SITE-CONTACT-*, TURNSTILE-SECRET-KEY, ACS-*,
+# Stripe TEST/LIVE API keys
+# Per-env vault: Gemini, GitHub App, allowlist, AAD, Stripe webhook secret, Payment Links
 #
 # Usage:
 #   ./scripts/sync-swa-api-secrets.sh staging
@@ -62,8 +63,13 @@ ACS_SMS_FROM="$(kv_value "$SHARED_VAULT" ACS-SMS-FROM)"
 NOTIFY_EMAIL="$(kv_value "$SHARED_VAULT" SITE-CONTACT-EMAIL)"
 NOTIFY_PHONE="$(kv_value "$SHARED_VAULT" SITE-CONTACT-PHONE)"
 TURNSTILE_SECRET="$(kv_value "$SHARED_VAULT" TURNSTILE-SECRET-KEY)"
-STRIPE_SECRET="$(kv_value "$VAULT" STRIPE-SECRET-KEY)"
-STRIPE_PUBLISHABLE="$(kv_value "$VAULT" STRIPE-PUBLISHABLE-KEY)"
+if [[ "$ENV" == "prod" ]]; then
+  STRIPE_PREFIX="STRIPE-LIVE"
+else
+  STRIPE_PREFIX="STRIPE-TEST"
+fi
+STRIPE_SECRET="$(kv_value "$SHARED_VAULT" "${STRIPE_PREFIX}-SECRET-KEY")"
+STRIPE_PUBLISHABLE="$(kv_value "$SHARED_VAULT" "${STRIPE_PREFIX}-PUBLISHABLE-KEY")"
 STRIPE_WEBHOOK="$(kv_value "$VAULT" STRIPE-WEBHOOK-SECRET)"
 STRIPE_LINK_30="$(kv_value "$VAULT" STRIPE-PAYMENT-LINK-30MIN)"
 STRIPE_LINK_60="$(kv_value "$VAULT" STRIPE-PAYMENT-LINK-60MIN)"

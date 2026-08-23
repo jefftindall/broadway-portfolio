@@ -30,6 +30,17 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      - name: Install API deps (Stripe Payment Link upsert)
+        working-directory: ${{ github.workspace }}
+        run: npm ci --prefix api
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v4
         with:
@@ -68,6 +79,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
         run: terraform apply -input=false tfplan
+
+      - name: Sync SWA API secrets
+        working-directory: ${{ github.workspace }}
+        run: bash scripts/sync-swa-api-secrets.sh staging
 
   deploy_staging:
     name: Deploy Staging
