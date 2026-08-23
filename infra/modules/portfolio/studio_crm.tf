@@ -1,5 +1,7 @@
 # STUDIO-P1-001 — per-environment Table Storage for Studio CRM contacts.
-# Standard LRS; no always-on Postgres. Connection string is written into SWA
+# Standard RA-GRS (eastus2 → paired Central US). The secondary is readable if
+# the primary region is down. Writes still require the primary until an operator
+# account failover. No always-on Postgres. Connection string is written into SWA
 # app settings at apply (same pattern as ACS). Do not output the value.
 
 locals {
@@ -12,7 +14,7 @@ resource "azurerm_storage_account" "studio_crm" {
   resource_group_name             = azurerm_resource_group.main.name
   location                        = azurerm_resource_group.main.location
   account_tier                    = "Standard"
-  account_replication_type        = "LRS"
+  account_replication_type        = "RAGRS"
   account_kind                    = "StorageV2"
   min_tls_version                 = "TLS1_2"
   https_traffic_only_enabled      = true

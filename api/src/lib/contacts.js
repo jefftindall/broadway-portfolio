@@ -3,7 +3,7 @@
  * Never log email, phone, notes, or display names (ids + kinds only).
  */
 import { randomUUID } from 'node:crypto';
-import { TableClient } from '@azure/data-tables';
+import { createGeoRedundantTableClient } from './tableGeo.js';
 
 export const STUDIO_PERSONAS = ['student', 'parent', 'agent', 'casting', 'alumni'];
 export const STUDIO_STUDENT_FORMATS = ['nyc', 'zoom'];
@@ -621,7 +621,7 @@ export function contactsStoreFromEnv(env = process.env) {
     throw new CrmConfigError('missing studio_crm_storage');
   }
   return createContactsStore({
-    tableClient: TableClient.fromConnectionString(connectionString, tableName),
+    tableClient: createGeoRedundantTableClient(connectionString, tableName),
   });
 }
 

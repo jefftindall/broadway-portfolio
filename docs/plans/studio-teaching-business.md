@@ -173,7 +173,7 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 
 | ID | Title | Status | Depends on | Primary files |
 |----|-------|--------|------------|---------------|
-| `STUDIO-P1-001` | Contact store + schema (Table Storage) | `done` | `STUDIO-P0-001` | `infra/modules/portfolio/studio_crm.tf`, `api/src/lib/contacts.js` |
+| `STUDIO-P1-001` | Contact store + schema (Table Storage) | `done` | `STUDIO-P0-001` | `infra/modules/portfolio/studio_crm.tf`, `api/src/lib/contacts.js`, `api/src/lib/tableGeo.js` |
 | `STUDIO-P1-002` | Persona model + related contacts | `done` | `STUDIO-P1-001` | Same store; validation |
 | `STUDIO-P1-003` | `/studio/people` list + detail (create/edit) | `done` | `STUDIO-P1-002` | `src/pages/studio/people.astro`, `src/pages/studio/people/[id].astro` |
 | `STUDIO-P1-004` | Privacy + logging contract for CRM PII | `done` | `STUDIO-P1-001` | `src/pages/privacy.astro`; Functions logs |
@@ -185,6 +185,7 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 **Acceptance criteria**
 
 - [x] Azure Table Storage (preferred) or Cosmos serverless provisioned in env stacks; no always-on Postgres
+- [x] Env accounts are Standard **RA-GRS** so People can read the paired region (eastus2 → Central US) if the primary is down; writes stay on the primary until an account failover
 - [x] If a new billable SKU is added: [`cost-and-quotas.md`](../runbooks/cost-and-quotas.md) + `budget.tf` + `SUBSCRIPTION_BUDGET_USD` updated in the same PR
 - [x] Contact record: id, display name, email, phone, personas[], notes, created/updated — **values never committed**
 - [x] Auth: only the signed-in Studio user; publish allowlist is not required to **read** people (same as opening `/studio`)

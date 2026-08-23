@@ -21,7 +21,7 @@
     "test:api-gallery-meta": "node --test api/src/lib/gallery-meta.test.js",
     "test:api-lesson-pay": "node --test api/src/lib/lessonPayConfig.test.js",
     "test:api-stripe-webhook": "node --test api/src/lib/stripeWebhook.test.js",
-    "test:api-contacts": "node --test api/src/lib/contacts.test.js",
+    "test:api-contacts": "node --test api/src/lib/contacts.test.js api/src/lib/tableGeo.test.js",
     "test:lesson-rates": "node --test scripts/read-lesson-rates.test.mjs scripts/upsert-stripe-payment-links.test.mjs",
     "test:api-reel-poster": "node --test api/src/lib/reel-poster.test.js",
     "lint:actions-secrets": "node scripts/check-actions-secret-safety.mjs",
