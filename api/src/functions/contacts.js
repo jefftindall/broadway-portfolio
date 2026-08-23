@@ -8,7 +8,6 @@ import {
 } from '../lib/auth.js';
 import { contactsStoreFromEnv } from '../lib/contacts.js';
 import { crmFailureResponse } from '../lib/httpErrors.js';
-import { ensurePeopleSeed, shouldSeedStudioPeople } from '../lib/peopleSeed.js';
 import { flush, trackEvent, trackException } from '../lib/telemetry.js';
 
 function jsonHeaders() {
@@ -86,12 +85,6 @@ app.http('contacts', {
         const url = new URL(request.url);
         const includeArchived = flagEnabled(url.searchParams.get('includeArchived'));
         const directory = flagEnabled(url.searchParams.get('directory'));
-        if (shouldSeedStudioPeople()) {
-          const seeded = await ensurePeopleSeed(store, authed.ownerKey);
-          if (seeded.created > 0) {
-            trackEvent('StudioCrmSeed', { correlationId, created: seeded.created });
-          }
-        }
         const listed = await store.list(authed.ownerKey, {
           q: url.searchParams.get('q') || '',
           persona: url.searchParams.get('persona') || '',

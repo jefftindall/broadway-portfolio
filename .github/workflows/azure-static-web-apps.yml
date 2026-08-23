@@ -56,6 +56,9 @@ jobs:
               - '.github/workflows/azure-static-web-apps.yml'
               - '.github/workflows/static-analysis.yml'
               - '.github/workflows/staging-branch.yml'
+              - 'scripts/seed-studio-people.sh'
+              - 'scripts/seed-studio-people.mjs'
+              - 'scripts/lib/people-seed.mjs'
             app:
               - 'src/**'
               - 'public/**'
@@ -294,6 +297,15 @@ jobs:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Install API dependencies
+        run: npm ci --prefix api
+
+      - name: Seed Studio People
+        env:
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          AZURE_KEY_VAULT_NAME: ${{ vars.AZURE_KEY_VAULT_NAME }}
+        run: bash scripts/seed-studio-people.sh staging
 
       - name: Resolve Static Web Apps deploy token
         id: swa

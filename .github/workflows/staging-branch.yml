@@ -129,6 +129,12 @@ jobs:
       - name: Install API dependencies
         run: npm ci --prefix api
 
+      - name: Seed Studio People
+        env:
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          AZURE_KEY_VAULT_NAME: ${{ vars.AZURE_KEY_VAULT_NAME }}
+        run: bash scripts/seed-studio-people.sh staging
+
       - name: Apply staging noindex (robots.txt + X-Robots-Tag)
         run: node scripts/apply-staging-noindex.mjs dist
 

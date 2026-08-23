@@ -1,6 +1,7 @@
 /**
  * Fictional Studio People rows for local + staging pagination checks.
  * 15 rows = a page and a half at the default page size of 10.
+ * Deploy-time only — not imported by Azure Functions.
  * Never log display names, emails, or phones.
  */
 
@@ -33,9 +34,15 @@ export const PEOPLE_SEEDS = [
   notes: SEED_NOTE,
 }));
 
-export function shouldSeedStudioPeople(env = process.env) {
-  if (String(env.AZURE_FUNCTIONS_ENVIRONMENT || '').trim() === 'Development') return true;
-  return /^(1|true|yes)$/i.test(String(env.STUDIO_CRM_SEED || '').trim());
+export function parseOwnerList(text) {
+  return [
+    ...new Set(
+      String(text || '')
+        .split(/[\s,]+/)
+        .map((part) => part.trim())
+        .filter((part) => part && part !== 'REPLACE_ME'),
+    ),
+  ];
 }
 
 export async function ensurePeopleSeed(store, ownerKey) {

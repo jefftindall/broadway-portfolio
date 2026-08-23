@@ -190,6 +190,7 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 - [x] If a new billable SKU is added: [`cost-and-quotas.md`](../runbooks/cost-and-quotas.md) + `budget.tf` + `SUBSCRIPTION_BUDGET_USD` updated in the same PR
 - [x] Contact record: id, display name, email, phone, personas[], notes, created/updated — **values never committed**
 - [x] Auth: only the signed-in Studio user; publish allowlist is not required to **read** people (same as opening `/studio`)
+- [x] Staging seed (15 fictional rows) runs in CD **after Terraform apply and before SWA upload** (`scripts/seed-studio-people.sh`) — not inside Functions. Prod is not seeded. Local: `npm run studio:seed-people`
 - [ ] Sync CSV download — **removed**; data-not-hostage export is `STUDIO-P1-006`
 
 </details>

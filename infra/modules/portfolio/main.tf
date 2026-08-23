@@ -215,8 +215,6 @@ resource "azurerm_static_web_app" "main" {
     # Studio CRM (Table Storage). Signed-in users only — not the publish allowlist.
     STUDIO_CRM_STORAGE_CONNECTION_STRING = azurerm_storage_account.studio_crm.primary_connection_string
     STUDIO_CRM_TABLE_NAME                = azurerm_storage_table.contacts.name
-    # Staging-only fictional seed (15 rows). Prod stays off.
-    STUDIO_CRM_SEED = var.environment == "staging" ? "true" : "false"
   }
 
   depends_on = [

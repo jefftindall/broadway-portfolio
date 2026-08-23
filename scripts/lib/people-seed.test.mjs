@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createContactsStore, MemoryTableClient } from './contacts.js';
+import { createContactsStore, MemoryTableClient } from '../../api/src/lib/contacts.js';
 import {
   PEOPLE_SEED_COUNT,
   PEOPLE_SEEDS,
   ensurePeopleSeed,
-  shouldSeedStudioPeople,
-} from './peopleSeed.js';
+  parseOwnerList,
+} from './people-seed.mjs';
 
 test('people seed is a page and a half at 10 per page', () => {
   assert.equal(PEOPLE_SEED_COUNT, 15);
@@ -16,11 +16,9 @@ test('people seed is a page and a half at 10 per page', () => {
   assert.ok(PEOPLE_SEEDS.every((row) => row.email.endsWith('@studio.test')));
 });
 
-test('shouldSeedStudioPeople is on in Development or when STUDIO_CRM_SEED is true', () => {
-  assert.equal(shouldSeedStudioPeople({ AZURE_FUNCTIONS_ENVIRONMENT: 'Development' }), true);
-  assert.equal(shouldSeedStudioPeople({ STUDIO_CRM_SEED: 'true' }), true);
-  assert.equal(shouldSeedStudioPeople({ STUDIO_CRM_SEED: 'false' }), false);
-  assert.equal(shouldSeedStudioPeople({}), false);
+test('parseOwnerList drops placeholders and blanks', () => {
+  assert.deepEqual(parseOwnerList('  , REPLACE_ME, ,dev, dev '), ['dev']);
+  assert.deepEqual(parseOwnerList(''), []);
 });
 
 test('ensurePeopleSeed is idempotent and stays on one owner partition', async () => {
