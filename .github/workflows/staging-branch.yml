@@ -82,6 +82,8 @@ jobs:
 
       - name: Sync SWA API secrets
         working-directory: ${{ github.workspace }}
+        env:
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_TF_SUBSCRIPTION_ID }}
         run: bash scripts/sync-swa-api-secrets.sh staging
 
   deploy_staging:
