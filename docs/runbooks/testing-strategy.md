@@ -147,7 +147,7 @@ For local preview, propagation polling is usually instant; `waitForOk` still wor
 1. **Build release** once (`npm run build` + API install); artifact uploaded for reuse
 2. Deploy staging from that artifact (after `apply-staging-noindex.mjs` on the staging copy only)
 3. Resolve staging hostname via `scripts/resolve-swa-hostname.sh` (Ready custom domain, else default SWA host)
-4. `npm run test:studio-auth-token` then `npm run test:smoke` (Studio login spec skips until TOTP is enrolled)
+4. Azure OIDC login via [`scripts/azure-oidc-login.sh`](../../scripts/azure-oidc-login.sh) (retries transient `az login` JSON parse errors), then `npm run test:studio-auth-token` and `npm run test:smoke` (Studio login spec skips until TOTP is enrolled)
 5. Journeys per `test_profile` (`full`, `content`, or skip for API-only)
 6. Prod deploy downloads the **same artifact** — no second site build
 
