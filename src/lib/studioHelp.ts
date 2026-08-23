@@ -169,6 +169,8 @@ export const studioCapabilities: StudioCapability[] = [
   },
 ];
 
+export { studioPeopleNotes } from './studioPeople';
+
 export const studioVoiceNotes = {
   referenceDevice: 'iPhone 17 · Safari',
   holdToSpeak:

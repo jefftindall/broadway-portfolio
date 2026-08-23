@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type APIRequestContext } from '@playwright/test';
 import { sampleCastingSlug, sampleShowTitle } from '../helpers/content';
 import { waitForOk, waitForRequestOk, isStaticWebAppHost, expectsStagingNoIndex } from '../helpers/propagation';
 
@@ -97,30 +97,40 @@ test.describe('public smoke', () => {
 
   test('anonymous studio requires sign-in', async ({ request }) => {
     test.skip(!isStaticWebAppHost(), 'SWA auth is only enforced on deployed hosts');
-    let response = await request.get('/studio', { maxRedirects: 0 });
-    expect(response.status(), 'studio should redirect unauthenticated users').toBeGreaterThanOrEqual(
-      300,
-    );
-    expect(response.status()).toBeLessThan(400);
-    let location = response.headers()['location'] ?? '';
+    await expectAnonymousStudioRedirect(request, '/studio');
+  });
 
-    // When BASE_URL is *.azurestaticapps.net and a custom domain is SWA's default,
-    // Azure 301s /studio to https://<custom>/studio before the auth challenge.
-    // Follow one hop so we still assert Entra login (prod smoke prefers the apex).
-    if (!/\.auth\/login/i.test(location) && /\/studio\/?(\?|$)/i.test(location)) {
-      response = await request.get(location, { maxRedirects: 0 });
-      expect(
-        response.status(),
-        'canonical-domain /studio should still redirect unauthenticated users',
-      ).toBeGreaterThanOrEqual(300);
-      expect(response.status()).toBeLessThan(400);
-      location = response.headers()['location'] ?? '';
-    }
-
-    expect(location).toMatch(/\.auth\/login/i);
-    // Auth 302s must not inherit the public HTML max-age or browsers replay
-    // login after Entra returns to /studio (staging hostname and prod apex).
-    expect(response.headers()['cache-control'] ?? '').toMatch(/no-store/i);
+  test('anonymous studio people requires sign-in', async ({ request }) => {
+    test.skip(!isStaticWebAppHost(), 'SWA auth is only enforced on deployed hosts');
+    await expectAnonymousStudioRedirect(request, '/studio/people');
   });
 });
+
+async function expectAnonymousStudioRedirect(request: APIRequestContext, path: string) {
+  let response = await request.get(path, { maxRedirects: 0 });
+  expect(response.status(), `${path} should redirect unauthenticated users`).toBeGreaterThanOrEqual(
+    300,
+  );
+  expect(response.status()).toBeLessThan(400);
+  let location = response.headers()['location'] ?? '';
+
+  // When BASE_URL is *.azurestaticapps.net and a custom domain is SWA's default,
+  // Azure 301s /studio to https://<custom>/studio before the auth challenge.
+  // Follow one hop so we still assert Entra login (prod smoke prefers the apex).
+  const pathEscaped = path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  if (!/\.auth\/login/i.test(location) && new RegExp(`${pathEscaped}/?(\\?|$)`, 'i').test(location)) {
+    response = await request.get(location, { maxRedirects: 0 });
+    expect(
+      response.status(),
+      `canonical-domain ${path} should still redirect unauthenticated users`,
+    ).toBeGreaterThanOrEqual(300);
+    expect(response.status()).toBeLessThan(400);
+    location = response.headers()['location'] ?? '';
+  }
+
+  expect(location).toMatch(/\.auth\/login/i);
+  // Auth 302s must not inherit the public HTML max-age or browsers replay
+  // login after Entra returns to /studio (staging hostname and prod apex).
+  expect(response.headers()['cache-control'] ?? '').toMatch(/no-store/i);
+}
 

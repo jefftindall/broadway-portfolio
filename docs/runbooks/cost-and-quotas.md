@@ -4,7 +4,7 @@
 
 Region: **eastus2** (all environments). Rates: Azure Retail Prices API (`prices.azure.com`), Consumption / pay-as-you-go USD. Recalculate whenever billable resources are added, removed, or resized — see [`.cursor/rules/ops-operational-excellence.mdc`](../../.cursor/rules/ops-operational-excellence.mdc).
 
-**Last calculated:** 2026-08-09 · **Expected total: $26.54 / month**
+**Last calculated:** 2026-08-23 · **Expected total: $26.63 / month**
 
 | Item | Qty / assumption | Unit rate | USD/mo |
 |------|------------------|-----------|--------|
@@ -12,12 +12,13 @@ Region: **eastus2** (all environments). Rates: Azure Retail Prices API (`prices.
 | App Insights standard web tests (prod) | 3 tests × 1 geo × every 10 min → 12,960 exec/30d | $0.0005 / execution | **6.48** |
 | Key Vault Standard | ×3 (shared + staging + prod), light ops | $0.03 / 10K ops | **0.03** |
 | tfstate storage (`stelysetfstateeu2`) | Standard LRS, &lt;1 GB | $0.024 / GB-mo | **0.03** |
+| Studio CRM Table Storage (`STUDIO-P1-001`) | staging + prod Standard LRS (`stelysecrmstaging`, `stelysecrmprod`); &lt;1 GB tables each | Tables data **$0.045** / GB-mo · ops **$0.00036** / 10K (eastus2 retail, 2026-08-23) | **0.09** |
 | Log Analytics / App Insights | &lt;5 GB Analytics Logs; 30-day retention | First 5 GB/mo free; retention ≤31d free | **0.00** |
 | ACS Email | ~50–100 inquiry + OPS digest msgs | $0.00025 / email + $0.00012 / MB | **0.03** |
 | SWA bandwidth | Within included 100 GB / subscription | Overage $0.20 / GB | **0.00** |
 | Monitor Action Group SMS / voice | Steady-state idle | $0.00645 / SMS · $0.013 / voice (US) | **0.00** |
 | ACS US toll-free number | Leased on `acs-elyse-shared`; E.164 in Key Vault `ACS-SMS-FROM` | **$2.00 / mo** while leased | **2.00** |
-| **Azure expected total** | | | **26.54** |
+| **Azure expected total** | | | **26.63** |
 
 **ACS toll-free note:** Lease billing starts when the number is purchased. **Toll-free verification** often takes on the order of **~5 weeks** before SMS can send. Keeping the number in `ACS-SMS-FROM` (shared KV) during that wait is fine — the API still skips SMS until the number is usable / not `REPLACE_ME`. Email inquiry notify continues to work. See [rotate-secrets.md](rotate-secrets.md) § Shared SMS.
 
@@ -26,7 +27,7 @@ Region: **eastus2** (all environments). Rates: Azure Retail Prices API (`prices.
 | Field | Value |
 |-------|--------|
 | Formula | `ceil(expected_monthly_usd × 1.25)` |
-| Expected | **$26.54** |
+| Expected | **$26.63** |
 | Budget amount | **$34 / month** (`budget-elyse-portfolio-monthly` in `infra/bootstrap/budget.tf`) |
 | Actual alerts | **80%** and **100%** → Key Vault `ALERT-EMAIL` only (Owners fallback if `REPLACE_ME`) |
 | 80% of budget | ≈ **$27.20** (≈ expected retail total) |

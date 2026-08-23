@@ -1,0 +1,482 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import {
+  STUDIO_PERSONAS,
+  STUDIO_PERSONA_LABELS,
+  STUDIO_RELATED_RELATIONS,
+  STUDIO_RELATED_LABELS,
+  STUDIO_STUDENT_FORMATS,
+  STUDIO_STUDENT_FORMAT_LABELS,
+} from '../../../lib/studioPeople';
+
+const { id } = Astro.params;
+---
+
+<BaseLayout
+  title="Person"
+  description="Private Studio contact detail."
+  hideFooterCta={true}
+  noIndex={true}
+>
+  <section class="mx-auto max-w-xl px-4 py-5 md:py-8" data-contact-id={id}>
+    <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+      <div>
+        <p class="text-sm uppercase tracking-[0.2em] text-gel">Studio</p>
+        <h1 id="person-title" class="mt-1 font-display text-3xl text-spotlight md:text-4xl">Person</h1>
+      </div>
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
+        <a href="/studio/people" class="text-gel underline-offset-2 hover:text-gold hover:underline">
+          People
+        </a>
+        <a href="/studio" class="text-gel underline-offset-2 hover:text-gold hover:underline">Hub</a>
+        <a
+          href="/.auth/logout?post_logout_redirect_uri=/"
+          class="text-gel underline-offset-2 hover:text-gold hover:underline"
+        >
+          Sign out
+        </a>
+      </div>
+    </div>
+
+    <div
+      id="people-error"
+      class="mt-4 hidden rounded-sm border border-line bg-panel/60 p-3 text-sm text-muted"
+      role="alert"
+    >
+      <p id="people-error-msg"></p>
+      <p id="people-error-ref" class="mt-2 hidden">
+        Reference: <code id="people-error-id" class="break-all text-spotlight"></code>
+      </p>
+    </div>
+
+    <p id="people-status" class="mt-4 text-sm text-muted" role="status">Loading…</p>
+
+    <form id="edit-form" class="mt-6 hidden space-y-4">
+      <label class="block text-sm text-muted">
+        Name
+        <input
+          id="edit-name"
+          type="text"
+          required
+          class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+        />
+      </label>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <label class="block text-sm text-muted">
+          Email
+          <input
+            id="edit-email"
+            type="email"
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <label class="block text-sm text-muted">
+          Phone
+          <input
+            id="edit-phone"
+            type="tel"
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+      </div>
+      <fieldset>
+        <legend class="text-sm text-muted">Personas</legend>
+        <div class="mt-2 flex flex-wrap gap-2">
+          {
+            STUDIO_PERSONAS.map((persona) => (
+              <label class="inline-flex items-center gap-2 rounded-sm border border-line px-3 py-2 text-sm text-spotlight">
+                <input type="checkbox" name="edit-persona" value={persona} />
+                {STUDIO_PERSONA_LABELS[persona]}
+              </label>
+            ))
+          }
+        </div>
+      </fieldset>
+      <label class="block text-sm text-muted">
+        Notes
+        <textarea
+          id="edit-notes"
+          rows="4"
+          class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+        ></textarea>
+      </label>
+
+      <div id="student-fields" class="hidden space-y-3 rounded-sm border border-line bg-panel/40 p-4">
+        <h2 class="font-display text-2xl text-spotlight">Student</h2>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <label class="block text-sm text-muted">
+            Lesson rate ($)
+            <input
+              id="edit-rate"
+              type="number"
+              min="0"
+              step="1"
+              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+            />
+          </label>
+          <label class="block text-sm text-muted">
+            Format
+            <select
+              id="edit-format"
+              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+            >
+              <option value="">Not set</option>
+              {
+                STUDIO_STUDENT_FORMATS.map((format) => (
+                  <option value={format}>{STUDIO_STUDENT_FORMAT_LABELS[format]}</option>
+                ))
+              }
+            </select>
+          </label>
+          <label class="block text-sm text-muted">
+            Package remaining
+            <input
+              id="edit-package"
+              type="number"
+              min="0"
+              step="1"
+              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+            />
+          </label>
+          <label class="block text-sm text-muted">
+            Last lesson
+            <input
+              id="edit-last-lesson"
+              type="date"
+              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+            />
+          </label>
+        </div>
+      </div>
+
+      <div id="agent-fields" class="hidden space-y-3 rounded-sm border border-line bg-panel/40 p-4">
+        <h2 class="font-display text-2xl text-spotlight">Agent</h2>
+        <label class="block text-sm text-muted">
+          Agency
+          <input
+            id="edit-agency"
+            type="text"
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <label class="block text-sm text-muted">
+          Territory
+          <input
+            id="edit-territory"
+            type="text"
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <label class="block text-sm text-muted">
+          Last submission
+          <input
+            id="edit-last-submission"
+            type="text"
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <label class="block text-sm text-muted">
+          Last booking
+          <input
+            id="edit-last-booking"
+            type="text"
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <label class="block text-sm text-muted">
+          Next step
+          <input
+            id="edit-next-step"
+            type="text"
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+      </div>
+
+      <div class="space-y-3 rounded-sm border border-line bg-panel/40 p-4">
+        <h2 class="font-display text-2xl text-spotlight">Related people</h2>
+        <ul id="related-list" class="space-y-2 text-sm"></ul>
+        <div class="grid gap-3 sm:grid-cols-[1fr_auto_auto] sm:items-end">
+          <label class="block text-sm text-muted">
+            Link an existing person
+            <select
+              id="related-pick"
+              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+            >
+              <option value="">Choose…</option>
+            </select>
+          </label>
+          <label class="block text-sm text-muted">
+            Relation
+            <select
+              id="related-relation"
+              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+            >
+              {
+                STUDIO_RELATED_RELATIONS.map((relation) => (
+                  <option value={relation}>{STUDIO_RELATED_LABELS[relation]}</option>
+                ))
+              }
+            </select>
+          </label>
+          <button
+            id="related-add"
+            type="button"
+            class="rounded-sm border border-line px-4 py-2 text-sm text-spotlight hover:border-gold"
+          >
+            Link
+          </button>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-2">
+        <button
+          type="submit"
+          class="rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110"
+        >
+          Save changes
+        </button>
+        <button
+          id="archive-btn"
+          type="button"
+          class="rounded-sm border border-line px-4 py-2 text-sm text-spotlight hover:border-gold"
+        >
+          Archive
+        </button>
+      </div>
+    </form>
+  </section>
+</BaseLayout>
+
+<script>
+  import { STUDIO_RELATED_LABELS } from '../../../lib/studioPeople';
+
+  type Related = { id: string; relation: string };
+  type Contact = {
+    id: string;
+    displayName: string;
+    email: string;
+    phone: string;
+    personas: string[];
+    notes: string;
+    archived: boolean;
+    studentRateCents: number | null;
+    studentFormat: string;
+    studentPackageRemaining: number | null;
+    studentLastLesson: string;
+    agentAgency: string;
+    agentTerritory: string;
+    agentLastSubmission: string;
+    agentLastBooking: string;
+    agentNextStep: string;
+    relatedContacts: Related[];
+    etag?: string;
+  };
+
+  const contactId = (document.querySelector('[data-contact-id]') as HTMLElement).dataset.contactId || '';
+  const titleEl = document.getElementById('person-title') as HTMLElement;
+  const statusEl = document.getElementById('people-status') as HTMLElement;
+  const form = document.getElementById('edit-form') as HTMLFormElement;
+  const errorBox = document.getElementById('people-error') as HTMLElement;
+  const errorMsg = document.getElementById('people-error-msg') as HTMLElement;
+  const errorRef = document.getElementById('people-error-ref') as HTMLElement;
+  const errorId = document.getElementById('people-error-id') as HTMLElement;
+  const studentFields = document.getElementById('student-fields') as HTMLElement;
+  const agentFields = document.getElementById('agent-fields') as HTMLElement;
+  const relatedList = document.getElementById('related-list') as HTMLElement;
+  const relatedPick = document.getElementById('related-pick') as HTMLSelectElement;
+  const relatedRelation = document.getElementById('related-relation') as HTMLSelectElement;
+  const archiveBtn = document.getElementById('archive-btn') as HTMLButtonElement;
+
+  let current: Contact | null = null;
+  let directory: Contact[] = [];
+
+  function showError(message: string, correlationId?: string) {
+    errorMsg.textContent = message;
+    if (correlationId) {
+      errorId.textContent = correlationId;
+      errorRef.classList.remove('hidden');
+    } else {
+      errorRef.classList.add('hidden');
+    }
+    errorBox.classList.remove('hidden');
+  }
+
+  function clearError() {
+    errorBox.classList.add('hidden');
+  }
+
+  function selectedPersonas() {
+    return [...document.querySelectorAll<HTMLInputElement>('input[name="edit-persona"]:checked')].map(
+      (el) => el.value,
+    );
+  }
+
+  function togglePersonaSections() {
+    const personas = selectedPersonas();
+    studentFields.classList.toggle('hidden', !personas.includes('student'));
+    agentFields.classList.toggle('hidden', !personas.includes('agent'));
+  }
+
+  function fillForm(contact: Contact) {
+    current = contact;
+    titleEl.textContent = contact.displayName;
+    (document.getElementById('edit-name') as HTMLInputElement).value = contact.displayName;
+    (document.getElementById('edit-email') as HTMLInputElement).value = contact.email || '';
+    (document.getElementById('edit-phone') as HTMLInputElement).value = contact.phone || '';
+    (document.getElementById('edit-notes') as HTMLTextAreaElement).value = contact.notes || '';
+    document.querySelectorAll<HTMLInputElement>('input[name="edit-persona"]').forEach((box) => {
+      box.checked = contact.personas.includes(box.value);
+    });
+    (document.getElementById('edit-rate') as HTMLInputElement).value =
+      contact.studentRateCents === null || contact.studentRateCents === undefined
+        ? ''
+        : String(Math.round(contact.studentRateCents / 100));
+    (document.getElementById('edit-format') as HTMLSelectElement).value = contact.studentFormat || '';
+    (document.getElementById('edit-package') as HTMLInputElement).value =
+      contact.studentPackageRemaining === null || contact.studentPackageRemaining === undefined
+        ? ''
+        : String(contact.studentPackageRemaining);
+    (document.getElementById('edit-last-lesson') as HTMLInputElement).value = contact.studentLastLesson || '';
+    (document.getElementById('edit-agency') as HTMLInputElement).value = contact.agentAgency || '';
+    (document.getElementById('edit-territory') as HTMLInputElement).value = contact.agentTerritory || '';
+    (document.getElementById('edit-last-submission') as HTMLInputElement).value =
+      contact.agentLastSubmission || '';
+    (document.getElementById('edit-last-booking') as HTMLInputElement).value = contact.agentLastBooking || '';
+    (document.getElementById('edit-next-step') as HTMLInputElement).value = contact.agentNextStep || '';
+    archiveBtn.textContent = contact.archived ? 'Restore' : 'Archive';
+    togglePersonaSections();
+    renderRelated();
+    form.classList.remove('hidden');
+    statusEl.textContent = contact.archived ? 'Archived — restore to show them in the main list.' : '';
+  }
+
+  function renderRelated() {
+    if (!current) return;
+    relatedList.replaceChildren(
+      ...(current.relatedContacts || []).map((rel) => {
+        const other = directory.find((row) => row.id === rel.id);
+        const li = document.createElement('li');
+        li.className = 'flex flex-wrap items-center justify-between gap-2';
+        const label = other?.displayName || 'Linked person';
+        const relation = STUDIO_RELATED_LABELS[rel.relation as keyof typeof STUDIO_RELATED_LABELS] || rel.relation;
+        li.innerHTML = `
+          <a href="/studio/people/${encodeURIComponent(rel.id)}" class="text-gel underline-offset-2 hover:text-gold hover:underline">${escapeHtml(label)}</a>
+          <span class="text-xs text-muted">${escapeHtml(relation)}</span>
+          <button type="button" data-unlink="${escapeHtml(rel.id)}" class="text-xs text-muted underline-offset-2 hover:text-gold hover:underline">Unlink</button>
+        `;
+        li.querySelector('button')?.addEventListener('click', () => {
+          current!.relatedContacts = current!.relatedContacts.filter((item) => item.id !== rel.id);
+          renderRelated();
+        });
+        return li;
+      }),
+    );
+
+    const used = new Set((current.relatedContacts || []).map((rel) => rel.id));
+    used.add(contactId);
+    relatedPick.replaceChildren(new Option('Choose…', ''));
+    for (const row of directory) {
+      if (used.has(row.id) || row.archived) continue;
+      relatedPick.add(new Option(row.displayName, row.id));
+    }
+  }
+
+  function escapeHtml(value: string) {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function formPayload() {
+    const rate = (document.getElementById('edit-rate') as HTMLInputElement).value;
+    const pack = (document.getElementById('edit-package') as HTMLInputElement).value;
+    return {
+      displayName: (document.getElementById('edit-name') as HTMLInputElement).value,
+      email: (document.getElementById('edit-email') as HTMLInputElement).value,
+      phone: (document.getElementById('edit-phone') as HTMLInputElement).value,
+      notes: (document.getElementById('edit-notes') as HTMLTextAreaElement).value,
+      personas: selectedPersonas(),
+      studentRateUsd: rate === '' ? null : Number(rate),
+      studentFormat: (document.getElementById('edit-format') as HTMLSelectElement).value,
+      studentPackageRemaining: pack === '' ? null : Number(pack),
+      studentLastLesson: (document.getElementById('edit-last-lesson') as HTMLInputElement).value,
+      agentAgency: (document.getElementById('edit-agency') as HTMLInputElement).value,
+      agentTerritory: (document.getElementById('edit-territory') as HTMLInputElement).value,
+      agentLastSubmission: (document.getElementById('edit-last-submission') as HTMLInputElement).value,
+      agentLastBooking: (document.getElementById('edit-last-booking') as HTMLInputElement).value,
+      agentNextStep: (document.getElementById('edit-next-step') as HTMLInputElement).value,
+      relatedContacts: current?.relatedContacts || [],
+      archived: current?.archived || false,
+      etag: current?.etag || '',
+    };
+  }
+
+  async function save(extra: Partial<Contact> = {}) {
+    clearError();
+    const payload = { ...formPayload(), ...extra };
+    const res = await fetch(`/api/contacts/${encodeURIComponent(contactId)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showError(data.error || 'Could not save this person.', data.correlationId);
+      return false;
+    }
+    fillForm(data.contact as Contact);
+    return true;
+  }
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const ok = await save();
+    if (ok) statusEl.textContent = 'Saved.';
+  });
+
+  archiveBtn.addEventListener('click', async () => {
+    const next = !current?.archived;
+    const ok = await save({ archived: next });
+    if (ok) statusEl.textContent = next ? 'Archived.' : 'Restored.';
+  });
+
+  document.getElementById('related-add')?.addEventListener('click', () => {
+    const id = relatedPick.value;
+    if (!id || !current) return;
+    current.relatedContacts = [
+      ...current.relatedContacts.filter((rel) => rel.id !== id),
+      { id, relation: relatedRelation.value || 'related' },
+    ];
+    renderRelated();
+  });
+
+  document.querySelectorAll<HTMLInputElement>('input[name="edit-persona"]').forEach((box) => {
+    box.addEventListener('change', togglePersonaSections);
+  });
+
+  async function load() {
+    try {
+      const [detailRes, listRes] = await Promise.all([
+        fetch(`/api/contacts/${encodeURIComponent(contactId)}`, { headers: { Accept: 'application/json' } }),
+        fetch('/api/contacts?includeArchived=true', { headers: { Accept: 'application/json' } }),
+      ]);
+      const detail = await detailRes.json().catch(() => ({}));
+      const list = await listRes.json().catch(() => ({}));
+      if (!detailRes.ok) {
+        showError(detail.error || 'That person isn’t in Studio.', detail.correlationId);
+        statusEl.textContent = '';
+        return;
+      }
+      directory = (list.contacts || []) as Contact[];
+      fillForm(detail.contact as Contact);
+    } catch {
+      showError('Could not load this person. Try again in a moment.');
+      statusEl.textContent = '';
+    }
+  }
+
+  void load();
+</script>

@@ -53,6 +53,7 @@ Living “what runs today” SoT: [testing-strategy.md](../runbooks/testing-stra
 | `J-GAL-01` (gallery **tag filter**) | `planned` | No filter assertions yet |
 | `J-REEL-01` / `J-FOOT-01` / `J-ABOUT-01` / `J-A11Y-01` | `planned` | P1 catalog |
 | `J-STU-01` (anon studio) | `done` | Smoke (SWA hosts) |
+| `J-STU-05` (anon `/studio/people`) | `done` | Smoke (`STUDIO-P1-003`) |
 | `J-STU-04` (signed-in health) | `done` | Smoke `studio-auth.spec.ts` (skips until TOTP seed) |
 | `J-STU-02` / `03`, `J-API-01` / `02` | `planned` | Phase C publisher / API |
 

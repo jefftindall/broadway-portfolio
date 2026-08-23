@@ -4,7 +4,7 @@ import { site } from '../lib/site';
 
 const privacyEmail = 'privacy@elysetindall.com';
 const description =
-  'Privacy policy for elysetindall.com, including contact forms, paid voice-lesson payments via Stripe, SMS inquiry alerts, and how to opt out of text messages.';
+  'Privacy policy for elysetindall.com, including contact forms, Studio CRM contacts, paid voice-lesson payments via Stripe, SMS inquiry alerts, and how to opt out of text messages.';
 ---
 
 <BaseLayout title="Privacy" description={description} hideFooterCta>
@@ -13,17 +13,17 @@ const description =
     <h1 class="mt-3 font-display text-5xl text-spotlight md:text-6xl">Privacy</h1>
     <p class="mt-4 text-muted">
       How {site.name} ({site.url.replace(/^https:\/\//, '')}) collects and uses information on this
-      site — including paid voice lessons, Stripe checkout, and SMS program details carriers may
-      request. Last updated August 22, 2026.
+      site — including paid voice lessons, Stripe checkout, Studio CRM contacts, and SMS program
+      details carriers may request. Last updated August 23, 2026.
     </p>
 
     <div class="prose-site mt-12">
       <h2 id="overview">Overview</h2>
       <p>
         This site is a professional portfolio and voice-lesson site for {site.name}. We collect only
-        what we need to respond to casting and lesson inquiries, take payment for scheduled private
-        voice lessons, run the site securely, and (in production) send short text alerts about
-        inquiries to the studio’s designated phone number.
+        what we need to respond to casting and lesson inquiries, keep signed-in Studio teaching
+        contacts, take payment for scheduled private voice lessons, run the site securely, and (in
+        production) send short text alerts about inquiries to the studio’s designated phone number.
       </p>
 
       <h2 id="information-we-collect">Information we collect</h2>
@@ -46,6 +46,12 @@ const description =
           use this data for advertising personalization on this site.
         </li>
         <li>
+          <strong>Studio CRM.</strong> When a signed-in Studio user adds a teaching or career
+          contact, we store the name and optional email, phone, personas, notes, and related-person
+          links in Azure Table Storage for that user’s Studio workspace. This is not a public
+          directory and is not written into the website repository.
+        </li>
+        <li>
           <strong>Lesson payments.</strong> When you pay for a private voice lesson, Stripe
           (a separate payment processor) collects the details needed to complete checkout and send
           a receipt — typically your name, email, and payment-method data. This site does not
@@ -60,15 +66,18 @@ const description =
         Contact details and messages from inquiry forms are used to reply about casting materials or
         private voice lessons via the contact method you prefer. Optional phone numbers you provide
         are for follow-up on that inquiry — not for unrelated marketing lists. We do not send
-        promotional SMS campaigns to visitors. Payment information is used only to collect lesson
-        fees, issue refunds when applicable, keep bookkeeping records, and prevent fraud.
+        promotional SMS campaigns to visitors. Studio CRM contacts are used only to operate the
+        teaching business (schedule, notes, and later payment or reminder workflows). Payment
+        information is used only to collect lesson fees, issue refunds when applicable, keep
+        bookkeeping records, and prevent fraud.
       </p>
 
       <h2 id="sharing">Sharing</h2>
       <p>
         Inquiry content is processed by our hosting, form-verification, and messaging providers so
         we can deliver and respond to your request. Analytics events from public pages are processed
-        by Google Analytics. Lesson payments are processed by Stripe; Stripe acts as an independent
+        by Google Analytics. Signed-in Studio CRM records are stored in Azure Table Storage in the
+        same hosting environment as the site. Lesson payments are processed by Stripe; Stripe acts as an independent
         controller of the payment data it collects. See Stripe’s privacy policy at{' '}
         <a href="https://stripe.com/privacy" rel="noopener noreferrer" target="_blank">
           stripe.com/privacy</a
@@ -87,6 +96,19 @@ const description =
         If you need a payment record corrected or deleted where the law allows, email{' '}
         <a href={`mailto:${privacyEmail}`}>{privacyEmail}</a>. Some payment records must be kept
         for tax and bookkeeping obligations even after a lesson is complete.
+      </p>
+
+      <h2 id="studio-crm">Studio CRM</h2>
+      <p>
+        Studio is a login-protected workspace. Contacts saved there (inquiry follow-up, voice-lesson
+        students, parents, representation, and casting relationships) are visible only to the
+        signed-in Studio user who owns them. Operational logs and application monitoring record
+        contact identifiers and error kinds — not email addresses, phone numbers, or note bodies.
+        Monthly operations summaries count inquiry volume only and do not include CRM names.
+      </p>
+      <p>
+        To request correction or deletion of a Studio CRM record where the law allows, email{' '}
+        <a href={`mailto:${privacyEmail}`}>{privacyEmail}</a>.
       </p>
 
       <h2 id="sms">SMS notifications</h2>
@@ -126,9 +148,10 @@ const description =
       <h2 id="retention">Retention</h2>
       <p>
         Inquiry messages and related operational logs are kept only as long as needed to respond and
-        run the site securely, unless a longer period is required by law. Payment and refund records
-        are kept as long as needed for taxes, bookkeeping, and dispute handling. Stripe retains
-        payment-method data according to its own policies.
+        run the site securely, unless a longer period is required by law. Studio CRM contacts are
+        kept until the Studio user archives or deletes them, or asks us to remove them where the
+        law allows. Payment and refund records are kept as long as needed for taxes, bookkeeping,
+        and dispute handling. Stripe retains payment-method data according to its own policies.
       </p>
 
       <h2 id="contact">Contact</h2>

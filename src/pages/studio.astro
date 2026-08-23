@@ -64,6 +64,12 @@ const imageHashIndex = buildPublicImageHashIndex();
           Help
         </a>
         <a
+          href="/studio/people"
+          class="inline-flex items-center gap-1.5 text-gel underline-offset-2 hover:text-gold hover:underline"
+        >
+          People
+        </a>
+        <a
           href="/.auth/logout?post_logout_redirect_uri=/"
           class="inline-flex items-center gap-1.5 text-gel underline-offset-2 hover:text-gold hover:underline"
         >
@@ -114,7 +120,14 @@ const imageHashIndex = buildPublicImageHashIndex();
           class="break-all text-spotlight"></code>
       </p>
       <p class="mt-4">
-        You can still read how Studio works — voice, example prompts, and the preview flow — in{' '}
+        You can still open{' '}
+        <a
+          href="/studio/people"
+          class="text-gel underline-offset-2 hover:text-gold hover:underline"
+        >
+          People
+        </a>
+        {' '}and read how Studio works in{' '}
         <a
           href="/studio/help"
           class="text-gel underline-offset-2 hover:text-gold hover:underline"
@@ -135,7 +148,17 @@ const imageHashIndex = buildPublicImageHashIndex();
       data-image-hashes={JSON.stringify(imageHashIndex)}
     >
       <div id="hub-step" class="space-y-4">
-        <p class="text-sm text-muted">What do you want to update?</p>
+        <p class="text-sm text-muted">Teaching business</p>
+        <a
+          href="/studio/people"
+          class="block rounded-sm border border-line bg-panel/40 px-4 py-4 hover:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+        >
+          <span class="block font-display text-2xl text-spotlight">People</span>
+          <span class="mt-1 block text-sm text-muted"
+            >Students, parents, agents, and casting — notes and personas.</span
+          >
+        </a>
+        <p class="pt-2 text-sm text-muted">What do you want to update on the site?</p>
         <div class="grid gap-3">
           <button
             type="button"

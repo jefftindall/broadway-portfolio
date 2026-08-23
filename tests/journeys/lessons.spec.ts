@@ -50,6 +50,8 @@ test.describe('lessons journeys', () => {
     await expect(page.getByRole('heading', { name: 'Payments' })).toBeVisible();
     await expect(page.getByText(/Stripe/i).first()).toBeVisible();
     await expect(page.getByText(/does not sell acting lessons/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Studio CRM' })).toBeVisible();
+    await expect(page.getByText(/Azure Table Storage/i).first()).toBeVisible();
 
     await waitForOk(page, '/terms');
     await expect(page.getByRole('heading', { name: 'Paid voice lessons' })).toBeVisible();

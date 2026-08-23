@@ -1,12 +1,12 @@
 # Elyse Tindall Portfolio
 
-Astro portfolio for [elysetindall.com](https://elysetindall.com) with an authenticated Studio (voice/text content publish today; teaching-business ops over time), Azure Static Web Apps hosting, Terraform infrastructure, and Key Vault–backed secrets.
+Astro portfolio for [elysetindall.com](https://elysetindall.com) with an authenticated Studio (voice/text content publish and People/CRM; more teaching-business ops over time), Azure Static Web Apps hosting, Terraform infrastructure, and Key Vault–backed secrets.
 
 ## Features
 
 - Public site: Shows, Materials, Lessons, About, News, Contact (Gallery linked from About + footer); private voice Lessons (vocal pedagogy / CCM)
 - Casting SEO landing pages at `/for/[slug]` (inbound from search; not linked from site chrome)
-- Private `/studio` companion (auth required) — natural language updates via Gemini → GitHub commits → SWA rebuild
+- Private `/studio` companion (auth required) — Gemini publish plus `/studio/people` CRM (Table Storage); later calendar, pay status, and comms
 - Terraform for Azure (bootstrap + staging/prod, Key Vault, Entra auth, GitHub Actions OIDC)
 - Studio publishes via **GitHub App** installation tokens (no PAT)
 - Docs for setup and ongoing maintenance

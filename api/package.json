@@ -10,6 +10,7 @@
   "dependencies": {
     "@azure/communication-email": "^1.1.0",
     "@azure/communication-sms": "^1.2.0-beta.4",
+    "@azure/data-tables": "^13.3.2",
     "@azure/functions": "^4.6.0",
     "@google/generative-ai": "^0.24.0",
     "@octokit/auth-app": "^8.2.0",
