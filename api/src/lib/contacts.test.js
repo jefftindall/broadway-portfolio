@@ -63,6 +63,9 @@ test('normalizeContactInput accepts student + agent fields without inventing dol
     agentTerritory: 'NYC',
     agentLastSubmission: 'Hadestown',
     agentLastBooking: 'Cabaret 2024',
+    agentLastBookingYear: 2024,
+    agentWarmth: 'Warm',
+    agentLastTouch: '2026-08-01',
     agentNextStep: 'Follow up after callback',
   });
   assert.equal(ok.studentRateCents, 6000);
@@ -70,6 +73,9 @@ test('normalizeContactInput accepts student + agent fields without inventing dol
   assert.equal(ok.studentPackageRemaining, 4);
   assert.equal(ok.studentLastLesson, '2026-08-01');
   assert.equal(ok.agentAgency, 'Example Reps');
+  assert.equal(ok.agentLastBookingYear, 2024);
+  assert.equal(ok.agentWarmth, 'warm');
+  assert.equal(ok.agentLastTouch, '2026-08-01');
 });
 
 test('normalizeContactInput rejects invalid email without echoing it', () => {
@@ -292,4 +298,27 @@ test('classifyCrmError keeps validation copy and maps config/not-found', () => {
 test('persona vocabulary stays the planned set', () => {
   assert.deepEqual(STUDIO_PERSONAS, ['student', 'parent', 'agent', 'casting', 'alumni']);
   assert.equal(normalizeEmail('  A@B.C '), 'a@b.c');
+});
+
+test('LTV rollup is server-set and findByEmail ignores archived rows', async () => {
+  const crm = store();
+  const created = await crm.create({
+    displayName: 'Ada',
+    email: 'ada@example.com',
+    personas: ['student'],
+  });
+  assert.equal(created.studentLtvCents, 0);
+  const rolled = await crm.setLtvRollup(created.id, {
+    stripeCents: 10000,
+    offlineCents: 6000,
+    syncedAt: '2026-08-23T00:00:00.000Z',
+  });
+  assert.equal(rolled.studentLtvCents, 16000);
+  assert.equal(rolled.studentLtvStripeCents, 10000);
+  assert.equal(rolled.studentLtvOfflineCents, 6000);
+  const patched = await crm.update(created.id, { notes: 'Keep LTV' });
+  assert.equal(patched.studentLtvCents, 16000);
+  assert.equal((await crm.findByEmail('ADA@example.com')).id, created.id);
+  await crm.archive(created.id, true);
+  assert.equal(await crm.findByEmail('ada@example.com'), null);
 });

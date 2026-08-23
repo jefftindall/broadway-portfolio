@@ -69,7 +69,7 @@ Sign-in follows the tenant directory, not an enterprise-app assignment list.
 2. Open `/studio/admin/access` as a Super Administrator
 3. Add their email or user ID
 4. Assign:
-   - **People** — view and edit contacts (`people.read` + `people.write`)
+   - **People** — view and edit contacts, lifetime value, and unmatched Stripe rows (`people.read` + `people.write`)
    - **People (view only)** — `people.read`
    - **Publisher** — site updates only (`content.publish`)
    - **Super Administrator** — full catalog (not Azure / Entra Owner)

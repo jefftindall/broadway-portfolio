@@ -81,6 +81,10 @@ export class GeoRedundantTableClient {
     return this.#read('getEntity', args);
   }
 
+  createTable(...args) {
+    return this.primary.createTable(...args);
+  }
+
   createEntity(...args) {
     return this.primary.createEntity(...args);
   }

@@ -50,7 +50,7 @@ export function studioHelpHref(pathname: string): string {
   ) {
     return '/studio/help/students';
   }
-  if (path === '/studio/career' || path.startsWith('/studio/career/')) return '/studio/help';
+  if (path === '/studio/career' || path.startsWith('/studio/career/')) return '/studio/help/career';
   return '/studio/help';
 }
 

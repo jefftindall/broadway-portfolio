@@ -31,6 +31,7 @@
     "STRIPE_PAYMENT_LINK_60MIN": "",
     "STUDIO_CRM_STORAGE_CONNECTION_STRING": "UseDevelopmentStorage=true",
     "STUDIO_CRM_TABLE_NAME": "contacts",
-    "STUDIO_USERS_TABLE_NAME": "studioUsers"
+    "STUDIO_USERS_TABLE_NAME": "studioUsers",
+    "STUDIO_LEDGER_TABLE_NAME": "studioLedger"
   }
 }

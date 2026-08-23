@@ -1,0 +1,35 @@
+---
+import StudioLayout from '../../../layouts/StudioLayout.astro';
+---
+
+<StudioLayout
+  title="Career help"
+  description="Private guide to Studio Career contacts."
+  heading="Career help"
+>
+  <article class="mx-auto max-w-xl px-4 py-5 md:py-8">
+    <p class="text-sm">
+      <a href="/studio/help" class="text-gel underline-offset-2 hover:text-gold hover:underline">
+        ← All help
+      </a>
+      {' · '}
+      <a href="/studio/career" class="text-gel underline-offset-2 hover:text-gold hover:underline">
+        Open Career
+      </a>
+    </p>
+
+    <section class="mt-8 space-y-4">
+      <h2 class="font-display text-3xl text-spotlight">Agents and casting</h2>
+      <p class="text-sm text-muted">
+        Career contacts live in People. Each agent shows last submission, last booking (title and
+        year), recency, warmth, and next step — not a dollar total unless a real invoice exists.
+        Casting contacts store the last materials request the same way.
+      </p>
+      <ol class="list-decimal space-y-2 pl-5 text-sm text-muted">
+        <li>Open <a href="/studio/career" class="text-gel hover:text-gold">Career</a>, then Agents or Casting.</li>
+        <li>Open a person to edit warmth and last-touch dates. Recency is calculated from that date.</li>
+        <li>Stale follow-up tasks are not automatic yet. Recency is not a public score.</li>
+      </ol>
+    </section>
+  </article>
+</StudioLayout>

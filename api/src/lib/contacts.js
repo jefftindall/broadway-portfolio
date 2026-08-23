@@ -8,6 +8,7 @@ import { createGeoRedundantTableClient } from './tableGeo.js';
 export const STUDIO_PERSONAS = ['student', 'parent', 'agent', 'casting', 'alumni'];
 export const STUDIO_STUDENT_FORMATS = ['nyc', 'zoom'];
 export const STUDIO_RELATED_RELATIONS = ['parent', 'student', 'related'];
+export const STUDIO_WARMTH = ['hot', 'warm', 'cool', 'cold'];
 export const DEFAULT_PEOPLE_PAGE_SIZE = 10;
 export const MAX_PEOPLE_PAGE_SIZE = 50;
 export const SEED_CONTACT_ID_PATTERN = /^seed-people-\d{2}$/;
@@ -90,6 +91,17 @@ function asDay(value) {
   const parsed = new Date(text);
   if (Number.isNaN(parsed.getTime())) return '';
   return parsed.toISOString().slice(0, 10);
+}
+
+function normalizeWarmth(value) {
+  const warmth = String(value || '')
+    .trim()
+    .toLowerCase();
+  if (!warmth) return '';
+  if (!STUDIO_WARMTH.includes(warmth)) {
+    throw new CrmValidationError('Warmth must be hot, warm, cool, or cold.');
+  }
+  return warmth;
 }
 
 function uniquePersonas(list) {
@@ -250,6 +262,29 @@ export function normalizeContactInput(input, { partial = false } = {}) {
   if (!partial || has('agentNextStep')) {
     out.agentNextStep = trimTo(src.agentNextStep, MAX_AGENT_LONG);
   }
+  if (!partial || has('agentLastBookingYear')) {
+    const year = src.agentLastBookingYear;
+    if (year === '' || year === null || year === undefined) {
+      out.agentLastBookingYear = null;
+    } else {
+      out.agentLastBookingYear = optionalInt(year, { min: 1950, max: 2100 });
+    }
+  }
+  if (!partial || has('agentWarmth')) {
+    out.agentWarmth = normalizeWarmth(src.agentWarmth);
+  }
+  if (!partial || has('agentLastTouch')) {
+    out.agentLastTouch = asDay(src.agentLastTouch);
+  }
+  if (!partial || has('castingLastRequest')) {
+    out.castingLastRequest = trimTo(src.castingLastRequest, MAX_AGENT_LONG);
+  }
+  if (!partial || has('castingLastRequestOn')) {
+    out.castingLastRequestOn = asDay(src.castingLastRequestOn);
+  }
+  if (!partial || has('castingWarmth')) {
+    out.castingWarmth = normalizeWarmth(src.castingWarmth);
+  }
 
   if (!partial || has('relatedContacts')) {
     out.relatedContacts = normalizeRelated(src.relatedContacts);
@@ -279,7 +314,17 @@ export function publicContact(record) {
     agentTerritory: record.agentTerritory || '',
     agentLastSubmission: record.agentLastSubmission || '',
     agentLastBooking: record.agentLastBooking || '',
+    agentLastBookingYear: record.agentLastBookingYear ?? null,
     agentNextStep: record.agentNextStep || '',
+    agentWarmth: record.agentWarmth || '',
+    agentLastTouch: record.agentLastTouch || '',
+    castingLastRequest: record.castingLastRequest || '',
+    castingLastRequestOn: record.castingLastRequestOn || '',
+    castingWarmth: record.castingWarmth || '',
+    studentLtvCents: record.studentLtvCents ?? 0,
+    studentLtvStripeCents: record.studentLtvStripeCents ?? 0,
+    studentLtvOfflineCents: record.studentLtvOfflineCents ?? 0,
+    studentLtvSyncedAt: record.studentLtvSyncedAt || '',
     relatedContacts: (record.relatedContacts || []).map((rel) => ({
       id: rel.id,
       relation: rel.relation,
@@ -313,7 +358,20 @@ function entityToRecord(entity) {
     agentTerritory: String(entity.agentTerritory || ''),
     agentLastSubmission: String(entity.agentLastSubmission || ''),
     agentLastBooking: String(entity.agentLastBooking || ''),
+    agentLastBookingYear:
+      entity.agentLastBookingYear === undefined || entity.agentLastBookingYear === null
+        ? null
+        : Number(entity.agentLastBookingYear),
     agentNextStep: String(entity.agentNextStep || ''),
+    agentWarmth: String(entity.agentWarmth || ''),
+    agentLastTouch: String(entity.agentLastTouch || ''),
+    castingLastRequest: String(entity.castingLastRequest || ''),
+    castingLastRequestOn: String(entity.castingLastRequestOn || ''),
+    castingWarmth: String(entity.castingWarmth || ''),
+    studentLtvCents: Number(entity.studentLtvCents || 0),
+    studentLtvStripeCents: Number(entity.studentLtvStripeCents || 0),
+    studentLtvOfflineCents: Number(entity.studentLtvOfflineCents || 0),
+    studentLtvSyncedAt: asIsoDate(entity.studentLtvSyncedAt) || '',
     relatedContacts: normalizeRelated(parseJsonArray(entity.relatedContactsJson)),
     createdAt: asIsoDate(entity.createdAt) || '',
     updatedAt: asIsoDate(entity.updatedAt) || '',
@@ -339,6 +397,15 @@ function recordToEntity(record) {
     agentLastSubmission: record.agentLastSubmission || '',
     agentLastBooking: record.agentLastBooking || '',
     agentNextStep: record.agentNextStep || '',
+    agentWarmth: record.agentWarmth || '',
+    agentLastTouch: record.agentLastTouch || '',
+    castingLastRequest: record.castingLastRequest || '',
+    castingLastRequestOn: record.castingLastRequestOn || '',
+    castingWarmth: record.castingWarmth || '',
+    studentLtvCents: Number(record.studentLtvCents || 0),
+    studentLtvStripeCents: Number(record.studentLtvStripeCents || 0),
+    studentLtvOfflineCents: Number(record.studentLtvOfflineCents || 0),
+    studentLtvSyncedAt: record.studentLtvSyncedAt || '',
     relatedContactsJson: JSON.stringify(record.relatedContacts || []),
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
@@ -348,6 +415,9 @@ function recordToEntity(record) {
   }
   if (record.studentPackageRemaining !== null && record.studentPackageRemaining !== undefined) {
     entity.studentPackageRemaining = record.studentPackageRemaining;
+  }
+  if (record.agentLastBookingYear !== null && record.agentLastBookingYear !== undefined) {
+    entity.agentLastBookingYear = record.agentLastBookingYear;
   }
   return entity;
 }
@@ -562,6 +632,10 @@ export function createContactsStore({ tableClient }) {
       const record = {
         id: randomUUID(),
         ...fields,
+        studentLtvCents: 0,
+        studentLtvStripeCents: 0,
+        studentLtvOfflineCents: 0,
+        studentLtvSyncedAt: '',
         createdAt: now,
         updatedAt: now,
       };
@@ -614,6 +688,43 @@ export function createContactsStore({ tableClient }) {
       return this.update(id, { archived: Boolean(archived) });
     },
 
+    async findByEmail(email) {
+      const key = normalizeEmail(email);
+      if (!key) return null;
+      const all = await listPartition();
+      const row = all.find((item) => !item.archived && normalizeEmail(item.email) === key);
+      return row ? publicContact(row) : null;
+    },
+
+    async setLtvRollup(id, { stripeCents = 0, offlineCents = 0, syncedAt } = {}) {
+      const contactId = String(id || '').trim();
+      const stripe = Math.max(0, Math.round(Number(stripeCents) || 0));
+      const offline = Math.max(0, Math.round(Number(offlineCents) || 0));
+      const stamp = asIsoDate(syncedAt) || new Date().toISOString();
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        const existing = await getRecord(contactId);
+        const next = {
+          ...existing,
+          studentLtvStripeCents: stripe,
+          studentLtvOfflineCents: offline,
+          studentLtvCents: stripe + offline,
+          studentLtvSyncedAt: stamp,
+          updatedAt: existing.updatedAt,
+        };
+        try {
+          await writeRecord(next, { mode: 'Replace', etag: existing.etag });
+          return publicContact(next);
+        } catch (err) {
+          if (err?.statusCode === 412 || /precondition/i.test(err?.message || '')) {
+            if (attempt === 0) continue;
+            throw new CrmConflictError();
+          }
+          throw err;
+        }
+      }
+      throw new CrmConflictError();
+    },
+
     async ensureSeed(input) {
       const id = String(input?.id || '').trim();
       if (!SEED_CONTACT_ID_PATTERN.test(id)) {
@@ -636,6 +747,10 @@ export function createContactsStore({ tableClient }) {
       const record = {
         id,
         ...fields,
+        studentLtvCents: 0,
+        studentLtvStripeCents: 0,
+        studentLtvOfflineCents: 0,
+        studentLtvSyncedAt: '',
         createdAt: now,
         updatedAt: now,
       };
@@ -669,6 +784,10 @@ export class MemoryTableClient {
 
   #key(pk, rk) {
     return `${pk}\t${rk}`;
+  }
+
+  async createTable() {
+    return undefined;
   }
 
   async createEntity(entity) {

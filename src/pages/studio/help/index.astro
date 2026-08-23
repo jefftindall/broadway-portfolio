@@ -29,7 +29,8 @@ import StudioLandingCard from '../../../components/StudioLandingCard.astro';
         <li>
           For student and parent contacts, open{' '}
           <a href="/studio/students" class="text-gel hover:text-gold">Students</a>
-          {' '}then People (when your account has People permission).
+          {' '}then People (when your account has People permission). Agents and casting are under{' '}
+          <a href="/studio/career" class="text-gel hover:text-gold">Career</a>.
         </li>
       </ol>
       <p class="text-sm text-muted">
@@ -48,7 +49,12 @@ import StudioLandingCard from '../../../components/StudioLandingCard.astro';
       <StudioLandingCard
         href="/studio/help/students"
         title="Students"
-        summary="People contacts. Lesson schedules and payments are not built yet."
+        summary="People, lifetime value, offline money, and Payment Links."
+      />
+      <StudioLandingCard
+        href="/studio/help/career"
+        title="Career"
+        summary="Agent and casting value — recency and warmth, not a fake invoice total."
       />
       <StudioLandingCard
         href="/studio/help/admin"

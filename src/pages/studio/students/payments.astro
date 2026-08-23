@@ -1,0 +1,260 @@
+---
+import StudioLayout from '../../../layouts/StudioLayout.astro';
+---
+
+<StudioLayout
+  title="Payment status"
+  description="Private Studio lesson payment status and Payment Links."
+  heading="Payment status"
+  helpHref="/studio/help/students"
+>
+  <section class="mx-auto max-w-xl px-4 py-5 md:py-8">
+    <p class="text-sm">
+      <a href="/studio/students" class="text-gel underline-offset-2 hover:text-gold hover:underline">
+        ← Students
+      </a>
+    </p>
+    <p class="mt-3 text-sm text-muted">
+      Copy or share lesson Payment Links. Stripe payments that do not match a student email stay here
+      so they are not dropped. Upcoming lesson paid/unpaid from Calendar write-back ships with
+      scheduling.
+    </p>
+
+    <div
+      id="people-gate"
+      class="mt-6 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted"
+      role="alert"
+    >
+      <p>You’re signed in, but this account cannot view People.</p>
+    </div>
+
+    <div
+      id="pay-error"
+      class="mt-4 hidden rounded-sm border border-line bg-panel/60 p-3 text-sm text-muted"
+      role="alert"
+    >
+      <p id="pay-error-msg"></p>
+      <p id="pay-error-ref" class="mt-2 hidden">
+        Reference: <code id="pay-error-id" class="break-all text-spotlight"></code>
+      </p>
+    </div>
+
+    <div id="pay-workspace">
+      <div class="mt-6 space-y-3 rounded-sm border border-line bg-panel/40 p-4">
+        <h2 class="font-display text-2xl text-spotlight">Payment links</h2>
+        <p class="text-sm text-muted">
+          Share the matching 30- or 60-minute link. Studio does not charge a card from unconfirmed
+          voice prompts.
+        </p>
+        <div id="pay-link-buttons" class="flex flex-wrap gap-2"></div>
+        <p id="pay-link-empty" class="hidden text-sm text-muted">
+          Payment Links are not configured in this environment yet.
+        </p>
+      </div>
+
+      <div class="mt-6 space-y-3 rounded-sm border border-line bg-panel/40 p-4">
+        <h2 class="font-display text-2xl text-spotlight">Needs a person</h2>
+        <p id="unmatched-status" class="text-sm text-muted" role="status">Loading payments…</p>
+        <ul id="unmatched-list" class="space-y-3"></ul>
+      </div>
+
+      <p class="mt-6 text-sm text-muted">
+        Student lifetime value and offline Venmo/cash rows live on each person in People.
+      </p>
+    </div>
+  </section>
+</StudioLayout>
+
+<script>
+  import { STUDIO_PAY_LINK_LABELS, formatUsdFromCents } from '../../../lib/studioPeople';
+  import {
+    STUDIO_PERMISSION,
+    fetchStudioSession,
+    hasStudioPermission,
+  } from '../../../lib/studioSession';
+
+  type Payment = {
+    id: string;
+    email: string;
+    amountCents: number;
+    refundedCents: number;
+    netCents: number;
+    paidOn: string;
+    matchKind: string;
+  };
+  type Contact = { id: string; displayName: string; personas: string[]; archived?: boolean };
+
+  const errorBox = document.getElementById('pay-error') as HTMLElement;
+  const errorMsg = document.getElementById('pay-error-msg') as HTMLElement;
+  const errorRef = document.getElementById('pay-error-ref') as HTMLElement;
+  const errorId = document.getElementById('pay-error-id') as HTMLElement;
+  const gate = document.getElementById('people-gate') as HTMLElement;
+  const workspace = document.getElementById('pay-workspace') as HTMLElement;
+  const statusEl = document.getElementById('unmatched-status') as HTMLElement;
+  const listEl = document.getElementById('unmatched-list') as HTMLElement;
+  const payLinkButtons = document.getElementById('pay-link-buttons') as HTMLElement;
+  const payLinkEmpty = document.getElementById('pay-link-empty') as HTMLElement;
+
+  let canWrite = true;
+  let students: Contact[] = [];
+
+  function showError(message: string, correlationId?: string) {
+    errorMsg.textContent = message;
+    if (correlationId) {
+      errorId.textContent = correlationId;
+      errorRef.classList.remove('hidden');
+    } else {
+      errorRef.classList.add('hidden');
+    }
+    errorBox.classList.remove('hidden');
+  }
+
+  function escapeHtml(value: string) {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function matchKindLabel(kind: string) {
+    if (kind === 'ambiguous') return 'More than one linked student';
+    if (kind === 'needs_student') return 'Matched a person who is not a student';
+    return 'No matching person';
+  }
+
+  async function copyLink(href: string, button: HTMLButtonElement, restore: string) {
+    try {
+      await navigator.clipboard.writeText(href);
+      button.textContent = 'Copied';
+      window.setTimeout(() => {
+        button.textContent = restore;
+      }, 1500);
+    } catch {
+      showError('Could not copy that link.');
+    }
+  }
+
+  function renderPayLinks(links: Record<string, string>) {
+    const entries = Object.entries(links || {});
+    payLinkEmpty.classList.toggle('hidden', entries.length > 0);
+    payLinkButtons.replaceChildren(
+      ...entries.flatMap(([id, href]) => {
+        const label = STUDIO_PAY_LINK_LABELS[id] || id;
+        const copy = document.createElement('button');
+        copy.type = 'button';
+        copy.className = 'rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110';
+        copy.textContent = `Copy ${label}`;
+        copy.addEventListener('click', () => {
+          void copyLink(href, copy, `Copy ${label}`);
+        });
+        const out = [copy];
+        if (typeof navigator.share === 'function') {
+          const share = document.createElement('button');
+          share.type = 'button';
+          share.className = 'rounded-sm border border-line px-4 py-2 text-sm text-spotlight hover:border-gold';
+          share.textContent = `Share ${label}`;
+          share.addEventListener('click', () => {
+            void navigator.share({ title: label, url: href }).catch(() => undefined);
+          });
+          out.push(share);
+        }
+        return out;
+      }),
+    );
+  }
+
+  function renderUnmatched(payments: Payment[]) {
+    statusEl.textContent = payments.length
+      ? `${payments.length} ${payments.length === 1 ? 'payment needs' : 'payments need'} a person.`
+      : 'No unmatched Stripe payments.';
+    listEl.replaceChildren(
+      ...payments.map((payment) => {
+        const li = document.createElement('li');
+        li.className = 'rounded-sm border border-line bg-ink/40 p-3';
+        const select = document.createElement('select');
+        select.className =
+          'mt-2 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold';
+        select.append(new Option('Choose a student…', ''));
+        for (const student of students) {
+          select.append(new Option(student.displayName, student.id));
+        }
+        const assign = document.createElement('button');
+        assign.type = 'button';
+        assign.className = 'mt-2 rounded-sm border border-line px-4 py-2 text-sm text-spotlight hover:border-gold';
+        assign.textContent = 'Attach';
+        assign.disabled = !canWrite;
+        assign.addEventListener('click', () => {
+          void assignPayment(payment.id, select.value);
+        });
+        li.innerHTML = `
+          <p class="text-sm text-spotlight">${escapeHtml(formatUsdFromCents(payment.netCents))} · ${escapeHtml(payment.paidOn || '—')}</p>
+          <p class="mt-1 truncate text-xs text-muted">${escapeHtml(payment.email || 'No email on the Stripe event')}</p>
+          <p class="mt-1 text-xs text-muted">${escapeHtml(matchKindLabel(payment.matchKind))}</p>
+        `;
+        if (canWrite && students.length) {
+          li.append(select, assign);
+        }
+        return li;
+      }),
+    );
+  }
+
+  async function assignPayment(paymentId: string, contactId: string) {
+    if (!contactId) {
+      showError('Choose a student.');
+      return;
+    }
+    errorBox.classList.add('hidden');
+    try {
+      const res = await fetch(`/api/unmatchedPayments/${encodeURIComponent(paymentId)}/assign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ contactId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showError(data.error || 'Could not attach that payment.', data.correlationId);
+        return;
+      }
+      await load();
+    } catch {
+      showError('Could not attach that payment. Try again in a moment.');
+    }
+  }
+
+  async function load() {
+    try {
+      const [unmatchedRes, directoryRes] = await Promise.all([
+        fetch('/api/unmatchedPayments', { headers: { Accept: 'application/json' } }),
+        fetch('/api/contacts?directory=1&persona=student', { headers: { Accept: 'application/json' } }),
+      ]);
+      const unmatched = await unmatchedRes.json().catch(() => ({}));
+      const directory = await directoryRes.json().catch(() => ({}));
+      if (!unmatchedRes.ok) {
+        showError(unmatched.error || 'Could not load payments.', unmatched.correlationId);
+        statusEl.textContent = '';
+        return;
+      }
+      students = ((directory.contacts || []) as Contact[]).filter((row) => !row.archived);
+      renderPayLinks(unmatched.payLinks || {});
+      renderUnmatched((unmatched.payments || []) as Payment[]);
+    } catch {
+      showError('Could not load payments. Try again in a moment.');
+      statusEl.textContent = '';
+    }
+  }
+
+  async function bootstrap() {
+    const session = await fetchStudioSession();
+    if (!session.apiUnavailable && !hasStudioPermission(session, STUDIO_PERMISSION.PEOPLE_READ)) {
+      gate.classList.remove('hidden');
+      workspace.classList.add('hidden');
+      return;
+    }
+    canWrite = session.apiUnavailable || hasStudioPermission(session, STUDIO_PERMISSION.PEOPLE_WRITE);
+    await load();
+  }
+
+  void bootstrap();
+</script>

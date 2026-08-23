@@ -13,6 +13,9 @@ test('people seed is a page and a half at 10 per page', () => {
   assert.equal(PEOPLE_SEEDS[0].id, 'seed-people-01');
   assert.equal(PEOPLE_SEEDS[14].id, 'seed-people-15');
   assert.ok(PEOPLE_SEEDS.every((row) => row.email.endsWith('@studio.test')));
+  const agent = PEOPLE_SEEDS.find((row) => row.id === 'seed-people-04');
+  assert.equal(agent.agentWarmth, 'warm');
+  assert.equal(agent.agentLastBookingYear, 2024);
 });
 
 test('ensurePeopleSeed is idempotent and writes the shared People partition', async () => {

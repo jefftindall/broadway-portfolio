@@ -1,7 +1,7 @@
 # Plan: Studio as teaching-business ops
 
 **Artifact ID:** `ELYSE-STUDIO-001`  
-**Version:** 1.6  
+**Version:** 1.7  
 **Last updated:** 2026-08-23  
 **Audience:** Agents, implementers, operators  
 **Scope:** Auth-gated Studio (`/studio`) as the ops home for the teaching business **and** career relationships — CRM (people + personas + LTV), Google Calendar scheduling, contact automation, payment status, and reports. Public site stays the portfolio + inquire/book surface. Money movement stays in [`lesson-payments.md`](./lesson-payments.md).
@@ -46,9 +46,9 @@ Record shapes, Table Storage keys, git collections, and access-flow diagrams: [`
 | Area | Today (in scope now) | Later (phased `STUDIO-*` below) |
 |------|----------------------|----------------------------------|
 | Content | Voice/text → Gemini → site publish | Keep; still part of running the brand |
-| People / CRM | `/studio/people` list + detail (`STUDIO-P1`) | LTV + Stripe match (`STUDIO-P2`) |
+| People / CRM | `/studio/people` list + detail + student LTV (`STUDIO-P1`, `P2`) | Inquiry ingest (`STUDIO-P4`) |
 | Schedule | Email / manual | Google Calendar sync, availability, write-back (`STUDIO-P3`) |
-| Payments | Not in Studio (Stripe Dashboard / Payment Links when adopted) | Who is paid / unpaid per lesson; share pay links (`STUDIO-P2`) |
+| Payments | Stripe match + offline rows + copy Payment Links (`STUDIO-P2`) | Upcoming lesson paid/unpaid from Calendar (`STUDIO-P2-004` residual / `P3`) |
 | Communications | Inquiry forms → email (ACS notify) | Templates, reminders, inquiry → CRM (`STUDIO-P4`) |
 | Financial reports | — | Month summary (gross / fees / net / refunds); deep ledger stays in Stripe/exports (`STUDIO-P5`) |
 | Public booking | Inquire-then-email | Optional slot picker that reads Google free/busy (`STUDIO-P5`) |
@@ -62,9 +62,9 @@ Record shapes, Table Storage keys, git collections, and access-flow diagrams: [`
 | Surface | Route | Status |
 |---------|--------|--------|
 | Home | `/studio` | Four cards |
-| Career | `/studio/career` | Placeholder (agents / casting / performance tools later) |
+| Career | `/studio/career` | Agents / casting filters into People; career value on the person (`STUDIO-P2-003`) |
 | Content | `/studio/content` | Speak + discrete publish hub |
-| Students | `/studio/students` | Landing; **People** at `/studio/people` is live. Lesson schedules, pay status, reminders later |
+| Students | `/studio/students` | **People** + **Payment status** live. Lesson schedules and reminders later |
 | Admin | `/studio/admin` | Landing; **Access** at `/studio/admin/access` is live |
 | Admin Calendar *(later)* | `/studio/admin/calendar` | **Global business-closed calendar** (holidays, vacations). Blocks **all** scheduling and sets auto-reply / response-time expectations. Not per-student lessons (those stay under Students) |
 | Admin Reports *(later)* | `/studio/admin` reports tile | Not built |
@@ -82,12 +82,12 @@ Payments vendor choice and Phase 1 checkout live in [`lesson-payments.md`](./les
 | Phase 0 — Plan + Action IDs + SoT | `done` | — |
 | Phase 1 — People & personas | `done` | Residual: `STUDIO-P1-006` async export |
 | Phase 6 — Roles, permissions, user profiles | `done` | Allowlist bootstraps Super Administrator on first session; live grants on `/studio/admin/access` |
-| Phase 2 — Lifetime value + pay status | `planned` | Stripe match + agent value |
+| Phase 2 — Lifetime value + pay status | `done` | Residual: upcoming lesson paid/unpaid waits on `STUDIO-P3-003` |
 | Phase 3 — Google Calendar scheduling | `planned` | OAuth + two-way sync |
 | Phase 4 — Contact automation | `planned` | Inquiry ingest + reminders |
 | Phase 5 — Public slots + month report | `planned` | After P3 write-back is reliable |
 
-**Suggested next:** `STUDIO-P2-001` (student LTV from Stripe email match) after staging CRM apply + Payment Links are usable.
+**Suggested next:** `STUDIO-P3-001` (Google Calendar OAuth) after staging ledger table apply. Residual `STUDIO-P2-004` upcoming paid/unpaid joins Calendar write-back.
 
 ---
 
@@ -361,21 +361,21 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 
 | ID | Title | Status | Depends on | Primary files |
 |----|-------|--------|------------|---------------|
-| `STUDIO-P2-001` | Student LTV from Stripe (email match) | `planned` | `STUDIO-P1-003`; lesson-payments webhook (`#6` done, `#7` planned) | `api/src/lib/stripeWebhook.js` |
-| `STUDIO-P2-002` | Offline Venmo/cash row on the same student | `planned` | `STUDIO-P2-001` | People detail + API |
-| `STUDIO-P2-003` | Agent / casting non-monetary value | `planned` | `STUDIO-P1-002` | People detail |
-| `STUDIO-P2-004` | Upcoming lesson paid/unpaid + copy Payment Link | `planned` | `STUDIO-P2-001`; `STUDIO-P3-003` for “upcoming” | Studio pay status UI |
+| `STUDIO-P2-001` | Student LTV from Stripe (email match) | `done` | `STUDIO-P1-003`; lesson-payments webhook (`#6` done) | `api/src/lib/stripeWebhook.js`, `api/src/lib/ledger.js` |
+| `STUDIO-P2-002` | Offline Venmo/cash row on the same student | `done` | `STUDIO-P2-001` | People detail + `POST /api/contacts/{id}/offlinePayments` |
+| `STUDIO-P2-003` | Agent / casting non-monetary value | `done` | `STUDIO-P1-002` | People detail + Career landing |
+| `STUDIO-P2-004` | Upcoming lesson paid/unpaid + copy Payment Link | `in_progress` | `STUDIO-P2-001`; `STUDIO-P3-003` for “upcoming” | `/studio/students/payments` + person page |
 
 <details>
 <summary><code>STUDIO-P2-001</code> — Student LTV</summary>
 
 **Acceptance criteria**
 
-- [ ] Webhook or periodic match: Stripe customer/charge email → contact, increment **student LTV (USD)**
-- [ ] Stripe remains the ledger; Studio stores a rollup + last-synced timestamp, not a second books
-- [ ] Refunds decrease the rollup
-- [ ] Unmatched charges are listable in Studio as “needs a person” — no silent drop
-- [ ] Cross-link: satisfies the Studio half of lesson-payments backlog **#7** (webhook → paid status)
+- [x] Webhook or periodic match: Stripe customer/charge email → contact, increment **student LTV (USD)**
+- [x] Stripe remains the ledger; Studio stores a rollup + last-synced timestamp, not a second books
+- [x] Refunds decrease the rollup
+- [x] Unmatched charges are listable in Studio as “needs a person” — no silent drop
+- [x] Cross-link: satisfies the Studio half of lesson-payments backlog **#7** (webhook → paid status)
 
 </details>
 
@@ -384,9 +384,9 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 
 **Acceptance criteria**
 
-- [ ] Manual amount + method (`venmo` \| `cash` \| `zelle` \| `other`) + date on a student
-- [ ] Included in student LTV and in the month summary later (`STUDIO-P5-002`)
-- [ ] Never treated as a Stripe charge
+- [x] Manual amount + method (`venmo` \| `cash` \| `zelle` \| `other`) + date on a student
+- [x] Included in student LTV and in the month summary later (`STUDIO-P5-002`)
+- [x] Never treated as a Stripe charge
 
 </details>
 
@@ -395,8 +395,8 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 
 **Acceptance criteria**
 
-- [ ] Fields: last submission, last booking (title/year), recency, warmth or next-step — **not** a dollar total unless a real invoice exists
-- [ ] Stale threshold is a Studio task input for Phase 4, not a public score
+- [x] Fields: last submission, last booking (title/year), recency, warmth or next-step — **not** a dollar total unless a real invoice exists
+- [x] Stale threshold is a Studio task input for Phase 4, not a public score
 
 </details>
 
@@ -405,9 +405,9 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 
 **Acceptance criteria**
 
-- [ ] Upcoming lessons (from Calendar write-back) show paid / unpaid
-- [ ] Copy/share the matching Payment Link on iPhone
-- [ ] No card charge from unconfirmed voice prompts
+- [ ] Upcoming lessons (from Calendar write-back) show paid / unpaid — **residual:** waits on `STUDIO-P3-003`
+- [x] Copy/share the matching Payment Link on iPhone
+- [x] No card charge from unconfirmed voice prompts
 
 </details>
 
@@ -612,8 +612,8 @@ STUDIO-P0-001 (done)
             │                         └─► P1-006 export [planned]
             ├─► P6-001 catalog [done] ─► P6-002 profiles [done]
             │                         └─► P6-003 enforce [done] ─► P6-004 UI [done] ─► P6-005 bootstrap [done]
-            ├─► P2-001 Stripe LTV ─► P2-002 offline ─► P2-004 pay status
-            │         └─► P2-003 agent value ─► P4-004 tasks
+            ├─► P2-001 Stripe LTV [done] ─► P2-002 offline [done] ─► P2-004 pay status [in_progress]
+            │         └─► P2-003 agent value [done] ─► P4-004 tasks
             └─► P3-001 GCal OAuth ─► P3-002 free/busy ─► P3-003 write-back
                                           ├─► P3-004 recurring ─► P3-005 docs
                                           ├─► P4-002 confirm ─► P4-003 reminders

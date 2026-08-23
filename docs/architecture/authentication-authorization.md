@@ -84,8 +84,8 @@ Canonical IDs live in [`api/src/lib/permissions.js`](../../api/src/lib/permissio
 | ID | Meaning | Enforced on |
 |----|---------|-------------|
 | `content.publish` | Compose, preview, and publish the public site | Publish / upload / discrete / publish status (`publisherGate()`) |
-| `people.read` | View People list and contact details | `GET /api/contacts` |
-| `people.write` | Create, update, archive contacts (implies `people.read`) | `POST`/`PATCH` contacts |
+| `people.read` | View People list, contact details, LTV, unmatched Stripe rows | `GET /api/contacts`, `GET /api/unmatchedPayments` |
+| `people.write` | Create, update, archive contacts; log offline money; attach unmatched Stripe (implies `people.read`) | `POST`/`PATCH` contacts; offline payments; assign unmatched |
 | `users.read` | View Access profiles | `GET /api/studioUsers` |
 | `users.manage` | Assign roles and discrete permissions (implies `users.read`) | Access writes at `/studio/admin/access` |
 
