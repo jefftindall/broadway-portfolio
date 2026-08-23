@@ -175,7 +175,7 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 |----|-------|--------|------------|---------------|
 | `STUDIO-P1-001` | Contact store + schema (Table Storage) | `done` | `STUDIO-P0-001` | `infra/modules/portfolio/studio_crm.tf`, `api/src/lib/contacts.js`, `api/src/lib/tableGeo.js` |
 | `STUDIO-P1-002` | Persona model + related contacts | `done` | `STUDIO-P1-001` | Same store; validation |
-| `STUDIO-P1-003` | `/studio/people` list + detail (create/edit) | `done` | `STUDIO-P1-002` | `src/pages/studio/people.astro`, `src/pages/studio/people/[id].astro` |
+| `STUDIO-P1-003` | `/studio/people` list + detail (create/edit) | `done` | `STUDIO-P1-002` | `src/pages/studio/people.astro`, `src/pages/studio/people/person.astro` |
 | `STUDIO-P1-004` | Privacy + logging contract for CRM PII | `done` | `STUDIO-P1-001` | `src/pages/privacy.astro`; Functions logs |
 | `STUDIO-P1-005` | Help catalog for People (only once UI ships) | `done` | `STUDIO-P1-003` | `src/lib/studioHelp.ts`, `src/pages/studio/help.astro` |
 | `STUDIO-P1-006` | People export (not a sync in-request CSV) | `planned` | `STUDIO-P1-003` | Background / emailed file when ready |
@@ -213,7 +213,7 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 
 **Acceptance criteria**
 
-- [x] `/studio/people` and `/studio/people/{id}` (or query-id) are SWA `authenticated`, `noIndex`, not in sitemap
+- [x] `/studio/people` and `/studio/people/person?id=` (query-id) are SWA `authenticated`, `noIndex`, not in sitemap
 - [x] List filterable by persona; search by name/email
 - [x] Default sort is last name, then first name
 - [x] Pagination: **10** people per page (not one long list)

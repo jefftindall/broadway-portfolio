@@ -37,6 +37,15 @@ export const studioPeopleNotes = {
     'Signed-in Studio users can add students, parents, agents, casting contacts, and alumni — with notes and related-person links. The list is 10 per page, sorted by last name then first. Publishing access is not required. There is no Gemini tool that writes People; changes happen on this screen only.',
 };
 
+/**
+ * Detail URL for a contact. Ids live in Table Storage and are unknown at
+ * `astro build` (`output: 'static'`), so this is a query-id on a static page
+ * rather than `src/pages/studio/people/[id].astro`.
+ */
+export function studioPersonPath(id: string): string {
+  return `/studio/people/person?id=${encodeURIComponent(id)}`;
+}
+
 export function personaLabel(persona: string): string {
   return STUDIO_PERSONA_LABELS[persona as StudioPersona] || persona;
 }
