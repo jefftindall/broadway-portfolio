@@ -1,55 +1,35 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import { studioAccessNotes, studioCapabilities, studioPeopleNotes, studioVoiceNotes } from '../../lib/studioHelp';
+import StudioLayout from '../../../layouts/StudioLayout.astro';
+import { studioCapabilities, studioVoiceNotes } from '../../../lib/studioHelp';
 ---
 
-<BaseLayout
-  title="Studio help"
-  description="Private guide to Studio voice updates and discrete prompts."
-  hideFooterCta={true}
-  noIndex={true}
+<StudioLayout
+  title="Content help"
+  description="Private guide to Studio Content — voice, discrete updates, preview, and publish."
+  heading="Content help"
 >
-  <article class="mx-auto max-w-2xl px-4 py-8 md:py-12">
-    <p class="text-sm uppercase tracking-[0.2em] text-gel">Private</p>
-    <h1 class="mt-2 font-display text-4xl text-spotlight">Studio help</h1>
-    <p class="mt-3 text-sm text-muted">
-      How to update the site with your voice or a short typed prompt. Reference device for
-      screenshots and mic steps: <span class="text-spotlight">{studioVoiceNotes.referenceDevice}</span>.
-    </p>
-
-    <p class="mt-6 text-sm">
-      <a
-        href="/studio"
-        class="text-gel underline-offset-2 hover:text-gold hover:underline"
-      >
-        ← Back to Studio
+  <article class="mx-auto max-w-xl px-4 py-5 md:py-8">
+    <p class="text-sm">
+      <a href="/studio/help" class="text-gel underline-offset-2 hover:text-gold hover:underline">
+        ← All help
+      </a>
+      {' · '}
+      <a href="/studio/content" class="text-gel underline-offset-2 hover:text-gold hover:underline">
+        Open Content
       </a>
     </p>
 
-    <nav
-      class="mt-8 flex flex-wrap gap-x-4 gap-y-2 border-b border-line pb-4 text-sm text-muted"
-      aria-label="Help sections"
-    >
-      <a href="#getting-started" class="hover:text-gold">Getting started</a>
-      <a href="#people" class="hover:text-gold">People</a>
-      <a href="#hub-flows" class="hover:text-gold">Hub flows</a>
-      <a href="#voice" class="hover:text-gold">Voice</a>
-      <a href="#prompts" class="hover:text-gold">What you can say</a>
-      <a href="#preview-publish" class="hover:text-gold">Preview &amp; publish</a>
-      <a href="#access" class="hover:text-gold">Access</a>
-    </nav>
+    <p class="mt-4 text-sm text-muted">
+      Site updates live under Content. Speak or type a request, or open a discrete tile. Reference
+      device: <span class="text-spotlight">{studioVoiceNotes.referenceDevice}</span>.
+    </p>
 
-    <section id="getting-started" class="mt-10 space-y-4">
+    <section class="mt-10 space-y-4">
       <h2 class="font-display text-3xl text-spotlight">Getting started</h2>
       <ol class="list-decimal space-y-2 pl-5 text-sm text-muted">
-        <li>Open <a href="/studio" class="text-gel hover:text-gold">Studio</a> and sign in.</li>
+        <li>Open <a href="/studio/content" class="text-gel hover:text-gold">Content</a>.</li>
         <li>
-          For students, parents, agents, and casting contacts, open{' '}
-          <a href={studioPeopleNotes.path} class="text-gel hover:text-gold">{studioPeopleNotes.title}</a>
-          {' '}when your account has People permission.
-        </li>
-        <li>
-          On the hub, choose what to update — <span class="text-spotlight">Speak or type</span>,{' '}
+          Choose <span class="text-spotlight">Speak or type</span>,{' '}
           <span class="text-spotlight">Gallery photo</span>,{' '}
           <span class="text-spotlight">Lesson rates</span>,{' '}
           <span class="text-spotlight">Performer facts</span>,{' '}
@@ -62,65 +42,37 @@ import { studioAccessNotes, studioCapabilities, studioPeopleNotes, studioVoiceNo
           gallery, rates, and facts, edit the fields (and attach a photo for gallery) directly.
         </li>
         <li>
-          Tap preview, review (or tweak the fields), then <span class="text-spotlight">Publish to site</span>.
+          Tap preview, review (or tweak the fields), then{' '}
+          <span class="text-spotlight">Publish to site</span>.
         </li>
         <li>Wait a few minutes for the site rebuild; Studio shows progress when publishing is allowed.</li>
       </ol>
       <figure class="space-y-3 pt-2">
         <img
           src="/images/studio-help/studio-help-hub.jpg"
-          alt="iPhone 17 Safari showing the Studio hub with Speak or type and tiles for Gallery photo, Lesson rates, and other updates."
-          class="w-full max-w-sm mx-auto rounded-sm border border-line"
+          alt="iPhone 17 Safari showing Studio Content with Speak or type and tiles for Gallery photo, Lesson rates, and other updates."
+          class="mx-auto w-full max-w-sm rounded-sm border border-line"
           width="720"
           height="1080"
           loading="lazy"
         />
-        <figcaption class="text-xs text-muted text-center">
-          Start on the hub — pick a job, then edit → preview → publish.
+        <figcaption class="text-center text-xs text-muted">
+          On Content — pick a job, then edit → preview → publish.
         </figcaption>
       </figure>
-      <p class="text-sm text-muted">
-        You can read this help guide whenever you are signed in — even before People or publish
-        permissions are turned on.
-      </p>
     </section>
 
-    <section id="people" class="mt-12 space-y-4">
-      <h2 class="font-display text-3xl text-spotlight">{studioPeopleNotes.title}</h2>
-      <p class="text-sm text-muted">{studioPeopleNotes.summary}</p>
-      <ol class="list-decimal space-y-2 pl-5 text-sm text-muted">
-        <li>
-          Open{' '}
-          <a href={studioPeopleNotes.path} class="text-gel hover:text-gold">{studioPeopleNotes.path}</a>
-          {' '}from the Studio hub or the header.
-        </li>
-        <li>Tap <span class="text-spotlight">Add person</span>, enter a name, and choose one or more personas.</li>
-        <li>
-          Open a person to add student or agent fields, notes, and related links (student ↔ parent).
-          Archive hides them from the main list without deleting history.
-        </li>
-        <li>
-          The list shows 10 people per page, sorted by last name then first. Search and persona
-          filters apply across every page.
-        </li>
-      </ol>
+    <section class="mt-12 space-y-8">
+      <h2 class="font-display text-3xl text-spotlight">Discrete tiles</h2>
       <p class="text-sm text-muted">
-        There is no voice or typed Gemini tool that writes People. Changes happen on this screen
-        only.
-      </p>
-    </section>
-
-    <section id="hub-flows" class="mt-12 space-y-8">
-      <h2 class="font-display text-3xl text-spotlight">Hub flows</h2>
-      <p class="text-sm text-muted">
-        Discrete hub tiles skip voice and open a short form. Same Preview and Publish steps as Speak
-        or type.
+        Discrete tiles skip voice and open a short form. Same Preview and Publish steps as Speak or
+        type.
       </p>
 
       <div class="space-y-4">
         <h3 class="font-display text-2xl text-spotlight">Gallery photo</h3>
         <ol class="list-decimal space-y-2 pl-5 text-sm text-muted">
-          <li>Open <span class="text-spotlight">Gallery photo</span> from the hub.</li>
+          <li>Open <span class="text-spotlight">Gallery photo</span> from Content.</li>
           <li>
             Choose a JPEG, PNG, or WebP. Pick tags from the fixed list (custom tags can’t be added) and
             crop focus if you want. Optionally set a gallery file name — Studio explains why it matters
@@ -139,12 +91,12 @@ import { studioAccessNotes, studioCapabilities, studioPeopleNotes, studioVoiceNo
           <img
             src="/images/studio-help/studio-help-gallery.jpg"
             alt="iPhone 17 Safari showing the Gallery photo editor with a selected headshot, tags, crop focus, and Preview gallery photo."
-            class="w-full max-w-sm mx-auto rounded-sm border border-line"
+            class="mx-auto w-full max-w-sm rounded-sm border border-line"
             width="720"
             height="1080"
             loading="lazy"
           />
-          <figcaption class="text-xs text-muted text-center">
+          <figcaption class="text-center text-xs text-muted">
             Attach a photo, choose allowlisted tags and focus, then preview the gallery tile.
           </figcaption>
         </figure>
@@ -161,19 +113,19 @@ import { studioAccessNotes, studioCapabilities, studioPeopleNotes, studioVoiceNo
           <img
             src="/images/studio-help/studio-help-rates.jpg"
             alt="iPhone 17 Safari showing Lesson rates with 30- and 60-minute dollar fields and Preview rate update."
-            class="w-full max-w-sm mx-auto rounded-sm border border-line"
+            class="mx-auto w-full max-w-sm rounded-sm border border-line"
             width="720"
             height="1080"
             loading="lazy"
           />
-          <figcaption class="text-xs text-muted text-center">
+          <figcaption class="text-center text-xs text-muted">
             Dollar amounts for 30- and 60-minute sessions — Reset to live restores current prices.
           </figcaption>
         </figure>
       </div>
     </section>
 
-    <section id="voice" class="mt-12 space-y-6">
+    <section class="mt-12 space-y-6">
       <h2 class="font-display text-3xl text-spotlight">Voice on iPhone</h2>
       <p class="text-sm text-muted">
         Voice is dictation into the Message box — not a separate command list. Speak the same kind of
@@ -184,12 +136,12 @@ import { studioAccessNotes, studioCapabilities, studioPeopleNotes, studioVoiceNo
         <img
           src="/images/studio-help/studio-help-hold-to-speak.jpg"
           alt="iPhone 17 Safari showing Studio with a finger holding the Hold to speak button while a booking message appears in the Message field."
-          class="w-full max-w-sm mx-auto rounded-sm border border-line"
+          class="mx-auto w-full max-w-sm rounded-sm border border-line"
           width="720"
           height="1080"
           loading="lazy"
         />
-        <figcaption class="text-xs text-muted text-center">
+        <figcaption class="text-center text-xs text-muted">
           Hold <span class="text-spotlight">Hold to speak</span>, say your update, then release.
         </figcaption>
       </figure>
@@ -197,7 +149,7 @@ import { studioAccessNotes, studioCapabilities, studioPeopleNotes, studioVoiceNo
       <div class="space-y-3 text-sm text-muted">
         <h3 class="font-display text-xl text-spotlight">Hold to speak</h3>
         <ol class="list-decimal space-y-2 pl-5">
-          <li>Open Studio in Safari on your iPhone.</li>
+          <li>Open Content in Safari on your iPhone.</li>
           <li>Press and hold <span class="text-spotlight">Hold to speak</span> (do not just tap).</li>
           <li>Keep holding while you talk. The button shows Listening…</li>
           <li>Lift your finger when you finish. Your words fill the Message box.</li>
@@ -213,12 +165,12 @@ import { studioAccessNotes, studioCapabilities, studioPeopleNotes, studioVoiceNo
           <img
             src="/images/studio-help/studio-help-safari-mic.jpg"
             alt="iPhone 17 Safari system alert: elysetindall.com would like to access the microphone, with Don’t Allow and Allow."
-            class="w-full max-w-sm mx-auto rounded-sm border border-line"
+            class="mx-auto w-full max-w-sm rounded-sm border border-line"
             width="720"
             height="1080"
             loading="lazy"
           />
-          <figcaption class="text-xs text-muted text-center">
+          <figcaption class="text-center text-xs text-muted">
             Tap <span class="text-spotlight">Allow</span> when Safari asks for the microphone.
           </figcaption>
         </figure>
@@ -229,11 +181,7 @@ import { studioAccessNotes, studioCapabilities, studioPeopleNotes, studioVoiceNo
             If you chose Don’t Allow, open the iPhone <span class="text-spotlight">Settings</span> app
             → <span class="text-spotlight">Apps</span> → <span class="text-spotlight">Safari</span> →
             <span class="text-spotlight">Microphone</span> (or Settings → Safari → scroll to
-            elysetindall.com under Website Settings) and turn microphone access on, then reload Studio.
-          </li>
-          <li>
-            Also check the Control Center mic privacy indicator and that Silent Mode / Focus is not
-            blocking Safari prompts.
+            elysetindall.com under Website Settings) and turn microphone access on, then reload Content.
           </li>
         </ol>
         <p>
@@ -244,7 +192,7 @@ import { studioAccessNotes, studioCapabilities, studioPeopleNotes, studioVoiceNo
       </div>
     </section>
 
-    <section id="prompts" class="mt-12 space-y-6">
+    <section class="mt-12 space-y-6">
       <h2 class="font-display text-3xl text-spotlight">What you can say</h2>
       <p class="text-sm text-muted">
         Speak or type a clear request. Studio maps it to one of these updates. Include names, dates,
@@ -257,9 +205,7 @@ import { studioAccessNotes, studioCapabilities, studioPeopleNotes, studioVoiceNo
             <li class="border-b border-line pb-8 last:border-0">
               <h3 class="font-display text-2xl text-spotlight">{cap.title}</h3>
               <p class="mt-2 text-sm text-muted">{cap.summary}</p>
-              <p class="mt-1 text-xs uppercase tracking-[0.15em] text-gel">
-                Lives at {cap.livePath}
-              </p>
+              <p class="mt-1 text-xs uppercase tracking-[0.15em] text-gel">Lives at {cap.livePath}</p>
               <p class="mt-4 text-xs uppercase tracking-[0.15em] text-muted">Try saying</p>
               <ul class="mt-2 space-y-2">
                 {cap.examplePrompts.map((prompt) => (
@@ -273,7 +219,7 @@ import { studioAccessNotes, studioCapabilities, studioPeopleNotes, studioVoiceNo
         }
       </ul>
 
-      <div class="rounded-sm border border-line bg-panel/40 p-4 text-sm text-muted space-y-2">
+      <div class="space-y-2 rounded-sm border border-line bg-panel/40 p-4 text-sm text-muted">
         <p class="font-semibold text-spotlight">Teaching brand reminder</p>
         <p>
           Private lessons are <span class="text-spotlight">voice lessons</span> only — vocal pedagogy,
@@ -283,23 +229,21 @@ import { studioAccessNotes, studioCapabilities, studioPeopleNotes, studioVoiceNo
       </div>
     </section>
 
-    <section id="preview-publish" class="mt-12 space-y-6">
+    <section class="mt-12 space-y-6">
       <h2 class="font-display text-3xl text-spotlight">Preview &amp; publish</h2>
       <ol class="list-decimal space-y-2 pl-5 text-sm text-muted">
         <li>
           <span class="text-spotlight">Preview</span> drafts the change without going live. For gallery,
-          rates, reel, bio, quote, and facts, Preview is a <span class="text-spotlight">read-only site preview</span>
-          (how it will look on the page) — go Back to edit if something looks wrong. Speak-or-type drafts
-          for credits and news can still be adjusted in Preview.
+          rates, reel, bio, quote, and facts, Preview is a{' '}
+          <span class="text-spotlight">read-only site preview</span> — go Back to edit if something looks
+          wrong. Speak-or-type drafts for credits and news can still be adjusted in Preview.
         </li>
         <li>
           <span class="text-spotlight">Publish to site</span> (production Studio) commits the change.
-          The live site updates after the rebuild (usually a few minutes). On
-          <span class="text-spotlight">staging</span>, the button reads
+          The live site updates after the rebuild (usually a few minutes). On staging, the button reads
           <span class="text-spotlight">Publish to staging branch</span> — updates go to a dated branch
-          and a pull request (not production). Test with Actions →
-          <span class="text-spotlight">CD: staging</span>; merge the PR to promote. Studio shows
-          pipeline status on production publishes, and branch/PR links on staging.
+          and a pull request. Test with Actions → <span class="text-spotlight">CD: staging</span>; merge
+          the PR to promote.
         </li>
         <li>Use <span class="text-spotlight">Start another update</span> when you are ready for the next change.</li>
       </ol>
@@ -308,12 +252,12 @@ import { studioAccessNotes, studioCapabilities, studioPeopleNotes, studioVoiceNo
           <img
             src="/images/studio-help/studio-help-preview.jpg"
             alt="iPhone 17 Safari showing Studio Preview with a gallery tile confirmation and Publish to site."
-            class="w-full max-w-sm mx-auto rounded-sm border border-line"
+            class="mx-auto w-full max-w-sm rounded-sm border border-line"
             width="720"
             height="1080"
             loading="lazy"
           />
-          <figcaption class="text-xs text-muted text-center">
+          <figcaption class="text-center text-xs text-muted">
             Confirm the Preview, then publish — or go Back to edit.
           </figcaption>
         </figure>
@@ -321,66 +265,16 @@ import { studioAccessNotes, studioCapabilities, studioPeopleNotes, studioVoiceNo
           <img
             src="/images/studio-help/studio-help-done.jpg"
             alt="iPhone 17 Safari showing Studio Done with update accepted, publishing pipeline, and Start another update."
-            class="w-full max-w-sm mx-auto rounded-sm border border-line"
+            class="mx-auto w-full max-w-sm rounded-sm border border-line"
             width="720"
             height="1080"
             loading="lazy"
           />
-          <figcaption class="text-xs text-muted text-center">
+          <figcaption class="text-center text-xs text-muted">
             After publish, watch the rebuild and open the page when ready.
           </figcaption>
         </figure>
       </div>
-      <p class="text-sm text-muted">
-        Choose a job from the Studio hub, edit the values (or speak/type), then confirm in Preview and
-        publish. You don’t edit website files.
-      </p>
     </section>
-
-    <section id="access" class="mt-12 space-y-4">
-      <h2 class="font-display text-3xl text-spotlight">Who can use what</h2>
-      <dl class="space-y-4 text-sm text-muted">
-        <div>
-          <dt class="text-spotlight">Signed in</dt>
-          <dd class="mt-1">
-            Open Studio, this help guide, and the read-only{' '}
-            <span class="text-spotlight">/studio/health</span> canary. Sign-in alone does not grant
-            People or publish. Hub tiles appear only for permissions on your profile.
-          </dd>
-        </div>
-        <div>
-          <dt class="text-spotlight">People</dt>
-          <dd class="mt-1">
-            View or edit contacts when your profile includes People permission (or Super Administrator). Publishing
-            is a separate permission in the same catalog.
-          </dd>
-        </div>
-        <div>
-          <dt class="text-spotlight">Publish</dt>
-          <dd class="mt-1">
-            Preview and publish require <span class="text-spotlight">content.publish</span> (Super Administrator or
-            Publisher, or that extra permission). If those tiles are hidden, a Super Administrator can grant them
-            on{' '}
-            <a href="/studio/access" class="text-gel hover:text-gold">/studio/access</a>.
-          </dd>
-        </div>
-        <div>
-          <dt class="text-spotlight">{studioAccessNotes.title}</dt>
-          <dd class="mt-1">
-            {studioAccessNotes.summary} Grant or revoke at{' '}
-            <a href={studioAccessNotes.path} class="text-gel hover:text-gold">{studioAccessNotes.path}</a>.
-          </dd>
-        </div>
-      </dl>
-    </section>
-
-    <p class="mt-12 border-t border-line pt-6 text-sm">
-      <a
-        href="/studio"
-        class="inline-flex rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink hover:brightness-110"
-      >
-        Open Studio
-      </a>
-    </p>
   </article>
-</BaseLayout>
+</StudioLayout>

@@ -14,6 +14,8 @@ interface Props {
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
   hideFooterCta?: boolean;
   noIndex?: boolean;
+  hideNav?: boolean;
+  hideFooter?: boolean;
 }
 
 const {
@@ -24,6 +26,8 @@ const {
   jsonLd,
   hideFooterCta = false,
   noIndex = false,
+  hideNav = false,
+  hideFooter = false,
 } = Astro.props;
 
 /** Pages pass bare titles; BaseLayout owns the brand suffix (` · Elyse Tindall`). */
@@ -65,11 +69,11 @@ const pageTitle = title
     >
       Skip to content
     </a>
-    <Nav />
+    {hideNav ? null : <Nav />}
     <main id="main">
       <slot />
     </main>
-    <Footer hideCta={hideFooterCta} />
+    {hideFooter ? null : <Footer hideCta={hideFooterCta} />}
     <StickyMobileCastingBar />
     <script>
       const path = location.pathname.replace(/\/+$/, '') || '/';

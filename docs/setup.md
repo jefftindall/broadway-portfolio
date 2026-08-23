@@ -140,11 +140,11 @@ az keyvault secret set --vault-name kv-elyse-prod --name GITHUB-APP-INSTALLATION
 az keyvault secret set --vault-name kv-elyse-prod --name GITHUB-APP-PRIVATE-KEY --file ./path/to/app.pem
 ```
 
-`ALLOWED_USER_IDS` is a comma-separated list matching SWA principal `userId`, `userDetails`, or email claim (lowercase). It only **bootstraps** a missing Super Administrator profile on first Studio session. Live grants for publish, People, and Access live on `/studio/access` — see [manage-access.md](runbooks/manage-access.md).
+`ALLOWED_USER_IDS` is a comma-separated list matching SWA principal `userId`, `userDetails`, or email claim (lowercase). It only **bootstraps** a missing Super Administrator profile on first Studio session. Live grants for publish, People, and Access live on `/studio/admin/access` — see [manage-access.md](runbooks/manage-access.md).
 
 Stripe lesson-payment **API keys** (`STRIPE-TEST-*` / `STRIPE-LIVE-*` secret + publishable) are created on **bootstrap** apply in `kv-elyse-shared`. Staging initializes Stripe with test keys and owns the test catalog; prod uses live keys. Populate keys, then apply each environment for products/prices/webhooks, then sync: [rotate-secrets.md](runbooks/rotate-secrets.md#stripe-lesson-payments).
 
-After first login to `/studio`, check `/.auth/me` while signed in to copy the exact `userId` / email into the bootstrap allowlist (or paste it into `/studio/access`).
+After first login to `/studio`, check `/.auth/me` while signed in to copy the exact `userId` / email into the bootstrap allowlist (or paste it into `/studio/admin/access`).
 
 **Important:** SWA managed Functions do **not** resolve `@Microsoft.KeyVault(...)` app settings. After populating the vault (or whenever you change API secrets), sync resolved values into SWA with `./scripts/sync-swa-api-secrets.sh <staging|prod>`, the **Ops: sync SWA secrets** workflow, or `terraform apply` for that environment. `AAD_CLIENT_SECRET` stays a Key Vault reference (auth platform only). See [rotate-secrets.md](runbooks/rotate-secrets.md).
 
@@ -258,7 +258,7 @@ That value is `terraform output -raw entra_openid_issuer` from **either** enviro
 1. Anonymous request to `/studio` redirects to Entra login
 2. Anonymous `POST /api/updateContent` returns 401/302
 3. Any tenant member or guest can complete login and open Studio / help / `/studio/health`
-4. Hub tiles, People, and publish appear only for catalog permissions on the profile; a signed-in user with none sees the Studio gate (not `AADSTS50105`)
+4. Content, People, and Access appear only for catalog permissions on the profile; a signed-in user with none can still open Studio home, help, and health (not `AADSTS50105`)
 
 ## 6. Custom domain / DNS (prod apex + staging test)
 

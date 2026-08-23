@@ -2,7 +2,8 @@
 description: Studio API errors must be friendly and correlation-ID keyed
 globs:
   - api/**/*
-  - src/pages/studio.astro
+  - src/pages/studio/**
+  - src/pages/studio/content.astro
   - docs/runbooks/observability.md
   - docs/runbooks/troubleshoot-build.md
   - docs/runbooks/manage-access.md
@@ -16,5 +17,5 @@ When changing Studio publish/upload API or UI error handling:
 - Return short, non-technical `error` text plus a **`correlationId`** on failure responses (same shape as allowlist denials in `api/src/lib/auth.js`).
 - Use `api/src/lib/httpErrors.js` (`studioFailureResponse` / `classifyStudioError`) — do **not** pass through raw `err.message`, GoogleGenerativeAI blobs, Octokit stacks, or missing-env strings to the client.
 - Log and telemeter the full error server-side: `context.error`/`warn`, `trackException`, and `StudioPublishFailed` with `correlationId` and coarse `errorKind`; `flush()` on deny/failure paths.
-- Studio UI (`src/pages/studio.astro`) shows the friendly message and `Reference: {correlationId}` for support — never dump provider payloads into the chat log.
+- Studio UI (`src/pages/studio/content.astro`) shows the friendly message and `Reference: {correlationId}` for support — never dump provider payloads into the chat log.
 - Ops lookup docs live in `docs/runbooks/observability.md`. Do not put HTTP/correlation rules into the Gemini `systemInstruction` in `api/src/lib/gemini.js`.

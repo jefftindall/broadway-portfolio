@@ -1,0 +1,30 @@
+---
+interface Props {
+  href?: string;
+  title: string;
+  summary: string;
+  primary?: boolean;
+  available?: boolean;
+}
+const { href, title, summary, primary = false, available = true } = Astro.props;
+const className = primary
+  ? 'block rounded-sm border border-gold/50 bg-gold/10 px-4 py-4 text-left transition hover:bg-gold/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold'
+  : available
+    ? 'block rounded-sm border border-line bg-panel/40 px-4 py-4 text-left transition hover:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold'
+    : 'block rounded-sm border border-line bg-panel/20 px-4 py-4 text-left opacity-80';
+---
+
+{
+  available && href ? (
+    <a href={href} class={className}>
+      <span class="block font-display text-2xl text-spotlight">{title}</span>
+      <span class="mt-1 block text-sm text-muted">{summary}</span>
+    </a>
+  ) : (
+    <div class={className}>
+      <span class="block font-display text-2xl text-spotlight">{title}</span>
+      <span class="mt-1 block text-sm text-muted">{summary}</span>
+      <span class="mt-2 block text-xs uppercase tracking-[0.15em] text-gel">Not available yet</span>
+    </div>
+  )
+}

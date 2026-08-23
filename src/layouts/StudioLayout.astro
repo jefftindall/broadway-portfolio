@@ -1,0 +1,58 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import StudioNav from '../components/StudioNav.astro';
+import StudioHelpLink from '../components/StudioHelpLink.astro';
+import { STUDIO_SIGN_OUT_HREF, studioHelpHref } from '../lib/studioNav';
+
+interface Props {
+  title: string;
+  description: string;
+  heading?: string;
+  helpHref?: string;
+}
+
+const { title, description, heading, helpHref } = Astro.props;
+const resolvedHelp = helpHref ?? studioHelpHref(Astro.url.pathname);
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  hideFooterCta={true}
+  noIndex={true}
+  hideNav={true}
+  hideFooter={true}
+>
+  <div class="studio-shell min-h-dvh pb-[calc(4.75rem+env(safe-area-inset-bottom))] md:pb-8">
+    <header class="sticky top-0 z-30 border-b border-line bg-ink/80 backdrop-blur-md">
+      <div class="mx-auto flex max-w-xl flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3">
+        <div class="min-w-0">
+          <a href="/studio" class="text-xs uppercase tracking-[0.2em] text-gel hover:text-gold">
+            Studio
+          </a>
+          {
+            heading ? (
+              <h1 class="font-display text-xl text-spotlight md:text-2xl">{heading}</h1>
+            ) : null
+          }
+        </div>
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
+          <StudioHelpLink href={resolvedHelp} />
+          <a
+            href={STUDIO_SIGN_OUT_HREF}
+            class="text-gel underline-offset-2 hover:text-gold hover:underline"
+          >
+            Sign out
+          </a>
+        </div>
+      </div>
+      <div class="mx-auto hidden max-w-xl px-4 md:block">
+        <StudioNav />
+      </div>
+    </header>
+    <div class="md:hidden">
+      <StudioNav />
+    </div>
+    <slot />
+  </div>
+</BaseLayout>

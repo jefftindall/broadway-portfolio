@@ -1,0 +1,31 @@
+---
+interface Props {
+  href: string;
+  class?: string;
+}
+const { href, class: className = '' } = Astro.props;
+---
+
+<a
+  href={href}
+  class:list={[
+    'inline-flex items-center gap-1.5 text-sm text-gel underline-offset-2 hover:text-gold hover:underline',
+    className,
+  ]}
+>
+  <svg
+    class="size-3.5 shrink-0"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.75"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="9"></circle>
+    <path d="M9.5 9.5a2.5 2.5 0 1 1 3.8 2.1c-.7.4-1.3 1-1.3 1.9"></path>
+    <circle cx="12" cy="16.5" r="0.75" fill="currentColor" stroke="none"></circle>
+  </svg>
+  Help
+</a>

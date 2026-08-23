@@ -1,17 +1,15 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
+import StudioLayout from '../../layouts/StudioLayout.astro';
 ---
 
-<BaseLayout
+<StudioLayout
   title="Studio health"
   description="Read-only authenticated health marker for Studio sign-in checks."
-  hideFooterCta={true}
-  noIndex={true}
+  heading="Studio health"
+  helpHref="/studio/help"
 >
-  <section class="mx-auto max-w-xl px-4 py-8 md:py-12">
-    <p class="text-sm uppercase tracking-[0.2em] text-gel">Private</p>
-    <h1 class="mt-2 font-display text-3xl text-spotlight md:text-4xl">Studio health</h1>
-    <p class="mt-3 text-sm text-muted">
+  <section class="mx-auto max-w-xl px-4 py-5 md:py-8">
+    <p class="text-sm text-muted">
       Signed-in canary only. This page does not publish or edit the site.
     </p>
     <p
@@ -26,7 +24,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       </a>
     </p>
   </section>
-</BaseLayout>
+</StudioLayout>
 
 <script>
   import { flush, trackEvent } from '../../scripts/app-insights';

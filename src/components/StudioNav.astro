@@ -1,0 +1,34 @@
+---
+import { isStudioNavActive, STUDIO_NAV } from '../lib/studioNav';
+
+const pathname = Astro.url.pathname;
+---
+
+<nav
+  class="studio-nav fixed inset-x-0 bottom-0 z-40 border-t border-line bg-ink/95 backdrop-blur-md md:static md:z-0 md:border-t-0 md:border-b md:bg-transparent md:backdrop-blur-none"
+  aria-label="Studio sections"
+>
+  <ul
+    class="mx-auto flex max-w-xl items-stretch justify-around px-1 pb-[max(0.35rem,env(safe-area-inset-bottom))] pt-1 md:justify-start md:gap-1 md:px-0 md:pb-0 md:pt-0"
+  >
+    {
+      STUDIO_NAV.map((item) => {
+        const active = isStudioNavActive(item.href, pathname);
+        return (
+          <li class="flex-1 md:flex-none">
+            <a
+              href={item.href}
+              aria-current={active ? 'page' : undefined}
+              class:list={[
+                'flex min-h-11 items-center justify-center rounded-sm px-3 py-2 text-sm transition md:min-h-10',
+                active ? 'text-gold' : 'text-muted hover:text-spotlight',
+              ]}
+            >
+              {item.label}
+            </a>
+          </li>
+        );
+      })
+    }
+  </ul>
+</nav>

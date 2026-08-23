@@ -3,7 +3,7 @@
  * page and for agents refining Gemini tools.
  *
  * When you add, change, or remove a tool in `api/src/lib/gemini.js`, update the
- * matching entry here (and the voice / access copy in `src/pages/studio/help.astro`
+ * matching entry here (and the voice / access copy under `src/pages/studio/help/`
  * if the UX changed). See `docs/runbooks/refine-studio-gemini.md` and
  * `.cursor/rules/studio-help.mdc`.
  */
@@ -45,7 +45,7 @@ export const studioCapabilities: StudioCapability[] = [
     tool: 'add_gallery_photo',
     title: 'Gallery photos',
     summary:
-      'From the Studio hub, open Gallery photo — attach a JPEG, PNG, or WebP (the original file is what gets published; the site build creates smaller display versions), pick tags from the fixed filter list (custom tags can’t be added), set crop focus, and optionally set a stable gallery file name (Studio adds .md). Confirm a site-style tile Preview before publishing. New photos always appear first in the public gallery. You can still attach a photo under Speak or type and ask to add it. Captions stay empty — the public gallery does not show them. If the exact file is already on the site, Studio warns before preview so you can avoid duplicates.',
+      'From Content, open Gallery photo — attach a JPEG, PNG, or WebP (the original file is what gets published; the site build creates smaller display versions), pick tags from the fixed filter list (custom tags can’t be added), set crop focus, and optionally set a stable gallery file name (Studio adds .md). Confirm a site-style tile Preview before publishing. New photos always appear first in the public gallery. You can still attach a photo under Speak or type and ask to add it. Captions stay empty — the public gallery does not show them. If the exact file is already on the site, Studio warns before preview so you can avoid duplicates.',
     livePath: '/gallery',
     examplePrompts: [
       'Add this photo to my gallery.',
@@ -56,7 +56,7 @@ export const studioCapabilities: StudioCapability[] = [
     tool: 'update_short_bio',
     title: 'Short bio (About)',
     summary:
-      'Update the short lead paragraph at the top of About. Edit in the Studio hub (or by voice), then confirm in read-only Preview before publishing. Longer About sections stay PR-only.',
+      'Update the short lead paragraph at the top of About. Edit in Content (or by voice), then confirm in read-only Preview before publishing. Longer About sections stay PR-only.',
     livePath: '/about',
     examplePrompts: [
       'Update my short bio on About to: Elyse Tindall is a musical theatre actress and vocal coach from Atlanta, now based in New York City.',
@@ -67,7 +67,7 @@ export const studioCapabilities: StudioCapability[] = [
     tool: 'update_press_quote',
     title: 'Press quote (Home)',
     summary:
-      'Update the homepage press quote and attribution under the hero. Edit in the Studio hub (or by voice), then confirm with a site-style quote Preview before publishing.',
+      'Update the homepage press quote and attribution under the hero. Edit in Content (or by voice), then confirm with a site-style quote Preview before publishing.',
     livePath: '/',
     examplePrompts: [
       'Change my homepage quote to: The funniest actor you’ve never seen. Attribution Tiffany King.',
@@ -78,7 +78,7 @@ export const studioCapabilities: StudioCapability[] = [
     tool: 'update_performer_facts',
     title: 'Performer facts',
     summary:
-      'Update casting facts shown on About and Materials (availability, vocal type/range, union, playing age, height, ethnicity). Edit in the Studio hub (or by voice), then confirm in a site-style Performer facts Preview before publishing.',
+      'Update casting facts shown on About and Materials (availability, vocal type/range, union, playing age, height, ethnicity). Edit in Content (or by voice), then confirm in a site-style Performer facts Preview before publishing.',
     livePath: '/materials',
     examplePrompts: [
       'Mark me unavailable until September.',
@@ -95,7 +95,7 @@ export const studioCapabilities: StudioCapability[] = [
     tool: 'update_reel_url',
     title: 'Reel link',
     summary:
-      'Change the casting reel video link and the video embed title (play button / iframe name) on Materials, Shows, and home. Publishing also refreshes the reel poster still from YouTube or Vimeo. Does not change show credits or Materials page copy. Edit in the Studio hub (or by voice), then confirm with an embedded video Preview before publishing.',
+      'Change the casting reel video link and the video embed title (play button / iframe name) on Materials, Shows, and home. Publishing also refreshes the reel poster still from YouTube or Vimeo. Does not change show credits or Materials page copy. Edit in Content (or by voice), then confirm with an embedded video Preview before publishing.',
     livePath: '/materials',
     examplePrompts: [
       'Update my reel to this YouTube link: https://youtu.be/41jdPTkN_Sw',
@@ -128,7 +128,7 @@ export const studioCapabilities: StudioCapability[] = [
     tool: 'update_lesson_rates',
     title: 'Lesson rates',
     summary:
-      'Update session prices on the book-a-lesson page. From the Studio hub, open Lesson rates and enter dollar amounts — or say a prompt under Speak or type. Preview shows the rates block as it will appear on the book page.',
+      'Update session prices on the book-a-lesson page. From Content, open Lesson rates and enter dollar amounts — or say a prompt under Speak or type. Preview shows the rates block as it will appear on the book page.',
     livePath: '/lessons/book',
     examplePrompts: [
       'Raise my 60-minute rate to $120 and keep the 30-minute rate at $60.',
@@ -172,7 +172,7 @@ export const studioCapabilities: StudioCapability[] = [
 export { studioPeopleNotes } from './studioPeople';
 
 export const studioAccessNotes = {
-  path: '/studio/access',
+  path: '/studio/admin/access',
   title: 'Access',
   summary:
     'Super Administrators assign roles and discrete permissions. Publish (content.publish) and People (people.read / people.write) use the same catalog — there is no separate publisher list. Sign-in alone does not grant either.',
@@ -185,5 +185,5 @@ export const studioVoiceNotes = {
   replacesNotAppends:
     'Each hold-to-speak pass replaces the Message box. If you need to edit, type after speaking, or speak again with the full request.',
   fallback:
-    'If voice is unavailable, type your request — or open Gallery photo / Lesson rates / Performer facts from the Studio hub. Preview works the same either way.',
+    'If voice is unavailable, type your request — or open Gallery photo / Lesson rates / Performer facts from Content. Preview works the same either way.',
 };

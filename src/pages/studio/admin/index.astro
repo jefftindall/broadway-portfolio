@@ -1,0 +1,35 @@
+---
+import StudioLayout from '../../../layouts/StudioLayout.astro';
+import StudioLandingCard from '../../../components/StudioLandingCard.astro';
+---
+
+<StudioLayout
+  title="Admin"
+  description="Private Studio administration."
+  heading="Admin"
+  helpHref="/studio/help/admin"
+>
+  <section class="mx-auto max-w-xl px-4 py-5 md:py-8">
+    <p class="text-sm text-muted">
+      Studio-wide settings. Access is live. Calendar and reports are not built yet.
+    </p>
+    <div class="mt-5 grid gap-3">
+      <StudioLandingCard
+        href="/studio/admin/access"
+        title="Access"
+        summary="Who is signed in, roles, and publish vs People permissions."
+        primary
+      />
+      <StudioLandingCard
+        title="Calendar"
+        summary="Global studio calendar for holidays and vacations — when the entire business is temporarily closed. Blocks all scheduling (students and career) and sets automatic reply expectations. Not a per-student lesson calendar."
+        available={false}
+      />
+      <StudioLandingCard
+        title="Reports"
+        summary="Studio-wide reporting. Not available yet."
+        available={false}
+      />
+    </div>
+  </section>
+</StudioLayout>

@@ -1,0 +1,44 @@
+---
+import StudioLayout from '../../../layouts/StudioLayout.astro';
+---
+
+<StudioLayout
+  title="Admin help"
+  description="Private guide to Studio Admin."
+  heading="Admin help"
+>
+  <article class="mx-auto max-w-xl px-4 py-5 md:py-8">
+    <p class="text-sm">
+      <a href="/studio/help" class="text-gel underline-offset-2 hover:text-gold hover:underline">
+        ← All help
+      </a>
+      {' · '}
+      <a href="/studio/admin" class="text-gel underline-offset-2 hover:text-gold hover:underline">
+        Open Admin
+      </a>
+    </p>
+
+    <p class="mt-6 text-sm text-muted">
+      Admin is for studio-wide settings — not day-to-day publishing or student records.
+    </p>
+
+    <ul class="mt-6 space-y-4 text-sm text-muted">
+      <li>
+        <span class="text-spotlight">Access</span> (live) — who can sign in, publish, and use People.
+        Open{' '}
+        <a href="/studio/help/access" class="text-gel hover:text-gold">Access help</a>
+        {' '}or{' '}
+        <a href="/studio/admin/access" class="text-gel hover:text-gold">Access</a>.
+      </li>
+      <li>
+        <span class="text-spotlight">Calendar</span> (not built) — the global studio calendar for
+        holidays, vacations, and other windows when the entire business is temporarily closed. When
+        it ships, it will block new scheduling everywhere (students and career) and set automatic
+        messages so people know when to expect a reply. It is not a per-student lesson calendar.
+      </li>
+      <li>
+        <span class="text-spotlight">Reports</span> (not built) — studio-wide reporting.
+      </li>
+    </ul>
+  </article>
+</StudioLayout>

@@ -1,5 +1,5 @@
 ---
-import BaseLayout from '../../../layouts/BaseLayout.astro';
+import StudioLayout from '../../../layouts/StudioLayout.astro';
 import {
   STUDIO_PERSONAS,
   STUDIO_PERSONA_LABELS,
@@ -13,31 +13,18 @@ import {
 // browser so `astro build` (`output: 'static'`) does not need getStaticPaths.
 ---
 
-<BaseLayout
+<StudioLayout
   title="Person"
   description="Private Studio contact detail."
-  hideFooterCta={true}
-  noIndex={true}
+  helpHref="/studio/help/students"
 >
   <section class="mx-auto max-w-xl px-4 py-5 md:py-8">
-    <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
-      <div>
-        <p class="text-sm uppercase tracking-[0.2em] text-gel">Studio</p>
-        <h1 id="person-title" class="mt-1 font-display text-3xl text-spotlight md:text-4xl">Person</h1>
-      </div>
-      <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted">
-        <a href="/studio/people" class="text-gel underline-offset-2 hover:text-gold hover:underline">
-          People
-        </a>
-        <a href="/studio" class="text-gel underline-offset-2 hover:text-gold hover:underline">Hub</a>
-        <a
-          href="/.auth/logout?post_logout_redirect_uri=/"
-          class="text-gel underline-offset-2 hover:text-gold hover:underline"
-        >
-          Sign out
-        </a>
-      </div>
-    </div>
+    <p class="text-sm">
+      <a href="/studio/people" class="text-gel underline-offset-2 hover:text-gold hover:underline">
+        ← People
+      </a>
+    </p>
+    <h1 id="person-title" class="mt-3 font-display text-3xl text-spotlight md:text-4xl">Person</h1>
 
     <div
       id="people-gate"
@@ -258,7 +245,7 @@ import {
       </div>
     </form>
   </section>
-</BaseLayout>
+</StudioLayout>
 
 <script>
   import { STUDIO_RELATED_LABELS, studioPersonPath } from '../../../lib/studioPeople';
