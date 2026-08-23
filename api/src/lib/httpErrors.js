@@ -25,6 +25,13 @@ const MSG_CONTACT_TURNSTILE =
 const MSG_CONTACT_VALIDATION =
   'Please check the form fields and try again.';
 
+const MSG_CRM_GENERIC =
+  'Something went wrong while loading people. Share the reference below with support.';
+const MSG_CRM_CONFIG =
+  'People isn’t configured right now. Please try again later or contact support.';
+const MSG_CRM_NOT_FOUND = 'That person isn’t in Studio.';
+const MSG_CRM_UNAUTHORIZED = 'Sign in to use Studio.';
+
 /**
  * @param {unknown} err
  * @returns {{ errorKind: string, status: number, error: string }}
@@ -148,6 +155,67 @@ export function classifyContactError(err) {
  */
 export function contactFailureResponse(err, correlationId) {
   const classified = classifyContactError(err);
+  return {
+    status: classified.status,
+    jsonBody: {
+      error: classified.error,
+      correlationId,
+    },
+    errorKind: classified.errorKind,
+  };
+}
+
+/**
+ * @param {unknown} err
+ * @returns {{ errorKind: string, status: number, error: string }}
+ */
+export function classifyCrmError(err) {
+  const name = err instanceof Error ? err.name : '';
+  const message = err instanceof Error ? err.message : String(err || '');
+  const lower = message.toLowerCase();
+
+  if (name === 'CrmUnauthorizedError') {
+    return { errorKind: 'unauthorized', status: 401, error: MSG_CRM_UNAUTHORIZED };
+  }
+  if (name === 'CrmValidationError') {
+    return {
+      errorKind: 'validation',
+      status: 400,
+      error: message || 'Please check the person fields and try again.',
+    };
+  }
+  if (name === 'CrmNotFoundError') {
+    return { errorKind: 'not_found', status: 404, error: MSG_CRM_NOT_FOUND };
+  }
+  if (name === 'CrmConflictError') {
+    return {
+      errorKind: 'conflict',
+      status: 409,
+      error: message || 'Someone else updated this person. Refresh and try again.',
+    };
+  }
+  if (
+    name === 'CrmConfigError' ||
+    /missing studio_crm|studio crm storage|table storage|not configured/i.test(message)
+  ) {
+    return { errorKind: 'config', status: 500, error: MSG_CRM_CONFIG };
+  }
+  if (/429|throttl|timeout|temporar|unavailable|econnreset/i.test(lower)) {
+    return {
+      errorKind: 'storage_temporary',
+      status: 503,
+      error: 'People is temporarily unavailable. Please try again in a few minutes.',
+    };
+  }
+  return { errorKind: 'unknown', status: 500, error: MSG_CRM_GENERIC };
+}
+
+/**
+ * @param {unknown} err
+ * @param {string} correlationId
+ */
+export function crmFailureResponse(err, correlationId) {
+  const classified = classifyCrmError(err);
   return {
     status: classified.status,
     jsonBody: {

@@ -59,3 +59,37 @@ export function unauthorized(correlationId) {
     },
   };
 }
+
+export function isDevelopmentEnvironment() {
+  return process.env.AZURE_FUNCTIONS_ENVIRONMENT === 'Development';
+}
+
+/** Any signed-in Studio user — not the publish allowlist. */
+export function isSignedInStudioUser(principal) {
+  if (isDevelopmentEnvironment()) return true;
+  return Boolean(principal?.userId || principal?.userDetails);
+}
+
+/** Table Storage partition for this signed-in user. */
+export function studioOwnerKey(principal) {
+  if (isDevelopmentEnvironment()) {
+    return String(process.env.STUDIO_CRM_DEV_OWNER || 'dev').trim() || 'dev';
+  }
+  const userId = String(principal?.userId || '').trim();
+  if (!userId) {
+    const err = new Error('missing studio owner');
+    err.name = 'CrmUnauthorizedError';
+    throw err;
+  }
+  return userId;
+}
+
+export function signInRequired(correlationId) {
+  return {
+    status: 401,
+    jsonBody: {
+      error: 'Sign in to use Studio.',
+      correlationId: correlationId || undefined,
+    },
+  };
+}

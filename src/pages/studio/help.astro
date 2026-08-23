@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { studioCapabilities, studioVoiceNotes } from '../../lib/studioHelp';
+import { studioCapabilities, studioPeopleNotes, studioVoiceNotes } from '../../lib/studioHelp';
 ---
 
 <BaseLayout
@@ -31,6 +31,7 @@ import { studioCapabilities, studioVoiceNotes } from '../../lib/studioHelp';
       aria-label="Help sections"
     >
       <a href="#getting-started" class="hover:text-gold">Getting started</a>
+      <a href="#people" class="hover:text-gold">People</a>
       <a href="#hub-flows" class="hover:text-gold">Hub flows</a>
       <a href="#voice" class="hover:text-gold">Voice</a>
       <a href="#prompts" class="hover:text-gold">What you can say</a>
@@ -42,6 +43,11 @@ import { studioCapabilities, studioVoiceNotes } from '../../lib/studioHelp';
       <h2 class="font-display text-3xl text-spotlight">Getting started</h2>
       <ol class="list-decimal space-y-2 pl-5 text-sm text-muted">
         <li>Open <a href="/studio" class="text-gel hover:text-gold">Studio</a> and sign in.</li>
+        <li>
+          For students, parents, agents, and casting contacts, open{' '}
+          <a href={studioPeopleNotes.path} class="text-gel hover:text-gold">{studioPeopleNotes.title}</a>
+          {' '}— publishing access is not required.
+        </li>
         <li>
           On the hub, choose what to update — <span class="text-spotlight">Speak or type</span>,{' '}
           <span class="text-spotlight">Gallery photo</span>,{' '}
@@ -76,6 +82,31 @@ import { studioCapabilities, studioVoiceNotes } from '../../lib/studioHelp';
       <p class="text-sm text-muted">
         You can read this help guide whenever you are signed in — even before publisher access is
         turned on.
+      </p>
+    </section>
+
+    <section id="people" class="mt-12 space-y-4">
+      <h2 class="font-display text-3xl text-spotlight">{studioPeopleNotes.title}</h2>
+      <p class="text-sm text-muted">{studioPeopleNotes.summary}</p>
+      <ol class="list-decimal space-y-2 pl-5 text-sm text-muted">
+        <li>
+          Open{' '}
+          <a href={studioPeopleNotes.path} class="text-gel hover:text-gold">{studioPeopleNotes.path}</a>
+          {' '}from the Studio hub or the header.
+        </li>
+        <li>Tap <span class="text-spotlight">Add person</span>, enter a name, and choose one or more personas.</li>
+        <li>
+          Open a person to add student or agent fields, notes, and related links (student ↔ parent).
+          Archive hides them from the main list without deleting history.
+        </li>
+        <li>
+          The list shows 10 people per page, sorted by last name then first. Search and persona
+          filters apply across every page.
+        </li>
+      </ol>
+      <p class="text-sm text-muted">
+        There is no voice or typed Gemini tool that writes People. Changes happen on this screen
+        only.
       </p>
     </section>
 
@@ -312,9 +343,11 @@ import { studioCapabilities, studioVoiceNotes } from '../../lib/studioHelp';
         <div>
           <dt class="text-spotlight">Signed in</dt>
           <dd class="mt-1">
-            Open Studio and this help guide. Sign-in alone does not turn on publishing. A
-            read-only <span class="text-spotlight">/studio/health</span> marker is also available
-            after sign-in (ops canary — no compose or publish).
+            Open Studio, this help guide, and{' '}
+            <a href={studioPeopleNotes.path} class="text-gel hover:text-gold">People</a>.
+            Sign-in alone does not turn on publishing. A read-only{' '}
+            <span class="text-spotlight">/studio/health</span> marker is also available after
+            sign-in (ops canary — no compose or publish).
           </dd>
         </div>
         <div>

@@ -50,10 +50,10 @@ When editing `.github/workflows/**` or composite actions: **before commit**, sca
 - See [`docs/style-guide.md`](docs/style-guide.md) and [`docs/runbooks/refine-studio-gemini.md`](docs/runbooks/refine-studio-gemini.md).
 
 ### Studio (authenticated · personalized)
-- **North star:** login-protected workspace for **running the teaching business** (content publish today; later people/CRM, Google Calendar, payment status, communications, financial summaries). Always `/studio` and `/studio/*` only—SWA `authenticated`, personalized to the signed-in user, `noIndex`, excluded from sitemap. Phased backlog: [`docs/plans/studio-teaching-business.md`](docs/plans/studio-teaching-business.md) (`STUDIO-*`). Payments: [`docs/plans/lesson-payments.md`](docs/plans/lesson-payments.md).
-- User guide: [`/studio/help`](src/pages/studio/help.astro) — linked only from `/studio`. Document only shipped capabilities. Read-only canary: [`/studio/health`](src/pages/studio/health.astro) (`TEST-C-005`).
+- **North star:** login-protected workspace for **running the teaching business** (content publish + People/CRM today; later Google Calendar, payment status, communications, financial summaries). Always `/studio` and `/studio/*` only—SWA `authenticated`, personalized to the signed-in user, `noIndex`, excluded from sitemap. Phased backlog: [`docs/plans/studio-teaching-business.md`](docs/plans/studio-teaching-business.md) (`STUDIO-*`). Payments: [`docs/plans/lesson-payments.md`](docs/plans/lesson-payments.md).
+- User guide: [`/studio/help`](src/pages/studio/help.astro) — linked only from `/studio`. Document only shipped capabilities. People: [`/studio/people`](src/pages/studio/people.astro) (`STUDIO-P1-*`). Read-only canary: [`/studio/health`](src/pages/studio/health.astro) (`TEST-C-005`).
 - Capability catalog + example prompts: [`src/lib/studioHelp.ts`](src/lib/studioHelp.ts). **When changing Gemini tools or Studio voice UX, update this catalog and the help page in the same PR** (see [`.cursor/rules/studio-help.mdc`](.cursor/rules/studio-help.mdc) and the refine-studio-gemini checklist).
-- Signed-in users may open Studio/help even if they are not on `ALLOWED_USER_IDS` yet (publish remains allowlisted).
+- Signed-in users may open Studio, help, and People even if they are not on `ALLOWED_USER_IDS` yet (publish remains allowlisted). There is no Gemini tool that writes People.
 - Device reference for mic/screenshots: **iPhone 17 · Safari**.
 
 ### Public site (primary service)

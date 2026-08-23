@@ -1,7 +1,7 @@
 # Plan: Studio as teaching-business ops
 
 **Artifact ID:** `ELYSE-STUDIO-001`  
-**Version:** 1.1  
+**Version:** 1.3  
 **Last updated:** 2026-08-23  
 **Audience:** Agents, implementers, operators  
 **Scope:** Auth-gated Studio (`/studio`) as the ops home for the teaching business **and** career relationships — CRM (people + personas + LTV), Google Calendar scheduling, contact automation, payment status, and reports. Public site stays the portfolio + inquire/book surface. Money movement stays in [`lesson-payments.md`](./lesson-payments.md).
@@ -44,7 +44,7 @@ Example PR title: `STUDIO-P1-003: Add /studio/people contact list`
 | Area | Today (in scope now) | Later (phased `STUDIO-*` below) |
 |------|----------------------|----------------------------------|
 | Content | Voice/text → Gemini → site publish | Keep; still part of running the brand |
-| People / CRM | — | Personas, related contacts, notes, LTV (`STUDIO-P1`–`P2`) |
+| People / CRM | `/studio/people` list + detail (`STUDIO-P1`) | LTV + Stripe match (`STUDIO-P2`) |
 | Schedule | Email / manual | Google Calendar sync, availability, write-back (`STUDIO-P3`) |
 | Payments | Not in Studio (Stripe Dashboard / Payment Links when adopted) | Who is paid / unpaid per lesson; share pay links (`STUDIO-P2`) |
 | Communications | Inquiry forms → email (ACS notify) | Templates, reminders, inquiry → CRM (`STUDIO-P4`) |
@@ -61,13 +61,13 @@ Payments vendor choice and Phase 1 checkout live in [`lesson-payments.md`](./les
 | Phase / area | Status | Open residuals |
 |--------------|--------|----------------|
 | Phase 0 — Plan + Action IDs + SoT | `done` | — |
-| Phase 1 — People & personas | `planned` | Store + `/studio/people` |
+| Phase 1 — People & personas | `done` | Residual: `STUDIO-P1-006` async export |
 | Phase 2 — Lifetime value + pay status | `planned` | Stripe match + agent value |
 | Phase 3 — Google Calendar scheduling | `planned` | OAuth + two-way sync |
 | Phase 4 — Contact automation | `planned` | Inquiry ingest + reminders |
 | Phase 5 — Public slots + month report | `planned` | After P3 write-back is reliable |
 
-**Suggested next:** `STUDIO-P1-001` (contact store + schema) after Payments Phase 1 links are usable on staging.
+**Suggested next:** `STUDIO-P2-001` (student LTV from Stripe email match) after staging CRM apply + Payment Links are usable.
 
 ---
 
@@ -173,22 +173,25 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 
 | ID | Title | Status | Depends on | Primary files |
 |----|-------|--------|------------|---------------|
-| `STUDIO-P1-001` | Contact store + schema (Table Storage) | `planned` | `STUDIO-P0-001` | `infra/` (table or Cosmos), `api/src/lib/` contacts |
-| `STUDIO-P1-002` | Persona model + related contacts | `planned` | `STUDIO-P1-001` | Same store; validation |
-| `STUDIO-P1-003` | `/studio/people` list + detail (create/edit) | `planned` | `STUDIO-P1-002` | `src/pages/studio/people.astro` (or equivalent) |
-| `STUDIO-P1-004` | Privacy + logging contract for CRM PII | `planned` | `STUDIO-P1-001` | `src/pages/privacy.astro`; Functions logs |
-| `STUDIO-P1-005` | Help catalog for People (only once UI ships) | `planned` | `STUDIO-P1-003` | `src/lib/studioHelp.ts`, `src/pages/studio/help.astro` |
+| `STUDIO-P1-001` | Contact store + schema (Table Storage) | `done` | `STUDIO-P0-001` | `infra/modules/portfolio/studio_crm.tf`, `api/src/lib/contacts.js`, `api/src/lib/tableGeo.js` |
+| `STUDIO-P1-002` | Persona model + related contacts | `done` | `STUDIO-P1-001` | Same store; validation |
+| `STUDIO-P1-003` | `/studio/people` list + detail (create/edit) | `done` | `STUDIO-P1-002` | `src/pages/studio/people.astro`, `src/pages/studio/people/[id].astro` |
+| `STUDIO-P1-004` | Privacy + logging contract for CRM PII | `done` | `STUDIO-P1-001` | `src/pages/privacy.astro`; Functions logs |
+| `STUDIO-P1-005` | Help catalog for People (only once UI ships) | `done` | `STUDIO-P1-003` | `src/lib/studioHelp.ts`, `src/pages/studio/help.astro` |
+| `STUDIO-P1-006` | People export (not a sync in-request CSV) | `planned` | `STUDIO-P1-003` | Background / emailed file when ready |
 
 <details>
 <summary><code>STUDIO-P1-001</code> — Contact store</summary>
 
 **Acceptance criteria**
 
-- [ ] Azure Table Storage (preferred) or Cosmos serverless provisioned in env stacks; no always-on Postgres
-- [ ] If a new billable SKU is added: [`cost-and-quotas.md`](../runbooks/cost-and-quotas.md) + `budget.tf` + `SUBSCRIPTION_BUDGET_USD` updated in the same PR
-- [ ] Contact record: id, display name, email, phone, personas[], notes, created/updated — **values never committed**
-- [ ] Auth: only the signed-in Studio user; publish allowlist is not required to **read** people (same as opening `/studio`)
-- [ ] Export path sketched (CSV download from Studio) so data is not hostage
+- [x] Azure Table Storage (preferred) or Cosmos serverless provisioned in env stacks; no always-on Postgres
+- [x] Env accounts are Standard **RA-GRS** so People can read the paired region (eastus2 → Central US) if the primary is down; writes stay on the primary until an account failover
+- [x] If a new billable SKU is added: [`cost-and-quotas.md`](../runbooks/cost-and-quotas.md) + `budget.tf` + `SUBSCRIPTION_BUDGET_USD` updated in the same PR
+- [x] Contact record: id, display name, email, phone, personas[], notes, created/updated — **values never committed**
+- [x] Auth: only the signed-in Studio user; publish allowlist is not required to **read** people (same as opening `/studio`)
+- [x] Staging seed (15 fictional rows) runs in CD **after Terraform apply and before SWA upload** (`scripts/seed-studio-people.sh`) — not inside Functions. Prod is not seeded. Local: `npm run studio:seed-people`
+- [ ] Sync CSV download — **removed**; data-not-hostage export is `STUDIO-P1-006`
 
 </details>
 
@@ -197,11 +200,11 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 
 **Acceptance criteria**
 
-- [ ] Personas are a multi-select set: `student` \| `parent` \| `agent` \| `casting` \| `alumni`
-- [ ] Student fields: rate, format (NYC / Zoom), package remaining, last lesson
-- [ ] Agent fields: agency, territory, last submission, last booking, next step
-- [ ] Related-contact links (student ↔ parent) stored; UI can navigate both ways
-- [ ] A contact can be both `student` and `alumni` (or student + parent) without duplicate rows
+- [x] Personas are a multi-select set: `student` \| `parent` \| `agent` \| `casting` \| `alumni`
+- [x] Student fields: rate, format (NYC / Zoom), package remaining, last lesson
+- [x] Agent fields: agency, territory, last submission, last booking, next step
+- [x] Related-contact links (student ↔ parent) stored; UI can navigate both ways
+- [x] A contact can be both `student` and `alumni` (or student + parent) without duplicate rows
 
 </details>
 
@@ -210,11 +213,13 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 
 **Acceptance criteria**
 
-- [ ] `/studio/people` and `/studio/people/{id}` (or query-id) are SWA `authenticated`, `noIndex`, not in sitemap
-- [ ] List filterable by persona; search by name/email
-- [ ] Create / edit / archive (soft-delete) on iPhone Safari
-- [ ] Friendly errors + `correlationId` on API failure
-- [ ] Journey or smoke: unauthenticated `/studio/people` redirects to login (same contract as `/studio`)
+- [x] `/studio/people` and `/studio/people/{id}` (or query-id) are SWA `authenticated`, `noIndex`, not in sitemap
+- [x] List filterable by persona; search by name/email
+- [x] Default sort is last name, then first name
+- [x] Pagination: **10** people per page (not one long list)
+- [x] Create / edit / archive (soft-delete) on iPhone Safari
+- [x] Friendly errors + `correlationId` on API failure
+- [x] Journey or smoke: unauthenticated `/studio/people` redirects to login (same contract as `/studio`)
 
 </details>
 
@@ -223,9 +228,9 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 
 **Acceptance criteria**
 
-- [ ] Privacy Policy names Studio CRM as a store for inquiry + lesson + representation contacts (no sample PII in the page)
-- [ ] Function logs and App Insights: **kinds and contact ids only** — never email/phone/note bodies
-- [ ] Scorecard / monthly digest still counts inquiries only — no CRM names
+- [x] Privacy Policy names Studio CRM as a store for inquiry + lesson + representation contacts (no sample PII in the page)
+- [x] Function logs and App Insights: **kinds and contact ids only** — never email/phone/note bodies
+- [x] Scorecard / monthly digest still counts inquiries only — no CRM names
 
 </details>
 
@@ -234,8 +239,19 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 
 **Acceptance criteria**
 
-- [ ] `/studio/help` documents People only after `STUDIO-P1-003` ships
-- [ ] No Gemini tools invented that mutate CRM without an explicit confirm UI
+- [x] `/studio/help` documents People only after `STUDIO-P1-003` ships
+- [x] No Gemini tools invented that mutate CRM without an explicit confirm UI
+
+</details>
+
+<details>
+<summary><code>STUDIO-P1-006</code> — People export</summary>
+
+**Acceptance criteria**
+
+- [ ] No synchronous `GET /api/contacts?format=csv` (or equivalent) that builds the full file in the request
+- [ ] Operator can take a copy of People data without it living only in Table Storage (async job, emailed link, or similar)
+- [ ] Logs still use kinds + contact ids only — never email/phone/note bodies in the export job log
 
 </details>
 
@@ -492,9 +508,10 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 
 ```text
 STUDIO-P0-001 (done)
-    └─► STUDIO-P1-001 store
-            ├─► P1-002 personas ─► P1-003 UI ─► P1-004 privacy
-            │                         └─► P1-005 help
+    └─► STUDIO-P1-001 store [done]
+            ├─► P1-002 personas [done] ─► P1-003 UI [done] ─► P1-004 privacy [done]
+            │                         ├─► P1-005 help [done]
+            │                         └─► P1-006 export [planned]
             ├─► P2-001 Stripe LTV ─► P2-002 offline ─► P2-004 pay status
             │         └─► P2-003 agent value ─► P4-004 tasks
             └─► P3-001 GCal OAuth ─► P3-002 free/busy ─► P3-003 write-back

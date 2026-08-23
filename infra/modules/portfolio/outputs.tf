@@ -119,3 +119,8 @@ output "application_insights_connection_string" {
 output "log_analytics_workspace_name" {
   value = azurerm_log_analytics_workspace.main.name
 }
+
+output "studio_crm_storage_account_name" {
+  description = "Table Storage account for Studio CRM contacts (STUDIO-P1-001). Connection string stays in SWA app settings."
+  value       = azurerm_storage_account.studio_crm.name
+}

@@ -16,7 +16,7 @@ locals {
   )
   # Fixed start (first of month). Do not roll this forward — recreating the budget resets history.
   budget_start_date = "2026-08-01T00:00:00Z"
-  # Expected ~$26.54/mo (eastus2 retail, 2026-08-09; includes ACS toll-free lease) → ceil(26.54 * 1.25) = 34
+  # Expected ~$26.69/mo (eastus2 retail, 2026-08-23; includes Studio CRM RA-GRS tables) → ceil(26.69 * 1.25) = 34
   subscription_budget_usd = 34
 }
 
