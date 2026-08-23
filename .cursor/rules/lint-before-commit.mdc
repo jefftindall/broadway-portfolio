@@ -22,3 +22,4 @@ That runs Terraform fmt/TFLint/validate, `astro check`, and API `node --check` (
 - When changing `.github/workflows/**` (or other Actions), also check for **Node.js 20** action runtimes and upgrade them before commit — see [`.cursor/rules/github-actions-node.mdc`](github-actions-node.mdc). Run `npm run lint:actions-secrets` (included in `npm run lint`) so multiline `::add-mask::` / PEM `with:` anti-patterns cannot land.
 - **Never echo secrets** in pipelines or scripts — see [`.cursor/rules/never-echo-secrets.mdc`](never-echo-secrets.mdc).
 - When the PR implements a planned phase / Action ID, update `docs/plans/*` statuses and checklists in the same PR — see [`.cursor/rules/plans-status-on-pr.mdc`](plans-status-on-pr.mdc).
+- When the PR changes a store, schema, relation, or access path, update [`docs/architecture/data-persistence.md`](docs/architecture/data-persistence.md) in the same PR — see [`.cursor/rules/data-persistence.mdc`](data-persistence.mdc).
