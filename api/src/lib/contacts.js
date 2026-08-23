@@ -11,6 +11,8 @@ export const STUDIO_RELATED_RELATIONS = ['parent', 'student', 'related'];
 export const DEFAULT_PEOPLE_PAGE_SIZE = 10;
 export const MAX_PEOPLE_PAGE_SIZE = 50;
 export const SEED_CONTACT_ID_PATTERN = /^seed-people-\d{2}$/;
+/** One CRM per deployment. Staging and prod already use separate storage accounts. */
+export const STUDIO_CONTACTS_PARTITION = 'people';
 
 const INVERSE_RELATION = {
   parent: 'student',
@@ -291,7 +293,6 @@ export function publicContact(record) {
 function entityToRecord(entity) {
   return {
     id: entity.rowKey,
-    ownerKey: entity.partitionKey,
     displayName: String(entity.displayName || ''),
     email: String(entity.email || ''),
     phone: String(entity.phone || ''),
@@ -322,7 +323,7 @@ function entityToRecord(entity) {
 
 function recordToEntity(record) {
   const entity = {
-    partitionKey: record.ownerKey,
+    partitionKey: STUDIO_CONTACTS_PARTITION,
     rowKey: record.id,
     displayName: record.displayName,
     email: record.email,
@@ -418,9 +419,9 @@ export function paginateContacts(contacts, params = {}) {
 export function createContactsStore({ tableClient }) {
   if (!tableClient) throw new CrmConfigError('missing studio_crm_storage');
 
-  async function getRecord(ownerKey, id) {
+  async function getRecord(id) {
     try {
-      const entity = await tableClient.getEntity(ownerKey, id);
+      const entity = await tableClient.getEntity(STUDIO_CONTACTS_PARTITION, id);
       return entityToRecord(entity);
     } catch (err) {
       if (isNotFound(err)) throw new CrmNotFoundError();
@@ -434,10 +435,10 @@ export function createContactsStore({ tableClient }) {
     await tableClient.updateEntity(entity, mode);
   }
 
-  async function listOwner(ownerKey) {
+  async function listPartition() {
     const records = [];
     const iterator = tableClient.listEntities({
-      queryOptions: { filter: `PartitionKey eq '${ownerKey.replace(/'/g, "''")}'` },
+      queryOptions: { filter: `PartitionKey eq '${STUDIO_CONTACTS_PARTITION}'` },
     });
     for await (const entity of iterator) {
       records.push(entityToRecord(entity));
@@ -445,10 +446,10 @@ export function createContactsStore({ tableClient }) {
     return records;
   }
 
-  async function assertUniqueEmail(ownerKey, email, exceptId) {
+  async function assertUniqueEmail(email, exceptId) {
     const key = normalizeEmail(email);
     if (!key) return;
-    const all = await listOwner(ownerKey);
+    const all = await listPartition();
     const clash = all.find(
       (row) => row.id !== exceptId && !row.archived && normalizeEmail(row.email) === key,
     );
@@ -457,13 +458,13 @@ export function createContactsStore({ tableClient }) {
     }
   }
 
-  async function assertRelatedExist(ownerKey, related, exceptId) {
+  async function assertRelatedExist(related, exceptId) {
     for (const rel of related) {
       if (rel.id === exceptId) {
         throw new CrmValidationError('A person can’t be related to themselves.');
       }
       try {
-        await getRecord(ownerKey, rel.id);
+        await getRecord(rel.id);
       } catch (err) {
         if (err instanceof CrmNotFoundError) {
           throw new CrmValidationError('Related person wasn’t found.');
@@ -473,7 +474,7 @@ export function createContactsStore({ tableClient }) {
     }
   }
 
-  async function syncRelatedLinks(ownerKey, contactId, previous, next) {
+  async function syncRelatedLinks(contactId, previous, next) {
     const prevMap = new Map((previous || []).map((rel) => [rel.id, rel.relation]));
     const nextMap = new Map((next || []).map((rel) => [rel.id, rel.relation]));
 
@@ -485,7 +486,7 @@ export function createContactsStore({ tableClient }) {
     for (const otherId of removed) {
       let other;
       try {
-        other = await getRecord(ownerKey, otherId);
+        other = await getRecord(otherId);
       } catch (err) {
         if (err instanceof CrmNotFoundError) continue;
         throw err;
@@ -499,7 +500,7 @@ export function createContactsStore({ tableClient }) {
       const inverse = INVERSE_RELATION[relation] || 'related';
       let other;
       try {
-        other = await getRecord(ownerKey, otherId);
+        other = await getRecord(otherId);
       } catch (err) {
         if (err instanceof CrmNotFoundError) {
           throw new CrmValidationError('Related person wasn’t found.');
@@ -515,17 +516,21 @@ export function createContactsStore({ tableClient }) {
   }
 
   return {
-    async list(
-      ownerKey,
-      { q = '', persona = '', includeArchived = false, page, pageSize, directory = false } = {},
-    ) {
+    async list({
+      q = '',
+      persona = '',
+      includeArchived = false,
+      page,
+      pageSize,
+      directory = false,
+    } = {}) {
       const personaFilter = String(persona || '')
         .trim()
         .toLowerCase();
       if (personaFilter && !STUDIO_PERSONAS.includes(personaFilter)) {
         throw new CrmValidationError('Unknown persona filter.');
       }
-      const records = await listOwner(ownerKey);
+      const records = await listPartition();
       const sorted = records
         .filter((row) => includeArchived || !row.archived)
         .filter((row) => matchesQuery(row, q))
@@ -545,28 +550,27 @@ export function createContactsStore({ tableClient }) {
       return paginateContacts(sorted, { page, pageSize });
     },
 
-    async get(ownerKey, id) {
-      return publicContact(await getRecord(ownerKey, String(id || '').trim()));
+    async get(id) {
+      return publicContact(await getRecord(String(id || '').trim()));
     },
 
-    async create(ownerKey, input) {
+    async create(input) {
       const fields = normalizeContactInput(input, { partial: false });
-      await assertUniqueEmail(ownerKey, fields.email);
-      await assertRelatedExist(ownerKey, fields.relatedContacts);
+      await assertUniqueEmail(fields.email);
+      await assertRelatedExist(fields.relatedContacts);
       const now = new Date().toISOString();
       const record = {
         id: randomUUID(),
-        ownerKey,
         ...fields,
         createdAt: now,
         updatedAt: now,
       };
       await tableClient.createEntity(recordToEntity(record));
       try {
-        await syncRelatedLinks(ownerKey, record.id, [], record.relatedContacts);
+        await syncRelatedLinks(record.id, [], record.relatedContacts);
       } catch (err) {
         try {
-          await tableClient.deleteEntity(ownerKey, record.id);
+          await tableClient.deleteEntity(STUDIO_CONTACTS_PARTITION, record.id);
         } catch {
           // Best-effort rollback; ids only in subsequent logs.
         }
@@ -575,23 +579,22 @@ export function createContactsStore({ tableClient }) {
       return publicContact(record);
     },
 
-    async update(ownerKey, id, input, { etag } = {}) {
+    async update(id, input, { etag } = {}) {
       const contactId = String(id || '').trim();
-      const existing = await getRecord(ownerKey, contactId);
+      const existing = await getRecord(contactId);
       const patch = normalizeContactInput(input, { partial: true });
       const next = {
         ...existing,
         ...patch,
         id: existing.id,
-        ownerKey,
         createdAt: existing.createdAt,
         updatedAt: new Date().toISOString(),
       };
       if (Object.prototype.hasOwnProperty.call(patch, 'email')) {
-        await assertUniqueEmail(ownerKey, next.email, contactId);
+        await assertUniqueEmail(next.email, contactId);
       }
       if (Object.prototype.hasOwnProperty.call(patch, 'relatedContacts')) {
-        await assertRelatedExist(ownerKey, next.relatedContacts, contactId);
+        await assertRelatedExist(next.relatedContacts, contactId);
       }
       try {
         await writeRecord(next, { mode: 'Replace', etag: etag || existing.etag });
@@ -602,29 +605,29 @@ export function createContactsStore({ tableClient }) {
         throw err;
       }
       if (Object.prototype.hasOwnProperty.call(patch, 'relatedContacts')) {
-        await syncRelatedLinks(ownerKey, contactId, existing.relatedContacts, next.relatedContacts);
+        await syncRelatedLinks(contactId, existing.relatedContacts, next.relatedContacts);
       }
       return publicContact(next);
     },
 
-    async archive(ownerKey, id, archived = true) {
-      return this.update(ownerKey, id, { archived: Boolean(archived) });
+    async archive(id, archived = true) {
+      return this.update(id, { archived: Boolean(archived) });
     },
 
-    async ensureSeed(ownerKey, input) {
+    async ensureSeed(input) {
       const id = String(input?.id || '').trim();
       if (!SEED_CONTACT_ID_PATTERN.test(id)) {
         throw new CrmValidationError('Invalid seed id.');
       }
       try {
-        await getRecord(ownerKey, id);
+        await getRecord(id);
         return { created: false };
       } catch (err) {
         if (!(err instanceof CrmNotFoundError)) throw err;
       }
       const fields = normalizeContactInput(input, { partial: false });
       try {
-        await assertUniqueEmail(ownerKey, fields.email);
+        await assertUniqueEmail(fields.email);
       } catch (err) {
         if (err instanceof CrmValidationError) return { created: false };
         throw err;
@@ -632,7 +635,6 @@ export function createContactsStore({ tableClient }) {
       const now = new Date().toISOString();
       const record = {
         id,
-        ownerKey,
         ...fields,
         createdAt: now,
         updatedAt: now,

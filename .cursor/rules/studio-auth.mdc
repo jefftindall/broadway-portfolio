@@ -33,7 +33,7 @@ Discrete permissions live in [`api/src/lib/permissions.js`](api/src/lib/permissi
 | Action | Check on every call |
 |--------|---------------------|
 | Publish / upload / discrete / publish status | `permissionGate(..., 'content.publish')` (also `publisherGate()`) |
-| People / CRM | `permissionGate(..., 'people.read' \| 'people.write')` + `access.ownerKey` — never trust an owner id from the body |
+| People / CRM | `permissionGate(..., 'people.read' \| 'people.write')` — one CRM per deployment (`STUDIO_CONTACTS_PARTITION`); never a tenant id from the body |
 | Access admin | `permissionGate(..., 'users.read' \| 'users.manage')` |
 | Public `contactInquiry` | Turnstile + schema; no Studio principal |
 | Public `lessonPayConfig` | Flag + sanitized Payment Link URLs only |

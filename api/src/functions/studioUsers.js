@@ -96,11 +96,7 @@ app.http('studioUsers', {
       }
 
       const body = await request.json();
-      const input = { ...(body || {}) };
-      if (!String(input.crmOwnerKey || '').trim()) {
-        input.crmOwnerKey = authed.access.ownerKey;
-      }
-      const user = await store.create(input);
+      const user = await store.create(body || {});
       trackEvent('StudioAccessAdminOp', {
         correlationId,
         operation: 'create',

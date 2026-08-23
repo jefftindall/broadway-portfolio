@@ -69,7 +69,6 @@ test('allowlisted user without a profile is migrated to a stored Owner profile',
       assert.deepEqual(first.roles, [ROLE.OWNER]);
       assert.equal(hasPermission(first.permissions, PERMISSION.PEOPLE_WRITE), true);
       assert.equal(hasPermission(first.permissions, PERMISSION.CONTENT_PUBLISH), true);
-      assert.equal(first.ownerKey, 'oid-elyse');
 
       const listed = await users.list();
       assert.equal(listed.length, 1);
@@ -103,7 +102,7 @@ test('signed-in user with no profile and no allowlist has no catalog permissions
   );
 });
 
-test('people role profile can manage CRM without publish, on a shared owner key', async () => {
+test('people role profile can manage CRM without publish', async () => {
   await withEnv(
     {
       AZURE_FUNCTIONS_ENVIRONMENT: undefined,
@@ -115,7 +114,6 @@ test('people role profile can manage CRM without publish, on a shared owner key'
         identity: 'assistant@example.com',
         userId: 'oid-assistant',
         roles: [ROLE.PEOPLE],
-        crmOwnerKey: 'oid-elyse',
       });
       const access = await resolveStudioAccess(
         principal({
@@ -127,7 +125,6 @@ test('people role profile can manage CRM without publish, on a shared owner key'
       assert.equal(access.source, 'profile');
       assert.equal(hasPermission(access.permissions, PERMISSION.PEOPLE_WRITE), true);
       assert.equal(hasPermission(access.permissions, PERMISSION.CONTENT_PUBLISH), false);
-      assert.equal(access.ownerKey, 'oid-elyse');
     },
   );
 });

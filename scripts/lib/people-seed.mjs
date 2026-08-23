@@ -34,21 +34,10 @@ export const PEOPLE_SEEDS = [
   notes: SEED_NOTE,
 }));
 
-export function parseOwnerList(text) {
-  return [
-    ...new Set(
-      String(text || '')
-        .split(/[\s,]+/)
-        .map((part) => part.trim())
-        .filter((part) => part && part !== 'REPLACE_ME'),
-    ),
-  ];
-}
-
-export async function ensurePeopleSeed(store, ownerKey) {
+export async function ensurePeopleSeed(store) {
   let created = 0;
   for (const seed of PEOPLE_SEEDS) {
-    const result = await store.ensureSeed(ownerKey, seed);
+    const result = await store.ensureSeed(seed);
     if (result.created) created += 1;
   }
   return { created, total: PEOPLE_SEEDS.length };

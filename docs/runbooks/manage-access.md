@@ -9,7 +9,7 @@ Sign-in is not permission to act. Studio authorization is one catalog of **discr
 3. **Route rules** — `/studio`, `/studio/*` (including help), and `/api/*` require `authenticated`. Exceptions: `POST /api/contactInquiry`, `GET /api/lessonPayConfig`, and `POST /api/stripeWebhook` allow anonymous (same `private, no-store` cache).
 4. **Authorization (application)** — every privileged Function calls `permissionGate()` against the catalog in [`api/src/lib/permissions.js`](../../api/src/lib/permissions.js):
    - **Publish / upload / discrete / publish status** — `content.publish`
-   - **People / CRM** — `people.read` / `people.write` (never an owner id from the request body)
+   - **People / CRM** — `people.read` / `people.write` (one CRM per environment)
    - **Access admin** — `users.read` / `users.manage`
    - **Public exceptions** — Turnstile, sanitized Payment Links, or Stripe webhook signatures
 
@@ -30,7 +30,6 @@ Profiles live in Table Storage (`studioUsers` on the Studio CRM account). Each r
 - **Roles** (`owner`, `publisher`, `people`, `people_reader`)
 - **Extra permissions** (grant one catalog ID without the whole role)
 - **Denied permissions** (strip an ID even if a role includes it)
-- Optional `crmOwnerKey` so a People operator shares Elyse’s contact partition
 
 Owners manage this at **`/studio/access`**. Adding a discrete permission in code (`api/src/lib/permissions.js`) is how new capabilities are defined; the Access page reads that catalog from the session.
 
@@ -75,7 +74,7 @@ Sign-in follows the tenant directory, not an enterprise-app assignment list.
    - **Publisher** — site updates only (`content.publish`)
    - **Owner** — full catalog
    - or tick **Extra permissions** for a single ID (for example `content.publish` without People)
-5. Leave CRM owner blank so they share the signed-in owner’s People partition (set automatically)
+5. Confirm they can open `/studio/people` after the next sign-in. There is one CRM per environment; permissions, not a partition key, decide who can see it.
 
 ## Remove publish or People access
 

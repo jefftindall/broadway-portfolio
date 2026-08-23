@@ -155,10 +155,6 @@ export function normalizeUserInput(input = {}, { partial = false } = {}) {
     );
   }
 
-  if (!partial || has('crmOwnerKey')) {
-    patch.crmOwnerKey = trimTo(input.crmOwnerKey, MAX_IDENTITY);
-  }
-
   if (!partial || has('status')) {
     const status = String(input.status || 'active')
       .trim()
@@ -190,7 +186,6 @@ export function publicUser(record) {
     roles,
     extraPermissions,
     deniedPermissions,
-    crmOwnerKey: record.crmOwnerKey || '',
     status: record.status || 'active',
     permissions: resolvePermissions({ roles, extraPermissions, deniedPermissions }),
     createdAt: record.createdAt,
@@ -220,7 +215,6 @@ function entityToRecord(entity) {
     roles: parseJsonArray(entity.rolesJson),
     extraPermissions: parseJsonArray(entity.extraPermissionsJson),
     deniedPermissions: parseJsonArray(entity.deniedPermissionsJson),
-    crmOwnerKey: String(entity.crmOwnerKey || ''),
     status: String(entity.status || 'active'),
     createdAt: String(entity.createdAt || ''),
     updatedAt: String(entity.updatedAt || ''),
@@ -239,7 +233,6 @@ function recordToEntity(record) {
     rolesJson: JSON.stringify(record.roles || []),
     extraPermissionsJson: JSON.stringify(record.extraPermissions || []),
     deniedPermissionsJson: JSON.stringify(record.deniedPermissions || []),
-    crmOwnerKey: record.crmOwnerKey || '',
     status: record.status || 'active',
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
@@ -323,7 +316,6 @@ export function createUsersStore({ tableClient }) {
           userDetails: input?.userDetails,
           emails: input?.emails,
           roles: [ROLE.OWNER],
-          crmOwnerKey: input?.crmOwnerKey || input?.userId || '',
         });
       } catch (err) {
         if (err?.statusCode === 409) {

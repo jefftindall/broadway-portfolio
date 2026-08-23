@@ -4,6 +4,7 @@ import {
   CrmConfigError,
   CrmValidationError,
   MemoryTableClient,
+  STUDIO_CONTACTS_PARTITION,
   STUDIO_PERSONAS,
   compareContactsByName,
   contactsStoreFromEnv,
@@ -81,110 +82,116 @@ test('normalizeContactInput rejects invalid email without echoing it', () => {
   }
 });
 
-test('create/list/get/update/archive stay scoped to the owner partition', async () => {
-  const crm = store();
-  const created = await crm.create('owner-a', {
+test('create/list/get/update/archive share one People partition', async () => {
+  const table = new MemoryTableClient();
+  const crm = createContactsStore({ tableClient: table });
+  const created = await crm.create({
     displayName: 'Riley Student',
     email: 'riley@example.com',
     personas: ['student'],
     studentFormat: 'nyc',
   });
-  await crm.create('owner-b', {
-    displayName: 'Other Owner',
+  await crm.create({
+    displayName: 'Other Operator',
     email: 'other@example.com',
     personas: ['agent'],
   });
 
-  const listA = await crm.list('owner-a');
-  assert.equal(listA.total, 1);
-  assert.equal(listA.contacts.length, 1);
-  assert.equal(listA.contacts[0].id, created.id);
-  assert.equal(listA.contacts[0].email, 'riley@example.com');
+  const listed = await crm.list();
+  assert.equal(listed.total, 2);
+  assert.equal(
+    listed.contacts.some((row) => row.id === created.id),
+    true,
+  );
 
-  const fetched = await crm.get('owner-a', created.id);
+  const stored = [...table.entities.values()];
+  assert.equal(stored.length, 2);
+  assert.ok(stored.every((row) => row.partitionKey === STUDIO_CONTACTS_PARTITION));
+
+  const fetched = await crm.get(created.id);
   assert.equal(fetched.displayName, 'Riley Student');
   assert.deepEqual(fetched.personas, ['student']);
 
-  await assert.rejects(() => crm.get('owner-b', created.id), { name: 'CrmNotFoundError' });
-
-  const updated = await crm.update('owner-a', created.id, {
+  const updated = await crm.update(created.id, {
     notes: 'Prefers morning Zoom makeups.',
     personas: ['student', 'alumni'],
   });
   assert.deepEqual(updated.personas, ['student', 'alumni']);
   assert.equal(updated.notes.includes('Zoom'), true);
 
-  await crm.archive('owner-a', created.id, true);
-  assert.equal((await crm.list('owner-a')).total, 0);
-  assert.equal((await crm.list('owner-a', { includeArchived: true })).total, 1);
+  await crm.archive(created.id, true);
+  assert.equal((await crm.list()).total, 1);
+  assert.equal((await crm.list({ includeArchived: true })).total, 2);
 });
 
-test('email uniqueness is per owner and ignores archived rows', async () => {
+test('email uniqueness is per CRM and ignores archived rows', async () => {
   const crm = store();
-  await crm.create('owner-a', {
+  await crm.create({
     displayName: 'One',
     email: 'shared@example.com',
     personas: ['student'],
   });
   await assert.rejects(
     () =>
-      crm.create('owner-a', {
+      crm.create({
         displayName: 'Two',
         email: 'SHARED@example.com',
         personas: ['parent'],
       }),
     { name: 'CrmValidationError' },
   );
-  const other = await crm.create('owner-b', {
-    displayName: 'Other',
+  const first = (await crm.list()).contacts[0];
+  await crm.archive(first.id, true);
+  const reused = await crm.create({
+    displayName: 'Two',
     email: 'shared@example.com',
     personas: ['casting'],
   });
-  assert.equal(other.email, 'shared@example.com');
+  assert.equal(reused.email, 'shared@example.com');
 });
 
 test('related contacts write both sides and can be a student plus alumni on one row', async () => {
   const crm = store();
-  const parent = await crm.create('owner-a', {
+  const parent = await crm.create({
     displayName: 'Parent Pat',
     email: 'pat@example.com',
     personas: ['parent'],
   });
-  const student = await crm.create('owner-a', {
+  const student = await crm.create({
     displayName: 'Student Sam',
     email: 'sam@example.com',
     personas: ['student', 'alumni'],
     relatedContacts: [{ id: parent.id, relation: 'parent' }],
   });
 
-  const linkedParent = await crm.get('owner-a', parent.id);
+  const linkedParent = await crm.get(parent.id);
   assert.deepEqual(student.personas, ['student', 'alumni']);
   assert.deepEqual(student.relatedContacts, [{ id: parent.id, relation: 'parent' }]);
   assert.deepEqual(linkedParent.relatedContacts, [{ id: student.id, relation: 'student' }]);
 
-  await crm.update('owner-a', student.id, { relatedContacts: [] });
-  const unlinked = await crm.get('owner-a', parent.id);
+  await crm.update(student.id, { relatedContacts: [] });
+  const unlinked = await crm.get(parent.id);
   assert.deepEqual(unlinked.relatedContacts, []);
 });
 
 test('search and persona filters do not require a second store', async () => {
   const crm = store();
-  await crm.create('owner-a', {
+  await crm.create({
     displayName: 'Jordan Voice',
     email: 'jordan@studio.test',
     personas: ['student'],
   });
-  await crm.create('owner-a', {
+  await crm.create({
     displayName: 'Casey Rep',
     email: 'casey@agency.test',
     personas: ['agent'],
   });
 
-  const students = await crm.list('owner-a', { persona: 'student' });
+  const students = await crm.list({ persona: 'student' });
   assert.equal(students.total, 1);
   assert.equal(students.contacts[0].displayName, 'Jordan Voice');
 
-  const search = await crm.list('owner-a', { q: 'agency.test' });
+  const search = await crm.list({ q: 'agency.test' });
   assert.equal(search.total, 1);
   assert.equal(search.contacts[0].personas[0], 'agent');
 });
@@ -194,10 +201,10 @@ test('default sort is last name then first name', async () => {
   assert.ok(compareContactsByName({ displayName: 'Zara Adams' }, { displayName: 'Amy Brown' }) < 0);
 
   const crm = store();
-  await crm.create('owner-a', { displayName: 'Zara Adams', personas: ['student'] });
-  await crm.create('owner-a', { displayName: 'Amy Brown', personas: ['agent'] });
-  await crm.create('owner-a', { displayName: 'Ben Adams', personas: ['parent'] });
-  const listed = await crm.list('owner-a');
+  await crm.create({ displayName: 'Zara Adams', personas: ['student'] });
+  await crm.create({ displayName: 'Amy Brown', personas: ['agent'] });
+  await crm.create({ displayName: 'Ben Adams', personas: ['parent'] });
+  const listed = await crm.list();
   assert.deepEqual(
     listed.contacts.map((row) => row.displayName),
     ['Ben Adams', 'Zara Adams', 'Amy Brown'],
@@ -219,9 +226,9 @@ test('list paginates 10 per page by default', async () => {
     'Wes Jung',
     'Xan Kane',
   ]) {
-    await crm.create('owner-a', { displayName: name, personas: ['student'] });
+    await crm.create({ displayName: name, personas: ['student'] });
   }
-  const first = await crm.list('owner-a');
+  const first = await crm.list();
   assert.equal(first.page, 1);
   assert.equal(first.pageSize, 10);
   assert.equal(first.total, 11);
@@ -229,11 +236,11 @@ test('list paginates 10 per page by default', async () => {
   assert.equal(first.contacts.length, 10);
   assert.equal(first.contacts[0].displayName, 'Nia Abel');
 
-  const second = await crm.list('owner-a', { page: 2 });
+  const second = await crm.list({ page: 2 });
   assert.equal(second.contacts.length, 1);
   assert.equal(second.contacts[0].displayName, 'Xan Kane');
 
-  const directory = await crm.list('owner-a', { directory: true });
+  const directory = await crm.list({ directory: true });
   assert.equal(directory.contacts.length, 11);
   assert.equal(directory.directory, true);
 
@@ -245,10 +252,11 @@ test('list paginates 10 per page by default', async () => {
   assert.equal(page.totalPages, 2);
 });
 
-test('publicContact never includes the owner partition key', () => {
+test('publicContact never includes a partition key', () => {
   const published = publicContact({
     id: 'x',
     ownerKey: 'secret-user-id',
+    partitionKey: 'people',
     displayName: 'Ada',
     email: '',
     phone: '',
@@ -261,6 +269,7 @@ test('publicContact never includes the owner partition key', () => {
   });
   assert.equal(published.id, 'x');
   assert.equal(Object.hasOwn(published, 'ownerKey'), false);
+  assert.equal(Object.hasOwn(published, 'partitionKey'), false);
 });
 
 test('classifyCrmError keeps validation copy and maps config/not-found', () => {

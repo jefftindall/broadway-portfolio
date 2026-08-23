@@ -112,20 +112,6 @@ export function isSignedInStudioUser(principal) {
   return Boolean(principal?.userId || principal?.userDetails);
 }
 
-/** Table Storage partition for this signed-in user. */
-export function studioOwnerKey(principal) {
-  if (isDevelopmentEnvironment()) {
-    return String(process.env.STUDIO_CRM_DEV_OWNER || 'dev').trim() || 'dev';
-  }
-  const userId = String(principal?.userId || '').trim();
-  if (!userId) {
-    const err = new Error('missing studio owner');
-    err.name = 'CrmUnauthorizedError';
-    throw err;
-  }
-  return userId;
-}
-
 export function signInRequired(correlationId) {
   return {
     status: 401,

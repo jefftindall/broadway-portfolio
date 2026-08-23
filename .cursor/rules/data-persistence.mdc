@@ -42,8 +42,8 @@ When you **add, remove, or change** a durable store, schema, relation, or how re
 | Change | Update in the persistence doc |
 |--------|-------------------------------|
 | New Table / collection / Stripe object / vault secret that holds records or config the app reads | Systems of record table + the matching section + source map |
-| Contact / profile columns, personas, related-contact rules, `crmOwnerKey` | §1 entity tables and relations ER |
-| Permission IDs, roles, or how `permissionGate` resolves `ownerKey` | §1.2 catalog + People sequence |
+| Contact / profile columns, personas, related-contact rules, People partition | §1 entity tables and relations ER |
+| Permission IDs, roles, or how `permissionGate` authorizes People | §1.2 catalog + People sequence |
 | Content Zod / Astro collection / site-settings / resume-meta fields | §2 models and git ER |
 | Publish mode, commit paths, or media write location | §2.4 publish sequence |
 | Lesson rates ↔ Stripe `lesson_rate_id`, Payment Links, webhook persistence | §3 Stripe + pay sequence |

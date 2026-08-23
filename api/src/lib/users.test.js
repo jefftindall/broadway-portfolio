@@ -50,12 +50,11 @@ test('users store create/list/update and principal match', async () => {
   const created = await users.create({
     identity: 'assistant@example.com',
     roles: [ROLE.PEOPLE],
-    crmOwnerKey: 'oid-elyse',
   });
   assert.equal(created.status, 'active');
   assert.equal(hasPermission(created.permissions, PERMISSION.PEOPLE_WRITE), true);
   assert.equal(hasPermission(created.permissions, PERMISSION.CONTENT_PUBLISH), false);
-  assert.equal(created.crmOwnerKey, 'oid-elyse');
+  assert.equal(Object.hasOwn(created, 'crmOwnerKey'), false);
 
   const listed = await users.list();
   assert.equal(listed.length, 1);
@@ -77,7 +76,6 @@ test('ensureOwnerFromAllowlist is idempotent and grants owner', async () => {
     userId: 'oid-elyse',
     userDetails: 'elyse@example.com',
     emails: ['elyse@example.com'],
-    crmOwnerKey: 'oid-elyse',
   });
   assert.deepEqual(first.roles, [ROLE.OWNER]);
   assert.equal(hasPermission(first.permissions, PERMISSION.CONTENT_PUBLISH), true);
