@@ -64,7 +64,7 @@ GA must load only on **public** pages (never `/studio`). App Insights remains th
 | robots.txt + sitemap pointer | `public/robots.txt` → `sitemap-index.xml` |
 | Title / description / canonical / OG / Twitter / JSON-LD | `src/components/Seo.astro`, page-specific schema |
 | Legacy WordPress 301s | `public/staticwebapp.config.json` (+ root mirror) — `DISC-P0-003` done |
-| Studio help `noIndex` | `src/pages/studio/help.astro` |
+| Studio help `noIndex` | `src/pages/studio/help/` (Studio layouts) |
 
 ### Shipped under this plan (Phase 1)
 
@@ -251,7 +251,7 @@ Keep the event set small and stable:
 
 | ID | Title | Status | Depends on | Primary files |
 |----|-------|--------|------------|---------------|
-| `SEARCH-P2-001` | `noIndex` on `/studio` | `done` | — | `src/pages/studio.astro` |
+| `SEARCH-P2-001` | `noIndex` on `/studio` | `done` | — | Studio layouts (`noIndex`) |
 | `SEARCH-P2-002` | Fix duplicated casting titles (`\|` + `· Elyse Tindall`) | `done` | — | Casting frontmatter / `LandingLayout` / `BaseLayout` |
 | `SEARCH-P2-003` | Merge custom JSON-LD with default Person (don’t replace) | `done` | — | `src/components/Seo.astro`, page schemas |
 | `SEARCH-P2-004` | Compress default OG image + width/height/alt | `done` | — | `public/images/og-default.jpg`, `Seo.astro` |

@@ -130,6 +130,11 @@
       }
     },
     {
+      "route": "/studio/access",
+      "redirect": "/studio/admin/access",
+      "statusCode": 301
+    },
+    {
       "route": "/studio",
       "allowedRoles": ["authenticated"],
       "headers": {

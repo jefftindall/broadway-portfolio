@@ -1,0 +1,351 @@
+---
+import StudioLayout from '../../../layouts/StudioLayout.astro';
+---
+
+<StudioLayout
+  title="Access"
+  description="Private Studio roles and permissions."
+  heading="Access"
+  helpHref="/studio/help/access"
+>
+  <section class="mx-auto max-w-xl px-4 py-5 md:py-8">
+
+    <p class="mt-3 text-sm text-muted">
+      Roles bundle discrete permissions. You can also grant or deny a single permission without a
+      role. Publish and People both use this catalog — there is no separate publisher list in the
+      UI.
+    </p>
+
+    <div
+      id="access-gate"
+      class="mt-6 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted"
+      role="alert"
+    >
+      <p>You’re signed in, but this account cannot manage Studio access.</p>
+      <p class="mt-4">
+        <a href="/studio" class="text-gel underline-offset-2 hover:text-gold hover:underline"
+          >Back to Studio</a
+        >
+      </p>
+    </div>
+
+    <div
+      id="access-error"
+      class="mt-4 hidden rounded-sm border border-line bg-panel/60 p-3 text-sm text-muted"
+      role="alert"
+    >
+      <p id="access-error-msg"></p>
+      <p id="access-error-ref" class="mt-2 hidden">
+        Reference: <code id="access-error-id" class="break-all text-spotlight"></code>
+      </p>
+    </div>
+
+    <div id="access-workspace" class="hidden">
+      <div class="mt-6">
+        <button
+          id="add-user-btn"
+          type="button"
+          class="rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110"
+        >
+          Add person
+        </button>
+      </div>
+
+      <form id="user-form" class="mt-6 hidden space-y-4 rounded-sm border border-line bg-panel/40 p-4">
+        <h2 id="user-form-title" class="font-display text-2xl text-spotlight">New access</h2>
+        <input id="user-id" type="hidden" />
+        <input id="user-etag" type="hidden" />
+        <label class="block text-sm text-muted">
+          Email or user ID
+          <input
+            id="user-identity"
+            type="text"
+            required
+            autocomplete="off"
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <fieldset>
+          <legend class="text-sm text-muted">Roles</legend>
+          <div id="role-fields" class="mt-2 space-y-2"></div>
+        </fieldset>
+        <fieldset>
+          <legend class="text-sm text-muted">Extra permissions</legend>
+          <p class="mt-1 text-xs text-muted">Grant one capability without assigning the whole role.</p>
+          <div id="extra-fields" class="mt-2 space-y-2"></div>
+        </fieldset>
+        <fieldset>
+          <legend class="text-sm text-muted">Denied permissions</legend>
+          <p class="mt-1 text-xs text-muted">Remove a capability even if a role includes it.</p>
+          <div id="denied-fields" class="mt-2 space-y-2"></div>
+        </fieldset>
+        <label class="block text-sm text-muted">
+          Status
+          <select
+            id="user-status"
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+          >
+            <option value="active">Active</option>
+            <option value="disabled">Disabled</option>
+          </select>
+        </label>
+        <div class="flex flex-wrap gap-2">
+          <button
+            type="submit"
+            class="rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110"
+          >
+            Save
+          </button>
+          <button
+            id="user-cancel"
+            type="button"
+            class="rounded-sm border border-line px-4 py-2 text-sm text-spotlight hover:border-gold"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+
+      <p id="access-status" class="mt-4 text-sm text-muted" role="status">Loading access…</p>
+      <ul id="access-list" class="mt-3 space-y-3"></ul>
+    </div>
+  </section>
+</StudioLayout>
+
+<script>
+  import {
+    STUDIO_PERMISSION,
+    fetchStudioSession,
+    hasStudioPermission,
+    type StudioSession,
+  } from '../../../lib/studioSession';
+
+  type CatalogPermission = { id: string; label: string; description: string };
+  type CatalogRole = { id: string; label: string; description: string; permissions: string[] };
+  type AccessUser = {
+    id: string;
+    userId: string;
+    userDetails: string;
+    emails: string[];
+    roles: string[];
+    extraPermissions: string[];
+    deniedPermissions: string[];
+    status: string;
+    permissions: string[];
+    etag?: string;
+  };
+
+  const gate = document.getElementById('access-gate') as HTMLElement;
+  const workspace = document.getElementById('access-workspace') as HTMLElement;
+  const errorBox = document.getElementById('access-error') as HTMLElement;
+  const errorMsg = document.getElementById('access-error-msg') as HTMLElement;
+  const errorRef = document.getElementById('access-error-ref') as HTMLElement;
+  const errorId = document.getElementById('access-error-id') as HTMLElement;
+  const statusEl = document.getElementById('access-status') as HTMLElement;
+  const listEl = document.getElementById('access-list') as HTMLElement;
+  const form = document.getElementById('user-form') as HTMLFormElement;
+  const formTitle = document.getElementById('user-form-title') as HTMLElement;
+  const addBtn = document.getElementById('add-user-btn') as HTMLButtonElement;
+  const cancelBtn = document.getElementById('user-cancel') as HTMLButtonElement;
+  const roleFields = document.getElementById('role-fields') as HTMLElement;
+  const extraFields = document.getElementById('extra-fields') as HTMLElement;
+  const deniedFields = document.getElementById('denied-fields') as HTMLElement;
+  const identityInput = document.getElementById('user-identity') as HTMLInputElement;
+  const statusInput = document.getElementById('user-status') as HTMLSelectElement;
+  const idInput = document.getElementById('user-id') as HTMLInputElement;
+  const etagInput = document.getElementById('user-etag') as HTMLInputElement;
+
+  let catalog: NonNullable<StudioSession['catalog']> = { permissions: [], roles: [] };
+  let users: AccessUser[] = [];
+
+  function showError(message: string, correlationId?: string) {
+    errorMsg.textContent = message;
+    if (correlationId) {
+      errorId.textContent = correlationId;
+      errorRef.classList.remove('hidden');
+    } else {
+      errorRef.classList.add('hidden');
+    }
+    errorBox.classList.remove('hidden');
+  }
+
+  function clearError() {
+    errorBox.classList.add('hidden');
+  }
+
+  function checkboxRow(name: string, id: string, label: string, description: string) {
+    const wrap = document.createElement('label');
+    wrap.className = 'flex items-start gap-2 text-sm text-spotlight';
+    wrap.innerHTML = `
+      <input type="checkbox" name="${name}" value="${id}" class="mt-1" />
+      <span>
+        <span class="block">${label}</span>
+        <span class="block text-xs text-muted">${description}</span>
+      </span>`;
+    return wrap;
+  }
+
+  function renderCatalog() {
+    roleFields.replaceChildren(
+      ...catalog.roles.map((role: CatalogRole) =>
+        checkboxRow('role', role.id, role.label, role.description),
+      ),
+    );
+    extraFields.replaceChildren(
+      ...catalog.permissions.map((perm: CatalogPermission) =>
+        checkboxRow('extra', perm.id, perm.label, perm.description),
+      ),
+    );
+    deniedFields.replaceChildren(
+      ...catalog.permissions.map((perm: CatalogPermission) =>
+        checkboxRow('denied', perm.id, perm.label, perm.description),
+      ),
+    );
+  }
+
+  function setChecked(name: string, values: string[]) {
+    form.querySelectorAll<HTMLInputElement>(`input[name="${name}"]`).forEach((box) => {
+      box.checked = values.includes(box.value);
+    });
+  }
+
+  function checkedValues(name: string) {
+    return [...form.querySelectorAll<HTMLInputElement>(`input[name="${name}"]:checked`)].map(
+      (box) => box.value,
+    );
+  }
+
+  function identityLabel(user: AccessUser) {
+    return user.emails[0] || user.userDetails || user.userId || 'Unknown';
+  }
+
+  function roleLabels(user: AccessUser) {
+    if (user.status === 'disabled') return 'Disabled';
+    if (!user.roles.length && user.extraPermissions.length) return 'Custom permissions';
+    if (!user.roles.length) return 'No roles';
+    return user.roles
+      .map((id) => catalog.roles.find((role) => role.id === id)?.label || id)
+      .join(' · ');
+  }
+
+  function renderList() {
+    if (!users.length) {
+      statusEl.textContent =
+        'No access records yet. Super Administrator profiles are created on first sign-in.';
+      listEl.replaceChildren();
+      return;
+    }
+    statusEl.textContent = `${users.length} ${users.length === 1 ? 'person' : 'people'}`;
+    listEl.replaceChildren(
+      ...users.map((user) => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <button
+            type="button"
+            class="w-full rounded-sm border border-line bg-panel/40 px-4 py-3 text-left hover:border-gold"
+          >
+            <span class="block font-semibold text-spotlight">${identityLabel(user)}</span>
+            <span class="mt-1 block text-xs text-muted">${roleLabels(user)}</span>
+          </button>`;
+        li.querySelector('button')?.addEventListener('click', () => openEdit(user));
+        return li;
+      }),
+    );
+  }
+
+  function resetForm() {
+    form.reset();
+    idInput.value = '';
+    etagInput.value = '';
+    identityInput.disabled = false;
+    formTitle.textContent = 'New access';
+  }
+
+  function openCreate() {
+    resetForm();
+    form.classList.remove('hidden');
+    identityInput.focus();
+  }
+
+  function openEdit(user: AccessUser) {
+    resetForm();
+    formTitle.textContent = 'Edit access';
+    idInput.value = user.id;
+    etagInput.value = user.etag || '';
+    identityInput.value = identityLabel(user);
+    identityInput.disabled = true;
+    statusInput.value = user.status || 'active';
+    setChecked('role', user.roles);
+    setChecked('extra', user.extraPermissions);
+    setChecked('denied', user.deniedPermissions);
+    form.classList.remove('hidden');
+  }
+
+  async function loadUsers() {
+    clearError();
+    const res = await fetch('/api/studioUsers', { headers: { Accept: 'application/json' } });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showError(data.error || 'Could not load access.', data.correlationId);
+      statusEl.textContent = '';
+      return;
+    }
+    users = (data.users || []) as AccessUser[];
+    renderList();
+  }
+
+  addBtn.addEventListener('click', openCreate);
+  cancelBtn.addEventListener('click', () => {
+    resetForm();
+    form.classList.add('hidden');
+  });
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    clearError();
+    const editing = Boolean(idInput.value);
+    const body: Record<string, unknown> = {
+      roles: checkedValues('role'),
+      extraPermissions: checkedValues('extra'),
+      deniedPermissions: checkedValues('denied'),
+      status: statusInput.value,
+    };
+    if (!editing) body.identity = identityInput.value.trim();
+    const res = await fetch(editing ? `/api/studioUsers/${encodeURIComponent(idInput.value)}` : '/api/studioUsers', {
+      method: editing ? 'PATCH' : 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        ...(editing && etagInput.value ? { 'If-Match': etagInput.value } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showError(data.error || 'Could not save access.', data.correlationId);
+      return;
+    }
+    form.classList.add('hidden');
+    resetForm();
+    await loadUsers();
+  });
+
+  async function bootstrap() {
+    const session = await fetchStudioSession();
+    if (session.catalog) catalog = session.catalog;
+    renderCatalog();
+    if (session.apiUnavailable) {
+      workspace.classList.remove('hidden');
+      await loadUsers();
+      return;
+    }
+    if (!hasStudioPermission(session, STUDIO_PERMISSION.USERS_MANAGE)) {
+      gate.classList.remove('hidden');
+      return;
+    }
+    workspace.classList.remove('hidden');
+    await loadUsers();
+  }
+
+  void bootstrap();
+</script>

@@ -1,7 +1,7 @@
 # Plan: Studio as teaching-business ops
 
 **Artifact ID:** `ELYSE-STUDIO-001`  
-**Version:** 1.5  
+**Version:** 1.6  
 **Last updated:** 2026-08-23  
 **Audience:** Agents, implementers, operators  
 **Scope:** Auth-gated Studio (`/studio`) as the ops home for the teaching business **and** career relationships — CRM (people + personas + LTV), Google Calendar scheduling, contact automation, payment status, and reports. Public site stays the portfolio + inquire/book surface. Money movement stays in [`lesson-payments.md`](./lesson-payments.md).
@@ -52,8 +52,24 @@ Record shapes, Table Storage keys, git collections, and access-flow diagrams: [`
 | Communications | Inquiry forms → email (ACS notify) | Templates, reminders, inquiry → CRM (`STUDIO-P4`) |
 | Financial reports | — | Month summary (gross / fees / net / refunds); deep ledger stays in Stripe/exports (`STUDIO-P5`) |
 | Public booking | Inquire-then-email | Optional slot picker that reads Google free/busy (`STUDIO-P5`) |
-| Help | `/studio/help` capability catalog | Expand as ops capabilities ship (never before) |
-| Access | Roles + discrete permissions (`STUDIO-P6`) | Grant People without publish (and the reverse) |
+| Help | `/studio/help` map + contextual guides (`/studio/help/content`, `/students`, `/admin`, `/access`) | Expand as ops capabilities ship (never before) |
+| Access | Roles + discrete permissions (`STUDIO-P6`) at `/studio/admin/access` | Grant People without publish (and the reverse) |
+
+### Studio IA (shipped chrome)
+
+`/studio` is the **home chooser**. Workflow tabs (not Help): **Career · Content · Students · Admin**. Help icons deep-link to `/studio/help/*`.
+
+| Surface | Route | Status |
+|---------|--------|--------|
+| Home | `/studio` | Four cards |
+| Career | `/studio/career` | Placeholder (agents / casting / performance tools later) |
+| Content | `/studio/content` | Speak + discrete publish hub |
+| Students | `/studio/students` | Landing; **People** at `/studio/people` is live. Lesson schedules, pay status, reminders later |
+| Admin | `/studio/admin` | Landing; **Access** at `/studio/admin/access` is live |
+| Admin Calendar *(later)* | `/studio/admin/calendar` | **Global business-closed calendar** (holidays, vacations). Blocks **all** scheduling and sets auto-reply / response-time expectations. Not per-student lessons (those stay under Students) |
+| Admin Reports *(later)* | `/studio/admin` reports tile | Not built |
+
+`/studio/access` 301s to `/studio/admin/access`.
 
 Payments vendor choice and Phase 1 checkout live in [`lesson-payments.md`](./lesson-payments.md). That plan’s Studio section should stay aligned with this north star.
 
@@ -65,7 +81,7 @@ Payments vendor choice and Phase 1 checkout live in [`lesson-payments.md`](./les
 |--------------|--------|----------------|
 | Phase 0 — Plan + Action IDs + SoT | `done` | — |
 | Phase 1 — People & personas | `done` | Residual: `STUDIO-P1-006` async export |
-| Phase 6 — Roles, permissions, user profiles | `done` | Allowlist bootstraps Super Administrator on first session; live grants on `/studio/access` |
+| Phase 6 — Roles, permissions, user profiles | `done` | Allowlist bootstraps Super Administrator on first session; live grants on `/studio/admin/access` |
 | Phase 2 — Lifetime value + pay status | `planned` | Stripe match + agent value |
 | Phase 3 — Google Calendar scheduling | `planned` | OAuth + two-way sync |
 | Phase 4 — Contact automation | `planned` | Inquiry ingest + reminders |
@@ -271,7 +287,7 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 | `STUDIO-P6-001` | Permission catalog + role bundles | `done` | `STUDIO-P1-001` | `api/src/lib/permissions.js` |
 | `STUDIO-P6-002` | User-profile store (`studioUsers` table) | `done` | `STUDIO-P6-001` | `api/src/lib/users.js`; `infra/modules/portfolio/studio_crm.tf` |
 | `STUDIO-P6-003` | Enforce catalog on People + publish APIs | `done` | `STUDIO-P6-002`; `STUDIO-P1-003` | `api/src/lib/studioAccess.js`; contacts + publish Functions |
-| `STUDIO-P6-004` | Session API + hub / People / Access UI | `done` | `STUDIO-P6-003` | `GET /api/studioSession`; `src/pages/studio.astro`; `/studio/access` |
+| `STUDIO-P6-004` | Session API + hub / People / Access UI | `done` | `STUDIO-P6-003` | `GET /api/studioSession`; Access UI now `/studio/admin/access` |
 | `STUDIO-P6-005` | Allowlist → Super Administrator bootstrap + runbook/help | `done` | `STUDIO-P6-004` | `ensureOwnerFromAllowlist`; `docs/runbooks/manage-access.md`; help |
 
 <details>
@@ -320,7 +336,7 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 
 - [x] `GET /api/studioSession` (and `publisherStatus`) return roles + `permissions[]`; `authorized` means `content.publish`
 - [x] Hub shows People / Access / publish tiles from those permissions — missing publish does not hide People
-- [x] `/studio/access` lets Super Administrators assign roles and extra/denied IDs
+- [x] `/studio/admin/access` lets Super Administrators assign roles and extra/denied IDs (`/studio/access` redirects here)
 - [x] Signed-in users with zero catalog permissions still open `/studio/help` and `/studio/health`
 
 </details>
@@ -331,7 +347,7 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 **Acceptance criteria**
 
 - [x] First session for an allowlisted caller with no profile writes a Super Administrator row; later checks use the profile
-- [x] [`manage-access.md`](../runbooks/manage-access.md) documents the catalog, `/studio/access`, and allowlist-as-bootstrap
+- [x] [`manage-access.md`](../runbooks/manage-access.md) documents the catalog, `/studio/admin/access`, and allowlist-as-bootstrap
 - [x] Help Access section describes sign-in vs People vs publish vs Access
 - [x] Monitor user (`TEST-C-005`) stays off the allowlist and is not granted a profile
 
@@ -633,6 +649,6 @@ lesson-payments #7 (Checkout / webhook polish) ║ P2-001 / P2-004
 | [`lesson-payments.md`](./lesson-payments.md) | Stripe money SoT; backlog **#7** / **#8** point here (`STUDIO-P2`, `P3`, `P5`) |
 | [`rotate-secrets.md`](../runbooks/rotate-secrets.md) | Extend when `STUDIO-P3-001` OAuth names ship |
 | [`cost-and-quotas.md`](../runbooks/cost-and-quotas.md) | Recalc if Phase 1+ adds a billable Azure SKU |
-| [`manage-access.md`](../runbooks/manage-access.md) | Roles, discrete permissions, `/studio/access` |
+| [`manage-access.md`](../runbooks/manage-access.md) | Roles, discrete permissions, `/studio/admin/access` |
 | [`.cursor/rules/studio-help.mdc`](../../.cursor/rules/studio-help.mdc) | Help catalog only after capabilities ship |
 | [`ux-release-testing-strategy.md`](./ux-release-testing-strategy.md) | Auth’d Studio journeys when People/Calendar exist |

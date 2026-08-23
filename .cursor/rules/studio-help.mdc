@@ -2,14 +2,14 @@
 description: Keep Studio help docs aligned with Gemini tools and Studio UX
 globs:
   - api/src/lib/gemini.js
-  - src/pages/studio.astro
   - src/pages/studio/**
   - src/lib/studioHelp.ts
+  - src/lib/studioNav.ts
 ---
 
 # Studio help documentation
 
-Authenticated help lives at **`/studio/help`** (`src/pages/studio/help.astro`). It is linked only from `/studio` (not public nav). SWA requires `authenticated` for `/studio` and `/studio/*`. Signed-in users may open help **even when they cannot publish or manage People**. Sign-in is open to the tenant; actions use the permission catalog — see [studio-auth.mdc](studio-auth.mdc).
+Authenticated help lives at **`/studio/help`** (`src/pages/studio/help/index.astro`) with contextual guides under `/studio/help/*`. Help is **not** in the Career / Content / Students / Admin workflow nav. Each Studio screen’s Help icon must point at the matching guide (`studioHelpHref` in `src/lib/studioNav.ts`). SWA requires `authenticated` for `/studio` and `/studio/*`. Signed-in users may open help **even when they cannot publish or manage People**. Sign-in is open to the tenant; actions use the permission catalog — see [studio-auth.mdc](studio-auth.mdc).
 
 ## Keep docs in sync with capabilities
 
@@ -18,11 +18,11 @@ When you change Studio capabilities, update the help catalog in the same change:
 | Change | Update |
 |--------|--------|
 | Add / rename / remove a Gemini tool in `api/src/lib/gemini.js` | Matching entry in `src/lib/studioHelp.ts` (`tool`, summary, `livePath`, `examplePrompts`) |
-| Change voice UX (hold-to-speak, mic copy, browser support) | Voice section in `src/pages/studio/help.astro` + `studioVoiceNotes` in `studioHelp.ts` |
-| Change compose / preview / publish flow | Getting started + Preview & publish sections on the help page |
-| Change sign-in vs People / publish / Access gates | Access section on the help page + hub tiles on `studio.astro` + `studioAccessNotes` / `studioPeopleNotes` |
-| Replace help screenshots | `public/images/studio-help/*.jpg` — reference device is **iPhone 17 · Safari**. Current set: hub, gallery, rates, hold-to-speak, mic permission, preview, done. |
+| Change voice UX (hold-to-speak, mic copy, browser support) | Voice section in `src/pages/studio/help/content.astro` + `studioVoiceNotes` in `studioHelp.ts` |
+| Change compose / preview / publish flow | Getting started + Preview & publish on `/studio/help/content` |
+| Change sign-in vs People / publish / Access gates | `/studio/help/access` + `studioAccessNotes` / `studioPeopleNotes`; Home / Admin / Students landings |
+| Replace help screenshots | `public/images/studio-help/*.jpg` — reference device is **iPhone 17 · Safari**. Current set: hub (Content), gallery, rates, hold-to-speak, mic permission, preview, done. |
 
-Do not invent Studio features in help that Gemini cannot perform. Example prompts must match real tools and brand rules (voice lessons only — no acting-lesson marketing).
+Do not invent Studio features in help that Gemini cannot perform. Example prompts must match real tools and brand rules (voice lessons only — no acting-lesson marketing). Do not document Career tools, lesson schedules, or Admin calendar as shipped.
 
 After prompt/tool edits, follow `docs/runbooks/refine-studio-gemini.md` (includes the help-sync checklist).

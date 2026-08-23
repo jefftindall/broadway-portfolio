@@ -26,7 +26,7 @@ Schemas live in `src/content.config.ts`. Fix the markdown fields (types, require
 - **AADSTS50105 (assignment required)** — Entra is blocking login before the app can authorize. Keep `require_app_role_assignment = false` and re-apply the env stack. Do not add Users and groups assignments as a workaround.
 - **AADSTS50011 (redirect URI mismatch)** — the hostname you used is not registered; add it to `additional_auth_hostnames` and re-apply, then check `terraform output entra_redirect_uris`
 - **500 / Missing env** — Key Vault secret empty/REPLACE_ME, or SWA app settings not synced after a vault update ([rotate-secrets](rotate-secrets.md)). If a setting still looks like `@Microsoft.KeyVault(...)`, managed Functions will not resolve it — run the sync script/workflow or terraform apply.
-- **401 after updating ALLOWED-USER-IDS** — vault updated but SWA not synced yet (bootstrap only; live grants are `/studio/access`)
+- **401 after updating ALLOWED-USER-IDS** — vault updated but SWA not synced yet (bootstrap only; live grants are `/studio/admin/access`)
 - **GitHub 401/403 from Studio** — App private key / installation ID wrong, or App missing Contents:write ([github-app](github-app.md))
 - **Gemini / quota / 429 (or friendly “temporarily unavailable”)** — confirm `GEMINI_MODEL` is a current model (default `gemini-3.6-flash`; `gemini-2.0-flash` is shut down). Match the API key’s Google project to the quotas in AI Studio / Cloud Console. Look up the user-facing **reference** (`correlationId`) in App Insights — see [observability](observability.md).
 - **Any publish failure with a reference ID** — user-facing copy is intentionally non-technical; use the correlation ID in App Insights ([observability](observability.md))

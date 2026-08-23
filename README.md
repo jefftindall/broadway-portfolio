@@ -6,7 +6,7 @@ Astro portfolio for [elysetindall.com](https://elysetindall.com) with an authent
 
 - Public site: Shows, Materials, Lessons, About, News, Contact (Gallery linked from About + footer); private voice Lessons (vocal pedagogy / CCM)
 - Casting SEO landing pages at `/for/[slug]` (inbound from search; not linked from site chrome)
-- Private `/studio` companion (auth required) — Gemini publish plus `/studio/people` CRM (Table Storage); later calendar, pay status, and comms
+- Private `/studio` companion (auth required) — home chooser; Gemini publish at `/studio/content`; `/studio/people` CRM (Table Storage); Access at `/studio/admin/access`; later calendar, pay status, and comms
 - Terraform for Azure (bootstrap + staging/prod, Key Vault, Entra auth, GitHub Actions OIDC)
 - Studio publishes via **GitHub App** installation tokens (no PAT)
 - Docs for setup and ongoing maintenance

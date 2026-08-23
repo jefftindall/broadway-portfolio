@@ -13,7 +13,7 @@
 | **Authentication** | Who is calling? | Microsoft Entra + SWA Easy Auth (`x-ms-client-principal`) |
 | **Authorization** | What may they do? | Application catalog on `studioUsers` rows (`api/src/lib/permissions.js`) |
 
-Sign-in is not permission to act. A completed Entra login may open `/studio`, `/studio/help`, and `/studio/health`. Hub tiles, People, publish, and Access require discrete permission IDs on the caller’s profile. Every privileged Function re-checks with `permissionGate()`.
+Sign-in is not permission to act. A completed Entra login may open `/studio`, `/studio/help`, and `/studio/health`. Content publish, People, and Access require discrete permission IDs on the caller’s profile. Every privileged Function re-checks with `permissionGate()`.
 
 ```mermaid
 flowchart LR
@@ -87,7 +87,7 @@ Canonical IDs live in [`api/src/lib/permissions.js`](../../api/src/lib/permissio
 | `people.read` | View People list and contact details | `GET /api/contacts` |
 | `people.write` | Create, update, archive contacts (implies `people.read`) | `POST`/`PATCH` contacts |
 | `users.read` | View Access profiles | `GET /api/studioUsers` |
-| `users.manage` | Assign roles and discrete permissions (implies `users.read`) | Access writes at `/studio/access` |
+| `users.manage` | Assign roles and discrete permissions (implies `users.read`) | Access writes at `/studio/admin/access` |
 
 ### Role catalog
 
@@ -108,9 +108,9 @@ Roles are UI/operator bundles. The picker shows these labels only:
 
 The Key Vault allowlist (`ALLOWED_USER_IDS` in SWA) is **not** a second permission model. The first Studio session for an allowlisted caller with no profile writes a **Super Administrator** row (`ensureOwnerFromAllowlist`). After that the table is SoT:
 
-- Edit `/studio/access` to grant or revoke publish, People, or Access
+- Edit `/studio/admin/access` to grant or revoke publish, People, or Access
 - Removing someone from the allowlist does **not** disable an existing profile
-- Adding a new allowlist token still bootstraps Super Administrator on next sign-in (emergency). Prefer `/studio/access`
+- Adding a new allowlist token still bootstraps Super Administrator on next sign-in (emergency). Prefer `/studio/admin/access`
 
 ### Resolution
 
@@ -134,14 +134,14 @@ sequenceDiagram
   Gate-->>Operator: action or deny
 ```
 
-Hub UI reads `GET /api/studioSession` (same payload as publisher status) and shows tiles from `permissions[]`. That is convenience only. The API is the enforcement point.
+Studio screens read `GET /api/studioSession` (same payload as publisher status) and show Content / People / Access from `permissions[]`. That is convenience only. The API is the enforcement point.
 
 ## Contrast: who can sign in vs who can act
 
 | Can complete Entra login | Has a `studioUsers` profile with grants | Result |
 |--------------------------|-----------------------------------------|--------|
 | No | — | Redirect to login |
-| Yes | No | Studio/help/health only; hub tiles hidden; APIs 403 |
+| Yes | No | Studio home, help, and health; Content / People / Access stay gated; APIs 403 |
 | Yes | Super Administrator | Full catalog |
 | Yes | Publisher / People / extras | Those IDs only |
 
@@ -154,7 +154,7 @@ Hub UI reads `GET /api/studioSession` (same payload as publisher status) and sho
 | Profile store | `api/src/lib/users.js` |
 | Principal parsing | `api/src/lib/auth.js` |
 | Access HTTP | `api/src/functions/studioUsers.js` |
-| Access UI | `src/pages/studio/access.astro` |
+| Access UI | `src/pages/studio/admin/access.astro` |
 | Entra / assignment-required | `infra/modules/portfolio/entra.tf` |
 | SWA route rules | `staticwebapp.config.json` / `public/staticwebapp.config.json` |
 | Operator runbook | [`docs/runbooks/manage-access.md`](../runbooks/manage-access.md) |

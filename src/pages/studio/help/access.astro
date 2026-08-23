@@ -1,0 +1,63 @@
+---
+import StudioLayout from '../../../layouts/StudioLayout.astro';
+import { studioAccessNotes } from '../../../lib/studioHelp';
+---
+
+<StudioLayout
+  title="Access help"
+  description="Private guide to Studio Access."
+  heading="Access help"
+>
+  <article class="mx-auto max-w-xl px-4 py-5 md:py-8">
+    <p class="text-sm">
+      <a href="/studio/help" class="text-gel underline-offset-2 hover:text-gold hover:underline">
+        ← All help
+      </a>
+      {' · '}
+      <a href="/studio/admin/access" class="text-gel underline-offset-2 hover:text-gold hover:underline">
+        Open Access
+      </a>
+    </p>
+
+    <section class="mt-8 space-y-4">
+      <h2 class="font-display text-3xl text-spotlight">Who can use what</h2>
+      <dl class="space-y-4 text-sm text-muted">
+        <div>
+          <dt class="text-spotlight">Signed in</dt>
+          <dd class="mt-1">
+            Open Studio, these help guides, and the read-only{' '}
+            <span class="text-spotlight">/studio/health</span> canary. Sign-in alone does not grant
+            People or publish.
+          </dd>
+        </div>
+        <div>
+          <dt class="text-spotlight">People</dt>
+          <dd class="mt-1">
+            View or edit contacts when your profile includes People permission (or Super
+            Administrator). Publishing is a separate permission in the same catalog.
+          </dd>
+        </div>
+        <div>
+          <dt class="text-spotlight">Publish</dt>
+          <dd class="mt-1">
+            Preview and publish require <span class="text-spotlight">content.publish</span> (Super
+            Administrator or Publisher, or that extra permission). A Super Administrator can grant
+            it on{' '}
+            <a href={studioAccessNotes.path} class="text-gel hover:text-gold">{studioAccessNotes.path}</a>.
+          </dd>
+        </div>
+        <div>
+          <dt class="text-spotlight">{studioAccessNotes.title}</dt>
+          <dd class="mt-1">
+            {studioAccessNotes.summary} Grant or revoke at{' '}
+            <a href={studioAccessNotes.path} class="text-gel hover:text-gold">{studioAccessNotes.path}</a>.
+          </dd>
+        </div>
+      </dl>
+      <p class="text-sm text-muted">
+        Operators: follow <span class="text-spotlight">docs/runbooks/manage-access.md</span> in the
+        repo. There is no in-app Key Vault editor.
+      </p>
+    </section>
+  </article>
+</StudioLayout>

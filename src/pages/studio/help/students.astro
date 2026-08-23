@@ -1,0 +1,58 @@
+---
+import StudioLayout from '../../../layouts/StudioLayout.astro';
+import { studioPeopleNotes } from '../../../lib/studioHelp';
+---
+
+<StudioLayout
+  title="Students help"
+  description="Private guide to Studio Students and People."
+  heading="Students help"
+>
+  <article class="mx-auto max-w-xl px-4 py-5 md:py-8">
+    <p class="text-sm">
+      <a href="/studio/help" class="text-gel underline-offset-2 hover:text-gold hover:underline">
+        ← All help
+      </a>
+      {' · '}
+      <a href="/studio/students" class="text-gel underline-offset-2 hover:text-gold hover:underline">
+        Open Students
+      </a>
+    </p>
+
+    <section class="mt-8 space-y-4">
+      <h2 class="font-display text-3xl text-spotlight">{studioPeopleNotes.title}</h2>
+      <p class="text-sm text-muted">{studioPeopleNotes.summary}</p>
+      <ol class="list-decimal space-y-2 pl-5 text-sm text-muted">
+        <li>
+          Open{' '}
+          <a href="/studio/students" class="text-gel hover:text-gold">Students</a>
+          {' '}then{' '}
+          <a href={studioPeopleNotes.path} class="text-gel hover:text-gold">{studioPeopleNotes.title}</a>
+          {' '}when your account has People permission.
+        </li>
+        <li>Tap <span class="text-spotlight">Add person</span>, enter a name, and choose one or more personas.</li>
+        <li>
+          Open a person to add student or agent fields, notes, and related links (student ↔ parent).
+          Archive hides them from the main list without deleting history.
+        </li>
+        <li>
+          The list shows 10 people per page, sorted by last name then first. Search and persona
+          filters apply across every page.
+        </li>
+      </ol>
+      <p class="text-sm text-muted">
+        There is no voice or typed Gemini tool that writes People. Changes happen on this screen
+        only.
+      </p>
+    </section>
+
+    <section class="mt-10 space-y-3">
+      <h2 class="font-display text-2xl text-spotlight">Not built yet</h2>
+      <p class="text-sm text-muted">
+        Individual lesson schedules, payment status, and appointment reminders will live under
+        Students. They are not available yet. Studio-wide holidays and vacations (when the entire
+        business is closed) will live under Admin → Calendar, not here.
+      </p>
+    </section>
+  </article>
+</StudioLayout>

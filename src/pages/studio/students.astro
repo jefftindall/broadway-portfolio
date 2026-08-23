@@ -1,0 +1,42 @@
+---
+import StudioLayout from '../../layouts/StudioLayout.astro';
+import StudioLandingCard from '../../components/StudioLandingCard.astro';
+---
+
+<StudioLayout
+  title="Students"
+  description="Private Studio student and lesson ops."
+  heading="Students"
+  helpHref="/studio/help/students"
+>
+  <section class="mx-auto max-w-xl px-4 py-5 md:py-8">
+    <p class="text-sm text-muted">
+      Teaching relationships and lesson ops. People is live. Lesson schedules, payment status, and
+      reminders are not built yet. Studio-wide holidays and vacations will live under Admin →
+      Calendar — not here.
+    </p>
+    <div class="mt-5 grid gap-3">
+      <StudioLandingCard
+        href="/studio/people"
+        title="People"
+        summary="Students, parents, and related contacts — notes and personas."
+        primary
+      />
+      <StudioLandingCard
+        title="Schedules"
+        summary="Individual lesson times. Not available yet."
+        available={false}
+      />
+      <StudioLandingCard
+        title="Payment status"
+        summary="Who is paid or unpaid per lesson. Not available yet."
+        available={false}
+      />
+      <StudioLandingCard
+        title="Reminders"
+        summary="Appointment reminder settings. Not available yet."
+        available={false}
+      />
+    </div>
+  </section>
+</StudioLayout>
