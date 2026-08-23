@@ -15,7 +15,6 @@
 #   Stripe API keys:   STRIPE-TEST-SECRET-KEY / PUBLISHABLE-KEY and STRIPE-LIVE-* placeholders.
 #                      Staging/prod initialize the Stripe provider from these secrets and own
 #                      the catalog (products, prices, webhooks, Payment Links).
-#                      One-off copy from env vaults: ../../scripts/copy-stripe-keys-to-shared-kv.sh
 #                      Do not data-source env vaults from bootstrap.
 #   Studio monitor:    azuread_user studio-monitor@<initial domain> + MONITOR-UPN/PASSWORD/TOTP-SEED
 #                      Apply requires User Administrator (or Global Administrator). TOTP seed:

@@ -136,12 +136,9 @@ Feature flag (not a Key Vault secret): SWA app setting `LESSON_PAYMENTS_ENABLED`
 When advertised rates in `lessons-book.md` change, **re-apply the environment stack** (staging first, then prod) so Stripe prices and Payment Links follow the website (Stripe prices are immutable; Terraform replaces them).
 
 ```bash
-# After bootstrap apply (API-key placeholders exist). One-off copy from env vaults if keys
-# were populated there first — never prints values. Strips trailing newlines so
-# Stripe Authorization headers stay valid:
-./scripts/copy-stripe-keys-to-shared-kv.sh
-
-# Or set shared secrets directly (never --value a secret key if history is retained):
+# After bootstrap apply (API-key placeholders exist). Strip trailing newlines
+# (tr -d '\r\n') so Stripe Authorization headers stay valid. Never --value a
+# secret key if shell history is retained:
 az keyvault secret set --vault-name kv-elyse-shared --name STRIPE-TEST-SECRET-KEY --file ./stripe-rk-test.txt
 az keyvault secret set --vault-name kv-elyse-shared --name STRIPE-TEST-PUBLISHABLE-KEY --value "pk_test_..."
 az keyvault secret set --vault-name kv-elyse-shared --name STRIPE-LIVE-SECRET-KEY --file ./stripe-rk-live.txt
@@ -155,7 +152,7 @@ cd infra/environments/prod && terraform apply
 ./scripts/sync-swa-api-secrets.sh prod
 ```
 
-Do not write webhook secrets by hand — each env stack stores `stripe_webhook_endpoint.secret` in that vault’s `STRIPE-WEBHOOK-SECRET`. Restricted keys need Products / Prices / Webhook Endpoints / Payment Links write. Env apply destroys leftover `STRIPE-SECRET-KEY` / `STRIPE-PUBLISHABLE-KEY` in `kv-elyse-staging` / `kv-elyse-prod` (already copied to shared). The pay-flow **flag** is not in Key Vault; after links are populated, staging shows `/lessons/book` Pay CTAs automatically. To show them on production: `cd infra/environments/prod && terraform apply -var='lesson_payments_enabled=true'`.
+Do not write webhook secrets by hand — each env stack stores `stripe_webhook_endpoint.secret` in that vault’s `STRIPE-WEBHOOK-SECRET`. Restricted keys need Products / Prices / Webhook Endpoints / Payment Links write. Env apply destroys leftover `STRIPE-SECRET-KEY` / `STRIPE-PUBLISHABLE-KEY` in `kv-elyse-staging` / `kv-elyse-prod` if those names still exist. The pay-flow **flag** is not in Key Vault; after links are populated, staging shows `/lessons/book` Pay CTAs automatically. To show them on production: `cd infra/environments/prod && terraform apply -var='lesson_payments_enabled=true'`.
 
 If a live key is leaked, roll it in the Stripe Dashboard immediately (see [protecting against compromised API keys](https://support.stripe.com/questions/protecting-against-compromised-api-keys)) and update the matching shared vault secret + re-apply **prod** + sync.
 

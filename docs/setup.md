@@ -142,7 +142,7 @@ az keyvault secret set --vault-name kv-elyse-prod --name GITHUB-APP-PRIVATE-KEY 
 
 `ALLOWED_USER_IDS` is a comma-separated list matching SWA principal `userId`, `userDetails`, or email claim (lowercase).
 
-Stripe lesson-payment **API keys** (`STRIPE-TEST-*` / `STRIPE-LIVE-*` secret + publishable) are created on **bootstrap** apply in `kv-elyse-shared`. Staging initializes Stripe with test keys and owns the test catalog; prod uses live keys. Populate keys (or run `scripts/copy-stripe-keys-to-shared-kv.sh` once if they still live in env vaults), then apply each environment for products/prices/webhooks, then sync: [rotate-secrets.md](runbooks/rotate-secrets.md#stripe-lesson-payments).
+Stripe lesson-payment **API keys** (`STRIPE-TEST-*` / `STRIPE-LIVE-*` secret + publishable) are created on **bootstrap** apply in `kv-elyse-shared`. Staging initializes Stripe with test keys and owns the test catalog; prod uses live keys. Populate keys, then apply each environment for products/prices/webhooks, then sync: [rotate-secrets.md](runbooks/rotate-secrets.md#stripe-lesson-payments).
 
 After first login to `/studio`, check `/.auth/me` while signed in to copy the exact `userId` / email into the allowlist.
 

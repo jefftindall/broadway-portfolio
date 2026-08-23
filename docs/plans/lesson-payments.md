@@ -314,7 +314,7 @@ Do not charge cards from unconfirmed voice prompts. Keep `/studio` and `/studio/
 
 | # | Work | Status |
 |---|------|--------|
-| 1 | Stripe account + shared Key Vault `STRIPE-TEST-*` / `STRIPE-LIVE-*` (staging maps test, prod maps live) | `done` (one-off copy from env vaults via `scripts/copy-stripe-keys-to-shared-kv.sh`) |
+| 1 | Stripe account + shared Key Vault `STRIPE-TEST-*` / `STRIPE-LIVE-*` (staging maps test, prod maps live) | `done` |
 | 2 | Privacy/Terms updates for paid lessons | `done` (`/privacy#payments`, `/terms#paid-lessons`) |
 | 3 | `/lessons/book` Pay CTAs gated by `LESSON_PAYMENTS_ENABLED` (staging **true**, prod **false**) | `in_progress` (UI wired; hidden on prod until go-live + live Payment Links) |
 | 4 | Operator runbook: day-of charge, refund, monthly CSV | `planned` |
@@ -323,4 +323,4 @@ Do not charge cards from unconfirmed voice prompts. Keep `/studio` and `/studio/
 | 7 | Later: Checkout Session Function; webhook → paid status for Studio | `planned` |
 | 8 | Later: Studio schedule / paid / comms / reports per [`studio-teaching-business.md`](./studio-teaching-business.md) | `planned` |
 
-CD ships **one Astro artifact** to staging and prod, so the pay-flow flag and Payment Link URLs are **runtime** SWA app settings (`GET /api/lessonPayConfig`), not baked `PUBLIC_*` vars. Restricted API keys (`rk_test_` / `rk_live_`) stay in **`kv-elyse-shared`**; webhook secrets and Payment Links live in the **env vault** and are never returned by that endpoint. Rate changes in `lessons-book.md` require an **environment re-apply** (staging, then prod) so Stripe prices follow the site. Populate / copy commands: [rotate-secrets.md](../runbooks/rotate-secrets.md#stripe-lesson-payments). Go-live on production: `terraform apply -var='lesson_payments_enabled=true'` in `infra/environments/prod` after live Payment Links are set.
+CD ships **one Astro artifact** to staging and prod, so the pay-flow flag and Payment Link URLs are **runtime** SWA app settings (`GET /api/lessonPayConfig`), not baked `PUBLIC_*` vars. Restricted API keys (`rk_test_` / `rk_live_`) stay in **`kv-elyse-shared`**; webhook secrets and Payment Links live in the **env vault** and are never returned by that endpoint. Rate changes in `lessons-book.md` require an **environment re-apply** (staging, then prod) so Stripe prices follow the site. Populate commands: [rotate-secrets.md](../runbooks/rotate-secrets.md#stripe-lesson-payments). Go-live on production: `terraform apply -var='lesson_payments_enabled=true'` in `infra/environments/prod` after live Payment Links are set.
