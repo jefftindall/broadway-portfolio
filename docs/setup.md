@@ -164,7 +164,7 @@ Terraform creates an Entra app `elyse-portfolio-gha-<env>` with federated creden
 | `AZURE_RESOURCE_GROUP` | Environment resource group |
 | `AZURE_STATIC_WEB_APP_NAME` | SWA name for `az staticwebapp secrets list` |
 
-The workflow ([azure-static-web-apps.yml](../.github/workflows/azure-static-web-apps.yml)) uses `azure/login` with OIDC, fetches the SWA deploy key at runtime, and deploys. **Do not** store `AZURE_STATIC_WEB_APPS_API_TOKEN` in GitHub secrets.
+The workflow ([azure-static-web-apps.yml](../.github/workflows/azure-static-web-apps.yml)) logs in with GitHub OIDC ([`scripts/azure-oidc-login.sh`](../scripts/azure-oidc-login.sh) for SWA deploy/smoke; `azure/login@v3` for Terraform), fetches the SWA deploy key at runtime, and deploys. **Do not** store `AZURE_STATIC_WEB_APPS_API_TOKEN` in GitHub secrets.
 
 ### Terraform identity (shared, from bootstrap)
 
