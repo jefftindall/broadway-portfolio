@@ -1,0 +1,47 @@
+---
+description: Authentication is not authorization — enforce action checks on every Studio call
+globs:
+  - api/src/lib/auth.js
+  - api/src/functions/**/*.js
+  - infra/modules/portfolio/entra.tf
+  - infra/modules/portfolio/variables.tf
+  - staticwebapp.config.json
+  - public/staticwebapp.config.json
+  - docs/runbooks/manage-access.md
+  - AGENTS.md
+---
+
+# Studio authentication vs authorization
+
+**Never assume a signed-in user is allowed to act.** Entra + SWA Easy Auth only prove identity. Authorization is application-level and must be re-checked on every privileged call.
+
+## Authentication (open)
+
+- Any user who can complete Entra login for this tenant (members and guests) must be able to sign in.
+- Keep `require_app_role_assignment` **false** (`azuread_service_principal.swa`). Setting it true causes **AADSTS50105** and blocks login before the app can authorize.
+- Do **not** use Entra “Assignment required?”, Users and groups assignments, or SWA `authenticated` as the publish/CRM permission model.
+- SWA still requires `authenticated` for `/studio`, `/studio/*`, and `/api/*` (except the documented public exceptions). That is a login gate, not an action grant.
+- Apps stay `AzureADMyOrg` with the tenant-specific `openIdIssuer`. Do not switch to `/common/v2.0`.
+
+## Authorization (independent)
+
+| Action | Check on every call |
+|--------|---------------------|
+| Publish / upload / discrete site values / publish status | `publisherGate()` / `isAuthorizedPublisher()` against `ALLOWED_USER_IDS` |
+| People / CRM | `isSignedInStudioUser()` **and** `studioOwnerKey(principal)` — never trust an owner id from the body |
+| Public `contactInquiry` | Turnstile + schema; no Studio principal |
+| Public `lessonPayConfig` | Flag + sanitized Payment Link URLs only |
+| Public `stripeWebhook` | Stripe signature verification |
+
+Azure Functions use `authLevel: 'anonymous'` because SWA presents the principal. That is **not** a skip — handlers must still call the gate above. Local `AZURE_FUNCTIONS_ENVIRONMENT=Development` is the only allowlist skip (`func start` without SWA headers).
+
+## When adding a Studio API
+
+1. Decide the authorization model (publish allowlist vs signed-in owner vs public verifier).
+2. Call that check **before** reading secrets, calling Gemini, writing git, or touching Table Storage.
+3. Return a friendly error + `correlationId`. Do not leak whether the allowlist is empty.
+4. Update [`docs/runbooks/manage-access.md`](docs/runbooks/manage-access.md) if the layers change.
+
+UI publisher-status checks are convenience only. The API remains the enforcement point.
+
+See [`api/src/lib/auth.js`](api/src/lib/auth.js) and [`docs/runbooks/manage-access.md`](docs/runbooks/manage-access.md).

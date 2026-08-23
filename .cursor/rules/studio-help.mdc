@@ -9,7 +9,7 @@ globs:
 
 # Studio help documentation
 
-Authenticated help lives at **`/studio/help`** (`src/pages/studio/help.astro`). It is linked only from `/studio` (not public nav). SWA requires `authenticated` for `/studio` and `/studio/*`. Signed-in users may open help **even when they cannot publish**.
+Authenticated help lives at **`/studio/help`** (`src/pages/studio/help.astro`). It is linked only from `/studio` (not public nav). SWA requires `authenticated` for `/studio` and `/studio/*`. Signed-in users may open help **even when they cannot publish**. Sign-in is open to the tenant; publishing is a separate allowlist — see [studio-auth.mdc](studio-auth.mdc).
 
 ## Keep docs in sync with capabilities
 

@@ -83,6 +83,8 @@ module "portfolio" {
   ga_measurement_id         = var.ga_measurement_id
   monitor_upn               = var.monitor_upn
   lesson_payments_enabled   = var.lesson_payments_enabled
+  # Sign-in is open to the tenant; Studio APIs enforce publish/CRM authorization.
+  require_app_role_assignment = false
   # OPS-P3-006 — irreversible while soft-delete retention remains; staging stays off.
   # soft_delete_retention_days is immutable after create (prod vault already at 7).
   purge_protection_enabled   = true

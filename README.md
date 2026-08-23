@@ -64,10 +64,10 @@ func start
 
 ## Security model
 
-Only Elyse can publish:
+Authentication and authorization are separate. Anyone in the Entra tenant can sign in; only allowlisted publishers can change the site.
 
-1. SWA routes protect `/studio` and `/api/*` (authenticated)
-2. API re-checks `x-ms-client-principal` against `ALLOWED_USER_IDS` (Key Vault source of truth, synced into SWA app settings for managed Functions)
+1. SWA routes protect `/studio` and `/api/*` (`authenticated` login gate). Entra **Assignment required** stays off so login is not blocked with `AADSTS50105`.
+2. API never treats a signed-in principal as permission to act. Publish/upload re-check `x-ms-client-principal` against `ALLOWED_USER_IDS` (Key Vault source of truth, synced into SWA app settings). People/CRM is owner-scoped to that principal. Public exceptions use Turnstile, sanitized Payment Links, or Stripe signatures.
 3. GitHub writes use short-lived **GitHub App** installation tokens (private key in Key Vault, synced into SWA)
 4. GitHub Actions uses **OIDC** to Azure (separate identities for SWA deploy vs Terraform; no long-lived deploy token in repo secrets)
 

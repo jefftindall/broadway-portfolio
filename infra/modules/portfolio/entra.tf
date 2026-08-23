@@ -108,6 +108,8 @@ resource "azuread_application_redirect_uris" "swa_web" {
   redirect_uris  = local.redirect_uris
 }
 
+# Authentication only. Keep assignment required false so tenant members and
+# guests can sign in (AADSTS50105 when true). Authorization is in the Studio API.
 resource "azuread_service_principal" "swa" {
   client_id                    = azuread_application.swa.client_id
   app_role_assignment_required = var.require_app_role_assignment
@@ -127,7 +129,7 @@ resource "azuread_application_pre_authorized" "swa" {
   depends_on           = [azuread_application_identifier_uri.swa]
 }
 
-# Default role (0000…) — assignment required, no custom user-facing roles.
+# Default role (0000…) — used only if require_app_role_assignment is flipped on.
 # Count is 0 until bootstrap creates the monitor user (ignore_missing).
 resource "azuread_app_role_assignment" "monitor" {
   count               = length(data.azuread_users.monitor.object_ids) == 1 ? 1 : 0
@@ -137,7 +139,7 @@ resource "azuread_app_role_assignment" "monitor" {
 }
 
 # Same-app client_credentials needs the SWA SP assigned Monitor.Ping on itself.
-# Assignment required is true, so missing this yields AADSTS501051.
+# When assignment required is true, missing this yields AADSTS501051.
 # az ad app permission admin-consent can drop this application-type assignment
 # (it rewrites grants from required_resource_access, which is Graph User.Read only).
 resource "azuread_app_role_assignment" "monitor_ping_self" {

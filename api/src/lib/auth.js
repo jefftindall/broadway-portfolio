@@ -1,6 +1,18 @@
 /**
- * Parse SWA client principal from x-ms-client-principal header.
- * Enforce allowlist from ALLOWED_USER_IDS (comma-separated user IDs or emails).
+ * Studio identity helpers.
+ *
+ * Authentication (Entra + SWA Easy Auth) is not authorization.
+ * A signed-in `x-ms-client-principal` only proves who called. Every privileged
+ * route must decide what that identity may do:
+ * - Publish / upload / discrete site values: ALLOWED_USER_IDS allowlist
+ * - People / CRM: signed-in + owner-scoped partition (`studioOwnerKey`)
+ *
+ * Do not treat SWA `authenticated` as permission to act. Do not use Entra
+ * "Assignment required" to stand in for these checks (that blocks login with
+ * AADSTS50105 and still would not authorize the caller).
+ *
+ * Local Functions (`AZURE_FUNCTIONS_ENVIRONMENT=Development`) skip the
+ * allowlist so `func start` works without SWA headers.
  */
 import { randomUUID } from 'node:crypto';
 
@@ -30,6 +42,7 @@ export function newCorrelationId() {
   return randomUUID();
 }
 
+/** Publish allowlist only — a valid principal is not enough. */
 export function isAuthorizedPublisher(principal) {
   if (!principal) return false;
   const allow = (process.env.ALLOWED_USER_IDS || '')
@@ -48,6 +61,25 @@ export function isAuthorizedPublisher(principal) {
 
   const candidates = [userId, userDetails, ...emails, `${identityProvider}:${userId}`];
   return candidates.some((c) => c && allow.includes(c));
+}
+
+/**
+ * Gate for publish-capable routes. Call this even when SWA already required
+ * `authenticated` — a signed-in user is not a publisher by default.
+ */
+export function publisherGate(request) {
+  const principal = getClientPrincipal(request);
+  if (isDevelopmentEnvironment()) {
+    return { allowed: true, principal, reason: 'development' };
+  }
+  if (!isAuthorizedPublisher(principal)) {
+    return {
+      allowed: false,
+      principal,
+      correlationId: newCorrelationId(),
+    };
+  }
+  return { allowed: true, principal };
 }
 
 export function unauthorized(correlationId) {

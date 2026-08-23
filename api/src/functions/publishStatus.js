@@ -1,8 +1,7 @@
 import { app } from '@azure/functions';
 import {
-  getClientPrincipal,
-  isAuthorizedPublisher,
   newCorrelationId,
+  publisherGate,
   publisherIdentity,
   unauthorized,
 } from '../lib/auth.js';
@@ -15,23 +14,21 @@ app.http('publishStatus', {
   authLevel: 'anonymous',
   route: 'publishStatus',
   handler: async (request, context) => {
-    const principal = getClientPrincipal(request);
-    if (process.env.AZURE_FUNCTIONS_ENVIRONMENT !== 'Development') {
-      if (!isAuthorizedPublisher(principal)) {
-        const identity = publisherIdentity(principal);
-        const correlationId = newCorrelationId();
-        context.warn('Rejected publishStatus attempt', {
-          correlationId,
-          userId: identity.userId,
-        });
-        trackEvent('StudioPublishDenied', {
-          ...identity,
-          correlationId,
-          route: 'publishStatus',
-        });
-        await flush();
-        return unauthorized(correlationId);
-      }
+    const gate = publisherGate(request);
+    if (!gate.allowed) {
+      const identity = publisherIdentity(gate.principal);
+      const correlationId = gate.correlationId;
+      context.warn('Rejected publishStatus attempt', {
+        correlationId,
+        userId: identity.userId,
+      });
+      trackEvent('StudioPublishDenied', {
+        ...identity,
+        correlationId,
+        route: 'publishStatus',
+      });
+      await flush();
+      return unauthorized(correlationId);
     }
 
     const sha = String(request.query.get('sha') || '').trim();
