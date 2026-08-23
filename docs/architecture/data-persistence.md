@@ -4,6 +4,8 @@
 **Last updated:** 2026-08-23  
 **Scope:** Where durable data lives today, the record shapes, how records relate, and the access paths. This is the architecture SoT for stores — not a backlog. Phased work stays in [`docs/plans/`](../plans/).
 
+**Keep this document current:** when a PR changes a store, schema, relation, or access path, update the matching sections, mermaid, and source map **in that same PR**, then bump **Last updated**. Agent contract: [`.cursor/rules/data-persistence.mdc`](../../.cursor/rules/data-persistence.mdc) and [AGENTS.md](../../AGENTS.md).
+
 There is **no application database**. Durable records are split across **git** (public brand), **Azure Table Storage** (Studio People + access profiles), **Stripe** (money), and **Key Vault** (secrets). Inquiries and Stripe webhook events are **not** written to a store.
 
 ## Systems of record
@@ -529,3 +531,4 @@ Do not invent a second calendar or a Studio ledger that can drift from Stripe.
 | Access runbook | [`docs/runbooks/manage-access.md`](../runbooks/manage-access.md) |
 | Payments plan | [`docs/plans/lesson-payments.md`](../plans/lesson-payments.md) |
 | Studio backlog | [`docs/plans/studio-teaching-business.md`](../plans/studio-teaching-business.md) |
+| Keep-in-sync rule | [`.cursor/rules/data-persistence.mdc`](../../.cursor/rules/data-persistence.mdc) |

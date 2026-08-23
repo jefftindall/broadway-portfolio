@@ -1,0 +1,62 @@
+---
+description: Keep docs/architecture/data-persistence.md current when stores, schemas, or access paths change
+globs:
+  - api/src/lib/contacts.js
+  - api/src/lib/users.js
+  - api/src/lib/tableGeo.js
+  - api/src/lib/permissions.js
+  - api/src/lib/studioAccess.js
+  - api/src/lib/contentSchemas.js
+  - api/src/lib/siteSettings.js
+  - api/src/lib/github.js
+  - api/src/lib/lessonPayConfig.js
+  - api/src/lib/stripeWebhook.js
+  - api/src/lib/acsNotify.js
+  - api/src/functions/contacts.js
+  - api/src/functions/studioUsers.js
+  - api/src/functions/contactInquiry.js
+  - api/src/functions/lessonPayConfig.js
+  - api/src/functions/stripeWebhook.js
+  - api/src/functions/updateContent.js
+  - api/src/functions/uploadMedia.js
+  - src/content.config.ts
+  - src/data/site-settings.json
+  - src/content/resume-meta.json
+  - src/content/pages/lessons-book.md
+  - infra/modules/portfolio/studio_crm.tf
+  - infra/modules/portfolio/stripe.tf
+  - infra/modules/stripe_catalog/**
+  - scripts/seed-studio-people.mjs
+  - scripts/lib/people-seed.mjs
+  - docs/architecture/data-persistence.md
+---
+
+# Data persistence documentation
+
+[`docs/architecture/data-persistence.md`](docs/architecture/data-persistence.md) is the architecture SoT for **stores, record shapes, relations, and access flows**. It is not a backlog — phased work stays in [`docs/plans/`](docs/plans/).
+
+## Keep the doc in sync
+
+When you **add, remove, or change** a durable store, schema, relation, or how records are read/written, update `docs/architecture/data-persistence.md` **in the same PR**. Bump **Last updated**. Refresh mermaid diagrams that the change invalidates. Do not leave the doc describing a store or field that no longer exists.
+
+| Change | Update in the persistence doc |
+|--------|-------------------------------|
+| New Table / collection / Stripe object / vault secret that holds records or config the app reads | Systems of record table + the matching section + source map |
+| Contact / profile columns, personas, related-contact rules, `crmOwnerKey` | §1 entity tables and relations ER |
+| Permission IDs, roles, or how `permissionGate` resolves `ownerKey` | §1.2 catalog + People sequence |
+| Content Zod / Astro collection / site-settings / resume-meta fields | §2 models and git ER |
+| Publish mode, commit paths, or media write location | §2.4 publish sequence |
+| Lesson rates ↔ Stripe `lesson_rate_id`, Payment Links, webhook persistence | §3 Stripe + pay sequence |
+| Inquiry (or any public form) starts or stops writing a store | §5 transient vs SoT; move to a store section if it persists |
+| New store (Postgres, Calendar, LTV match, inquiry → CRM) | Systems of record + new section; remove it from “not persisted yet” |
+| Drop a store or make a path notify-only again | Delete or mark transient; do not leave stale SoT rows |
+
+Also add the new source file to this rule’s `globs` when you introduce a store module that is not already listed.
+
+## What does not need a doc edit
+
+Comment-only or typo fixes in the globbed files. Adding a markdown **content** file that already matches an existing collection schema (`src/content/shows/*.md`, and so on). Secret **value** rotation with no new secret **name**.
+
+## Related
+
+Plans stay the backlog SoT ([`plans-status-on-pr.mdc`](plans-status-on-pr.mdc)). Access layers: [`studio-auth.mdc`](studio-auth.mdc) + [manage-access.md](docs/runbooks/manage-access.md). New billable Azure SKU still requires [`cost-and-quotas.md`](docs/runbooks/cost-and-quotas.md) + budget in the same PR.

@@ -22,7 +22,7 @@ Example PR title: `STUDIO-P1-003: Add /studio/people contact list`
 
 ### Systems of record
 
-Record shapes, Table Storage keys, git collections, and access-flow diagrams: [`docs/architecture/data-persistence.md`](../architecture/data-persistence.md).
+Record shapes, Table Storage keys, git collections, and access-flow diagrams: [`docs/architecture/data-persistence.md`](../architecture/data-persistence.md) (living SoT — update it in the same PR when CRM, profiles, or other stores change).
 
 | Concern | System of record | Studio’s job |
 |---------|------------------|--------------|

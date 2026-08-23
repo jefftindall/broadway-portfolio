@@ -50,5 +50,6 @@ Hub UI reads `GET /api/studioSession` (same payload as `publisherStatus`) and sh
 3. Return a friendly error + `correlationId`. Do not leak whether the allowlist or profile table is empty.
 4. Gate matching Studio UI from the session permissions in the same PR.
 5. Update [`docs/runbooks/manage-access.md`](docs/runbooks/manage-access.md) if the layers change.
+6. If the API persists or stops persisting records, update [`docs/architecture/data-persistence.md`](docs/architecture/data-persistence.md) — see [data-persistence.mdc](data-persistence.mdc).
 
 See [`api/src/lib/studioAccess.js`](api/src/lib/studioAccess.js) and [`docs/runbooks/manage-access.md`](docs/runbooks/manage-access.md).

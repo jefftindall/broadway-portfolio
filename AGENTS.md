@@ -34,6 +34,10 @@ Requirements for Terraform lint: Terraform >= 1.5 and [TFLint](https://github.co
 
 When a PR implements work from [`docs/plans/`](docs/plans/) (`OPS-*`, `SEARCH-*`, `DISC-*`, …), update Action ID statuses and acceptance checklists **in that same PR**. See [`.cursor/rules/plans-status-on-pr.mdc`](.cursor/rules/plans-status-on-pr.mdc).
 
+### Data persistence documentation (required when stores change)
+
+[`docs/architecture/data-persistence.md`](docs/architecture/data-persistence.md) is the architecture SoT for stores, record shapes, relations, and access-flow diagrams. When a PR adds, removes, or changes a durable store, schema, relation, or how records are read/written (Table Storage, git collections, Stripe catalog, Key Vault names the app reads, or a path that starts/stops persisting), update that document **in the same PR** — bump **Last updated** and fix any stale mermaid. See [`.cursor/rules/data-persistence.mdc`](.cursor/rules/data-persistence.mdc). Do not invent a second application database; Table Storage first until queries force otherwise ([`cost-and-quotas.md`](docs/runbooks/cost-and-quotas.md) + budget in the same PR if a billable SKU is added).
+
 ### Never echo secrets (pipelines + scripts)
 
 **Never** print secret values (`echo` / `printf` / `console.log` / traces / action `with:` dumps) in workflows or scripts. Mask line-by-line; prefer temp files; on errors log names only. Full rules: [`.cursor/rules/never-echo-secrets.mdc`](.cursor/rules/never-echo-secrets.mdc). GitHub App minting: [`scripts/mint-github-app-token.sh`](scripts/mint-github-app-token.sh). If leaked, rotate immediately ([rotate-secrets.md](docs/runbooks/rotate-secrets.md)).
