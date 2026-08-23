@@ -4,7 +4,7 @@
 
 Region: **eastus2** (all environments). Rates: Azure Retail Prices API (`prices.azure.com`), Consumption / pay-as-you-go USD. Recalculate whenever billable resources are added, removed, or resized — see [`.cursor/rules/ops-operational-excellence.mdc`](../../.cursor/rules/ops-operational-excellence.mdc).
 
-**Last calculated:** 2026-08-23 · **Expected total: $26.69 / month**
+**Last calculated:** 2026-08-23 · **Expected total: $29.69 / month**
 
 | Item | Qty / assumption | Unit rate | USD/mo |
 |------|------------------|-----------|--------|
@@ -14,11 +14,12 @@ Region: **eastus2** (all environments). Rates: Azure Retail Prices API (`prices.
 | tfstate storage (`stelysetfstateeu2`) | Standard LRS, &lt;1 GB | $0.024 / GB-mo | **0.03** |
 | Studio CRM Table Storage (`STUDIO-P1-001`) | staging + prod Standard **RA-GRS** (`stelysecrmstaging`, `stelysecrmprod`); &lt;1 GB tables each; eastus2 → paired Central US | Tables RA-GRS data **$0.075** / GB-mo · ops **$0.00036** / 10K (Azure Tables list / eastus2, 2026-08-23) | **0.15** |
 | Log Analytics / App Insights | &lt;5 GB Analytics Logs; 30-day retention | First 5 GB/mo free; retention ≤31d free | **0.00** |
+| Azure Monitor system-log alerts | Prod `DeployFailed` **5 min** + homepage FCP **daily** (billed at ≤15-min meter) + failed-request **15 min** × staging+prod (`OPS-P6-001`) | $1.50 / 5-min rule · $0.50 / ≤15-min rule (eastus2 retail) | **3.00** |
 | ACS Email | ~50–100 inquiry + OPS digest msgs | $0.00025 / email + $0.00012 / MB | **0.03** |
 | SWA bandwidth | Within included 100 GB / subscription | Overage $0.20 / GB | **0.00** |
 | Monitor Action Group SMS / voice | Steady-state idle | $0.00645 / SMS · $0.013 / voice (US) | **0.00** |
 | ACS US toll-free number | Leased on `acs-elyse-shared`; E.164 in Key Vault `ACS-SMS-FROM` | **$2.00 / mo** while leased | **2.00** |
-| **Azure expected total** | | | **26.69** |
+| **Azure expected total** | | | **29.69** |
 
 **ACS toll-free note:** Lease billing starts when the number is purchased. **Toll-free verification** often takes on the order of **~5 weeks** before SMS can send. Keeping the number in `ACS-SMS-FROM` (shared KV) during that wait is fine — the API still skips SMS until the number is usable / not `REPLACE_ME`. Email inquiry notify continues to work. See [rotate-secrets.md](rotate-secrets.md) § Shared SMS.
 
@@ -27,10 +28,10 @@ Region: **eastus2** (all environments). Rates: Azure Retail Prices API (`prices.
 | Field | Value |
 |-------|--------|
 | Formula | `ceil(expected_monthly_usd × 1.25)` |
-| Expected | **$26.69** |
-| Budget amount | **$34 / month** (`budget-elyse-portfolio-monthly` in `infra/bootstrap/budget.tf`) |
+| Expected | **$29.69** |
+| Budget amount | **$38 / month** (`budget-elyse-portfolio-monthly` in `infra/bootstrap/budget.tf`) |
 | Actual alerts | **80%** and **100%** → Key Vault `ALERT-EMAIL` only (Owners fallback if `REPLACE_ME`) |
-| 80% of budget | ≈ **$27.20** (≈ expected retail total) |
+| 80% of budget | ≈ **$30.40** (≈ expected retail total) |
 
 The monthly OPS scorecard digest also reports last-month spend and MoM trend to both `ALERT-EMAIL` and `SITE-CONTACT-EMAIL` (ACS email; recipients never in git). **How to read it (Elyse):** [monthly-site-check-in.md](monthly-site-check-in.md).
 
@@ -52,8 +53,8 @@ The monthly OPS scorecard digest also reports last-month spend and MoM trend to 
 
 ## Alerts
 
-- Azure **subscription** budget `$34/mo` → `ALERT-EMAIL` at **80%** / **100%** Actual (bootstrap TF)
+- Azure **subscription** budget `$38/mo` → `ALERT-EMAIL` at **80%** / **100%** Actual (bootstrap TF)
 - Monthly OPS scorecard ACS digest (spend + MoM + scores) → `ALERT-EMAIL` + `SITE-CONTACT-EMAIL` ([how to read it](monthly-site-check-in.md))
 - Gemini/Google billing alert (console; not in this repo)
 - GitHub Actions email on failed workflow
-- Application Insights: 1 GB/day cap, 30-day retention, failed-request + prod availability (homepage + materials) + FCP watch alerts (see [observability.md](observability.md))
+- Application Insights: 1 GB/day cap, 30-day retention, failed-request 5xx (deploy-quiet, `OPS-P6-001`) + prod availability (homepage + materials) + FCP watch alerts (see [observability.md](observability.md))

@@ -242,28 +242,54 @@ resource "azurerm_monitor_action_group" "watch" {
   }
 }
 
-resource "azurerm_monitor_metric_alert" "failed_requests" {
+# Sev2 — 5xx spike outside a CD quiet window (OPS-P6-001).
+# SWA uploads recycle managed Functions; App Insights counts those as failed requests.
+# A count>0 metric alert therefore pages on every content publish. This query:
+#   * ignores 4xx (auth, Turnstile, validation — not a site outage)
+#   * ignores 15m before / 10m after the latest DeployStarted or DeployCompleted
+#   * pages only when 3+ remaining 5xx (or resultCode 0 / timeout) land in 15m
+# CD emits DeployStarted immediately before SWA upload. Sev1 availability /
+# DeployFailed / SmokeFailed still page during a real outage.
+resource "azurerm_monitor_scheduled_query_rules_alert_v2" "failed_requests" {
   count = local.alert_notify_enabled ? 1 : 0
 
-  name                = "alert-elyse-failed-requests-${local.name_suffix}"
-  resource_group_name = azurerm_resource_group.main.name
-  scopes              = [azurerm_application_insights.main.id]
-  description         = "Failed requests on ${local.appi_name} (Sev2 → notify)"
-  severity            = 2
-  frequency           = "PT5M"
-  window_size         = "PT15M"
-  tags                = local.tags
+  name                    = "alert-elyse-failed-requests-${local.name_suffix}"
+  resource_group_name     = azurerm_resource_group.main.name
+  location                = azurerm_resource_group.main.location
+  scopes                  = [azurerm_application_insights.main.id]
+  description             = "5xx spike on ${local.appi_name} outside deploy quiet window (Sev2 → notify)"
+  severity                = 2
+  enabled                 = true
+  evaluation_frequency    = "PT15M"
+  window_duration         = "PT15M"
+  skip_query_validation   = true
+  auto_mitigation_enabled = true
+  tags                    = local.tags
 
   criteria {
-    metric_namespace = "microsoft.insights/components"
-    metric_name      = "requests/failed"
-    aggregation      = "Count"
-    operator         = "GreaterThan"
-    threshold        = 0
+    query                   = <<-QUERY
+      let lastDeployMarker = toscalar(
+        customEvents
+        | where name in ("DeployStarted", "DeployCompleted")
+        | summarize max(timestamp)
+      );
+      requests
+      | where success == false
+      | where toint(resultCode) >= 500 or resultCode == "0" or isempty(resultCode)
+      | where isempty(lastDeployMarker) or timestamp < lastDeployMarker - 15m or timestamp > lastDeployMarker + 10m
+    QUERY
+    time_aggregation_method = "Count"
+    operator                = "GreaterThan"
+    threshold               = 2
+
+    failing_periods {
+      minimum_failing_periods_to_trigger_alert = 1
+      number_of_evaluation_periods             = 1
+    }
   }
 
   action {
-    action_group_id = azurerm_monitor_action_group.notify[0].id
+    action_groups = [azurerm_monitor_action_group.notify[0].id]
   }
 }
 

@@ -19,7 +19,7 @@
 #   Studio monitor:    azuread_user studio-monitor@<initial domain> + MONITOR-UPN/PASSWORD/TOTP-SEED
 #                      Apply requires User Administrator (or Global Administrator). TOTP seed:
 #                      docs/runbooks/studio-auth-monitoring.md
-#   Subscription budget: budget-elyse-portfolio-monthly (ceil(expected×1.25), currently $34/mo; ALERT-EMAIL at 80%/100%)
+#   Subscription budget: budget-elyse-portfolio-monthly (ceil(expected×1.25), currently $38/mo; ALERT-EMAIL at 80%/100%)
 #   Region:            eastus2
 #   Subscription:      e601e59a-c7f4-41f0-8178-b59740fb1974
 #   Entra app:         elyse-portfolio-gha-terraform (OIDC for plan/apply)

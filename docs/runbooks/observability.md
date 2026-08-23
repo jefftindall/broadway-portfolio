@@ -35,15 +35,15 @@ Measurement-only checklist for the `elysetindall.com` property (`G-XEE29C0RRE`):
 
 Consent Mode / cookie banner: **not shipped** (`SEARCH-P1-006` = `wont_fix`). Privacy policy covers GA use without a consent gate.
 
-Availability and failed-request metric alerts wire to Key Vault–backed Action Groups when shared `ALERT-*` secrets are set (not `REPLACE_ME`). See [rotate-secrets.md](./rotate-secrets.md) ops section and [operational-excellence.md](../plans/operational-excellence.md).
+Availability (metric) and failed-request (scheduled query, `OPS-P6-001`) alerts wire to Key Vault–backed Action Groups when shared `ALERT-*` secrets are set (not `REPLACE_ME`). See [rotate-secrets.md](./rotate-secrets.md) ops section and [operational-excellence.md](../plans/operational-excellence.md).
 
-**Operational excellence:** Living scorecard at [operational-excellence-scorecard.md](../ops/operational-excellence-scorecard.md). Backlog / SLOs / Sev1 SMS-voice plan: [operational-excellence.md](../plans/operational-excellence.md) (`OPS-*`). Private alert emails/phones must not be committed — only `ALERT-*` in `kv-elyse-shared`. Phase 0–4 done (except optional PagerDuty `OPS-P3-002`). **Phase 5 done in repo:** monthly site performance (GA4 visits/top pages + App Insights contact/Studio-update counts) in the scorecard + ACS digest — populate `GA-*` secrets per [ga-data-api-access.md](ga-data-api-access.md) before visits appear.
+**Operational excellence:** Living scorecard at [operational-excellence-scorecard.md](../ops/operational-excellence-scorecard.md). Backlog / SLOs / Sev1 SMS-voice plan: [operational-excellence.md](../plans/operational-excellence.md) (`OPS-*`). Private alert emails/phones must not be committed — only `ALERT-*` in `kv-elyse-shared`. Phase 0–6 done (except optional PagerDuty `OPS-P3-002`). **Phase 5 done in repo:** monthly site performance (GA4 visits/top pages + App Insights contact/Studio-update counts) in the scorecard + ACS digest — populate `GA-*` secrets per [ga-data-api-access.md](ga-data-api-access.md) before visits appear. **Phase 6:** failed-request Sev2 ignores SWA Function recycle during CD.
 
-## Action Groups (OPS-P1 / OPS-P2 / OPS-P3)
+## Action Groups (OPS-P1 / OPS-P2 / OPS-P3 / OPS-P6)
 
 | Group | Name pattern | Channels | Wired alerts |
 |-------|--------------|----------|--------------|
-| Notify (Sev2) | `ag-elyse-notify-{env}` | Email ± SMS | Failed-request spike |
+| Notify (Sev2) | `ag-elyse-notify-{env}` | Email ± SMS | 5xx spike **outside** a CD quiet window (`OPS-P6-001`) |
 | Critical (Sev1) | `ag-elyse-critical-{env}` | Email + SMS + voice | Prod homepage + materials availability; **DeployFailed** / **SmokeFailed** (`OPS-P3-003` / `TEST-D-003`) |
 | Watch (Sev3) | `ag-elyse-watch-{env}` | Email only | Homepage field FCP p75 burn (`HomepageFcpMs`; 2d watch window; SLO-6 scored over 7d in scorecard) |
 
@@ -96,6 +96,7 @@ User-facing messages stay short and non-technical. Full provider/SDK detail is o
 | `StudioPublishToProdCompleted` | Studio Done-step when Deploy Production succeeds (`durationMs` from Publish click; always sampled) |
 | `StudioPublishToProdDurationMs` | Browser custom metric (same window as above; always sampled) |
 | `StudioAuthOutcome` | `/studio/health` after a successful signed-in load (`TEST-C-005`; always sampled) |
+| `DeployStarted` | GitHub Actions immediately **before** SWA upload (staging or prod; `OPS-P6-001` quiet window) |
 | `DeployCompleted` | GitHub Actions after SWA upload (staging or prod) |
 | `DeployFailed` | GitHub Actions when **Deploy Production** job fails (`OPS-P3-003`; pages critical AG) |
 | `SmokeFailed` | GitHub Actions when **Smoke Production** fails after deploy (`TEST-D-003`; pages critical AG; no auto-rollback) |
@@ -105,13 +106,30 @@ Gemini model-side traces stay in Google — not App Insights. Coarse `errorKind`
 
 ## Useful Kusto (Logs)
 
-Failed requests:
+Failed requests (all, including deploy recycle and 4xx):
 
 ```kusto
 requests
 | where success == false
 | order by timestamp desc
 | take 50
+```
+
+Sev2 failed-request SLI (`OPS-P6-001`) — 5xx outside the CD quiet window. Use this to confirm a notify page is not just Function recycle:
+
+```kusto
+let lastDeployMarker = toscalar(
+  customEvents
+  | where name in ("DeployStarted", "DeployCompleted")
+  | where timestamp > ago(45m)
+  | summarize max(timestamp)
+);
+requests
+| where timestamp > ago(15m)
+| where success == false
+| where toint(resultCode) >= 500 or resultCode == "0" or isempty(resultCode)
+| where isempty(lastDeployMarker) or timestamp < lastDeployMarker - 15m or timestamp > lastDeployMarker + 10m
+| order by timestamp desc
 ```
 
 Allowlist denials (preferred for “signed in but cannot publish”). Studio shows a `correlationId` users can share with an admin:
@@ -168,7 +186,7 @@ Studio / publish events:
 
 ```kusto
 customEvents
-| where name in ("StudioAccessDenied", "StudioPublishDenied", "StudioDraftRequested", "StudioDraftFailed", "StudioPublishRequested", "StudioPublishFailed", "StudioToolExecuted", "GitHubCommitSucceeded", "GitHubCommitFailed", "GitHubCommitRetry", "StudioPublishUiSuccess", "StudioPublishUiFailed", "StudioPublishToProdCompleted", "StudioAuthOutcome", "DeployCompleted", "DeployFailed", "SmokeFailed", "ContactInquiryReceived", "ContactInquiryFailed")
+| where name in ("StudioAccessDenied", "StudioPublishDenied", "StudioDraftRequested", "StudioDraftFailed", "StudioPublishRequested", "StudioPublishFailed", "StudioToolExecuted", "GitHubCommitSucceeded", "GitHubCommitFailed", "GitHubCommitRetry", "StudioPublishUiSuccess", "StudioPublishUiFailed", "StudioPublishToProdCompleted", "StudioAuthOutcome", "DeployStarted", "DeployCompleted", "DeployFailed", "SmokeFailed", "ContactInquiryReceived", "ContactInquiryFailed")
 | order by timestamp desc
 | take 100
 ```
@@ -279,7 +297,7 @@ Deploy timeline:
 
 ```kusto
 customEvents
-| where name in ("DeployCompleted", "DeployFailed", "SmokeFailed")
+| where name in ("DeployStarted", "DeployCompleted", "DeployFailed", "SmokeFailed")
 | project timestamp, name, environment = tostring(customDimensions.environment), sha = tostring(customDimensions.sha), job = tostring(customDimensions.job)
 | order by timestamp desc
 ```
