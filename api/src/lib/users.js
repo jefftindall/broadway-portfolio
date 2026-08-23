@@ -5,7 +5,13 @@
  */
 import { randomUUID } from 'node:crypto';
 import { createGeoRedundantTableClient } from './tableGeo.js';
-import { isKnownPermission, isKnownRole, resolvePermissions, ROLE } from './permissions.js';
+import {
+  canonicalizeRoleId,
+  isKnownPermission,
+  isKnownRole,
+  resolvePermissions,
+  ROLE,
+} from './permissions.js';
 import { isUsableConnectionString } from './contacts.js';
 
 export const STUDIO_USERS_PARTITION = 'studio';
@@ -97,12 +103,18 @@ export function identityFromInput(input = {}) {
   return { userId, userDetails, emails };
 }
 
-function normalizeGrantList(values, { known, label, max }) {
-  const out = uniqueLower(values, max);
-  for (const id of out) {
-    if (!known(id)) {
+function normalizeGrantList(values, { known, label, max, canonicalize }) {
+  const raw = uniqueLower(values, max);
+  const out = [];
+  const seen = new Set();
+  for (const id of raw) {
+    const canonical = canonicalize ? canonicalize(id) : id;
+    if (!known(canonical)) {
       throw new AccessValidationError(`Unknown ${label}.`);
     }
+    if (seen.has(canonical)) continue;
+    seen.add(canonical);
+    out.push(canonical);
   }
   return out;
 }
@@ -130,6 +142,7 @@ export function normalizeUserInput(input = {}, { partial = false } = {}) {
       known: isKnownRole,
       label: 'role',
       max: MAX_ROLES,
+      canonicalize: canonicalizeRoleId,
     });
     if (!partial && patch.roles.length === 0 && !has('extraPermissions')) {
       // Allowed: extra-only grants. Empty roles + empty extra is a viewer profile.
@@ -212,7 +225,7 @@ function entityToRecord(entity) {
     userDetails: String(entity.userDetails || ''),
     emails: parseJsonArray(entity.emailsJson),
     displayName: String(entity.displayName || ''),
-    roles: parseJsonArray(entity.rolesJson),
+    roles: [...new Set(parseJsonArray(entity.rolesJson).map(canonicalizeRoleId))],
     extraPermissions: parseJsonArray(entity.extraPermissionsJson),
     deniedPermissions: parseJsonArray(entity.deniedPermissionsJson),
     status: String(entity.status || 'active'),
@@ -297,7 +310,7 @@ export function createUsersStore({ tableClient }) {
     },
 
     /**
-     * Persist an allowlisted caller as an Owner profile so the table is SoT.
+     * Persist an allowlisted caller as a Super Administrator profile so the table is SoT.
      * Idempotent: returns the existing match when one already exists.
      */
     async ensureOwnerFromAllowlist(input) {
@@ -315,7 +328,7 @@ export function createUsersStore({ tableClient }) {
           userId: input?.userId,
           userDetails: input?.userDetails,
           emails: input?.emails,
-          roles: [ROLE.OWNER],
+          roles: [ROLE.SUPER_ADMINISTRATOR],
         });
       } catch (err) {
         if (err?.statusCode === 409) {

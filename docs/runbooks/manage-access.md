@@ -27,19 +27,19 @@ Look up a shared reference in App Insights (`StudioAccessDenied` / `StudioPublis
 Profiles live in Table Storage (`studioUsers` on the Studio CRM account). Each row has:
 
 - Identity (Entra `userId`, email / UPN)
-- **Roles** (`owner`, `publisher`, `people`, `people_reader`)
+- **Roles** (`super_administrator`, `publisher`, `people`, `people_reader`; stored `owner` still means Super Administrator)
 - **Extra permissions** (grant one catalog ID without the whole role)
 - **Denied permissions** (strip an ID even if a role includes it)
 
-Owners manage this at **`/studio/access`**. Adding a discrete permission in code (`api/src/lib/permissions.js`) is how new capabilities are defined; the Access page reads that catalog from the session.
+Super Administrators manage this at **`/studio/access`**. Adding a discrete permission in code (`api/src/lib/permissions.js`) is how new capabilities are defined; the Access page reads that catalog from the session. Architecture: [`authentication-authorization.md`](../architecture/authentication-authorization.md).
 
 ### Bootstrap from `ALLOWED-USER-IDS`
 
-The Key Vault allowlist is **not** a second permission model. On the first Studio session for an allowlisted caller who has no profile yet, the API writes an **Owner** profile (all catalog permissions, including People and Access). After that, the profile is SoT:
+The Key Vault allowlist is **not** a second permission model. On the first Studio session for an allowlisted caller who has no profile yet, the API writes a **Super Administrator** profile (all catalog permissions, including People and Access). After that, the profile is SoT:
 
 - Changing roles or extra/denied permissions on `/studio/access` is how you grant or revoke publish and People
 - Removing someone from `ALLOWED-USER-IDS` does **not** revoke a profile that already exists — disable or edit the profile
-- Adding a new token to `ALLOWED-USER-IDS` still bootstraps Owner on that person’s next sign-in (emergency publisher). Prefer `/studio/access` instead
+- Adding a new token to `ALLOWED-USER-IDS` still bootstraps Super Administrator on that person’s next sign-in (emergency publisher). Prefer `/studio/access` instead
 
 ```bash
 az keyvault secret set --vault-name kv-elyse-staging --name ALLOWED-USER-IDS --value "<ids>"
@@ -66,13 +66,13 @@ Sign-in follows the tenant directory, not an enterprise-app assignment list.
 ## Add a People operator or publisher
 
 1. Confirm they can complete Entra login (tenant member or guest)
-2. Open `/studio/access` as an Owner
+2. Open `/studio/access` as a Super Administrator
 3. Add their email or user ID
 4. Assign:
    - **People** — view and edit contacts (`people.read` + `people.write`)
    - **People (view only)** — `people.read`
    - **Publisher** — site updates only (`content.publish`)
-   - **Owner** — full catalog
+   - **Super Administrator** — full catalog (not Azure / Entra Owner)
    - or tick **Extra permissions** for a single ID (for example `content.publish` without People)
 5. Confirm they can open `/studio/people` after the next sign-in. There is one CRM per environment; permissions, not a partition key, decide who can see it.
 

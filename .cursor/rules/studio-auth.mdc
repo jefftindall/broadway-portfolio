@@ -11,6 +11,7 @@ globs:
   - staticwebapp.config.json
   - public/staticwebapp.config.json
   - docs/runbooks/manage-access.md
+  - docs/architecture/authentication-authorization.md
   - AGENTS.md
 ---
 
@@ -28,7 +29,7 @@ globs:
 
 ## Authorization (one catalog)
 
-Discrete permissions live in [`api/src/lib/permissions.js`](api/src/lib/permissions.js). Roles are named bundles. User profiles (`studioUsers` table) are the source of truth. `ALLOWED_USER_IDS` only bootstraps a missing **Owner** profile on first session — it is not a second publish gate.
+Discrete permissions live in [`api/src/lib/permissions.js`](api/src/lib/permissions.js). Roles are named bundles. User profiles (`studioUsers` table) are the source of truth. `ALLOWED_USER_IDS` only bootstraps a missing **Super Administrator** profile on first session — it is not a second publish gate. Architecture: [`docs/architecture/authentication-authorization.md`](docs/architecture/authentication-authorization.md). Do not name that role Owner (Azure RBAC / Entra app owner are different).
 
 | Action | Check on every call |
 |--------|---------------------|
@@ -50,6 +51,7 @@ Hub UI reads `GET /api/studioSession` (same payload as `publisherStatus`) and sh
 3. Return a friendly error + `correlationId`. Do not leak whether the allowlist or profile table is empty.
 4. Gate matching Studio UI from the session permissions in the same PR.
 5. Update [`docs/runbooks/manage-access.md`](docs/runbooks/manage-access.md) if the layers change.
-6. If the API persists or stops persisting records, update [`docs/architecture/data-persistence.md`](docs/architecture/data-persistence.md) — see [data-persistence.mdc](data-persistence.mdc).
+6. If the catalog, roles, bootstrap, or login gates change, update [`docs/architecture/authentication-authorization.md`](docs/architecture/authentication-authorization.md).
+7. If the API persists or stops persisting records, update [`docs/architecture/data-persistence.md`](docs/architecture/data-persistence.md) — see [data-persistence.mdc](data-persistence.mdc).
 
 See [`api/src/lib/studioAccess.js`](api/src/lib/studioAccess.js) and [`docs/runbooks/manage-access.md`](docs/runbooks/manage-access.md).

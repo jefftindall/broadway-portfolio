@@ -22,7 +22,7 @@ Example PR title: `STUDIO-P1-003: Add /studio/people contact list`
 
 ### Systems of record
 
-Record shapes, Table Storage keys, git collections, and access-flow diagrams: [`docs/architecture/data-persistence.md`](../architecture/data-persistence.md) (living SoT — update it in the same PR when CRM, profiles, or other stores change).
+Record shapes, Table Storage keys, git collections, and access-flow diagrams: [`docs/architecture/data-persistence.md`](../architecture/data-persistence.md). Login vs permission catalog: [`docs/architecture/authentication-authorization.md`](../architecture/authentication-authorization.md). Update both in the same PR when CRM, profiles, or authz change.
 
 | Concern | System of record | Studio’s job |
 |---------|------------------|--------------|
@@ -65,7 +65,7 @@ Payments vendor choice and Phase 1 checkout live in [`lesson-payments.md`](./les
 |--------------|--------|----------------|
 | Phase 0 — Plan + Action IDs + SoT | `done` | — |
 | Phase 1 — People & personas | `done` | Residual: `STUDIO-P1-006` async export |
-| Phase 6 — Roles, permissions, user profiles | `done` | Allowlist bootstraps Owner on first session; live grants on `/studio/access` |
+| Phase 6 — Roles, permissions, user profiles | `done` | Allowlist bootstraps Super Administrator on first session; live grants on `/studio/access` |
 | Phase 2 — Lifetime value + pay status | `planned` | Stripe match + agent value |
 | Phase 3 — Google Calendar scheduling | `planned` | OAuth + two-way sync |
 | Phase 4 — Contact automation | `planned` | Inquiry ingest + reminders |
@@ -272,7 +272,7 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 | `STUDIO-P6-002` | User-profile store (`studioUsers` table) | `done` | `STUDIO-P6-001` | `api/src/lib/users.js`; `infra/modules/portfolio/studio_crm.tf` |
 | `STUDIO-P6-003` | Enforce catalog on People + publish APIs | `done` | `STUDIO-P6-002`; `STUDIO-P1-003` | `api/src/lib/studioAccess.js`; contacts + publish Functions |
 | `STUDIO-P6-004` | Session API + hub / People / Access UI | `done` | `STUDIO-P6-003` | `GET /api/studioSession`; `src/pages/studio.astro`; `/studio/access` |
-| `STUDIO-P6-005` | Allowlist → Owner bootstrap + runbook/help | `done` | `STUDIO-P6-004` | `ensureOwnerFromAllowlist`; `docs/runbooks/manage-access.md`; help |
+| `STUDIO-P6-005` | Allowlist → Super Administrator bootstrap + runbook/help | `done` | `STUDIO-P6-004` | `ensureOwnerFromAllowlist`; `docs/runbooks/manage-access.md`; help |
 
 <details>
 <summary><code>STUDIO-P6-001</code> — Catalog</summary>
@@ -281,7 +281,7 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 
 - [x] Discrete IDs: `content.publish`, `people.read`, `people.write`, `users.read`, `users.manage`
 - [x] `people.write` implies `people.read`; `users.manage` implies `users.read`
-- [x] Roles: `owner` (all), `publisher` (publish only), `people` (read+write), `people_reader` (read)
+- [x] Roles: `super_administrator` (all; legacy `owner` still accepted), `publisher` (publish only), `people` (read+write), `people_reader` (read)
 - [x] Profiles may add `extraPermissions` or subtract `deniedPermissions` (deny wins)
 - [x] New capabilities are added here — handlers do not invent ad-hoc checks
 
@@ -320,7 +320,7 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 
 - [x] `GET /api/studioSession` (and `publisherStatus`) return roles + `permissions[]`; `authorized` means `content.publish`
 - [x] Hub shows People / Access / publish tiles from those permissions — missing publish does not hide People
-- [x] `/studio/access` lets Owners assign roles and extra/denied IDs
+- [x] `/studio/access` lets Super Administrators assign roles and extra/denied IDs
 - [x] Signed-in users with zero catalog permissions still open `/studio/help` and `/studio/health`
 
 </details>
@@ -330,7 +330,7 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 
 **Acceptance criteria**
 
-- [x] First session for an allowlisted caller with no profile writes an Owner row; later checks use the profile
+- [x] First session for an allowlisted caller with no profile writes a Super Administrator row; later checks use the profile
 - [x] [`manage-access.md`](../runbooks/manage-access.md) documents the catalog, `/studio/access`, and allowlist-as-bootstrap
 - [x] Help Access section describes sign-in vs People vs publish vs Access
 - [x] Monitor user (`TEST-C-005`) stays off the allowlist and is not granted a profile

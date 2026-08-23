@@ -55,7 +55,7 @@ test('identityCandidates include userId, userDetails, email claims, and provider
   assert.ok(keys.includes('aad:oid-elyse'));
 });
 
-test('allowlisted user without a profile is migrated to a stored Owner profile', async () => {
+test('allowlisted user without a profile is migrated to a stored Super Administrator profile', async () => {
   await withEnv(
     {
       AZURE_FUNCTIONS_ENVIRONMENT: undefined,

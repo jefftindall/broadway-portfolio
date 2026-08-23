@@ -4,7 +4,7 @@
  * Authentication (SWA principal) is not authorization. The user-profile
  * table is the source of truth (roles + extraPermissions − deniedPermissions).
  * `ALLOWED_USER_IDS` is a one-time bootstrap: the first session for an
- * allowlisted caller without a profile writes an Owner row, then later
+ * allowlisted caller without a profile writes a Super Administrator row, then later
  * checks use only that profile (publish and People share the same catalog).
  *
  * Development (`AZURE_FUNCTIONS_ENVIRONMENT=Development`) grants every
@@ -89,7 +89,7 @@ export async function resolveStudioAccess(principal, opts = {}) {
   const env = opts.env || process.env;
 
   if (isDevelopmentEnvironment()) {
-    const roles = [ROLE.OWNER];
+    const roles = [ROLE.SUPER_ADMINISTRATOR];
     const permissions = resolvePermissions({ roles });
     return {
       signedIn: true,
@@ -122,13 +122,13 @@ export async function resolveStudioAccess(principal, opts = {}) {
         return accessFromProfile(principal, migrated, 'profile');
       }
     } catch {
-      // Table missing or write failed — fall through to in-memory owner so
+      // Table missing or write failed — fall through to in-memory Super Administrator so
       // the allowlisted caller can still publish until profiles apply.
     }
   }
 
   if (isAuthorizedPublisher(principal)) {
-    const roles = [ROLE.OWNER];
+    const roles = [ROLE.SUPER_ADMINISTRATOR];
     return {
       signedIn: true,
       principal,

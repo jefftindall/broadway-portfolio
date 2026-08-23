@@ -59,4 +59,4 @@ Comment-only or typo fixes in the globbed files. Adding a markdown **content** f
 
 ## Related
 
-Plans stay the backlog SoT ([`plans-status-on-pr.mdc`](plans-status-on-pr.mdc)). Access layers: [`studio-auth.mdc`](studio-auth.mdc) + [manage-access.md](docs/runbooks/manage-access.md). New billable Azure SKU still requires [`cost-and-quotas.md`](docs/runbooks/cost-and-quotas.md) + budget in the same PR.
+Plans stay the backlog SoT ([`plans-status-on-pr.mdc`](plans-status-on-pr.mdc)). Access layers: [`studio-auth.mdc`](studio-auth.mdc) + [manage-access.md](docs/runbooks/manage-access.md) + [authentication-authorization.md](docs/architecture/authentication-authorization.md). New billable Azure SKU still requires [`cost-and-quotas.md`](docs/runbooks/cost-and-quotas.md) + budget in the same PR.
