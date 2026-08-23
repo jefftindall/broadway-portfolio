@@ -12,7 +12,7 @@ Living “what runs today”: [testing-strategy.md](testing-strategy.md). TOTP c
 | Playwright `tests/smoke/studio-auth.spec.ts` | Same jobs, desktop only | **Skips** while `MONITOR-TOTP-SEED` is `REPLACE_ME`; **fails** the job once the seed is set and login/health breaks |
 | Public smoke (`tests/smoke/staging.spec.ts`) | Always | Independent of monitor secrets |
 
-Assertion target: [`/studio/health`](../../src/pages/studio/health.astro) (`data-studio-health="ok"` / text `studio-health-ok`). The monitor account must **not** be on `ALLOWED-USER-IDS`.
+Assertion target: [`/studio/health`](../../src/pages/studio/health.astro) (`data-studio-health="ok"` / text `studio-health-ok`). The monitor account must **not** be on `ALLOWED-USER-IDS` and must **not** have a Studio profile (no People or publish).
 
 Credentials are **shared** across staging and prod: one Entra user, secrets in `kv-elyse-shared`. Each env stack assigns that user to its SWA enterprise app (`elyse-portfolio-staging` / `elyse-portfolio-prod`).
 
@@ -113,13 +113,13 @@ Then sign in once with the new password from KV (TOTP seed unchanged unless Entr
 |---------|-------------|
 | Smoke skips Studio login | `MONITOR-TOTP-SEED` still `REPLACE_ME`, or bootstrap user not created |
 | `client_credentials` skipped | Identifier URI not on the SWA app yet — apply env Terraform (`Monitor.Ping` + self-assignment) |
-| Interactive login fails `AADSTS50105` | Enterprise-app **Assignment required** is on. User login must stay open (`require_app_role_assignment = false`). Re-apply the env stack; do not assign the tester in Users and groups as a workaround. Authorization stays on the allowlist / owner key. |
+| Interactive login fails `AADSTS50105` | Enterprise-app **Assignment required** is on. User login must stay open (`require_app_role_assignment = false`). Re-apply the env stack; do not assign the tester in Users and groups as a workaround. Authorization stays on the permission catalog / `crmOwnerKey`. |
 | `client_credentials` fails `AADSTS501051` | Assignment required is on, and the SWA service principal is missing the **Monitor.Ping** self-assignment (`principalType: ServicePrincipal`). Staging/prod should both list that assignment on `appRoleAssignedTo`. `az ad app permission admin-consent` grants Graph `User.Read` but can **drop** application-type self-assignments that are not in the app’s API permissions. Restore with env `terraform apply` (resource `azuread_app_role_assignment.monitor_ping_self`), then re-run smoke. |
 | `client_credentials` fails (other) | `AAD-CLIENT-SECRET` / identifier URI `api://{AAD_CLIENT_ID}` |
 | Entra “Need admin approval” | Identifier URI / `Monitor.Ping` made the login app an API. Prefer Terraform `azuread_application_pre_authorized` plus a delegated Graph grant. If you use `az ad app permission admin-consent`, **re-apply env Terraform immediately** so `Monitor.Ping` self-assignment is restored. |
 | Redirect loop / AADSTS50011 | `terraform output entra_redirect_uris` vs hostname used in smoke |
 | Health 200 but URL stays `/studio` | SWA 401 override hardcodes `post_login_redirect_uri=/studio`; smoke asserts the canary via authenticated fetch |
-| Signed in but Studio deny + `Reference:` | Monitor was added to `ALLOWED-USER-IDS` — remove it |
+| Signed in but Studio deny + `Reference:` | Monitor was added to `ALLOWED-USER-IDS` or granted a profile — remove the bootstrap token and disable the profile |
 | Playwright timeout on `input[name="otc"]` | MFA is push/number-match; re-enroll with a visible secret key |
 
 Failed-run Playwright traces/video/HAR (HAR redacted) upload as a 7-day Actions artifact on smoke failure. Treat them as restricted: they may still show the login UI.
@@ -129,5 +129,5 @@ Failed-run Playwright traces/video/HAR (HAR redacted) upload as a 7-day Actions 
 - [rotate-secrets.md](rotate-secrets.md) — `MONITOR-*` rows
 - [testing-strategy.md](testing-strategy.md) — smoke jobs
 - [setup.md](../setup.md) — Entra login (assignment required stays off)
-- [manage-access.md](manage-access.md) — sign-in vs publish allowlist
+- [manage-access.md](manage-access.md) — sign-in vs permission catalog
 - [infra/bootstrap/README.md](../../infra/bootstrap/README.md)

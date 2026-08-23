@@ -1,13 +1,13 @@
 import { app } from '@azure/functions';
 import {
-  getClientPrincipal,
-  isSignedInStudioUser,
+  forbidden,
   newCorrelationId,
+  publisherIdentity,
   signInRequired,
-  studioOwnerKey,
 } from '../lib/auth.js';
 import { contactsStoreFromEnv } from '../lib/contacts.js';
 import { crmFailureResponse } from '../lib/httpErrors.js';
+import { PERMISSION, permissionGate } from '../lib/studioAccess.js';
 import { flush, trackEvent, trackException } from '../lib/telemetry.js';
 
 function jsonHeaders() {
@@ -31,14 +31,27 @@ function crmLog(context, message, { correlationId, operation, contactId, errorKi
   });
 }
 
-async function requireOwner(request, correlationId) {
-  // Sign-in is required; publish allowlist is not. Still never use another
-  // user's partition — owner key comes from the principal, not the body.
-  const principal = getClientPrincipal(request);
-  if (!isSignedInStudioUser(principal)) {
+async function requirePeople(request, correlationId, permission) {
+  const gate = await permissionGate(request, permission);
+  if (!gate.signedIn) {
     return { error: signInRequired(correlationId) };
   }
-  return { ownerKey: studioOwnerKey(principal) };
+  if (!gate.allowed) {
+    const identity = publisherIdentity(gate.principal);
+    trackEvent('StudioAccessDenied', {
+      ...identity,
+      correlationId,
+      route: 'contacts',
+      permission,
+    });
+    await flush();
+    const error =
+      permission === PERMISSION.PEOPLE_WRITE
+        ? 'This account is signed in but cannot edit People.'
+        : 'This account is signed in but cannot view People.';
+    return { error: forbidden(correlationId, error) };
+  }
+  return { ownerKey: gate.access.ownerKey, access: gate.access };
 }
 
 async function fail(err, { context, correlationId, operation, contactId }) {
@@ -77,7 +90,8 @@ app.http('contacts', {
   route: 'contacts',
   handler: async (request, context) => {
     const correlationId = newCorrelationId();
-    const authed = await requireOwner(request, correlationId);
+    const permission = request.method === 'POST' ? PERMISSION.PEOPLE_WRITE : PERMISSION.PEOPLE_READ;
+    const authed = await requirePeople(request, correlationId, permission);
     if (authed.error) return { ...authed.error, headers: jsonHeaders() };
 
     const operation = request.method === 'POST' ? 'create' : 'list';
@@ -126,7 +140,8 @@ app.http('contactById', {
   handler: async (request, context) => {
     const correlationId = newCorrelationId();
     const contactId = request.params?.id;
-    const authed = await requireOwner(request, correlationId);
+    const permission = request.method === 'PATCH' ? PERMISSION.PEOPLE_WRITE : PERMISSION.PEOPLE_READ;
+    const authed = await requirePeople(request, correlationId, permission);
     if (authed.error) return { ...authed.error, headers: jsonHeaders() };
 
     const operation = request.method === 'PATCH' ? 'update' : 'get';

@@ -274,7 +274,7 @@ Exact Kusto for contacts/updates lives in [observability.md](../runbooks/observa
 | **SLO-1** | Homepage availability | **99.8% over 7 days** | App Insights homepage web test success | Measurable (prod web test exists) |
 | **SLO-4** | Materials availability | **99.8% over 7 days** | Synthetic GET resume PDF + theatrical headshot → 200 | Measurable (prod web tests) |
 | **SLO-6** | Homepage FCP | **Field p75 &lt; 1.5 s over 7 days** | Browser `HomepageFcpMs` → App Insights | Measurable (force-sampled RUM) |
-| **SLO-2** | Studio publish success | **95% over 28 days** (≥3 attempts) | `StudioPublishUiSuccess` / (Success+Failed); exclude allowlist denials | Measurable |
+| **SLO-2** | Studio publish success | **95% over 28 days** (≥3 attempts) | `StudioPublishUiSuccess` / (Success+Failed); exclude permission denials (`reason=unauthorized`) | Measurable |
 | **SLO-3** | Publish → live latency | **p95 ≤ 20 minutes over 28 days** | `StudioPublishToProdDurationMs` | Measurable |
 
 **Error budget (availability):** 99.8% / 7d ≈ **20 minutes** / week (~≤2 failed 10-minute probes). Page on the first Sev1 window; use the weekly % as the scorecard input for `slo` / `alerting`.

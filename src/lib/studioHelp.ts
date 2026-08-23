@@ -171,6 +171,13 @@ export const studioCapabilities: StudioCapability[] = [
 
 export { studioPeopleNotes } from './studioPeople';
 
+export const studioAccessNotes = {
+  path: '/studio/access',
+  title: 'Access',
+  summary:
+    'Owners assign roles and discrete permissions. Publish (content.publish) and People (people.read / people.write) use the same catalog — there is no separate publisher list. Sign-in alone does not grant either.',
+};
+
 export const studioVoiceNotes = {
   referenceDevice: 'iPhone 17 · Safari',
   holdToSpeak:

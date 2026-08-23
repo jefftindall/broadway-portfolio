@@ -1,9 +1,9 @@
 import { app } from '@azure/functions';
 import {
   newCorrelationId,
-  publisherGate,
   publisherIdentity,
 } from '../lib/auth.js';
+import { publisherGate } from '../lib/studioAccess.js';
 import { readLiveLessonRates } from '../lib/gemini.js';
 import { readSiteSettings } from '../lib/siteSettings.js';
 import { studioFailureResponse } from '../lib/httpErrors.js';
@@ -19,7 +19,7 @@ app.http('studioDiscrete', {
   handler: async (request, context) => {
     const correlationId = newCorrelationId();
 
-    const gate = publisherGate(request);
+    const gate = await publisherGate(request);
     if (!gate.allowed) {
       const identity = publisherIdentity(gate.principal);
       trackEvent('StudioAccessDenied', {

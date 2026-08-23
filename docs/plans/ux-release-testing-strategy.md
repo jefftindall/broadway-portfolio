@@ -333,7 +333,7 @@ Do **not** call live Gemini on every `main` deploy until cost, rate limits, and 
 | CDN propagation flakes | Keep `waitForOk` |
 | Suite too slow / blocks CD | Change-aware journey profiles; cap P0 |
 | Mailto/tel cannot be “clicked” in CI | Assert `href` only |
-| Studio auth secrets in CI | Shared KV + skip until TOTP; never put monitor on `ALLOWED-USER-IDS`; publisher still separate (`TEST-C-003`) |
+| Studio auth secrets in CI | Shared KV + skip until TOTP; never put monitor on `ALLOWED-USER-IDS` or grant it a profile; publisher E2E still separate (`TEST-C-003`) |
 | Over-testing copy | Brand invariants + roles; not full prose snapshots |
 
 ---

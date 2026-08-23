@@ -140,11 +140,11 @@ az keyvault secret set --vault-name kv-elyse-prod --name GITHUB-APP-INSTALLATION
 az keyvault secret set --vault-name kv-elyse-prod --name GITHUB-APP-PRIVATE-KEY --file ./path/to/app.pem
 ```
 
-`ALLOWED_USER_IDS` is a comma-separated list matching SWA principal `userId`, `userDetails`, or email claim (lowercase).
+`ALLOWED_USER_IDS` is a comma-separated list matching SWA principal `userId`, `userDetails`, or email claim (lowercase). It only **bootstraps** a missing Owner profile on first Studio session. Live grants for publish, People, and Access live on `/studio/access` — see [manage-access.md](runbooks/manage-access.md).
 
 Stripe lesson-payment **API keys** (`STRIPE-TEST-*` / `STRIPE-LIVE-*` secret + publishable) are created on **bootstrap** apply in `kv-elyse-shared`. Staging initializes Stripe with test keys and owns the test catalog; prod uses live keys. Populate keys, then apply each environment for products/prices/webhooks, then sync: [rotate-secrets.md](runbooks/rotate-secrets.md#stripe-lesson-payments).
 
-After first login to `/studio`, check `/.auth/me` while signed in to copy the exact `userId` / email into the allowlist.
+After first login to `/studio`, check `/.auth/me` while signed in to copy the exact `userId` / email into the bootstrap allowlist (or paste it into `/studio/access`).
 
 **Important:** SWA managed Functions do **not** resolve `@Microsoft.KeyVault(...)` app settings. After populating the vault (or whenever you change API secrets), sync resolved values into SWA with `./scripts/sync-swa-api-secrets.sh <staging|prod>`, the **Ops: sync SWA secrets** workflow, or `terraform apply` for that environment. `AAD_CLIENT_SECRET` stays a Key Vault reference (auth platform only). See [rotate-secrets.md](runbooks/rotate-secrets.md).
 
@@ -237,13 +237,13 @@ Staging example: Azure default plus `https://test.elysetindall.com/.auth/login/a
 
 Add more via `additional_auth_hostnames` in `terraform.tfvars`.
 
-### Sign-in vs publish
+### Sign-in vs permissions
 
 `require_app_role_assignment` is **false**. Do not assign users in Enterprise applications → Users and groups to “allow login,” and do not turn Assignment required on — that yields `AADSTS50105` and blocks guests/members who are not assigned.
 
 Apply order: **bootstrap** (creates `studio-monitor@…` + `MONITOR-*` in `kv-elyse-shared`) then **env** stacks. Terraform still assigns the monitor user as a fallback if assignment required is ever flipped on. Do **not** add the monitor UPN to `ALLOWED-USER-IDS`. Enroll software TOTP and set `MONITOR-TOTP-SEED` per [studio-auth-monitoring.md](runbooks/studio-auth-monitoring.md) (`TEST-C-005`).
 
-Publish permission is only `ALLOWED-USER-IDS` in the env vault, enforced on every Studio publish call. See [manage-access.md](runbooks/manage-access.md).
+Authorization is the permission catalog on user profiles (`content.publish`, `people.read` / `people.write`, `users.manage`). `ALLOWED-USER-IDS` only seeds an Owner profile when none exists. See [manage-access.md](runbooks/manage-access.md).
 
 ### Token issuer (same tenant for staging and prod)
 
@@ -257,8 +257,8 @@ That value is `terraform output -raw entra_openid_issuer` from **either** enviro
 
 1. Anonymous request to `/studio` redirects to Entra login
 2. Anonymous `POST /api/updateContent` returns 401/302
-3. Any tenant member or guest can complete login and open Studio / help / People
-4. Only allowlisted publishers can compose or publish; a signed-in non-publisher sees the Studio gate (not `AADSTS50105`)
+3. Any tenant member or guest can complete login and open Studio / help / `/studio/health`
+4. Hub tiles, People, and publish appear only for catalog permissions on the profile; a signed-in user with none sees the Studio gate (not `AADSTS50105`)
 
 ## 6. Custom domain / DNS (prod apex + staging test)
 
@@ -288,4 +288,4 @@ Summary:
 npm install && npm run dev
 ```
 
-For API locally, copy `api/local.settings.json.example` → `api/local.settings.json` and run Azure Functions Core Tools. Auth allowlist is relaxed when `AZURE_FUNCTIONS_ENVIRONMENT=Development`.
+For API locally, copy `api/local.settings.json.example` → `api/local.settings.json` and run Azure Functions Core Tools. The permission catalog is granted in full when `AZURE_FUNCTIONS_ENVIRONMENT=Development`.

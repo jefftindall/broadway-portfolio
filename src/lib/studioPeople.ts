@@ -34,7 +34,7 @@ export const studioPeopleNotes = {
   path: '/studio/people',
   title: 'People',
   summary:
-    'Signed-in Studio users can add students, parents, agents, casting contacts, and alumni — with notes and related-person links. The list is 10 per page, sorted by last name then first. Publishing access is not required. There is no Gemini tool that writes People; changes happen on this screen only.',
+    'Authorized Studio users can add students, parents, agents, casting contacts, and alumni — with notes and related-person links. Sign-in alone is not enough; People requires the People role or an explicit people permission. The list is 10 per page, sorted by last name then first. There is no Gemini tool that writes People; changes happen on this screen only.',
 };
 
 /**

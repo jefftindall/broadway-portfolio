@@ -1,10 +1,10 @@
 import { app } from '@azure/functions';
 import {
   newCorrelationId,
-  publisherGate,
   publisherIdentity,
   unauthorized,
 } from '../lib/auth.js';
+import { publisherGate } from '../lib/studioAccess.js';
 import { studioFailureResponse } from '../lib/httpErrors.js';
 import { getPublishPipelineStatus } from '../lib/publishStatus.js';
 import { flush, trackEvent, trackException } from '../lib/telemetry.js';
@@ -14,7 +14,7 @@ app.http('publishStatus', {
   authLevel: 'anonymous',
   route: 'publishStatus',
   handler: async (request, context) => {
-    const gate = publisherGate(request);
+    const gate = await publisherGate(request);
     if (!gate.allowed) {
       const identity = publisherIdentity(gate.principal);
       const correlationId = gate.correlationId;

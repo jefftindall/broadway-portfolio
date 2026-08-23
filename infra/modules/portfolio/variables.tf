@@ -109,7 +109,7 @@ variable "additional_auth_hostnames" {
 
 variable "require_app_role_assignment" {
   type        = bool
-  description = "When true, Entra blocks sign-in unless the user (or a group) is assigned to the enterprise app (AADSTS50105). Default false: any user who can authenticate to this tenant may sign in. This is not authorization — Studio APIs must still enforce the publish allowlist and owner-scoped CRM. Do not turn this on to 'secure' publish; use ALLOWED-USER-IDS."
+  description = "When true, Entra blocks sign-in unless the user (or a group) is assigned to the enterprise app (AADSTS50105). Default false: any user who can authenticate to this tenant may sign in. This is not authorization — Studio APIs must still enforce the permission catalog (profiles; ALLOWED-USER-IDS only bootstraps a missing Owner). Do not turn this on to 'secure' publish or People."
   default     = false
 }
 

@@ -550,7 +550,7 @@ customMetrics
 
 /**
  * Studio publish success over 28d (OPS-P3-001 / SLO-2).
- * Excludes allowlist denials (reason=unauthorized) and draft-mode UI failures.
+ * Excludes permission denials (reason=unauthorized) and draft-mode UI failures.
  */
 function probeStudioPublishSuccess() {
   if (!azureLoggedIn()) {
