@@ -134,3 +134,34 @@ test("requires OIDC request env", () => {
   assert.equal(result.status, 1);
   assert.match(result.stdout + result.stderr, /id-token: write/);
 });
+
+test("masks the JWT on Actions and redacts it from az stderr", () => {
+  const binDir = makeBins({ failUntil: 1 });
+  writeExec(
+    path.join(binDir, "az"),
+    `#!/usr/bin/env bash
+set -euo pipefail
+cmd="\${1:-}"
+echo "az \$*" >> "${binDir}/az.log"
+case "\$cmd" in
+  cloud|account) exit 0 ;;
+  login)
+    n=$((\$(cat "${binDir}/az.login.count" 2>/dev/null || echo 0) + 1))
+    echo "\$n" > "${binDir}/az.login.count"
+    if (( n <= 1 )); then
+      echo "JSON is invalid token=${FAKE_JWT}" >&2
+      exit 1
+    fi
+    exit 0
+    ;;
+  *) exit 0 ;;
+esac
+`,
+  );
+  const result = runLogin(binDir, { GITHUB_ACTIONS: "true" });
+  assert.equal(result.status, 0, result.stderr + result.stdout);
+  assert.ok(result.stdout.includes(`::add-mask::${FAKE_JWT}`), "must emit a workflow mask for the JWT");
+  assert.match(result.stdout, /\[redacted-oidc-token\]/);
+  const withoutMask = (result.stdout + result.stderr).replaceAll(`::add-mask::${FAKE_JWT}`, "");
+  assert.equal(withoutMask.includes(FAKE_JWT), false, "JWT must appear only as a workflow mask command");
+});
