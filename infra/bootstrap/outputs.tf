@@ -79,16 +79,6 @@ output "shared_acs_name" {
   value       = azurerm_communication_service.shared.name
 }
 
-output "stripe_test_price_ids" {
-  description = "Test-mode Stripe Price ids keyed by lesson rate id (empty until STRIPE-TEST-SECRET-KEY is populated)"
-  value       = try(module.stripe_test[0].price_ids, {})
-}
-
-output "stripe_live_price_ids" {
-  description = "Live-mode Stripe Price ids keyed by lesson rate id (empty until STRIPE-LIVE-SECRET-KEY is populated)"
-  value       = try(module.stripe_live[0].price_ids, {})
-}
-
 output "shared_acs_email_name" {
   value = azurerm_email_communication_service.shared.name
 }

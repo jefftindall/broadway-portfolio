@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# One-off: copy Stripe API keys (and Payment Links if populated) from environment
-# vaults into kv-elyse-shared. Does not create a Terraform dependency — bootstrap
-# never data-sources env vaults.
+# One-off: copy Stripe API keys from environment vaults into kv-elyse-shared.
+# Does not create a Terraform dependency — bootstrap never data-sources env vaults.
+# Webhook secrets and Payment Links stay in env vaults (written by env Terraform).
 #
 # Prerequisites: bootstrap apply has created the shared STRIPE-TEST-* / STRIPE-LIVE-*
-# placeholders. Then re-apply bootstrap so products, prices, and webhooks can run.
+# key placeholders. Then apply staging (test keys) and prod (live keys) so each
+# environment can create its catalog.
 #
 # Usage: ./scripts/copy-stripe-keys-to-shared-kv.sh
 #
@@ -60,17 +61,13 @@ copy_secret() {
   echo "Copied ${src_vault}/${src_name} → ${dest_vault}/${dest_name}."
 }
 
-echo "Copying Stripe keys into ${SHARED_VAULT} (values never printed)..."
+echo "Copying Stripe API keys into ${SHARED_VAULT} (values never printed)..."
 
 copy_secret "$STAGING_VAULT" "STRIPE-SECRET-KEY" "$SHARED_VAULT" "STRIPE-TEST-SECRET-KEY"
 copy_secret "$STAGING_VAULT" "STRIPE-PUBLISHABLE-KEY" "$SHARED_VAULT" "STRIPE-TEST-PUBLISHABLE-KEY"
-copy_secret "$STAGING_VAULT" "STRIPE-PAYMENT-LINK-30MIN" "$SHARED_VAULT" "STRIPE-TEST-PAYMENT-LINK-30MIN"
-copy_secret "$STAGING_VAULT" "STRIPE-PAYMENT-LINK-60MIN" "$SHARED_VAULT" "STRIPE-TEST-PAYMENT-LINK-60MIN"
 
 copy_secret "$PROD_VAULT" "STRIPE-SECRET-KEY" "$SHARED_VAULT" "STRIPE-LIVE-SECRET-KEY"
 copy_secret "$PROD_VAULT" "STRIPE-PUBLISHABLE-KEY" "$SHARED_VAULT" "STRIPE-LIVE-PUBLISHABLE-KEY"
-copy_secret "$PROD_VAULT" "STRIPE-PAYMENT-LINK-30MIN" "$SHARED_VAULT" "STRIPE-LIVE-PAYMENT-LINK-30MIN"
-copy_secret "$PROD_VAULT" "STRIPE-PAYMENT-LINK-60MIN" "$SHARED_VAULT" "STRIPE-LIVE-PAYMENT-LINK-60MIN"
 
-echo "Done. Re-apply infra/bootstrap so Stripe products, prices, and webhooks can use the keys."
-echo "Do not copy webhook secrets — bootstrap writes STRIPE-*-WEBHOOK-SECRET from stripe_webhook_endpoint."
+echo "Done. Apply staging Terraform (test catalog) then prod (live catalog)."
+echo "Do not copy webhook secrets or Payment Links — env stacks write those to kv-elyse-staging / kv-elyse-prod."

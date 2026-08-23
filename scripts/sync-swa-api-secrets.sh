@@ -7,8 +7,8 @@
 # Key Vault reference; the SWA auth platform resolves that one).
 #
 # Shared (bootstrap kv-elyse-shared): SITE-CONTACT-*, TURNSTILE-SECRET-KEY, ACS-*,
-# Stripe TEST/LIVE keys, webhook secrets, and Payment Links
-# Per-env vault: Gemini, GitHub App, allowlist, AAD
+# Stripe TEST/LIVE API keys
+# Per-env vault: Gemini, GitHub App, allowlist, AAD, Stripe webhook secret, Payment Links
 #
 # Usage:
 #   ./scripts/sync-swa-api-secrets.sh staging
@@ -70,9 +70,9 @@ else
 fi
 STRIPE_SECRET="$(kv_value "$SHARED_VAULT" "${STRIPE_PREFIX}-SECRET-KEY")"
 STRIPE_PUBLISHABLE="$(kv_value "$SHARED_VAULT" "${STRIPE_PREFIX}-PUBLISHABLE-KEY")"
-STRIPE_WEBHOOK="$(kv_value "$SHARED_VAULT" "${STRIPE_PREFIX}-WEBHOOK-SECRET")"
-STRIPE_LINK_30="$(kv_value "$SHARED_VAULT" "${STRIPE_PREFIX}-PAYMENT-LINK-30MIN")"
-STRIPE_LINK_60="$(kv_value "$SHARED_VAULT" "${STRIPE_PREFIX}-PAYMENT-LINK-60MIN")"
+STRIPE_WEBHOOK="$(kv_value "$VAULT" STRIPE-WEBHOOK-SECRET)"
+STRIPE_LINK_30="$(kv_value "$VAULT" STRIPE-PAYMENT-LINK-30MIN)"
+STRIPE_LINK_60="$(kv_value "$VAULT" STRIPE-PAYMENT-LINK-60MIN)"
 AAD_REF="@Microsoft.KeyVault(SecretUri=https://${VAULT}.vault.azure.net/secrets/AAD-CLIENT-SECRET/)"
 
 CONFIG_URL="/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RG}/providers/Microsoft.Web/staticSites/${SWA}/config/appsettings?api-version=2023-01-01"

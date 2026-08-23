@@ -1,7 +1,7 @@
 # Shared foundation Key Vault — site-build, Turnstile, ACS (email/SMS), ops
 # ALERT-*, GA Data API scorecard reads (OPS-P5), and Stripe TEST/LIVE keys
-# (see stripe.tf). ALERT-* / GA-* / Stripe-mode keys are identical across
-# staging and prod mappings. Env vaults keep Gemini / GitHub App / allowlist / AAD.
+# (see stripe.tf). ALERT-* / GA-* are identical across staging and prod mappings.
+# Stripe API keys (TEST + LIVE) also live here; each env stack owns its catalog.
 
 locals {
   shared_kv_name = "kv-elyse-shared"

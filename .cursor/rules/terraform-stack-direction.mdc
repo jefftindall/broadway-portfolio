@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Terraform stack direction
 
-**Only bootstrap → environments.** Bootstrap creates shared resources (`kv-elyse-shared`, ACS, OIDC, budget). Staging/prod **consume** them by well-known name (`data.azurerm_key_vault.shared`). That is the allowed dependency.
+**Only bootstrap → environments.** Bootstrap creates shared resources (`kv-elyse-shared`, ACS, OIDC, budget, Stripe API keys). Staging/prod **consume** them by well-known name (`data.azurerm_key_vault.shared`). That is the allowed dependency. Stripe products, prices, webhooks, and Payment Links belong in the environment stacks (test keys on staging, live keys on prod) so catalog changes promote with the rest of the env.
 
 **Never environments → bootstrap.** Do not add to `infra/bootstrap/`:
 

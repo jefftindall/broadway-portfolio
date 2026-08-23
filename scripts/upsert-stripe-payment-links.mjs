@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 /**
  * Upsert Stripe Payment Links for advertised lesson rates and store URLs in
- * kv-elyse-shared. Reads the API key from Key Vault via Azure CLI (never prints it).
+ * the environment Key Vault. Reads the API key from shared KV via Azure CLI
+ * (never prints it).
  *
  * Env:
- *   STRIPE_MODE                    test | live
- *   AZURE_SHARED_KEY_VAULT_NAME    default kv-elyse-shared
- *   STRIPE_PRICE_IDS               JSON {"30min":"price_…","60min":"price_…"}
+ *   STRIPE_MODE                     test | live
+ *   STRIPE_SECRET_VAULT_NAME        vault holding the API key (default kv-elyse-shared)
+ *   STRIPE_SECRET_NAME              STRIPE-TEST-SECRET-KEY | STRIPE-LIVE-SECRET-KEY
+ *   PAYMENT_LINK_VAULT_NAME         env vault (kv-elyse-staging | kv-elyse-prod)
+ *   STRIPE_PRICE_IDS                JSON {"30min":"price_…","60min":"price_…"}
  *   STRIPE_PAYMENT_LINK_SUCCESS_URL
  */
 import { spawnSync } from 'node:child_process';
@@ -21,8 +24,8 @@ const requireFromApi = createRequire(
 );
 
 const RATE_SECRET = {
-  '30min': 'PAYMENT-LINK-30MIN',
-  '60min': 'PAYMENT-LINK-60MIN',
+  '30min': 'STRIPE-PAYMENT-LINK-30MIN',
+  '60min': 'STRIPE-PAYMENT-LINK-60MIN',
 };
 
 function fail(message) {
@@ -95,8 +98,8 @@ export async function upsertPaymentLinks({
 
   const urls = {};
   for (const [rateId, priceId] of Object.entries(priceIds)) {
-    const secretSuffix = RATE_SECRET[rateId];
-    if (!secretSuffix) {
+    const secretName = RATE_SECRET[rateId];
+    if (!secretName) {
       throw new Error(`unsupported lesson rate id ${rateId}`);
     }
     let link = byRate.get(rateId);
@@ -125,7 +128,19 @@ async function main() {
   if (mode !== 'test' && mode !== 'live') {
     fail('STRIPE_MODE must be test or live');
   }
-  const vault = process.env.AZURE_SHARED_KEY_VAULT_NAME || 'kv-elyse-shared';
+  const secretVault = process.env.STRIPE_SECRET_VAULT_NAME || 'kv-elyse-shared';
+  const secretName = process.env.STRIPE_SECRET_NAME;
+  if (!secretName) {
+    fail('STRIPE_SECRET_NAME is required');
+  }
+  const expectedName = mode === 'test' ? 'STRIPE-TEST-SECRET-KEY' : 'STRIPE-LIVE-SECRET-KEY';
+  if (secretName !== expectedName) {
+    fail(`STRIPE_SECRET_NAME must be ${expectedName} when STRIPE_MODE=${mode}`);
+  }
+  const linkVault = process.env.PAYMENT_LINK_VAULT_NAME;
+  if (!linkVault) {
+    fail('PAYMENT_LINK_VAULT_NAME is required');
+  }
   const successUrl = process.env.STRIPE_PAYMENT_LINK_SUCCESS_URL;
   if (!successUrl || !successUrl.startsWith('https://')) {
     fail('STRIPE_PAYMENT_LINK_SUCCESS_URL must be https');
@@ -140,14 +155,13 @@ async function main() {
     fail('STRIPE_PRICE_IDS must be JSON object of rate id → price id');
   }
 
-  const prefix = mode === 'test' ? 'STRIPE-TEST' : 'STRIPE-LIVE';
   const dir = mkdtempSync(join(tmpdir(), 'stripe-pl-'));
   const keyFile = join(dir, 'key');
   try {
-    azWriteSecretValue(vault, `${prefix}-SECRET-KEY`, keyFile);
-    const apiKey = readFileSync(keyFile, 'utf8').replace(/\r?\n$/, '');
+    azWriteSecretValue(secretVault, secretName, keyFile);
+    const apiKey = readFileSync(keyFile, 'utf8').replace(/[\r\n]/g, '');
     if (!apiKey || apiKey === 'REPLACE_ME') {
-      fail(`${prefix}-SECRET-KEY is not populated`);
+      fail(`${secretName} is not populated`);
     }
     const stripe = loadStripe(apiKey);
     await upsertPaymentLinks({
@@ -155,11 +169,11 @@ async function main() {
       priceIds,
       successUrl,
       setSecret(rateId, url) {
-        const dest = `${prefix}-${RATE_SECRET[rateId]}`;
+        const dest = RATE_SECRET[rateId];
         const urlFile = join(dir, rateId);
         writeFileSync(urlFile, url, { mode: 0o600 });
-        azSetSecretFromFile(vault, dest, urlFile);
-        process.stdout.write(`Wrote ${vault}/${dest} for ${rateId}.\n`);
+        azSetSecretFromFile(linkVault, dest, urlFile);
+        process.stdout.write(`Wrote ${linkVault}/${dest} for ${rateId}.\n`);
       },
     });
   } finally {

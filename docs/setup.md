@@ -142,13 +142,13 @@ az keyvault secret set --vault-name kv-elyse-prod --name GITHUB-APP-PRIVATE-KEY 
 
 `ALLOWED_USER_IDS` is a comma-separated list matching SWA principal `userId`, `userDetails`, or email claim (lowercase).
 
-Stripe lesson-payment placeholders (`STRIPE-TEST-*` / `STRIPE-LIVE-*`) are created on **bootstrap** apply in `kv-elyse-shared`. Staging SWA uses test mode; prod uses live. Populate keys (or run `scripts/copy-stripe-keys-to-shared-kv.sh` once if they still live in env vaults), re-apply bootstrap for products/prices/webhooks, then sync: [rotate-secrets.md](runbooks/rotate-secrets.md#stripe-lesson-payments).
+Stripe lesson-payment **API keys** (`STRIPE-TEST-*` / `STRIPE-LIVE-*` secret + publishable) are created on **bootstrap** apply in `kv-elyse-shared`. Staging initializes Stripe with test keys and owns the test catalog; prod uses live keys. Populate keys (or run `scripts/copy-stripe-keys-to-shared-kv.sh` once if they still live in env vaults), then apply each environment for products/prices/webhooks, then sync: [rotate-secrets.md](runbooks/rotate-secrets.md#stripe-lesson-payments).
 
 After first login to `/studio`, check `/.auth/me` while signed in to copy the exact `userId` / email into the allowlist.
 
 **Important:** SWA managed Functions do **not** resolve `@Microsoft.KeyVault(...)` app settings. After populating the vault (or whenever you change API secrets), sync resolved values into SWA with `./scripts/sync-swa-api-secrets.sh <staging|prod>`, the **Ops: sync SWA secrets** workflow, or `terraform apply` for that environment. `AAD_CLIENT_SECRET` stays a Key Vault reference (auth platform only). See [rotate-secrets.md](runbooks/rotate-secrets.md).
 
-Contact forms and the single CD build use **shared** Key Vault `kv-elyse-shared` (SITE-*, Turnstile, ACS, Stripe TEST/LIVE). Env vaults keep Gemini / GitHub App / allowlist / AAD. Apply bootstrap first (shared ACS + Stripe catalog in `rg-elyse-shared`), populate shared secrets, then sync SWA — see [rotate-secrets.md](runbooks/rotate-secrets.md). Staging maps test-mode Stripe secrets; prod maps live. The public pay-flow flag is Terraform `lesson_payments_enabled` (staging **true**, prod **false** until go-live).
+Contact forms and the single CD build use **shared** Key Vault `kv-elyse-shared` (SITE-*, Turnstile, ACS, Stripe TEST/LIVE API keys). Env vaults keep Gemini / GitHub App / allowlist / AAD plus Stripe webhook secrets and Payment Links. Apply bootstrap first (shared ACS + Stripe keys in `rg-elyse-shared`), populate shared secrets, apply each environment for the Stripe catalog, then sync SWA — see [rotate-secrets.md](runbooks/rotate-secrets.md). Staging uses test-mode Stripe; prod uses live. The public pay-flow flag is Terraform `lesson_payments_enabled` (staging **true**, prod **false** until go-live).
 
 ## 4. GitHub Actions OIDC (no deploy-token secret)
 
