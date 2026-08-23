@@ -10,6 +10,8 @@ name: "CD: main"
 # After Deploy Staging: Smoke Staging (Playwright desktop + mobile) must pass before prod.
 # After Deploy Production: Smoke Production re-runs the same suite against prod; failure → Sev1
 # (SmokeFailed → ag-elyse-critical-prod: email + SMS + voice). No auto-rollback (TEST-D-003).
+# DeployStarted is emitted immediately before each SWA upload so the Sev2 failed-request
+# alert (OPS-P6-001) can ignore Function-recycle 5xx in the deploy quiet window.
 # Build once per release; staging and prod deploy the same HTML/JS artifact that was
 # verified. Staging-only: apply-staging-noindex.mjs rewrites robots.txt + X-Robots-Tag
 # on the downloaded copy before upload (prod keeps the unmodified artifact).
@@ -317,6 +319,17 @@ jobs:
           echo "::add-mask::$TOKEN"
           echo "api_key=$TOKEN" >> "$GITHUB_OUTPUT"
 
+      # Always pass api_location. Omitting it (or "") is how SWA unlinks
+      # managed Functions — do not skip the API on content-only deploys.
+      - name: Emit DeployStarted to App Insights
+        continue-on-error: true
+        env:
+          APPINSIGHTS_CONNECTION_STRING: ${{ vars.APPINSIGHTS_CONNECTION_STRING }}
+          DEPLOY_ENVIRONMENT: staging
+          GIT_SHA: ${{ github.sha }}
+          JOB_NAME: Deploy Staging
+        run: bash scripts/emit-appinsights-event.sh DeployStarted
+
       - name: Deploy to staging
         uses: Azure/static-web-apps-deploy@v1
         with:
@@ -334,35 +347,7 @@ jobs:
           DEPLOY_ENVIRONMENT: staging
           GIT_SHA: ${{ github.sha }}
           JOB_NAME: Deploy Staging
-        run: |
-          if [ -z "$APPINSIGHTS_CONNECTION_STRING" ]; then
-            echo "No App Insights connection string; skipping."
-            exit 0
-          fi
-          IKEY=$(echo "$APPINSIGHTS_CONNECTION_STRING" | sed -n 's/.*InstrumentationKey=\([^;]*\).*/\1/p')
-          ENDPOINT=$(echo "$APPINSIGHTS_CONNECTION_STRING" | sed -n 's/.*IngestionEndpoint=\([^;]*\).*/\1/p')
-          ENDPOINT=${ENDPOINT:-https://dc.services.visualstudio.com}
-          ENDPOINT=${ENDPOINT%/}
-          TIME=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
-          curl -sS -X POST "${ENDPOINT}/v2/track" \
-            -H "Content-Type: application/json" \
-            -d "[{
-              \"name\": \"Microsoft.ApplicationInsights.Event\",
-              \"time\": \"${TIME}\",
-              \"iKey\": \"${IKEY}\",
-              \"data\": {
-                \"baseType\": \"EventData\",
-                \"baseData\": {
-                  \"ver\": 2,
-                  \"name\": \"DeployCompleted\",
-                  \"properties\": {
-                    \"environment\": \"${DEPLOY_ENVIRONMENT}\",
-                    \"sha\": \"${GIT_SHA}\",
-                    \"job\": \"${JOB_NAME}\"
-                  }
-                }
-              }
-            }]"
+        run: bash scripts/emit-appinsights-event.sh DeployCompleted
 
   smoke_staging:
     name: Smoke Staging
@@ -578,6 +563,17 @@ jobs:
           echo "::add-mask::$TOKEN"
           echo "api_key=$TOKEN" >> "$GITHUB_OUTPUT"
 
+      # Always pass api_location. Omitting it (or "") is how SWA unlinks
+      # managed Functions — do not skip the API on content-only deploys.
+      - name: Emit DeployStarted to App Insights
+        continue-on-error: true
+        env:
+          APPINSIGHTS_CONNECTION_STRING: ${{ vars.APPINSIGHTS_CONNECTION_STRING }}
+          DEPLOY_ENVIRONMENT: prod
+          GIT_SHA: ${{ github.sha }}
+          JOB_NAME: Deploy Production
+        run: bash scripts/emit-appinsights-event.sh DeployStarted
+
       - name: Deploy to production
         uses: Azure/static-web-apps-deploy@v1
         with:
@@ -595,35 +591,7 @@ jobs:
           DEPLOY_ENVIRONMENT: prod
           GIT_SHA: ${{ github.sha }}
           JOB_NAME: Deploy Production
-        run: |
-          if [ -z "$APPINSIGHTS_CONNECTION_STRING" ]; then
-            echo "No App Insights connection string; skipping."
-            exit 0
-          fi
-          IKEY=$(echo "$APPINSIGHTS_CONNECTION_STRING" | sed -n 's/.*InstrumentationKey=\([^;]*\).*/\1/p')
-          ENDPOINT=$(echo "$APPINSIGHTS_CONNECTION_STRING" | sed -n 's/.*IngestionEndpoint=\([^;]*\).*/\1/p')
-          ENDPOINT=${ENDPOINT:-https://dc.services.visualstudio.com}
-          ENDPOINT=${ENDPOINT%/}
-          TIME=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
-          curl -sS -X POST "${ENDPOINT}/v2/track" \
-            -H "Content-Type: application/json" \
-            -d "[{
-              \"name\": \"Microsoft.ApplicationInsights.Event\",
-              \"time\": \"${TIME}\",
-              \"iKey\": \"${IKEY}\",
-              \"data\": {
-                \"baseType\": \"EventData\",
-                \"baseData\": {
-                  \"ver\": 2,
-                  \"name\": \"DeployCompleted\",
-                  \"properties\": {
-                    \"environment\": \"${DEPLOY_ENVIRONMENT}\",
-                    \"sha\": \"${GIT_SHA}\",
-                    \"job\": \"${JOB_NAME}\"
-                  }
-                }
-              }
-            }]"
+        run: bash scripts/emit-appinsights-event.sh DeployCompleted
 
   # OPS-P3-003 — Sev1 path when Deploy Production fails. Emits DeployFailed → App Insights;
   # prod scheduled-query alert pages ag-elyse-critical-prod (email + SMS + voice).
@@ -634,6 +602,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: prod
     steps:
+      - uses: actions/checkout@v7
+
       - name: Emit DeployFailed to App Insights
         continue-on-error: true
         env:
@@ -643,35 +613,7 @@ jobs:
           JOB_NAME: Deploy Production
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          if [ -z "$APPINSIGHTS_CONNECTION_STRING" ]; then
-            echo "No App Insights connection string; cannot emit DeployFailed."
-            exit 0
-          fi
-          IKEY=$(echo "$APPINSIGHTS_CONNECTION_STRING" | sed -n 's/.*InstrumentationKey=\([^;]*\).*/\1/p')
-          ENDPOINT=$(echo "$APPINSIGHTS_CONNECTION_STRING" | sed -n 's/.*IngestionEndpoint=\([^;]*\).*/\1/p')
-          ENDPOINT=${ENDPOINT:-https://dc.services.visualstudio.com}
-          ENDPOINT=${ENDPOINT%/}
-          TIME=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
-          curl -sS -X POST "${ENDPOINT}/v2/track" \
-            -H "Content-Type: application/json" \
-            -d "[{
-              \"name\": \"Microsoft.ApplicationInsights.Event\",
-              \"time\": \"${TIME}\",
-              \"iKey\": \"${IKEY}\",
-              \"data\": {
-                \"baseType\": \"EventData\",
-                \"baseData\": {
-                  \"ver\": 2,
-                  \"name\": \"DeployFailed\",
-                  \"properties\": {
-                    \"environment\": \"${DEPLOY_ENVIRONMENT}\",
-                    \"sha\": \"${GIT_SHA}\",
-                    \"job\": \"${JOB_NAME}\",
-                    \"runUrl\": \"${RUN_URL}\"
-                  }
-                }
-              }
-            }]"
+          bash scripts/emit-appinsights-event.sh DeployFailed
           echo "Emitted DeployFailed (Sev1 SLI). Critical Action Group alert evaluates within ~5m."
 
   # TEST-D-003 — post-release prod smoke. Same Playwright suite as staging, against prod hostname.
@@ -784,6 +726,8 @@ jobs:
     runs-on: ubuntu-latest
     environment: prod
     steps:
+      - uses: actions/checkout@v7
+
       - name: Emit SmokeFailed to App Insights
         continue-on-error: true
         env:
@@ -793,33 +737,5 @@ jobs:
           JOB_NAME: Smoke Production
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          if [ -z "$APPINSIGHTS_CONNECTION_STRING" ]; then
-            echo "No App Insights connection string; cannot emit SmokeFailed."
-            exit 0
-          fi
-          IKEY=$(echo "$APPINSIGHTS_CONNECTION_STRING" | sed -n 's/.*InstrumentationKey=\([^;]*\).*/\1/p')
-          ENDPOINT=$(echo "$APPINSIGHTS_CONNECTION_STRING" | sed -n 's/.*IngestionEndpoint=\([^;]*\).*/\1/p')
-          ENDPOINT=${ENDPOINT:-https://dc.services.visualstudio.com}
-          ENDPOINT=${ENDPOINT%/}
-          TIME=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
-          curl -sS -X POST "${ENDPOINT}/v2/track" \
-            -H "Content-Type: application/json" \
-            -d "[{
-              \"name\": \"Microsoft.ApplicationInsights.Event\",
-              \"time\": \"${TIME}\",
-              \"iKey\": \"${IKEY}\",
-              \"data\": {
-                \"baseType\": \"EventData\",
-                \"baseData\": {
-                  \"ver\": 2,
-                  \"name\": \"SmokeFailed\",
-                  \"properties\": {
-                    \"environment\": \"${DEPLOY_ENVIRONMENT}\",
-                    \"sha\": \"${GIT_SHA}\",
-                    \"job\": \"${JOB_NAME}\",
-                    \"runUrl\": \"${RUN_URL}\"
-                  }
-                }
-              }
-            }]"
+          bash scripts/emit-appinsights-event.sh SmokeFailed
           echo "Emitted SmokeFailed (Sev1 SLI). Critical Action Group alert evaluates within ~5m."

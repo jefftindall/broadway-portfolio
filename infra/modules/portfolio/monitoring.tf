@@ -242,28 +242,62 @@ resource "azurerm_monitor_action_group" "watch" {
   }
 }
 
-resource "azurerm_monitor_metric_alert" "failed_requests" {
+# Sev2 — API error-budget burn vs SLO-7 99.9%/7d (OPS-P6-002).
+# 99.9% over 7d ≈ 10.08 minutes of "bad" API time. Azure scheduled-query max
+# lookback is P2D, so this alert uses the proportional 2d budget (~2.88 min)
+# and fires when BadMinutes > 2 (3+ minutes). A minute is bad only when it has
+# 2+ server errors (5xx / timeout) so a single stray 502 cannot page.
+# 4xx and every CD quiet window (15m before / 10m after each
+# DeployStarted/Completed) do not consume budget. Constants:
+# scripts/lib/api-error-budget.mjs (keep this query in sync).
+# CD emits DeployStarted immediately before SWA upload. Sev1 availability /
+# DeployFailed / SmokeFailed still page during a real outage.
+resource "azurerm_monitor_scheduled_query_rules_alert_v2" "failed_requests" {
   count = local.alert_notify_enabled ? 1 : 0
 
-  name                = "alert-elyse-failed-requests-${local.name_suffix}"
-  resource_group_name = azurerm_resource_group.main.name
-  scopes              = [azurerm_application_insights.main.id]
-  description         = "Failed requests on ${local.appi_name} (Sev2 → notify)"
-  severity            = 2
-  frequency           = "PT5M"
-  window_size         = "PT15M"
-  tags                = local.tags
+  name                    = "alert-elyse-failed-requests-${local.name_suffix}"
+  resource_group_name     = azurerm_resource_group.main.name
+  location                = azurerm_resource_group.main.location
+  scopes                  = [azurerm_application_insights.main.id]
+  description             = "API error-budget burn vs 99.9%/7d (SLO-7) on ${local.appi_name} (Sev2 → notify; 2d window)"
+  severity                = 2
+  enabled                 = true
+  evaluation_frequency    = "PT15M"
+  window_duration         = "P2D"
+  skip_query_validation   = true
+  auto_mitigation_enabled = true
+  tags                    = local.tags
 
   criteria {
-    metric_namespace = "microsoft.insights/components"
-    metric_name      = "requests/failed"
-    aggregation      = "Count"
-    operator         = "GreaterThan"
-    threshold        = 0
+    query                   = <<-QUERY
+      let quietMinutes =
+        customEvents
+        | where name in ("DeployStarted", "DeployCompleted")
+        | extend QuietStart = timestamp - 15m, QuietEnd = timestamp + 10m
+        | extend Minute = range(bin(QuietStart, 1m), bin(QuietEnd, 1m), 1m)
+        | mv-expand Minute to typeof(datetime)
+        | distinct Minute;
+      requests
+      | extend isServerError = success == false and (toint(resultCode) >= 500 or resultCode == "0" or isempty(resultCode))
+      | extend Minute = bin(timestamp, 1m)
+      | join kind=leftanti quietMinutes on Minute
+      | summarize Failed = countif(isServerError) by Minute
+      | summarize BadMinutes = countif(Failed >= 2)
+      | project BadMinutes
+    QUERY
+    time_aggregation_method = "Total"
+    metric_measure_column   = "BadMinutes"
+    operator                = "GreaterThan"
+    threshold               = 2
+
+    failing_periods {
+      minimum_failing_periods_to_trigger_alert = 1
+      number_of_evaluation_periods             = 1
+    }
   }
 
   action {
-    action_group_id = azurerm_monitor_action_group.notify[0].id
+    action_groups = [azurerm_monitor_action_group.notify[0].id]
   }
 }
 

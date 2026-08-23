@@ -1,8 +1,8 @@
 # Plan: Operational excellence
 
 **Artifact ID:** `ELYSE-OPS-001`  
-**Version:** 2.5  
-**Last updated:** 2026-08-10  
+**Version:** 2.7  
+**Last updated:** 2026-08-23  
 **Audience:** Agents, implementers, operators  
 **Scope:** Reliability posture scorecard, committed SLOs, critical alerting (SMS/voice), monthly refresh loop, and **site performance / activity** (visits, updates, contacts, top pages) in that same monthly artifact. Calibrated for a lean personal portfolio — not enterprise multi-team SRE.
 
@@ -10,7 +10,7 @@ Use the **Action ID** column (`OPS-*`) to reference items in PRs, issues, and co
 
 **Status values:** `planned` · `in_progress` · `blocked` · `done` · `wont_fix`
 
-**Implementation stance:** This document is the backlog. Prefer **one phase (or one `OPS-*` item) per PR**. Phase 0–5 (except optional `OPS-P3-002` PagerDuty) are complete. Do **not** implement PagerDuty escalate-if-unacked (`OPS-P3-002`) until explicitly requested.
+**Implementation stance:** This document is the backlog. Prefer **one phase (or one `OPS-*` item) per PR**. Phase 0–6 (except optional `OPS-P3-002` PagerDuty) are complete. Do **not** implement PagerDuty escalate-if-unacked (`OPS-P3-002`) until explicitly requested.
 
 ---
 
@@ -60,6 +60,7 @@ The **persisted scorecard** in `/docs` must also omit private emails/phones — 
 | Phase 3 — Studio cadence, CD Sev1, IR, inquiry SLI, KV purge | Mostly `done` | `OPS-P3-002` PagerDuty escalate-if-unacked (`planned` — **do not implement** until asked) |
 | Phase 4 — Subscription budget + ACS digest | `done` | — |
 | Phase 5 — Site performance in scorecard/digest | `done` | Live `GA-PROPERTY-ID` / `GA-DATA-API-SA-JSON` populated in `kv-elyse-shared`; confirm next monthly Actions run end-to-end |
+| Phase 6 — Deploy-quiet + API error-budget Sev2 | `done` | Residual: confirm next prod apply + content publish does not page `alert-elyse-failed-requests-prod` |
 
 **Living scores SoT:** [`docs/ops/operational-excellence-scorecard.md`](../ops/operational-excellence-scorecard.md) (not the historical baseline table in this plan).
 
@@ -276,8 +277,11 @@ Exact Kusto for contacts/updates lives in [observability.md](../runbooks/observa
 | **SLO-6** | Homepage FCP | **Field p75 &lt; 1.5 s over 7 days** | Browser `HomepageFcpMs` → App Insights | Measurable (force-sampled RUM) |
 | **SLO-2** | Studio publish success | **95% over 28 days** (≥3 attempts) | `StudioPublishUiSuccess` / (Success+Failed); exclude permission denials (`reason=unauthorized`) | Measurable |
 | **SLO-3** | Publish → live latency | **p95 ≤ 20 minutes over 28 days** | `StudioPublishToProdDurationMs` | Measurable |
+| **SLO-7** | API request success | **99.9% over 7 days** | Wall-clock minutes with **2+** 5xx/timeout (exclude 4xx + CD quiet window) / 10080 | Measurable (`OPS-P6-002`) |
 
-**Error budget (availability):** 99.8% / 7d ≈ **20 minutes** / week (~≤2 failed 10-minute probes). Page on the first Sev1 window; use the weekly % as the scorecard input for `slo` / `alerting`.
+**Error budget (homepage/materials):** 99.8% / 7d ≈ **20 minutes** / week (~≤2 failed 10-minute probes). Page on the first Sev1 window; use the weekly % as the scorecard input for `slo` / `alerting`.
+
+**Error budget (API, SLO-7):** 99.9% / 7d ≈ **10 minutes** of bad API time / week. A minute is bad only with 2+ server errors, so a single 502 does not consume budget. Sev2 pages when the **2d** burn exceeds the proportional budget (~2.9 min → alert at 3+ bad minutes). Monthly scorecard scores the full 7d window.
 
 **Process invariant (not an SLO):** 100% of production site deploys reuse a staging-verified artifact after green smoke (and journeys when required).
 
@@ -290,7 +294,7 @@ Exact Kusto for contacts/updates lives in [observability.md](../runbooks/observa
 | Severity | Examples | Channels | Ack expectation |
 |----------|----------|----------|-----------------|
 | **Sev1 — critical** | Homepage or materials availability fail; Deploy Production failed; post-release Smoke Production failed | Email + SMS immediately; native voice on critical AG (Phase 1); optional vendor escalate-if-unacked (`OPS-P3-002`) | Respond / silence within 15 min |
-| **Sev2 — urgent** | Failed-request spike; Studio publish failures ≥2 / 24h | Email + SMS (no voice) | Same day |
+| **Sev2 — urgent** | API error-budget burn vs SLO-7 99.9%/7d; Studio publish failures ≥2 / 24h | Email + SMS (no voice) | Same day |
 | **Sev3 — watch** | FCP p75 burn; error-budget Watch state | Email only (`ag-elyse-watch-*`) | Next working session |
 
 ---
@@ -301,7 +305,7 @@ Exact Kusto for contacts/updates lives in [observability.md](../runbooks/observa
 
 1. Shared Key Vault (`kv-elyse-shared`): `ALERT-EMAIL`, `ALERT-SMS-PHONE`, optional `ALERT-VOICE-PHONE` (placeholders in bootstrap TF; real values via CLI only).
 2. Action Groups: `ag-elyse-notify-{env}` (email ± SMS), `ag-elyse-critical-{env}` (email + SMS + voice).
-3. Homepage availability → **critical**; failed-request → **notify**.
+3. Homepage availability → **critical**; API error-budget burn (SLO-7 99.9%) → **notify**.
 4. Prove-out: Portal **Test action group** on `ag-elyse-critical-prod` + optional threshold exercise — procedure in [rotate-secrets.md](../runbooks/rotate-secrets.md) (no PII in git).
 
 ### Phase 2 — Materials + FCP SLIs (`done`)
@@ -397,6 +401,36 @@ Do **not** send ops alerts through ACS contact-form SMS (`ACS-SMS-FROM` + `SITE-
 
 **Suggested next (post–Phase 5):** Confirm next monthly scorecard run (GA visits/top pages should leave `stale`) → only then consider `OPS-P3-002` if explicitly requested.
 
+### Phase 6 — Deploy-quiet failed-request alerting
+
+| Action ID | Work | Acceptance criteria | Status |
+|-----------|------|---------------------|--------|
+| `OPS-P6-001` | Stop Sev2 paging on SWA Function recycle during CD | Failed-request alert is 5xx-only, ignores 15m before / 10m after `DeployStarted`/`DeployCompleted`; CD emits `DeployStarted` before upload; always keep `api_location` (omitting it unlinks managed Functions); cost table includes system-log alert meters | `done` |
+| `OPS-P6-002` | Sev2 uses 99.9%/7d API error budget (not single errors) | SLO-7 committed; a minute is bad only with 2+ 5xx/timeouts; 2d alert fires at 3+ bad minutes; scorecard probes 7d; constants in [`api-error-budget.mjs`](../../scripts/lib/api-error-budget.mjs) | `done` |
+
+<details>
+<summary><code>OPS-P6-001</code> — Phase 6 acceptance</summary>
+
+- [x] Replace count&gt;0 `requests/failed` metric alert with scheduled query (5xx / resultCode 0, deploy quiet window)
+- [x] CD (`CD: main` + `CD: staging`) emits `DeployStarted` immediately before SWA upload via [`scripts/emit-appinsights-event.sh`](../../scripts/emit-appinsights-event.sh) (no connection-string echo)
+- [x] Workflows still pass `api_location: api` on every upload — do not omit it on content-only deploys
+- [x] Observability + deploy runbooks document the quiet window and why the API is always packaged
+- [x] Retail system-log alert meters in [cost-and-quotas.md](../runbooks/cost-and-quotas.md); subscription budget = ceil(expected × 1.25)
+- [ ] Residual: after prod apply, next Studio/content publish should not fire `alert-elyse-failed-requests-prod` (operator)
+
+</details>
+
+<details>
+<summary><code>OPS-P6-002</code> — API error-budget Sev2</summary>
+
+- [x] SLO-7: API request success **99.9% / 7d** (~10 min bad-time budget)
+- [x] Bad minute = 2+ server errors (5xx / timeout); 4xx and **every** CD quiet window excluded (not only the latest deploy)
+- [x] Sev2 scheduled query: 2d window, fire when BadMinutes &gt; 2 (3+ min vs ~2.9 min proportional budget)
+- [x] Monthly scorecard Kusto probe + `committedSlos` row (stale until next `--azure` run)
+- [x] Shared constants + unit tests in [`scripts/lib/api-error-budget.mjs`](../../scripts/lib/api-error-budget.mjs)
+
+</details>
+
 ---
 
 ## Dependency graph
@@ -422,6 +456,8 @@ OPS-P0-001 (this plan / AI guidance) [done]
     ├── OPS-P3-004 (inquiry SLI) [done]
     ├── OPS-P3-006 (prod/shared KV purge protection) [done]
     └── OPS-P4-001 (subscription budget = ceil(expected×1.25); 80% alert) [done]
+            └── OPS-P6-001 (deploy-quiet failed-request Sev2) [done]
+                    └── OPS-P6-002 (API error-budget 99.9%/7d) [done]
 OPS-P3-002 (PagerDuty) — after OPS-P1-002 [done]; still planned
 ```
 ---
