@@ -2,6 +2,7 @@ import { app } from '@azure/functions';
 import { newCorrelationId } from '../lib/auth.js';
 import { tryCalendarSettingsStoreFromEnv } from '../lib/calendarSettings.js';
 import { requireLessonScheduling } from '../lib/calendarGate.js';
+import { contactsStoreFromEnv } from '../lib/contacts.js';
 import { calendarFailureResponse } from '../lib/httpErrors.js';
 import { readLessonActionToken } from '../lib/lessonActions.js';
 import { applyLessonStatus } from '../lib/lessonWorkflow.js';
@@ -47,14 +48,16 @@ app.http('lessonAction', {
         status,
         lessons,
         settings: tryCalendarSettingsStoreFromEnv(),
+        contacts: contactsStoreFromEnv(),
+        correlationId,
       });
       trackEvent('StudioLessonAction', { correlationId, action: payload.action, lessonId: lesson.id });
       await flush();
       const title = status === 'confirmed' ? 'Lesson confirmed' : 'Lesson declined';
       const copy =
         status === 'confirmed'
-          ? 'This request is now Confirmed. The student will get a confirmation email when that mail ships.'
-          : 'This request is now Declined.';
+          ? 'This request is now Confirmed. The student gets a confirmation email when they have an address on file.'
+          : 'This request is now Declined. The student is notified when they have an email on file.';
       return {
         status: 200,
         headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'private, no-store' },

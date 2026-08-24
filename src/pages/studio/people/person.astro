@@ -153,6 +153,10 @@ import {
             />
           </label>
         </div>
+        <label class="inline-flex items-center gap-2 text-sm text-spotlight">
+          <input id="edit-sms-ok" type="checkbox" />
+          SMS reminders OK (explicit opt-in only)
+        </label>
       </div>
 
       <div id="agent-fields" class="hidden space-y-3 rounded-sm border border-line bg-panel/40 p-4">
@@ -384,6 +388,23 @@ import {
           Add offline payment
         </button>
       </form>
+      <div id="comms-panel" class="hidden space-y-3 border-t border-line pt-4">
+        <h3 class="font-display text-xl text-spotlight">Send a message</h3>
+        <p class="text-sm text-muted">
+          Explicit tap only — never from voice. Requires an email on this person.
+        </p>
+        <label class="block text-sm text-muted">
+          Lesson (for confirm / reminder templates)
+          <select
+            id="comms-lesson"
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+          >
+            <option value="">None</option>
+          </select>
+        </label>
+        <div id="comms-buttons" class="flex flex-wrap gap-2"></div>
+        <p id="comms-status" class="hidden text-sm text-muted" role="status"></p>
+      </div>
     </div>
 
     <div id="parent-value" class="mt-6 hidden space-y-2 rounded-sm border border-line bg-panel/40 p-4">
@@ -434,6 +455,7 @@ import {
     castingLastRequest: string;
     castingLastRequestOn: string;
     castingWarmth: string;
+    studentSmsOk: boolean;
     studentLtvCents: number;
     studentLtvStripeCents: number;
     studentLtvOfflineCents: number;
@@ -471,6 +493,10 @@ import {
   const paymentList = document.getElementById('payment-list') as HTMLElement;
   const payLinks = document.getElementById('pay-links') as HTMLElement;
   const payLinkButtons = document.getElementById('pay-link-buttons') as HTMLElement;
+  const commsPanel = document.getElementById('comms-panel') as HTMLElement;
+  const commsLesson = document.getElementById('comms-lesson') as HTMLSelectElement;
+  const commsButtons = document.getElementById('comms-buttons') as HTMLElement;
+  const commsStatus = document.getElementById('comms-status') as HTMLElement;
   const offlineForm = document.getElementById('offline-form') as HTMLFormElement;
   const agentRecency = document.getElementById('agent-recency') as HTMLElement;
   const castingRecency = document.getElementById('casting-recency') as HTMLElement;
@@ -536,6 +562,7 @@ import {
         ? ''
         : String(contact.studentPackageRemaining);
     (document.getElementById('edit-last-lesson') as HTMLInputElement).value = contact.studentLastLesson || '';
+    (document.getElementById('edit-sms-ok') as HTMLInputElement).checked = Boolean(contact.studentSmsOk);
     (document.getElementById('edit-agency') as HTMLInputElement).value = contact.agentAgency || '';
     (document.getElementById('edit-territory') as HTMLInputElement).value = contact.agentTerritory || '';
     (document.getElementById('edit-last-submission') as HTMLInputElement).value =
@@ -556,7 +583,7 @@ import {
       contact.castingWarmth || '';
     agentRecency.textContent = contact.agentLastTouch
       ? `Recency: ${careerRecencyLabel(contact.agentLastTouch)}`
-      : 'Recency: no date yet. Stale follow-up tasks come later — this is not a public score.';
+      : 'Recency: no date yet. Stale agents appear under Career → Agents.';
     castingRecency.textContent = contact.castingLastRequestOn
       ? `Recency: ${careerRecencyLabel(contact.castingLastRequestOn)}`
       : 'Recency: no date yet.';
@@ -564,9 +591,85 @@ import {
     togglePersonaSections();
     renderRelated();
     renderValue();
+    renderComms();
     form.classList.remove('hidden');
     statusEl.classList.remove('busy-status');
     statusEl.textContent = contact.archived ? 'Archived — restore to show them in the main list.' : '';
+  }
+
+  async function loadLessonsForComms() {
+    if (!contactId) return;
+    const res = await fetch(`/api/lessons?contactId=${encodeURIComponent(contactId)}`, {
+      headers: { Accept: 'application/json' },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return;
+    commsLesson.replaceChildren(new Option('None', ''));
+    for (const lesson of (data.lessons || []) as { id: string; startAt: string; status: string }[]) {
+      if (lesson.status === 'cancelled' || lesson.status === 'declined') continue;
+      const when = new Date(lesson.startAt).toLocaleString('en-US', {
+        timeZone: 'America/New_York',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      });
+      commsLesson.add(new Option(`${when} · ${lesson.status}`, lesson.id));
+    }
+  }
+
+  function renderComms() {
+    if (!current || !canWrite || !current.email) {
+      commsPanel.classList.add('hidden');
+      return;
+    }
+    commsPanel.classList.remove('hidden');
+    const templates: { id: string; label: string; needsLesson?: boolean; personas?: string[] }[] = [
+      { id: 'pay_link', label: 'Send pay link', personas: ['student', 'parent'] },
+      { id: 'lesson_confirm_resend', label: 'Resend Confirmed', needsLesson: true, personas: ['student', 'parent'] },
+      { id: 'lesson_reminder', label: 'Send reminder', needsLesson: true, personas: ['student', 'parent'] },
+      { id: 'materials_thanks', label: 'Thanks for materials', personas: ['casting', 'agent'] },
+    ];
+    commsButtons.replaceChildren(
+      ...templates
+        .filter((row) => !row.personas || row.personas.some((p) => current!.personas.includes(p)))
+        .map((row) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'rounded-sm border border-line px-3 py-2 text-sm text-spotlight hover:border-gold';
+          btn.textContent = row.label;
+          btn.addEventListener('click', () => {
+            void sendTemplate(row.id, row.needsLesson);
+          });
+          return btn;
+        }),
+    );
+    void loadLessonsForComms();
+  }
+
+  async function sendTemplate(template: string, needsLesson?: boolean) {
+    if (!current?.email) {
+      showError('Add an email before sending a message.');
+      return;
+    }
+    const lessonId = commsLesson.value;
+    if (needsLesson && !lessonId) {
+      showError('Choose a lesson for this template.');
+      return;
+    }
+    commsStatus.classList.add('hidden');
+    const res = await fetch('/api/studioComms', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ template, contactId: current.id, lessonId: lessonId || undefined }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showError(data.error || 'Could not send that message.', data.correlationId);
+      return;
+    }
+    commsStatus.textContent = 'Message sent.';
+    commsStatus.classList.remove('hidden');
   }
 
   function renderValue() {
@@ -693,6 +796,7 @@ import {
       studentFormat: (document.getElementById('edit-format') as HTMLSelectElement).value,
       studentPackageRemaining: pack === '' ? null : Number(pack),
       studentLastLesson: (document.getElementById('edit-last-lesson') as HTMLInputElement).value,
+      studentSmsOk: (document.getElementById('edit-sms-ok') as HTMLInputElement).checked,
       agentAgency: (document.getElementById('edit-agency') as HTMLInputElement).value,
       agentTerritory: (document.getElementById('edit-territory') as HTMLInputElement).value,
       agentLastSubmission: (document.getElementById('edit-last-submission') as HTMLInputElement).value,

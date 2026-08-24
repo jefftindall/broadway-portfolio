@@ -293,6 +293,8 @@ resource "azurerm_static_web_app" "main" {
     STUDIO_LEDGER_TABLE_NAME                = azurerm_storage_table.studio_ledger.name
     STUDIO_LESSONS_TABLE_NAME               = azurerm_storage_table.studio_lessons.name
     STUDIO_CALENDAR_TABLE_NAME              = azurerm_storage_table.studio_calendar.name
+    STUDIO_LESSON_REMINDERS_ENABLED         = "true"
+    STUDIO_AGENT_STALE_DAYS                 = "90"
     SITE_URL                                = local.public_site_url
     GOOGLE_CALENDAR_CLIENT_ID               = data.azurerm_key_vault_secret.google_calendar_client_id.value
     GOOGLE_CALENDAR_CLIENT_SECRET           = data.azurerm_key_vault_secret.google_calendar_client_secret.value

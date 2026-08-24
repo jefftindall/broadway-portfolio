@@ -286,6 +286,10 @@ export function normalizeContactInput(input, { partial = false } = {}) {
     out.castingWarmth = normalizeWarmth(src.castingWarmth);
   }
 
+  if (!partial || has('studentSmsOk')) {
+    out.studentSmsOk = Boolean(src.studentSmsOk);
+  }
+
   if (!partial || has('relatedContacts')) {
     out.relatedContacts = normalizeRelated(src.relatedContacts);
     if (out.relatedContacts.some((rel) => !rel.id)) {
@@ -321,6 +325,7 @@ export function publicContact(record) {
     castingLastRequest: record.castingLastRequest || '',
     castingLastRequestOn: record.castingLastRequestOn || '',
     castingWarmth: record.castingWarmth || '',
+    studentSmsOk: Boolean(record.studentSmsOk),
     studentLtvCents: record.studentLtvCents ?? 0,
     studentLtvStripeCents: record.studentLtvStripeCents ?? 0,
     studentLtvOfflineCents: record.studentLtvOfflineCents ?? 0,
@@ -368,6 +373,7 @@ function entityToRecord(entity) {
     castingLastRequest: String(entity.castingLastRequest || ''),
     castingLastRequestOn: String(entity.castingLastRequestOn || ''),
     castingWarmth: String(entity.castingWarmth || ''),
+    studentSmsOk: Boolean(entity.studentSmsOk),
     studentLtvCents: Number(entity.studentLtvCents || 0),
     studentLtvStripeCents: Number(entity.studentLtvStripeCents || 0),
     studentLtvOfflineCents: Number(entity.studentLtvOfflineCents || 0),
@@ -402,6 +408,7 @@ function recordToEntity(record) {
     castingLastRequest: record.castingLastRequest || '',
     castingLastRequestOn: record.castingLastRequestOn || '',
     castingWarmth: record.castingWarmth || '',
+    studentSmsOk: Boolean(record.studentSmsOk),
     studentLtvCents: Number(record.studentLtvCents || 0),
     studentLtvStripeCents: Number(record.studentLtvStripeCents || 0),
     studentLtvOfflineCents: Number(record.studentLtvOfflineCents || 0),
@@ -484,6 +491,27 @@ export function paginateContacts(contacts, params = {}) {
     total,
     totalPages,
   };
+}
+
+export function formatInquiryNote({ type, organization, format, message, at = new Date() }) {
+  const stamp = at.toISOString().slice(0, 10);
+  const lines = [`[${stamp} inquiry:${type}]`];
+  if (organization) lines.push(`Organization: ${organization}`);
+  if (format) lines.push(`Format: ${format === 'nyc' ? 'NYC in-person' : 'Zoom'}`);
+  lines.push(String(message || '').trim());
+  return lines.filter(Boolean).join('\n');
+}
+
+export function appendNotes(existing, addition) {
+  const prior = String(existing || '').trim();
+  const next = String(addition || '').trim();
+  if (!next) return prior;
+  if (!prior) return next;
+  return `${prior}\n\n${next}`;
+}
+
+function mergePersonas(existing, persona) {
+  return uniquePersonas([...(existing || []), persona]);
 }
 
 export function createContactsStore({ tableClient }) {
@@ -696,6 +724,69 @@ export function createContactsStore({ tableClient }) {
       return row ? publicContact(row) : null;
     },
 
+    /**
+     * STUDIO-P4-001 — upsert a CRM row from a public inquiry (no PII in logs).
+     */
+    async upsertFromInquiry({
+      type,
+      name,
+      email,
+      phone,
+      organization,
+      format,
+      message,
+    }) {
+      const inquiryType = String(type || '').trim().toLowerCase();
+      const persona = inquiryType === 'lesson' ? 'student' : inquiryType === 'casting' ? 'casting' : '';
+      if (!persona) {
+        throw new CrmValidationError('Unknown inquiry type.');
+      }
+      const note = formatInquiryNote({ type: inquiryType, organization, format, message });
+      const displayName = trimTo(name, MAX_NAME);
+      if (!displayName) throw new CrmValidationError('Enter a name.');
+
+      const emailKey = normalizeEmail(email);
+      if (emailKey) {
+        const existing = await this.findByEmail(email);
+        if (existing) {
+          const patch = {
+            displayName: existing.displayName || displayName,
+            personas: mergePersonas(existing.personas, persona),
+            notes: appendNotes(existing.notes, note),
+          };
+          if (phone && !existing.phone) patch.phone = trimTo(phone, MAX_PHONE);
+          if (inquiryType === 'lesson' && format && !existing.studentFormat) {
+            patch.studentFormat = String(format).trim().toLowerCase();
+          }
+          if (inquiryType === 'casting') {
+            patch.castingLastRequest = trimTo(message, MAX_AGENT_LONG);
+            patch.castingLastRequestOn = new Date().toISOString().slice(0, 10);
+          }
+          return { contact: await this.update(existing.id, patch), created: false };
+        }
+      }
+
+      const fields = normalizeContactInput(
+        {
+          displayName,
+          email: emailKey ? trimTo(email, MAX_EMAIL) : '',
+          phone: trimTo(phone, MAX_PHONE),
+          personas: [persona],
+          notes: note,
+          ...(inquiryType === 'lesson' && format ? { studentFormat: format } : {}),
+          ...(inquiryType === 'casting'
+            ? {
+                castingLastRequest: trimTo(message, MAX_AGENT_LONG),
+                castingLastRequestOn: new Date().toISOString().slice(0, 10),
+              }
+            : {}),
+        },
+        { partial: false },
+      );
+      const contact = await this.create(fields);
+      return { contact, created: true };
+    },
+
     async setLtvRollup(id, { stripeCents = 0, offlineCents = 0, syncedAt } = {}) {
       const contactId = String(id || '').trim();
       const stripe = Math.max(0, Math.round(Number(stripeCents) || 0));
@@ -774,6 +865,15 @@ export function contactsStoreFromEnv(env = process.env) {
   return createContactsStore({
     tableClient: createGeoRedundantTableClient(connectionString, tableName),
   });
+}
+
+export function tryContactsStoreFromEnv(env = process.env) {
+  try {
+    return contactsStoreFromEnv(env);
+  } catch (err) {
+    if (err instanceof CrmConfigError) return null;
+    throw err;
+  }
 }
 
 /** In-memory TableClient stand-in for unit tests. */

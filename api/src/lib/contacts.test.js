@@ -322,3 +322,29 @@ test('LTV rollup is server-set and findByEmail ignores archived rows', async () 
   await crm.archive(created.id, true);
   assert.equal(await crm.findByEmail('ada@example.com'), null);
 });
+
+test('upsertFromInquiry creates lesson student and appends on duplicate email', async () => {
+  const crm = store();
+  const first = await crm.upsertFromInquiry({
+    type: 'lesson',
+    name: 'Jamie Lee',
+    email: 'jamie@example.com',
+    format: 'zoom',
+    message: 'I would like a voice lesson.',
+  });
+  assert.equal(first.created, true);
+  assert.deepEqual(first.contact.personas, ['student']);
+  assert.match(first.contact.notes, /inquiry:lesson/);
+
+  const second = await crm.upsertFromInquiry({
+    type: 'casting',
+    name: 'Jamie Lee',
+    email: 'jamie@example.com',
+    organization: 'Example Casting',
+    message: 'Please send headshot.',
+  });
+  assert.equal(second.created, false);
+  assert.ok(second.contact.personas.includes('student'));
+  assert.ok(second.contact.personas.includes('casting'));
+  assert.match(second.contact.notes, /inquiry:casting/);
+});
