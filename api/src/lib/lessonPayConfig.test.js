@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   flagEnabled,
   isUsableSecret,
+  lessonSchedulingEnabledFromEnv,
   publicLessonPayConfig,
   publicLessonPayConfigFromEnv,
   sanitizeStripePaymentLink,
@@ -88,6 +89,12 @@ test('publicLessonPayConfigFromEnv never returns secret key fields', () => {
   assert.equal('secretKey' in result, false);
   assert.equal(JSON.stringify(result).includes('rk_test'), false);
   assert.equal(JSON.stringify(result).includes('whsec_'), false);
+});
+
+test('lessonSchedulingEnabledFromEnv follows LESSON_PAYMENTS_ENABLED only', () => {
+  assert.equal(lessonSchedulingEnabledFromEnv({ LESSON_PAYMENTS_ENABLED: 'true' }), true);
+  assert.equal(lessonSchedulingEnabledFromEnv({ LESSON_PAYMENTS_ENABLED: 'false' }), false);
+  assert.equal(lessonSchedulingEnabledFromEnv({}), false);
 });
 
 test('studioLessonPayLinksFromEnv returns sanitized links when the public flag is off', () => {

@@ -1,7 +1,7 @@
 # Plan: Studio as teaching-business ops
 
 **Artifact ID:** `ELYSE-STUDIO-001`  
-**Version:** 1.8  
+**Version:** 1.9  
 **Last updated:** 2026-08-23  
 **Audience:** Agents, implementers, operators  
 **Scope:** Auth-gated Studio (`/studio`) as the ops home for the teaching business **and** career relationships — CRM (people + personas + LTV), Google Calendar scheduling, contact automation, payment status, and reports. Public site stays the portfolio + inquire/book surface. Money movement stays in [`lesson-payments.md`](./lesson-payments.md).
@@ -64,9 +64,9 @@ Record shapes, Table Storage keys, git collections, and access-flow diagrams: [`
 | Home | `/studio` | Four cards |
 | Career | `/studio/career` | Agents / casting filters into People; career value on the person (`STUDIO-P2-003`) |
 | Content | `/studio/content` | Speak + discrete publish hub |
-| Students | `/studio/students` | **People** + **Payment status** live. Lesson schedules and reminders later |
+| Students | `/studio/students` | **People** + **Payment status** + **Schedules** (`/studio/calendar`) live. Reminders later |
 | Admin | `/studio/admin` | Landing; **Access** at `/studio/admin/access` is live |
-| Admin Calendar *(later)* | `/studio/admin/calendar` | **Global business-closed calendar** (holidays, vacations). Blocks **all** scheduling and sets auto-reply / response-time expectations. Not per-student lessons (those stay under Students) |
+| Admin Calendar | `/studio/admin/calendar` | Google connect live (`STUDIO-P3-001`). **Global business-closed calendar** (holidays, vacations) later |
 | Admin Reports *(later)* | `/studio/admin` reports tile | Not built |
 
 `/studio/access` 301s to `/studio/admin/access`.
@@ -82,12 +82,12 @@ Payments vendor choice and Phase 1 checkout live in [`lesson-payments.md`](./les
 | Phase 0 — Plan + Action IDs + SoT | `done` | — |
 | Phase 1 — People & personas | `done` | Residual: `STUDIO-P1-006` async export |
 | Phase 2 — Lifetime value + pay status | `done` | Residual: upcoming lesson paid/unpaid waits on `STUDIO-P3-003` |
-| Phase 3 — Google Calendar scheduling | `planned` | Studio organizer OAuth + Elyse RSVP + ICS fallback; site never requires Google |
+| Phase 3 — Google Calendar scheduling | `done` | Operator: GCP Testing client + KV client id/secret + Connect in Studio. Student Requested/Confirmed mail is `STUDIO-P4-002`. Upcoming paid/unpaid join is `STUDIO-P2-004` residual |
 | Phase 4 — Contact automation | `planned` | Inquiry ingest; student **Requested** → **Confirmed** |
 | Phase 5 — Public slots + month report | `planned` | After P3 write-back is reliable |
 | Phase 6 — Roles, permissions, user profiles | `done` | Shipped after P1 in git (People needed the catalog). Listed last so phase numbers read 0–6. Live grants on `/studio/admin/access` |
 
-**Suggested next:** `STUDIO-P3-001` (Google Calendar API + KV) after staging ledger table apply. Residual `STUDIO-P2-004` upcoming paid/unpaid joins Calendar write-back. Phase 6 is already `done` — do not treat it as upcoming work.
+**Suggested next:** `STUDIO-P4-002` (student Requested → Confirmed ACS email) after operator Connect on staging. Residual `STUDIO-P2-004` upcoming paid/unpaid joins confirmed lessons. Phase 6 is already `done` — do not treat it as upcoming work.
 
 ---
 
@@ -431,25 +431,26 @@ Selected integration: **Studio Google identity as event organizer** (option F in
 
 | ID | Title | Status | Depends on | Primary files |
 |----|-------|--------|------------|---------------|
-| `STUDIO-P3-001` | Calendar API: Studio organizer OAuth + optional Elyse free/busy OAuth + KV | `planned` | `STUDIO-P1-001` | env vault placeholders; `rotate-secrets.md`; `/studio/admin/calendar` connect |
-| `STUDIO-P3-002` | Read free/busy + availability rules (degrade if disconnected) | `planned` | `STUDIO-P3-001` | API + `/studio/calendar` |
-| `STUDIO-P3-003` | Lesson requests: Google invite + ICS fallback + RSVP → confirmed | `planned` | `STUDIO-P3-001`; `STUDIO-P1-003` | API; lesson table; event ↔ contact id |
-| `STUDIO-P3-004` | Recurring weekly students | `planned` | `STUDIO-P3-003` | Series on Google Calendar, not “meeting links” |
-| `STUDIO-P3-005` | Help + operator runbook for Calendar connect | `planned` | `STUDIO-P3-003` | `studioHelp.ts`; new runbook |
-| `STUDIO-P3-006` | Runtime: Google optional; ICS to `SITE-CONTACT-EMAIL` on failure | `planned` | `STUDIO-P3-003` | book/inquire + Studio create-lesson paths |
+| `STUDIO-P3-001` | Calendar API: Studio organizer OAuth + optional Elyse free/busy OAuth + KV | `done` | `STUDIO-P1-001` | env vault placeholders; `rotate-secrets.md`; `/studio/admin/calendar` connect |
+| `STUDIO-P3-002` | Read free/busy + availability rules (degrade if disconnected) | `done` | `STUDIO-P3-001` | API + `/studio/calendar` |
+| `STUDIO-P3-003` | Lesson requests: Google invite + ICS fallback + RSVP → confirmed | `done` | `STUDIO-P3-001`; `STUDIO-P1-003` | API; lesson table; event ↔ contact id |
+| `STUDIO-P3-004` | Recurring weekly students | `done` | `STUDIO-P3-003` | Series on Google Calendar; max **12** instances (one quarter) |
+| `STUDIO-P3-005` | Help + operator runbook for Calendar connect | `done` | `STUDIO-P3-003` | `studioHelp.ts`; `docs/runbooks/studio-calendar.md` |
+| `STUDIO-P3-006` | Runtime: Google optional; ICS to `SITE-CONTACT-EMAIL` on failure | `done` | `STUDIO-P3-003` | Studio create-lesson path; inquire/book unchanged |
 
 <details>
 <summary><code>STUDIO-P3-001</code> — OAuth (Studio organizer + Elyse free/busy)</summary>
 
 **Acceptance criteria**
 
-- [ ] Dedicated **Studio Google account** is the Calendar API organizer (OAuth 2.0 authorization code, `access_type=offline`, refresh token in the **env** Key Vault; Terraform placeholders + `lifecycle { ignore_changes }`)
-- [ ] Optional second OAuth: Elyse connects **her** Google in Studio so free/busy can read the calendars she selects (lessons, shows, personal). Missing Elyse OAuth does **not** block booking
-- [ ] Secret **names** only in git (e.g. `GOOGLE-CALENDAR-ORGANIZER-REFRESH-TOKEN`, `GOOGLE-CALENDAR-ELYSE-REFRESH-TOKEN`, client id/secret names). **Never** echo tokens in logs or Actions
-- [ ] [`rotate-secrets.md`](../runbooks/rotate-secrets.md) extended when names ship
-- [ ] Re-consent path in Studio if Google revokes either grant; friendly error + `correlationId`; rest of Studio stays usable
-- [ ] Single-coach app stays in Google Cloud **Testing** with named test users; do not block the phase on public OAuth verification / CASA
-- [ ] Implementation PR adds any new catalog ID (e.g. `calendar.connect`) to `permissions.js` + Access UI in the **same** PR
+- [x] Dedicated **Studio Google account** is the Calendar API organizer (OAuth 2.0 authorization code, `access_type=offline`; Terraform KV placeholders + `lifecycle { ignore_changes }`). Runtime Connect stores the refresh token in Table `studioCalendar` (Functions cannot write Key Vault)
+- [x] Optional second OAuth: Elyse connects **her** Google in Studio so free/busy can read the calendars she selects (lessons, shows, personal). Missing Elyse OAuth does **not** block booking
+- [x] Secret **names** only in git (`GOOGLE-CALENDAR-ORGANIZER-REFRESH-TOKEN`, `GOOGLE-CALENDAR-ELYSE-REFRESH-TOKEN`, `GOOGLE-CALENDAR-CLIENT-ID`, `GOOGLE-CALENDAR-CLIENT-SECRET`). **Never** echo tokens in logs or Actions
+- [x] [`rotate-secrets.md`](../runbooks/rotate-secrets.md) extended when names ship
+- [x] Re-consent path in Studio if Google revokes either grant; friendly error + `correlationId`; rest of Studio stays usable
+- [x] Single-coach app stays in Google Cloud **Testing** with named test users; do not block the phase on public OAuth verification / CASA
+- [x] Implementation PR adds catalog IDs `calendar.connect`, `calendar.read`, `calendar.write` to `permissions.js` + Access UI in the **same** PR
+- [ ] Operator residual: create the Testing OAuth client, set client id/secret in env vaults, Connect both Google accounts on staging
 
 </details>
 
@@ -458,11 +459,11 @@ Selected integration: **Studio Google identity as event organizer** (option F in
 
 **Acceptance criteria**
 
-- [ ] When Elyse OAuth (or equivalent ACL) is connected: Studio reads free/busy from the calendars she selects
-- [ ] Rules: 30 / 60 min, Zoom vs NYC, buffer, minimum notice
-- [ ] A rehearsal already on Google Calendar blocks a lesson slot
-- [ ] `/studio/calendar` week/day view on iPhone Safari (list-first is OK)
-- [ ] When Calendar is disconnected: view shows a clear disconnected state (not a 500); operators can still create a **Requested** lesson by typing a time
+- [x] When Elyse OAuth (or equivalent ACL) is connected: Studio reads free/busy from the calendars she selects
+- [x] Rules: 30 / 60 min, Zoom vs NYC, buffer, minimum notice
+- [x] A rehearsal already on Google Calendar blocks a lesson slot
+- [x] `/studio/calendar` week/day view on iPhone Safari (list-first is OK)
+- [x] When Calendar is disconnected: view shows a clear disconnected state (not a 500); operators can still create a **Requested** lesson by typing a time
 
 </details>
 
@@ -471,13 +472,13 @@ Selected integration: **Studio Google identity as event organizer** (option F in
 
 **Acceptance criteria**
 
-- [ ] Creating a lesson persists a Studio lesson row (`requested`) **before** any Google call; Google failure does not lose the row
-- [ ] When organizer OAuth works: insert event as Studio organizer, attendees = Elyse (`SITE-CONTACT-EMAIL` Google) + student/parent; `sendUpdates=all` so Elyse gets a native Accept invite
-- [ ] Event stores the Studio lesson id + contact id (extended property) so pay status, RSVP, and reminders can join
-- [ ] `events.watch` (with channel renewal) or incremental sync flips the row to `confirmed` when Elyse `responseStatus` is `accepted`, and to `declined` when `declined`
-- [ ] Studio **Confirm** / **Decline** still exist for degraded mode and must keep Google in sync when the API is up
-- [ ] Cancel / reschedule in Studio updates or deletes the Google event when connected; Google-side deletes are detected on next sync (document last-write rules)
-- [ ] No HubSpot/Cal.com meeting-link branding
+- [x] Creating a lesson persists a Studio lesson row (`requested`) **before** any Google call; Google failure does not lose the row
+- [x] When organizer OAuth works: insert event as Studio organizer, attendees = Elyse (`SITE-CONTACT-EMAIL` Google) + student/parent; `sendUpdates=all` so Elyse gets a native Accept invite
+- [x] Event stores the Studio lesson id + contact id (extended property) so pay status, RSVP, and reminders can join
+- [x] `events.watch` (with channel renewal on create) or incremental sync flips the row to `confirmed` when Elyse `responseStatus` is `accepted`, and to `declined` when `declined`
+- [x] Studio **Confirm** / **Decline** still exist for degraded mode and must keep Google in sync when the API is up
+- [x] Cancel / reschedule in Studio updates or deletes the Google event when connected; Google-side deletes are detected on next sync (document last-write rules)
+- [x] No HubSpot/Cal.com meeting-link branding
 
 </details>
 
@@ -486,9 +487,9 @@ Selected integration: **Studio Google identity as event organizer** (option F in
 
 **Acceptance criteria**
 
-- [ ] Weekly (or custom) series lives on Google Calendar when connected
-- [ ] Studio shows the next N occurrences linked to the student (`requested` until Elyse accepts the series/instance rules documented in the runbook)
-- [ ] Exception (cancel one week) does not delete the series
+- [x] Weekly series lives on Google Calendar when connected (`RRULE:FREQ=WEEKLY;COUNT=n`)
+- [x] Studio shows the next occurrences linked to the student (`requested` until Elyse accepts; series/instance rules in the runbook). **Max 12 instances** (one quarter)
+- [x] Exception (cancel one week) does not delete the series
 
 </details>
 
@@ -497,8 +498,8 @@ Selected integration: **Studio Google identity as event organizer** (option F in
 
 **Acceptance criteria**
 
-- [ ] Help documents connect, Requested vs Confirmed, and “Google is the calendar” only after invite write-back ships
-- [ ] Operator runbook: Studio organizer account, Elyse Connect Google, which calendars to include, what happens when Google is down (ICS to `SITE-CONTACT-EMAIL`), no token values
+- [x] Help documents connect, Requested vs Confirmed, and “Google is the calendar” only after invite write-back ships
+- [x] Operator runbook: Studio organizer account, Elyse Connect Google, which calendars to include, what happens when Google is down (ICS to `SITE-CONTACT-EMAIL`), no token values
 
 </details>
 
@@ -507,11 +508,11 @@ Selected integration: **Studio Google identity as event organizer** (option F in
 
 **Acceptance criteria**
 
-- [ ] Public site, inquire, book, People, payments, and publish succeed when Calendar tokens are missing, revoked, or Google returns 401/403/429/5xx / timeout
-- [ ] On Google failure (or not connected): ACS **email** to `SITE-CONTACT-EMAIL` with `text/calendar` ICS `METHOD:REQUEST` (UID = lesson id) so Elyse still gets a calendar reminder in Mail/Google
-- [ ] Student still receives **Requested** (`STUDIO-P4-002`); they are not blocked on Google
-- [ ] Failures log kind + `correlationId` only — never token or PII bodies
-- [ ] Calendar UI and public slot picker degrade (hidden/disabled picker, disconnected banner) — never uncaught 500s
+- [x] Public site, inquire, book, People, payments, and publish succeed when Calendar tokens are missing, revoked, or Google returns 401/403/429/5xx / timeout
+- [x] On Google failure (or not connected): ACS **email** to `SITE-CONTACT-EMAIL` with `text/calendar` ICS `METHOD:REQUEST` (UID = lesson id) so Elyse still gets a calendar reminder in Mail/Google
+- [ ] Student still receives **Requested** (`STUDIO-P4-002`); they are not blocked on Google — residual: mail ships with Phase 4
+- [x] Failures log kind + `correlationId` only — never token or PII bodies
+- [x] Calendar UI degrades (disconnected banner) — never uncaught 500s. Public slot picker remains Phase 5 (hidden until then)
 
 </details>
 
@@ -729,9 +730,9 @@ STUDIO-P0-001 (done)
             │                         └─► P6-003 enforce [done] ─► P6-004 UI [done] ─► P6-005 bootstrap [done]
             ├─► P2-001 Stripe LTV [done] ─► P2-002 offline [done] ─► P2-004 pay status [in_progress]
             │         └─► P2-003 agent value [done] ─► P4-004 tasks
-            └─► P3-001 Studio organizer OAuth ─► P3-002 free/busy (optional)
-                                          └─► P3-003 invite + RSVP ─► P3-006 ICS fallback / Google optional
-                                                            ├─► P3-004 recurring ─► P3-005 docs
+            └─► P3-001 Studio organizer OAuth [done] ─► P3-002 free/busy (optional) [done]
+                                          └─► P3-003 invite + RSVP [done] ─► P3-006 ICS fallback / Google optional [done]
+                                                            ├─► P3-004 recurring [done] ─► P3-005 docs [done]
                                                             ├─► P4-002 Requested/Confirmed ─► P4-003 reminders
                                                             │         └─► P4-005 templates
                                                             └─► P5-001 public slots
@@ -765,7 +766,8 @@ lesson-payments #7 (Checkout / webhook polish) ║ P2-001 / P2-004
 | Doc | Role |
 |-----|------|
 | [`lesson-payments.md`](./lesson-payments.md) | Stripe money SoT; backlog **#7** / **#8** point here (`STUDIO-P2`, `P3`, `P5`) |
-| [`rotate-secrets.md`](../runbooks/rotate-secrets.md) | Extend when `STUDIO-P3-001` OAuth names ship |
+| [`rotate-secrets.md`](../runbooks/rotate-secrets.md) | Google Calendar OAuth names (`STUDIO-P3-001`) |
+| [`studio-calendar.md`](../runbooks/studio-calendar.md) | Connect, ICS fallback, Requested vs Confirmed, weekly max 12 |
 | [`cost-and-quotas.md`](../runbooks/cost-and-quotas.md) | Recalc if Phase 1+ adds a billable Azure SKU |
 | [`manage-access.md`](../runbooks/manage-access.md) | Roles, discrete permissions, `/studio/admin/access` |
 | [`.cursor/rules/studio-help.mdc`](../../.cursor/rules/studio-help.mdc) | Help catalog only after capabilities ship |

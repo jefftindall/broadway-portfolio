@@ -13,12 +13,16 @@ export const PERMISSION = {
   PEOPLE_WRITE: 'people.write',
   USERS_READ: 'users.read',
   USERS_MANAGE: 'users.manage',
+  CALENDAR_CONNECT: 'calendar.connect',
+  CALENDAR_READ: 'calendar.read',
+  CALENDAR_WRITE: 'calendar.write',
 };
 
 /** Permission A also grants these IDs (expanded after role + extra union). */
 export const PERMISSION_IMPLIES = {
   [PERMISSION.PEOPLE_WRITE]: [PERMISSION.PEOPLE_READ],
   [PERMISSION.USERS_MANAGE]: [PERMISSION.USERS_READ],
+  [PERMISSION.CALENDAR_WRITE]: [PERMISSION.CALENDAR_READ],
 };
 
 export const PERMISSION_CATALOG = {
@@ -46,6 +50,21 @@ export const PERMISSION_CATALOG = {
     id: PERMISSION.USERS_MANAGE,
     label: 'Manage access',
     description: 'Assign roles and discrete permissions to Studio users.',
+  },
+  [PERMISSION.CALENDAR_CONNECT]: {
+    id: PERMISSION.CALENDAR_CONNECT,
+    label: 'Connect Google Calendar',
+    description: 'Connect or disconnect the Studio organizer and Elyse free/busy Google accounts.',
+  },
+  [PERMISSION.CALENDAR_READ]: {
+    id: PERMISSION.CALENDAR_READ,
+    label: 'View schedule',
+    description: 'Open lesson schedules and free/busy when Calendar is connected.',
+  },
+  [PERMISSION.CALENDAR_WRITE]: {
+    id: PERMISSION.CALENDAR_WRITE,
+    label: 'Edit schedule',
+    description: 'Create, confirm, decline, reschedule, or cancel lesson requests.',
   },
 };
 
@@ -87,14 +106,19 @@ export const ROLE_CATALOG = {
   [ROLE.PEOPLE]: {
     id: ROLE.PEOPLE,
     label: 'People',
-    description: 'View and edit Studio contacts.',
-    permissions: [PERMISSION.PEOPLE_READ, PERMISSION.PEOPLE_WRITE],
+    description: 'View and edit Studio contacts and lesson schedules.',
+    permissions: [
+      PERMISSION.PEOPLE_READ,
+      PERMISSION.PEOPLE_WRITE,
+      PERMISSION.CALENDAR_READ,
+      PERMISSION.CALENDAR_WRITE,
+    ],
   },
   [ROLE.PEOPLE_READER]: {
     id: ROLE.PEOPLE_READER,
     label: 'People (view only)',
-    description: 'View Studio contacts without changing them.',
-    permissions: [PERMISSION.PEOPLE_READ],
+    description: 'View Studio contacts and lesson schedules without changing them.',
+    permissions: [PERMISSION.PEOPLE_READ, PERMISSION.CALENDAR_READ],
   },
 };
 

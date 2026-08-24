@@ -1,0 +1,388 @@
+---
+import StudioLayout from '../../layouts/StudioLayout.astro';
+---
+
+<StudioLayout
+  title="Schedules"
+  description="Private Studio lesson schedule."
+  heading="Schedules"
+  helpHref="/studio/help/calendar"
+>
+  <section class="mx-auto max-w-xl px-4 py-5 md:py-8">
+    <p class="text-sm text-muted">
+      Individual voice-lesson times. Google Calendar is the calendar when connected. A request stays
+      <span class="text-spotlight">Requested</span> until Elyse accepts the invite (or you Confirm here
+      if Google is down).
+    </p>
+
+    <div
+      id="cal-gate"
+      class="mt-6 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted"
+      role="alert"
+    >
+      <p id="cal-gate-msg">You’re signed in, but this account cannot view the schedule.</p>
+      <p id="cal-gate-ref" class="mt-3 hidden">
+        Reference: <code id="cal-gate-id" class="break-all text-spotlight"></code>
+      </p>
+      <p class="mt-4">
+        <a href="/studio/students" class="text-gel underline-offset-2 hover:text-gold hover:underline">Back to Students</a>
+      </p>
+    </div>
+
+    <div
+      id="cal-error"
+      class="mt-4 hidden rounded-sm border border-line bg-panel/60 p-3 text-sm text-muted"
+      role="alert"
+    >
+      <p id="cal-error-msg"></p>
+      <p id="cal-error-ref" class="mt-2 hidden">
+        Reference: <code id="cal-error-id" class="break-all text-spotlight"></code>
+      </p>
+    </div>
+
+    <div id="cal-workspace" class="hidden">
+      <div
+        id="cal-disconnected"
+        class="mt-6 hidden rounded-sm border border-gold/40 bg-gold/10 p-4 text-sm text-muted"
+      >
+        <p id="cal-disconnected-msg">
+          Google Calendar is disconnected. You can still request a time. Elyse gets an email invite
+          (ICS) at the studio contact address.
+        </p>
+        <p class="mt-3">
+          <a
+            href="/studio/admin/calendar"
+            class="text-gel underline-offset-2 hover:text-gold hover:underline"
+          >
+            Admin → Calendar connect
+          </a>
+        </p>
+      </div>
+
+      <div class="mt-6 flex flex-wrap items-center gap-2">
+        <button
+          id="add-lesson-btn"
+          type="button"
+          class="rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110"
+        >
+          Request lesson
+        </button>
+      </div>
+
+      <form id="create-form" class="mt-6 hidden space-y-4 rounded-sm border border-line bg-panel/40 p-4">
+        <h2 class="font-display text-2xl text-spotlight">New lesson request</h2>
+        <label class="block text-sm text-muted">
+          Student
+          <select
+            id="create-contact"
+            required
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+          >
+            <option value="">Select a student</option>
+          </select>
+        </label>
+        <label class="block text-sm text-muted">
+          Start
+          <input
+            id="create-start"
+            type="datetime-local"
+            required
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <label class="block text-sm text-muted">
+            Length
+            <select
+              id="create-duration"
+              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+            >
+              <option value="60">60 minutes</option>
+              <option value="30">30 minutes</option>
+            </select>
+          </label>
+          <label class="block text-sm text-muted">
+            Format
+            <select
+              id="create-format"
+              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+            >
+              <option value="zoom">Zoom</option>
+              <option value="nyc">NYC in person</option>
+            </select>
+          </label>
+        </div>
+        <label class="inline-flex items-center gap-2 text-sm text-spotlight">
+          <input id="create-recurring" type="checkbox" />
+          Weekly series
+        </label>
+        <label id="create-count-wrap" class="hidden block text-sm text-muted">
+          Weeks (max 12 — one quarter)
+          <input
+            id="create-count"
+            type="number"
+            min="1"
+            max="12"
+            value="12"
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <div class="flex flex-wrap gap-2">
+          <button
+            type="submit"
+            class="rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110"
+          >
+            Save request
+          </button>
+          <button
+            id="create-cancel"
+            type="button"
+            class="rounded-sm border border-line px-4 py-2 text-sm text-spotlight hover:border-gold"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+
+      <ol id="lesson-list" class="mt-6 space-y-3"></ol>
+      <p id="lesson-empty" class="mt-6 hidden text-sm text-muted">No upcoming lesson requests.</p>
+    </div>
+  </section>
+</StudioLayout>
+
+<script>
+  import { fetchStudioSession, hasStudioPermission, STUDIO_PERMISSION } from '../../lib/studioSession';
+
+  type Lesson = {
+    id: string;
+    contactId: string;
+    status: string;
+    startAt: string;
+    endAt: string;
+    durationMin: number;
+    format: string;
+    seriesId?: string;
+    occurrenceIndex?: number | null;
+    calendarFallback?: string;
+  };
+
+  type Contact = { id: string; displayName: string; personas: string[] };
+
+  const gate = document.getElementById('cal-gate') as HTMLElement;
+  const gateMsg = document.getElementById('cal-gate-msg') as HTMLElement;
+  const gateRef = document.getElementById('cal-gate-ref') as HTMLElement;
+  const gateId = document.getElementById('cal-gate-id') as HTMLElement;
+  const workspace = document.getElementById('cal-workspace') as HTMLElement;
+  const errorBox = document.getElementById('cal-error') as HTMLElement;
+  const errorMsg = document.getElementById('cal-error-msg') as HTMLElement;
+  const errorRef = document.getElementById('cal-error-ref') as HTMLElement;
+  const errorId = document.getElementById('cal-error-id') as HTMLElement;
+  const disconnected = document.getElementById('cal-disconnected') as HTMLElement;
+  const addBtn = document.getElementById('add-lesson-btn') as HTMLButtonElement;
+  const form = document.getElementById('create-form') as HTMLFormElement;
+  const cancelBtn = document.getElementById('create-cancel') as HTMLButtonElement;
+  const contactSelect = document.getElementById('create-contact') as HTMLSelectElement;
+  const recurring = document.getElementById('create-recurring') as HTMLInputElement;
+  const countWrap = document.getElementById('create-count-wrap') as HTMLElement;
+  const listEl = document.getElementById('lesson-list') as HTMLOListElement;
+  const emptyEl = document.getElementById('lesson-empty') as HTMLElement;
+
+  let canWrite = false;
+  const names = new Map<string, string>();
+
+  function showError(message: string, correlationId?: string) {
+    errorMsg.textContent = message;
+    if (correlationId) {
+      errorId.textContent = correlationId;
+      errorRef.classList.remove('hidden');
+    } else {
+      errorRef.classList.add('hidden');
+    }
+    errorBox.classList.remove('hidden');
+  }
+
+  function statusLabel(status: string) {
+    if (status === 'confirmed') return 'Confirmed';
+    if (status === 'declined') return 'Declined';
+    if (status === 'cancelled') return 'Cancelled';
+    return 'Requested';
+  }
+
+  function formatWhen(iso: string) {
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return iso;
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(date);
+  }
+
+  function showErrorFromResponse(data: { error?: string; correlationId?: string }, fallback: string) {
+    showError(data.error || fallback, data.correlationId);
+  }
+
+  async function loadStatus() {
+    const res = await fetch('/api/calendarStatus', { headers: { Accept: 'application/json' } });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showErrorFromResponse(data, 'Could not load Calendar status.');
+      return;
+    }
+    const connected = Boolean(data.organizer?.connected);
+    disconnected.classList.toggle('hidden', connected);
+  }
+
+  async function loadPeople() {
+    const res = await fetch('/api/contacts?directory=1&persona=student', {
+      headers: { Accept: 'application/json' },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return;
+    contactSelect.replaceChildren();
+    const blank = document.createElement('option');
+    blank.value = '';
+    blank.textContent = 'Select a student';
+    contactSelect.append(blank);
+    for (const person of (data.contacts || []) as Contact[]) {
+      names.set(person.id, person.displayName);
+      const option = document.createElement('option');
+      option.value = person.id;
+      option.textContent = person.displayName;
+      contactSelect.append(option);
+    }
+  }
+
+  async function patchLesson(id: string, status: string) {
+    const res = await fetch(`/api/lessons/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showErrorFromResponse(data, 'Could not update that lesson.');
+      return;
+    }
+    await loadLessons();
+  }
+
+  function renderLessons(lessons: Lesson[]) {
+    const upcoming = lessons.filter((row) => row.status !== 'cancelled' && row.status !== 'declined');
+    listEl.replaceChildren();
+    emptyEl.classList.toggle('hidden', upcoming.length > 0);
+    for (const lesson of upcoming) {
+      const item = document.createElement('li');
+      item.className = 'rounded-sm border border-line bg-panel/40 px-4 py-3';
+      const who = names.get(lesson.contactId) || 'Student';
+      const format = lesson.format === 'nyc' ? 'NYC' : 'Zoom';
+      const series =
+        lesson.seriesId && lesson.occurrenceIndex !== null && lesson.occurrenceIndex !== undefined
+          ? ` · week ${Number(lesson.occurrenceIndex) + 1}`
+          : '';
+      const when = document.createElement('p');
+      when.className = 'text-sm text-spotlight';
+      when.textContent = `${formatWhen(lesson.startAt)} · ${lesson.durationMin} min · ${format}${series}`;
+      const meta = document.createElement('p');
+      meta.className = 'mt-1 text-sm text-muted';
+      meta.textContent = `${who} · ${statusLabel(lesson.status)}${lesson.calendarFallback === 'ics' ? ' · email invite' : ''}`;
+      item.append(when, meta);
+      if (canWrite && lesson.status === 'requested') {
+        const actions = document.createElement('div');
+        actions.className = 'mt-3 flex flex-wrap gap-2';
+        const confirm = document.createElement('button');
+        confirm.type = 'button';
+        confirm.className = 'rounded-sm bg-gold px-3 py-1.5 text-sm font-semibold text-ink hover:brightness-110';
+        confirm.textContent = 'Confirm';
+        confirm.addEventListener('click', () => patchLesson(lesson.id, 'confirmed'));
+        const decline = document.createElement('button');
+        decline.type = 'button';
+        decline.className = 'rounded-sm border border-line px-3 py-1.5 text-sm text-spotlight hover:border-gold';
+        decline.textContent = 'Decline';
+        decline.addEventListener('click', () => patchLesson(lesson.id, 'declined'));
+        actions.append(confirm, decline);
+        item.append(actions);
+      } else if (canWrite && lesson.status === 'confirmed') {
+        const actions = document.createElement('div');
+        actions.className = 'mt-3 flex flex-wrap gap-2';
+        const cancel = document.createElement('button');
+        cancel.type = 'button';
+        cancel.className = 'rounded-sm border border-line px-3 py-1.5 text-sm text-spotlight hover:border-gold';
+        cancel.textContent = lesson.seriesId ? 'Cancel this week' : 'Cancel';
+        cancel.addEventListener('click', () => patchLesson(lesson.id, 'cancelled'));
+        actions.append(cancel);
+        item.append(actions);
+      }
+      listEl.append(item);
+    }
+  }
+
+  async function loadLessons() {
+    const from = new Date(Date.now() - 12 * 3600_000).toISOString();
+    const res = await fetch(`/api/lessons?from=${encodeURIComponent(from)}`, {
+      headers: { Accept: 'application/json' },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showErrorFromResponse(data, 'Could not load lessons.');
+      return;
+    }
+    renderLessons((data.lessons || []) as Lesson[]);
+  }
+
+  addBtn.addEventListener('click', () => form.classList.remove('hidden'));
+  cancelBtn.addEventListener('click', () => form.classList.add('hidden'));
+  recurring.addEventListener('change', () => {
+    countWrap.classList.toggle('hidden', !recurring.checked);
+  });
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    errorBox.classList.add('hidden');
+    const payload = {
+      contactId: contactSelect.value,
+      startAt: (document.getElementById('create-start') as HTMLInputElement).value,
+      durationMin: Number((document.getElementById('create-duration') as HTMLSelectElement).value),
+      format: (document.getElementById('create-format') as HTMLSelectElement).value,
+      recurring: recurring.checked,
+      recurringCount: Number((document.getElementById('create-count') as HTMLInputElement).value || 12),
+    };
+    const res = await fetch('/api/lessons', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showErrorFromResponse(data, 'Could not save that lesson request.');
+      return;
+    }
+    form.reset();
+    form.classList.add('hidden');
+    countWrap.classList.add('hidden');
+    await loadLessons();
+  });
+
+  const session = await fetchStudioSession();
+  if (!session.lessonSchedulingEnabled) {
+    gateMsg.textContent = 'Lesson scheduling is not enabled in this environment yet.';
+    gate.classList.remove('hidden');
+  } else if (!hasStudioPermission(session, STUDIO_PERMISSION.CALENDAR_READ)) {
+    if (session.correlationId) {
+      gateId.textContent = session.correlationId;
+      gateRef.classList.remove('hidden');
+    }
+    if (!session.signedIn) gateMsg.textContent = 'Sign in to use Studio.';
+    gate.classList.remove('hidden');
+  } else {
+    canWrite = hasStudioPermission(session, STUDIO_PERMISSION.CALENDAR_WRITE);
+    if (!canWrite) addBtn.classList.add('hidden');
+    workspace.classList.remove('hidden');
+    await loadPeople();
+    await loadStatus();
+    await loadLessons();
+  }
+</script>

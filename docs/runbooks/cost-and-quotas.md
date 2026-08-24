@@ -12,7 +12,7 @@ Region: **eastus2** (all environments). Rates: Azure Retail Prices API (`prices.
 | App Insights standard web tests (prod) | 3 tests × 1 geo × every 10 min → 12,960 exec/30d | $0.0005 / execution | **6.48** |
 | Key Vault Standard | ×3 (shared + staging + prod), light ops | $0.03 / 10K ops | **0.03** |
 | tfstate storage (`stelysetfstateeu2`) | Standard LRS, &lt;1 GB | $0.024 / GB-mo | **0.03** |
-| Studio CRM Table Storage (`STUDIO-P1-001`) | staging + prod Standard **RA-GRS** (`stelysecrmstaging`, `stelysecrmprod`); &lt;1 GB tables each; eastus2 → paired Central US | Tables RA-GRS data **$0.075** / GB-mo · ops **$0.00036** / 10K (Azure Tables list / eastus2, 2026-08-23) | **0.15** |
+| Studio CRM Table Storage (`STUDIO-P1-001`, `P3` tables on same accounts) | staging + prod Standard **RA-GRS** (`stelysecrmstaging`, `stelysecrmprod`); `contacts`, `studioUsers`, `studioLedger`, `studioLessons`, `studioCalendar`; &lt;1 GB each; eastus2 → paired Central US | Tables RA-GRS data **$0.075** / GB-mo · ops **$0.00036** / 10K (Azure Tables list / eastus2, 2026-08-23) | **0.15** |
 | Log Analytics / App Insights | &lt;5 GB Analytics Logs; 30-day retention | First 5 GB/mo free; retention ≤31d free | **0.00** |
 | Azure Monitor system-log alerts | Prod `DeployFailed` **5 min** + homepage FCP **daily** (billed at ≤15-min meter) + API error-budget **15 min** × staging+prod (`OPS-P6-002`; still the ≤15-min meter) | $1.50 / 5-min rule · $0.50 / ≤15-min rule (eastus2 retail) | **3.00** |
 | ACS Email | ~50–100 inquiry + OPS digest msgs | $0.00025 / email + $0.00012 / MB | **0.03** |

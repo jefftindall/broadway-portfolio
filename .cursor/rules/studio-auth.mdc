@@ -36,9 +36,13 @@ Discrete permissions live in [`api/src/lib/permissions.js`](api/src/lib/permissi
 | Publish / upload / discrete / publish status | `permissionGate(..., 'content.publish')` (also `publisherGate()`) |
 | People / CRM | `permissionGate(..., 'people.read' \| 'people.write')` — one CRM per deployment (`STUDIO_CONTACTS_PARTITION`); never a tenant id from the body |
 | Access admin | `permissionGate(..., 'users.read' \| 'users.manage')` |
+| Calendar connect | `permissionGate(..., 'calendar.connect')` |
+| Lesson schedule | `permissionGate(..., 'calendar.read' \| 'calendar.write')` |
 | Public `contactInquiry` | Turnstile + schema; no Studio principal |
 | Public `lessonPayConfig` | Flag + sanitized Payment Link URLs only |
 | Public `stripeWebhook` | Stripe signature verification |
+| Public `calendarWatch` | Google channel token |
+| Public `lessonAction` | Signed Confirm / Decline token (ICS fallback) |
 
 Azure Functions use `authLevel: 'anonymous'` because SWA presents the principal. That is **not** a skip — handlers must still call `permissionGate`. Local `AZURE_FUNCTIONS_ENVIRONMENT=Development` grants the full catalog (`func start` without SWA headers).
 

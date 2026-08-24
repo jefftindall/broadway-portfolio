@@ -9,6 +9,9 @@ export const STUDIO_PERMISSION = {
   PEOPLE_WRITE: 'people.write',
   USERS_READ: 'users.read',
   USERS_MANAGE: 'users.manage',
+  CALENDAR_CONNECT: 'calendar.connect',
+  CALENDAR_READ: 'calendar.read',
+  CALENDAR_WRITE: 'calendar.write',
 } as const;
 
 export type StudioPermission = (typeof STUDIO_PERMISSION)[keyof typeof STUDIO_PERMISSION];
@@ -20,6 +23,8 @@ export type StudioSession = {
   permissions: string[];
   source?: string;
   publishMode?: 'pr' | 'direct';
+  /** Same SWA flag as public Payment Links — gates Calendar + Schedules UI. */
+  lessonSchedulingEnabled?: boolean;
   correlationId?: string;
   catalog?: {
     permissions: Array<{ id: string; label: string; description: string }>;
@@ -47,6 +52,7 @@ export async function fetchStudioSession(): Promise<StudioSession> {
       permissions: Array.isArray(data?.permissions) ? data.permissions : [],
       source: data?.source,
       publishMode: data?.publishMode === 'pr' ? 'pr' : 'direct',
+      lessonSchedulingEnabled: Boolean(data?.lessonSchedulingEnabled),
       correlationId: typeof data?.correlationId === 'string' ? data.correlationId : undefined,
       catalog: data?.catalog,
     };

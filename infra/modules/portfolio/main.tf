@@ -49,6 +49,13 @@ locals {
     project     = "elyse-tindall-portfolio"
     managed     = "terraform"
   })
+
+  # Public hostname for Google OAuth redirect + Calendar watch webhook (STUDIO-P3).
+  public_site_url = var.environment == "prod" ? (
+    var.custom_domain != "" ? "https://${var.custom_domain}" : "https://elysetindall.com"
+    ) : (
+    length(var.custom_hostnames) > 0 ? "https://${var.custom_hostnames[0]}" : "https://test.elysetindall.com"
+  )
 }
 
 resource "azurerm_resource_group" "main" {
@@ -139,6 +146,53 @@ resource "azurerm_key_vault_secret" "allowlist" {
   }
 }
 
+# STUDIO-P3-001 — Google Calendar OAuth (Studio organizer + optional Elyse free/busy).
+# Values set outside Terraform. Runtime Connect writes refresh tokens to Table Storage;
+# these KV names are the operator bootstrap / rotate path.
+resource "azurerm_key_vault_secret" "google_calendar_client_id" {
+  name         = "GOOGLE-CALENDAR-CLIENT-ID"
+  value        = "REPLACE_ME"
+  key_vault_id = azurerm_key_vault.main.id
+  depends_on   = [azurerm_role_assignment.kv_admin]
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "azurerm_key_vault_secret" "google_calendar_client_secret" {
+  name         = "GOOGLE-CALENDAR-CLIENT-SECRET"
+  value        = "REPLACE_ME"
+  key_vault_id = azurerm_key_vault.main.id
+  depends_on   = [azurerm_role_assignment.kv_admin]
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "azurerm_key_vault_secret" "google_calendar_organizer_refresh" {
+  name         = "GOOGLE-CALENDAR-ORGANIZER-REFRESH-TOKEN"
+  value        = "REPLACE_ME"
+  key_vault_id = azurerm_key_vault.main.id
+  depends_on   = [azurerm_role_assignment.kv_admin]
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "azurerm_key_vault_secret" "google_calendar_elyse_refresh" {
+  name         = "GOOGLE-CALENDAR-ELYSE-REFRESH-TOKEN"
+  value        = "REPLACE_ME"
+  key_vault_id = azurerm_key_vault.main.id
+  depends_on   = [azurerm_role_assignment.kv_admin]
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 # Managed Functions do not resolve @Microsoft.KeyVault(...) app settings — they
 # receive the literal reference string. Read live vault values at plan/apply and
 # write them into SWA configuration. Key Vault remains the source of truth;
@@ -167,6 +221,26 @@ data "azurerm_key_vault_secret" "github_app_private_key" {
 
 data "azurerm_key_vault_secret" "allowlist" {
   name         = azurerm_key_vault_secret.allowlist.name
+  key_vault_id = azurerm_key_vault.main.id
+}
+
+data "azurerm_key_vault_secret" "google_calendar_client_id" {
+  name         = azurerm_key_vault_secret.google_calendar_client_id.name
+  key_vault_id = azurerm_key_vault.main.id
+}
+
+data "azurerm_key_vault_secret" "google_calendar_client_secret" {
+  name         = azurerm_key_vault_secret.google_calendar_client_secret.name
+  key_vault_id = azurerm_key_vault.main.id
+}
+
+data "azurerm_key_vault_secret" "google_calendar_organizer_refresh" {
+  name         = azurerm_key_vault_secret.google_calendar_organizer_refresh.name
+  key_vault_id = azurerm_key_vault.main.id
+}
+
+data "azurerm_key_vault_secret" "google_calendar_elyse_refresh" {
+  name         = azurerm_key_vault_secret.google_calendar_elyse_refresh.name
   key_vault_id = azurerm_key_vault.main.id
 }
 
@@ -213,10 +287,17 @@ resource "azurerm_static_web_app" "main" {
     STRIPE_PAYMENT_LINK_30MIN = data.azurerm_key_vault_secret.stripe_payment_link_30min.value
     STRIPE_PAYMENT_LINK_60MIN = data.azurerm_key_vault_secret.stripe_payment_link_60min.value
     # Studio CRM (Table Storage). People and access profiles require catalog permissions.
-    STUDIO_CRM_STORAGE_CONNECTION_STRING = azurerm_storage_account.studio_crm.primary_connection_string
-    STUDIO_CRM_TABLE_NAME                = azurerm_storage_table.contacts.name
-    STUDIO_USERS_TABLE_NAME              = azurerm_storage_table.studio_users.name
-    STUDIO_LEDGER_TABLE_NAME             = azurerm_storage_table.studio_ledger.name
+    STUDIO_CRM_STORAGE_CONNECTION_STRING    = azurerm_storage_account.studio_crm.primary_connection_string
+    STUDIO_CRM_TABLE_NAME                   = azurerm_storage_table.contacts.name
+    STUDIO_USERS_TABLE_NAME                 = azurerm_storage_table.studio_users.name
+    STUDIO_LEDGER_TABLE_NAME                = azurerm_storage_table.studio_ledger.name
+    STUDIO_LESSONS_TABLE_NAME               = azurerm_storage_table.studio_lessons.name
+    STUDIO_CALENDAR_TABLE_NAME              = azurerm_storage_table.studio_calendar.name
+    SITE_URL                                = local.public_site_url
+    GOOGLE_CALENDAR_CLIENT_ID               = data.azurerm_key_vault_secret.google_calendar_client_id.value
+    GOOGLE_CALENDAR_CLIENT_SECRET           = data.azurerm_key_vault_secret.google_calendar_client_secret.value
+    GOOGLE_CALENDAR_ORGANIZER_REFRESH_TOKEN = data.azurerm_key_vault_secret.google_calendar_organizer_refresh.value
+    GOOGLE_CALENDAR_ELYSE_REFRESH_TOKEN     = data.azurerm_key_vault_secret.google_calendar_elyse_refresh.value
   }
 
   depends_on = [

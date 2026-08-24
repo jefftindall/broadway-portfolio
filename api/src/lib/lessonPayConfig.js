@@ -82,6 +82,20 @@ export function publicLessonPayConfigFromEnv(env = process.env) {
  * Still sanitized buy.stripe.com URLs only — never keys.
  * @param {NodeJS.ProcessEnv} [env]
  */
+/**
+ * Lesson scheduling (Calendar + lesson rows) ships behind the same SWA flag as
+ * public Payment Links. Staging true; prod false until go-live.
+ * @param {NodeJS.ProcessEnv} [env]
+ */
+export function lessonSchedulingEnabledFromEnv(env = process.env) {
+  return flagEnabled(env.LESSON_PAYMENTS_ENABLED);
+}
+
+/**
+ * Studio ops may copy Payment Links even when the public book-page flag is off.
+ * Still sanitized buy.stripe.com URLs only — never keys.
+ * @param {NodeJS.ProcessEnv} [env]
+ */
 export function studioLessonPayLinksFromEnv(env = process.env) {
   /** @type {Record<string, string>} */
   const links = {};

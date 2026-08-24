@@ -12,6 +12,15 @@ globs:
   - api/src/lib/lessonPayConfig.js
   - api/src/lib/stripeWebhook.js
   - api/src/lib/ledger.js
+  - api/src/lib/lessons.js
+  - api/src/lib/calendarSettings.js
+  - api/src/lib/calendarOAuth.js
+  - api/src/lib/googleCalendar.js
+  - api/src/lib/lessonWorkflow.js
+  - api/src/functions/lessons.js
+  - api/src/functions/calendar.js
+  - api/src/functions/calendarWatch.js
+  - api/src/functions/lessonAction.js
   - api/src/lib/acsNotify.js
   - api/src/functions/contacts.js
   - api/src/functions/offlinePayments.js

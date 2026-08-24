@@ -7,7 +7,7 @@ Secrets live in Azure Key Vault as the source of truth. Managed Functions on SWA
 | Scope | Key Vault | Resource group | Purpose |
 |---|---|---|---|
 | **Shared (build + ACS + ops alerts + GA/GSC scorecard + Studio monitor + Stripe API keys)** | `kv-elyse-shared` | `rg-elyse-shared` | SITE-*, Turnstile, ACS email/SMS, `ALERT-*`, `GA-*`, `GSC-*`, `MONITOR-*`, `STRIPE-TEST-SECRET-KEY` / `STRIPE-TEST-PUBLISHABLE-KEY` / `STRIPE-LIVE-SECRET-KEY` / `STRIPE-LIVE-PUBLISHABLE-KEY` |
-| Staging API | `kv-elyse-staging` | `rg-elyse-portfolio-staging` | Gemini, GitHub App, allowlist, AAD, `STRIPE-WEBHOOK-SECRET`, `STRIPE-PAYMENT-LINK-*` |
+| Staging API | `kv-elyse-staging` | `rg-elyse-portfolio-staging` | Gemini, GitHub App, allowlist, AAD, Stripe webhook / Payment Links, Google Calendar OAuth |
 | Production API | `kv-elyse-prod` | `rg-elyse-portfolio-prod` | Same as staging |
 
 Subscription: `e601e59a-c7f4-41f0-8178-b59740fb1974`
@@ -230,6 +230,21 @@ Do **not** reuse `SITE-CONTACT-EMAIL`, `SITE-CONTACT-PHONE`, or `ACS-SMS-FROM` f
 Staging env vault stays **without** purge protection so tear-down / experiment remains possible.
 
 Purge protection is **one-way** while soft-delete retention remains: you cannot purge a deleted vault/secret until the retention window elapses, and you cannot turn protection off without waiting out retention after disabling (Azure blocks disable while protection is on). Apply bootstrap then prod Terraform after merge; document only the decision here — never secret values.
+
+## Google Calendar OAuth (`STUDIO-P3`)
+
+Env vaults (`kv-elyse-staging` / `kv-elyse-prod`). Client id/secret are required before **Connect Google** works. Refresh-token secrets are optional operator fallbacks — Studio Connect writes tokens to Table Storage (`studioCalendar`) at runtime.
+
+| Secret | SWA app setting | Notes |
+|--------|-----------------|-------|
+| `GOOGLE-CALENDAR-CLIENT-ID` | `GOOGLE_CALENDAR_CLIENT_ID` | OAuth Web client id |
+| `GOOGLE-CALENDAR-CLIENT-SECRET` | `GOOGLE_CALENDAR_CLIENT_SECRET` | Also signs OAuth `state` and ICS Confirm/Decline links |
+| `GOOGLE-CALENDAR-ORGANIZER-REFRESH-TOKEN` | `GOOGLE_CALENDAR_ORGANIZER_REFRESH_TOKEN` | Placeholder / bootstrap; Connect in Studio is preferred |
+| `GOOGLE-CALENDAR-ELYSE-REFRESH-TOKEN` | `GOOGLE_CALENDAR_ELYSE_REFRESH_TOKEN` | Same for Elyse free/busy |
+
+Redirect URIs and test users: [studio-calendar.md](./studio-calendar.md). After changing client id/secret, sync SWA. After a suspected leak, create a new OAuth client, set the new secrets, sync, then **Disconnect** and **Connect** both roles in Studio so Table rows are replaced. Never print token values.
+
+ICS fallback uses existing `SITE-CONTACT-EMAIL` → `CONTACT_NOTIFY_EMAIL` — not `ALERT-*`.
 
 ## Rotate Gemini API key
 
