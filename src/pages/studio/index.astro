@@ -10,7 +10,10 @@ import StudioLandingCard from '../../components/StudioLandingCard.astro';
   helpHref="/studio/help"
 >
   <section class="mx-auto max-w-xl px-4 py-5 md:py-8">
-    <p id="studio-greeting" class="text-sm text-muted">Choose a section to get started.</p>
+    <p id="studio-greeting" class="busy-status text-sm text-muted" role="status" aria-live="polite">
+      <span class="busy-spinner" aria-hidden="true"></span>
+      <span>Loading…</span>
+    </p>
     <div class="mt-5 grid gap-3">
       <StudioLandingCard
         href="/studio/content"
@@ -38,6 +41,8 @@ import StudioLandingCard from '../../components/StudioLandingCard.astro';
 </StudioLayout>
 
 <script>
+  import { setStudioStatus } from '../../lib/studioStatus';
+
   type ClientPrincipal = {
     userDetails?: string;
     claims?: Array<{ typ?: string; val?: string }>;
@@ -62,11 +67,15 @@ import StudioLandingCard from '../../components/StudioLandingCard.astro';
       const data = await res.json();
       const principal = data?.clientPrincipal as ClientPrincipal | null;
       const name = principal ? displayName(principal) : '';
-      if (greeting && name) {
-        greeting.textContent = `Signed in as ${name}. Choose a section to get started.`;
+      if (greeting) {
+        if (name) {
+          setStudioStatus(greeting, `Signed in as ${name}. Choose a section to get started.`);
+        } else {
+          setStudioStatus(greeting, 'Choose a section to get started.');
+        }
       }
     } catch {
-      /* local preview without Easy Auth */
+      if (greeting) setStudioStatus(greeting, 'Choose a section to get started.');
     }
   }
 

@@ -10,9 +10,14 @@ import StudioLayout from '../../layouts/StudioLayout.astro';
 >
   <section class="mx-auto max-w-xl px-4 py-5 md:py-8">
     <p class="text-sm text-muted">
-      Individual voice-lesson times. Google Calendar is the calendar when connected. A request stays
+      Individual voice-lesson times. Google Calendar is the calendar when connected. A request stays{' '}
       <span class="text-spotlight">Requested</span> until Elyse accepts the invite (or you Confirm here
       if Google is down).
+    </p>
+
+    <p id="cal-bootstrap-status" class="busy-status mt-6 text-sm text-muted" role="status" aria-live="polite">
+      <span class="busy-spinner" aria-hidden="true"></span>
+      <span>Checking access…</span>
     </p>
 
     <div
@@ -146,6 +151,10 @@ import StudioLayout from '../../layouts/StudioLayout.astro';
         </div>
       </form>
 
+      <p id="lesson-status" class="busy-status mt-6 text-sm text-muted" role="status" aria-live="polite">
+        <span class="busy-spinner" aria-hidden="true"></span>
+        <span>Loading schedule…</span>
+      </p>
       <ol id="lesson-list" class="mt-6 space-y-3"></ol>
       <p id="lesson-empty" class="mt-6 hidden text-sm text-muted">No upcoming lesson requests.</p>
     </div>
@@ -154,6 +163,7 @@ import StudioLayout from '../../layouts/StudioLayout.astro';
 
 <script>
   import { fetchStudioSession, hasStudioPermission, STUDIO_PERMISSION } from '../../lib/studioSession';
+  import { clearStudioStatus, setStudioStatus } from '../../lib/studioStatus';
   import { isButtonBusy, withButtonBusy } from '../../lib/buttonBusy';
 
   type Lesson = {
@@ -171,6 +181,7 @@ import StudioLayout from '../../layouts/StudioLayout.astro';
 
   type Contact = { id: string; displayName: string; personas: string[] };
 
+  const bootstrapStatus = document.getElementById('cal-bootstrap-status') as HTMLElement;
   const gate = document.getElementById('cal-gate') as HTMLElement;
   const gateMsg = document.getElementById('cal-gate-msg') as HTMLElement;
   const gateRef = document.getElementById('cal-gate-ref') as HTMLElement;
@@ -187,6 +198,7 @@ import StudioLayout from '../../layouts/StudioLayout.astro';
   const contactSelect = document.getElementById('create-contact') as HTMLSelectElement;
   const recurring = document.getElementById('create-recurring') as HTMLInputElement;
   const countWrap = document.getElementById('create-count-wrap') as HTMLElement;
+  const lessonStatus = document.getElementById('lesson-status') as HTMLElement;
   const listEl = document.getElementById('lesson-list') as HTMLOListElement;
   const emptyEl = document.getElementById('lesson-empty') as HTMLElement;
 
@@ -336,6 +348,9 @@ import StudioLayout from '../../layouts/StudioLayout.astro';
   }
 
   async function loadLessons() {
+    setStudioStatus(lessonStatus, 'Loading schedule…', true);
+    emptyEl.classList.add('hidden');
+    listEl.replaceChildren();
     const from = new Date(Date.now() - 12 * 3600_000).toISOString();
     const res = await fetch(`/api/lessons?from=${encodeURIComponent(from)}`, {
       headers: { Accept: 'application/json' },
@@ -343,9 +358,11 @@ import StudioLayout from '../../layouts/StudioLayout.astro';
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       showErrorFromResponse(data, 'Could not load lessons.');
+      clearStudioStatus(lessonStatus);
       return;
     }
     renderLessons((data.lessons || []) as Lesson[]);
+    clearStudioStatus(lessonStatus);
   }
 
   addBtn.addEventListener('click', () => form.classList.remove('hidden'));
@@ -384,23 +401,37 @@ import StudioLayout from '../../layouts/StudioLayout.astro';
     }, 'Saving…');
   });
 
-  const session = await fetchStudioSession();
-  if (!session.lessonSchedulingEnabled) {
-    gateMsg.textContent = 'Lesson scheduling is not enabled in this environment yet.';
-    gate.classList.remove('hidden');
-  } else if (!hasStudioPermission(session, STUDIO_PERMISSION.CALENDAR_READ)) {
-    if (session.correlationId) {
-      gateId.textContent = session.correlationId;
-      gateRef.classList.remove('hidden');
+  async function bootstrap() {
+    setStudioStatus(bootstrapStatus, 'Checking access…', true);
+    const session = await fetchStudioSession();
+    if (!session.lessonSchedulingEnabled) {
+      clearStudioStatus(bootstrapStatus);
+      bootstrapStatus.classList.add('hidden');
+      gateMsg.textContent = 'Lesson scheduling is not enabled in this environment yet.';
+      gate.classList.remove('hidden');
+      return;
     }
-    if (!session.signedIn) gateMsg.textContent = 'Sign in to use Studio.';
-    gate.classList.remove('hidden');
-  } else {
+    if (!hasStudioPermission(session, STUDIO_PERMISSION.CALENDAR_READ)) {
+      clearStudioStatus(bootstrapStatus);
+      bootstrapStatus.classList.add('hidden');
+      if (session.correlationId) {
+        gateId.textContent = session.correlationId;
+        gateRef.classList.remove('hidden');
+      }
+      if (!session.signedIn) gateMsg.textContent = 'Sign in to use Studio.';
+      gate.classList.remove('hidden');
+      return;
+    }
     canWrite = hasStudioPermission(session, STUDIO_PERMISSION.CALENDAR_WRITE);
     if (!canWrite) addBtn.classList.add('hidden');
+    clearStudioStatus(bootstrapStatus);
+    bootstrapStatus.classList.add('hidden');
     workspace.classList.remove('hidden');
+    setStudioStatus(lessonStatus, 'Loading schedule…', true);
     await loadPeople();
     await loadStatus();
     await loadLessons();
   }
+
+  void bootstrap();
 </script>

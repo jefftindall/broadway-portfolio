@@ -103,6 +103,8 @@ Use sparingly for presence:
 
 When Studio (or any client UI) is waiting on the API — loading lists, checking access, preparing a preview — show the **animated busy spinner** beside the status text. Do not rely on static “Loading…” copy alone.
 
+When inline formatted copy (`<span>`, `<a>`, `<strong>`, etc.) continues on the next source line, insert an explicit Astro space — `{' '}` — before the tag. HTML minification can drop the newline and glue words together (e.g. `staysRequested`).
+
 | Piece | Class / utility | Use |
 |-------|-----------------|-----|
 | Spinner | `.busy-spinner` | Gold ring, 1rem, continuous rotation |

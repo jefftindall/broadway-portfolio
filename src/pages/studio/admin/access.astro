@@ -16,6 +16,11 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
       UI.
     </p>
 
+    <p id="access-bootstrap-status" class="busy-status mt-6 text-sm text-muted" role="status" aria-live="polite">
+      <span class="busy-spinner" aria-hidden="true"></span>
+      <span>Checking access…</span>
+    </p>
+
     <div
       id="access-gate"
       class="mt-6 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted"
@@ -142,6 +147,7 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
     etag?: string;
   };
 
+  const bootstrapStatus = document.getElementById('access-bootstrap-status') as HTMLElement;
   const gate = document.getElementById('access-gate') as HTMLElement;
   const workspace = document.getElementById('access-workspace') as HTMLElement;
   const errorBox = document.getElementById('access-error') as HTMLElement;
@@ -346,18 +352,25 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
   });
 
   async function bootstrap() {
+    setStudioStatus(bootstrapStatus, 'Checking access…', true);
     const session = await fetchStudioSession();
     if (session.catalog) catalog = session.catalog;
     renderCatalog();
     if (session.apiUnavailable) {
+      clearStudioStatus(bootstrapStatus);
+      bootstrapStatus.classList.add('hidden');
       workspace.classList.remove('hidden');
       await loadUsers();
       return;
     }
     if (!hasStudioPermission(session, STUDIO_PERMISSION.USERS_MANAGE)) {
+      clearStudioStatus(bootstrapStatus);
+      bootstrapStatus.classList.add('hidden');
       gate.classList.remove('hidden');
       return;
     }
+    clearStudioStatus(bootstrapStatus);
+    bootstrapStatus.classList.add('hidden');
     workspace.classList.remove('hidden');
     await loadUsers();
   }

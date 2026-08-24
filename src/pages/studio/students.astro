@@ -15,7 +15,11 @@ import StudioLandingCard from '../../components/StudioLandingCard.astro';
       Confirmed lessons get an email reminder the day before (SMS only with explicit opt-in on the
       student). Studio-wide holidays will live under Admin → Calendar later.
     </p>
-    <div class="mt-5 grid gap-3" id="students-cards">
+    <p id="students-bootstrap-status" class="busy-status mt-4 text-sm text-muted" role="status" aria-live="polite">
+      <span class="busy-spinner" aria-hidden="true"></span>
+      <span>Loading…</span>
+    </p>
+    <div class="mt-5 grid gap-3 hidden" id="students-cards">
       <StudioLandingCard
         href="/studio/people"
         title="People"
@@ -38,17 +42,27 @@ import StudioLandingCard from '../../components/StudioLandingCard.astro';
 
 <script>
   import { fetchStudioSession } from '../../lib/studioSession';
+  import { clearStudioStatus } from '../../lib/studioStatus';
 
-  const wrap = document.getElementById('students-cards');
-  if (wrap && !(await fetchStudioSession()).lessonSchedulingEnabled) {
-    const schedules = wrap.querySelector('a[href="/studio/calendar"]')?.closest('div');
-    if (schedules) {
-      schedules.innerHTML = `
+  async function bootstrap() {
+    const bootstrapStatus = document.getElementById('students-bootstrap-status') as HTMLElement;
+    const wrap = document.getElementById('students-cards') as HTMLElement;
+    const session = await fetchStudioSession();
+    if (wrap && !session.lessonSchedulingEnabled) {
+      const schedules = wrap.querySelector('a[href="/studio/calendar"]')?.closest('div');
+      if (schedules) {
+        schedules.innerHTML = `
         <div class="block rounded-sm border border-line bg-panel/20 px-4 py-4 text-left opacity-80">
           <span class="block font-display text-2xl text-spotlight">Schedules</span>
           <span class="mt-1 block text-sm text-muted">Lesson scheduling is not enabled in this environment yet.</span>
           <span class="mt-2 block text-xs uppercase tracking-[0.15em] text-gel">Not available yet</span>
         </div>`;
+      }
     }
+    clearStudioStatus(bootstrapStatus);
+    bootstrapStatus.classList.add('hidden');
+    wrap?.classList.remove('hidden');
   }
+
+  void bootstrap();
 </script>

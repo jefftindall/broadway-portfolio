@@ -13,7 +13,11 @@ import StudioLandingCard from '../../../components/StudioLandingCard.astro';
     <p class="text-sm text-muted">
       Studio-wide settings. Access and Google Calendar connect are live. Reports are not built yet.
     </p>
-    <div class="mt-5 grid gap-3" id="admin-cards">
+    <p id="admin-bootstrap-status" class="busy-status mt-4 text-sm text-muted" role="status" aria-live="polite">
+      <span class="busy-spinner" aria-hidden="true"></span>
+      <span>Loading…</span>
+    </p>
+    <div class="mt-5 grid gap-3 hidden" id="admin-cards">
       <StudioLandingCard
         href="/studio/admin/access"
         title="Access"
@@ -38,11 +42,14 @@ import StudioLandingCard from '../../../components/StudioLandingCard.astro';
 
 <script>
   import { fetchStudioSession } from '../../../lib/studioSession';
+  import { clearStudioStatus } from '../../../lib/studioStatus';
 
-  const wrap = document.getElementById('admin-calendar-card-wrap');
-  if (wrap) {
+  async function bootstrap() {
+    const bootstrapStatus = document.getElementById('admin-bootstrap-status') as HTMLElement;
+    const wrap = document.getElementById('admin-calendar-card-wrap') as HTMLElement;
+    const cards = document.getElementById('admin-cards') as HTMLElement;
     const session = await fetchStudioSession();
-    if (!session.lessonSchedulingEnabled) {
+    if (wrap && !session.lessonSchedulingEnabled) {
       wrap.innerHTML = `
         <div class="block rounded-sm border border-line bg-panel/20 px-4 py-4 text-left opacity-80">
           <span class="block font-display text-2xl text-spotlight">Calendar</span>
@@ -50,5 +57,10 @@ import StudioLandingCard from '../../../components/StudioLandingCard.astro';
           <span class="mt-2 block text-xs uppercase tracking-[0.15em] text-gel">Not available yet</span>
         </div>`;
     }
+    clearStudioStatus(bootstrapStatus);
+    bootstrapStatus.classList.add('hidden');
+    cards?.classList.remove('hidden');
   }
+
+  void bootstrap();
 </script>

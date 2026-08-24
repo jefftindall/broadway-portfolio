@@ -28,6 +28,11 @@ import StudioLandingCard from '../../components/StudioLandingCard.astro';
       />
     </div>
 
+    <p id="agent-tasks-status" class="busy-status mt-8 text-sm text-muted" role="status" aria-live="polite">
+      <span class="busy-spinner" aria-hidden="true"></span>
+      <span>Checking access…</span>
+    </p>
+
     <div
       id="agent-tasks-gate"
       class="mt-8 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted"
@@ -50,6 +55,7 @@ import StudioLandingCard from '../../components/StudioLandingCard.astro';
 
 <script>
   import { fetchStudioSession, hasStudioPermission, STUDIO_PERMISSION } from '../../lib/studioSession';
+  import { clearStudioStatus, setStudioStatus } from '../../lib/studioStatus';
   import { studioPersonPath } from '../../lib/studioPeople';
 
   type AgentTask = {
@@ -61,18 +67,27 @@ import StudioLandingCard from '../../components/StudioLandingCard.astro';
     task: string;
   };
 
+  const bootstrapStatus = document.getElementById('agent-tasks-status') as HTMLElement;
   const gate = document.getElementById('agent-tasks-gate') as HTMLElement;
   const section = document.getElementById('agent-tasks') as HTMLElement;
   const list = document.getElementById('agent-task-list') as HTMLUListElement;
   const empty = document.getElementById('agent-task-empty') as HTMLElement;
 
-  const session = await fetchStudioSession();
-  if (!hasStudioPermission(session, STUDIO_PERMISSION.PEOPLE_READ)) {
-    gate.classList.remove('hidden');
-  } else {
-    section.classList.remove('hidden');
+  async function bootstrap() {
+    setStudioStatus(bootstrapStatus, 'Checking access…', true);
+    const session = await fetchStudioSession();
+    if (!hasStudioPermission(session, STUDIO_PERMISSION.PEOPLE_READ)) {
+      clearStudioStatus(bootstrapStatus);
+      bootstrapStatus.classList.add('hidden');
+      gate.classList.remove('hidden');
+      return;
+    }
+    setStudioStatus(bootstrapStatus, 'Loading agent tasks…', true);
     const res = await fetch('/api/agentTasks', { headers: { Accept: 'application/json' } });
     const data = await res.json().catch(() => ({}));
+    clearStudioStatus(bootstrapStatus);
+    bootstrapStatus.classList.add('hidden');
+    section.classList.remove('hidden');
     const tasks = (data.tasks || []) as AgentTask[];
     empty.classList.toggle('hidden', tasks.length > 0);
     list.replaceChildren(
@@ -91,4 +106,6 @@ import StudioLandingCard from '../../components/StudioLandingCard.astro';
       }),
     );
   }
+
+  void bootstrap();
 </script>
