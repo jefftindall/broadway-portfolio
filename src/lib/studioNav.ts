@@ -26,7 +26,9 @@ export function isStudioNavActive(href: string, pathname: string): boolean {
       path === '/studio/students' ||
       path.startsWith('/studio/students/') ||
       path === '/studio/people' ||
-      path.startsWith('/studio/people/')
+      path.startsWith('/studio/people/') ||
+      path === '/studio/calendar' ||
+      path.startsWith('/studio/calendar/')
     );
   }
   if (href === '/studio/admin') return path === '/studio/admin' || path.startsWith('/studio/admin/');
@@ -41,7 +43,13 @@ export function studioHelpHref(pathname: string): string {
   if (path === '/studio/admin/access' || path.startsWith('/studio/admin/access/')) {
     return '/studio/help/access';
   }
+  if (path === '/studio/admin/calendar' || path.startsWith('/studio/admin/calendar/')) {
+    return '/studio/help/calendar';
+  }
   if (path === '/studio/admin' || path.startsWith('/studio/admin/')) return '/studio/help/admin';
+  if (path === '/studio/calendar' || path.startsWith('/studio/calendar/')) {
+    return '/studio/help/calendar';
+  }
   if (
     path === '/studio/people' ||
     path.startsWith('/studio/people/') ||

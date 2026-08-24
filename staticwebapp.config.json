@@ -170,6 +170,20 @@
       }
     },
     {
+      "route": "/api/calendarWatch",
+      "allowedRoles": ["anonymous", "authenticated"],
+      "headers": {
+        "Cache-Control": "private, no-store"
+      }
+    },
+    {
+      "route": "/api/lessonAction",
+      "allowedRoles": ["anonymous", "authenticated"],
+      "headers": {
+        "Cache-Control": "private, no-store"
+      }
+    },
+    {
       "route": "/api/*",
       "allowedRoles": ["authenticated"],
       "headers": {

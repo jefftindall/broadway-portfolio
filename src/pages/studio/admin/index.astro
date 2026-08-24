@@ -11,7 +11,7 @@ import StudioLandingCard from '../../../components/StudioLandingCard.astro';
 >
   <section class="mx-auto max-w-xl px-4 py-5 md:py-8">
     <p class="text-sm text-muted">
-      Studio-wide settings. Access is live. Calendar and reports are not built yet.
+      Studio-wide settings. Access and Google Calendar connect are live. Reports are not built yet.
     </p>
     <div class="mt-5 grid gap-3">
       <StudioLandingCard
@@ -21,9 +21,9 @@ import StudioLandingCard from '../../../components/StudioLandingCard.astro';
         primary
       />
       <StudioLandingCard
+        href="/studio/admin/calendar"
         title="Calendar"
-        summary="Global studio calendar for holidays and vacations — when the entire business is temporarily closed. Blocks all scheduling (students and career) and sets automatic reply expectations. Not a per-student lesson calendar."
-        available={false}
+        summary="Connect the Studio organizer and optional Elyse free/busy Google accounts. Holidays and studio-wide closures are not built yet. Per-student lessons live under Students → Schedules."
       />
       <StudioLandingCard
         title="Reports"

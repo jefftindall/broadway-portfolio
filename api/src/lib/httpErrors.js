@@ -37,6 +37,13 @@ const MSG_ACCESS_GENERIC =
 const MSG_ACCESS_CONFIG =
   'Access isn’t configured right now. Please try again later or contact support.';
 const MSG_ACCESS_NOT_FOUND = 'That access record isn’t in Studio.';
+const MSG_CALENDAR_GENERIC =
+  'Something went wrong with the schedule. Share the reference below with support.';
+const MSG_CALENDAR_CONFIG =
+  'Calendar isn’t configured right now. You can still type a lesson time. Share the reference below if you need help.';
+const MSG_CALENDAR_DISCONNECTED =
+  'Google Calendar isn’t connected or the sign-in expired. Reconnect under Admin → Calendar.';
+const MSG_CALENDAR_NOT_FOUND = 'That lesson isn’t in Studio.';
 
 /**
  * @param {unknown} err
@@ -276,8 +283,82 @@ export function classifyAccessError(err) {
 
 /**
  * @param {unknown} err
+ * @returns {{ errorKind: string, status: number, error: string }}
+ */
+export function classifyCalendarError(err) {
+  const name = err instanceof Error ? err.name : '';
+  const message = err instanceof Error ? err.message : String(err || '');
+  const kind = err && typeof err === 'object' ? err.kind : '';
+  const lower = message.toLowerCase();
+
+  if (name === 'LessonValidationError' || name === 'CalendarValidationError') {
+    return {
+      errorKind: 'validation',
+      status: 400,
+      error: message || 'Please check the lesson fields and try again.',
+    };
+  }
+  if (name === 'LessonNotFoundError' || name === 'CrmNotFoundError') {
+    return { errorKind: 'not_found', status: 404, error: MSG_CALENDAR_NOT_FOUND };
+  }
+  if (name === 'LessonConflictError') {
+    return {
+      errorKind: 'conflict',
+      status: 409,
+      error: message || 'Someone else updated this lesson. Refresh and try again.',
+    };
+  }
+  if (
+    name === 'LessonConfigError' ||
+    name === 'CalendarConfigError' ||
+    kind === 'config' ||
+    /missing (studio_lessons|studio_calendar|google_calendar)/i.test(message)
+  ) {
+    return { errorKind: 'config', status: 500, error: MSG_CALENDAR_CONFIG };
+  }
+  if (kind === 'revoked' || /invalid_grant|revoked/.test(lower)) {
+    return { errorKind: 'revoked', status: 503, error: MSG_CALENDAR_DISCONNECTED };
+  }
+  if (
+    name === 'GoogleCalendarError' ||
+    name === 'CalendarOAuthError' ||
+    kind === 'timeout' ||
+    kind === 'quota' ||
+    kind === 'google_temporary' ||
+    /429|throttl|timeout|temporar|unavailable|econnreset/i.test(lower)
+  ) {
+    return {
+      errorKind: kind || 'google_temporary',
+      status: 503,
+      error: 'Google Calendar is temporarily unavailable. The lesson request was still saved when possible.',
+    };
+  }
+  if (name === 'ContactAcsError' || name === 'ContactConfigError') {
+    return {
+      errorKind: 'ics_fallback',
+      status: 503,
+      error: 'The lesson was saved, but the calendar reminder email could not be sent.',
+    };
+  }
+  return { errorKind: 'unknown', status: 500, error: MSG_CALENDAR_GENERIC };
+}
+
+/**
+ * @param {unknown} err
  * @param {string} correlationId
  */
+export function calendarFailureResponse(err, correlationId) {
+  const classified = classifyCalendarError(err);
+  return {
+    status: classified.status,
+    jsonBody: {
+      error: classified.error,
+      correlationId,
+    },
+    errorKind: classified.errorKind,
+  };
+}
+
 export function accessFailureResponse(err, correlationId) {
   const classified = classifyAccessError(err);
   return {

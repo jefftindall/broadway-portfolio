@@ -14,6 +14,9 @@ import {
 test('catalog IDs are discrete and stable', () => {
   const ids = permissionCatalogList().map((row) => row.id);
   assert.deepEqual(ids.sort(), [
+    PERMISSION.CALENDAR_CONNECT,
+    PERMISSION.CALENDAR_READ,
+    PERMISSION.CALENDAR_WRITE,
     PERMISSION.CONTENT_PUBLISH,
     PERMISSION.PEOPLE_READ,
     PERMISSION.PEOPLE_WRITE,
@@ -44,6 +47,9 @@ test('people.write implies people.read', () => {
   const fromRole = resolvePermissions({ roles: [ROLE.PEOPLE] });
   assert.equal(hasPermission(fromRole, PERMISSION.PEOPLE_READ), true);
   assert.equal(hasPermission(fromRole, PERMISSION.PEOPLE_WRITE), true);
+  assert.equal(hasPermission(fromRole, PERMISSION.CALENDAR_READ), true);
+  assert.equal(hasPermission(fromRole, PERMISSION.CALENDAR_WRITE), true);
+  assert.equal(hasPermission(fromRole, PERMISSION.CALENDAR_CONNECT), false);
   assert.equal(hasPermission(fromRole, PERMISSION.CONTENT_PUBLISH), false);
 
   const extraOnly = resolvePermissions({ extraPermissions: [PERMISSION.PEOPLE_WRITE] });
@@ -51,9 +57,16 @@ test('people.write implies people.read', () => {
   assert.equal(hasPermission(extraOnly, PERMISSION.PEOPLE_WRITE), true);
 });
 
+test('calendar.write implies calendar.read', () => {
+  const extraOnly = resolvePermissions({ extraPermissions: [PERMISSION.CALENDAR_WRITE] });
+  assert.equal(hasPermission(extraOnly, PERMISSION.CALENDAR_READ), true);
+  assert.equal(hasPermission(extraOnly, PERMISSION.CALENDAR_WRITE), true);
+  assert.equal(hasPermission(extraOnly, PERMISSION.CALENDAR_CONNECT), false);
+});
+
 test('people_reader cannot write', () => {
   const perms = resolvePermissions({ roles: [ROLE.PEOPLE_READER] });
-  assert.deepEqual(perms, [PERMISSION.PEOPLE_READ]);
+  assert.deepEqual(perms, [PERMISSION.CALENDAR_READ, PERMISSION.PEOPLE_READ]);
 });
 
 test('extraPermissions grant discrete IDs without a role', () => {

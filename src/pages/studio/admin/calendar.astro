@@ -1,0 +1,291 @@
+---
+import StudioLayout from '../../../layouts/StudioLayout.astro';
+---
+
+<StudioLayout
+  title="Calendar"
+  description="Connect Google Calendar for Studio lesson invites."
+  heading="Calendar"
+  helpHref="/studio/help/calendar"
+>
+  <section class="mx-auto max-w-xl px-4 py-5 md:py-8">
+    <p class="text-sm text-muted">
+      Google Calendar is the calendar of record when connected. Studio uses a dedicated organizer
+      account to create invites Elyse <span class="text-spotlight">Accepts</span> on her phone.
+      Holidays and studio-wide closures are not built yet.
+    </p>
+
+    <div
+      id="cal-gate"
+      class="mt-6 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted"
+      role="alert"
+    >
+      <p id="cal-gate-msg">You’re signed in, but this account cannot connect Google Calendar.</p>
+      <p id="cal-gate-ref" class="mt-3 hidden">
+        Reference: <code id="cal-gate-id" class="break-all text-spotlight"></code>
+      </p>
+      <p class="mt-4">
+        <a href="/studio/admin" class="text-gel underline-offset-2 hover:text-gold hover:underline">Back to Admin</a>
+      </p>
+    </div>
+
+    <div
+      id="cal-error"
+      class="mt-4 hidden rounded-sm border border-line bg-panel/60 p-3 text-sm text-muted"
+      role="alert"
+    >
+      <p id="cal-error-msg"></p>
+      <p id="cal-error-ref" class="mt-2 hidden">
+        Reference: <code id="cal-error-id" class="break-all text-spotlight"></code>
+      </p>
+    </div>
+
+    <div id="cal-workspace" class="hidden space-y-6">
+      <p id="cal-oauth-missing" class="hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted">
+        Google OAuth client id and secret are not set in this environment yet. Follow the Calendar
+        connect runbook, then return here.
+      </p>
+
+      <section class="rounded-sm border border-line bg-panel/40 p-4">
+        <h2 class="font-display text-2xl text-spotlight">Studio organizer</h2>
+        <p class="mt-2 text-sm text-muted">
+          The Studio Google account creates events and invites Elyse plus the student. Required for
+          native Accept on Elyse’s phone.
+        </p>
+        <p id="organizer-status" class="mt-3 text-sm text-spotlight">Checking…</p>
+        <div class="mt-4 flex flex-wrap gap-2">
+          <button
+            id="organizer-connect"
+            type="button"
+            class="rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110"
+          >
+            Connect Google
+          </button>
+          <button
+            id="organizer-disconnect"
+            type="button"
+            class="hidden rounded-sm border border-line px-4 py-2 text-sm text-spotlight hover:border-gold"
+          >
+            Disconnect
+          </button>
+        </div>
+      </section>
+
+      <section class="rounded-sm border border-line bg-panel/40 p-4">
+        <h2 class="font-display text-2xl text-spotlight">Elyse free/busy</h2>
+        <p class="mt-2 text-sm text-muted">
+          Optional. Lets Studio read busy time on the calendars she already uses. Missing this does
+          not block requesting a lesson.
+        </p>
+        <p id="elyse-status" class="mt-3 text-sm text-spotlight">Checking…</p>
+        <div class="mt-4 flex flex-wrap gap-2">
+          <button
+            id="elyse-connect"
+            type="button"
+            class="rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110"
+          >
+            Connect Elyse’s Google
+          </button>
+          <button
+            id="elyse-disconnect"
+            type="button"
+            class="hidden rounded-sm border border-line px-4 py-2 text-sm text-spotlight hover:border-gold"
+          >
+            Disconnect
+          </button>
+        </div>
+        <form id="calendars-form" class="mt-4 hidden space-y-3">
+          <fieldset>
+            <legend class="text-sm text-muted">Calendars that block lesson times</legend>
+            <div id="calendar-fields" class="mt-2 space-y-2"></div>
+          </fieldset>
+          <label class="block text-sm text-muted">
+            Buffer (minutes)
+            <input
+              id="buffer-minutes"
+              type="number"
+              min="0"
+              max="120"
+              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+            />
+          </label>
+          <label class="block text-sm text-muted">
+            Minimum notice (hours)
+            <input
+              id="min-notice"
+              type="number"
+              min="0"
+              max="168"
+              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+            />
+          </label>
+          <button
+            type="submit"
+            class="rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110"
+          >
+            Save availability
+          </button>
+        </form>
+      </section>
+    </div>
+  </section>
+</StudioLayout>
+
+<script>
+  import { fetchStudioSession, hasStudioPermission, STUDIO_PERMISSION } from '../../../lib/studioSession';
+
+  type CalendarItem = { id: string; summary: string; primary?: boolean };
+
+  const gate = document.getElementById('cal-gate') as HTMLElement;
+  const gateMsg = document.getElementById('cal-gate-msg') as HTMLElement;
+  const gateRef = document.getElementById('cal-gate-ref') as HTMLElement;
+  const gateId = document.getElementById('cal-gate-id') as HTMLElement;
+  const workspace = document.getElementById('cal-workspace') as HTMLElement;
+  const errorBox = document.getElementById('cal-error') as HTMLElement;
+  const errorMsg = document.getElementById('cal-error-msg') as HTMLElement;
+  const errorRef = document.getElementById('cal-error-ref') as HTMLElement;
+  const errorId = document.getElementById('cal-error-id') as HTMLElement;
+  const oauthMissing = document.getElementById('cal-oauth-missing') as HTMLElement;
+  const organizerStatus = document.getElementById('organizer-status') as HTMLElement;
+  const elyseStatus = document.getElementById('elyse-status') as HTMLElement;
+  const organizerConnect = document.getElementById('organizer-connect') as HTMLButtonElement;
+  const organizerDisconnect = document.getElementById('organizer-disconnect') as HTMLButtonElement;
+  const elyseConnect = document.getElementById('elyse-connect') as HTMLButtonElement;
+  const elyseDisconnect = document.getElementById('elyse-disconnect') as HTMLButtonElement;
+  const calendarsForm = document.getElementById('calendars-form') as HTMLFormElement;
+  const calendarFields = document.getElementById('calendar-fields') as HTMLElement;
+  const bufferInput = document.getElementById('buffer-minutes') as HTMLInputElement;
+  const noticeInput = document.getElementById('min-notice') as HTMLInputElement;
+
+  function showError(message: string, correlationId?: string) {
+    errorMsg.textContent = message;
+    if (correlationId) {
+      errorId.textContent = correlationId;
+      errorRef.classList.remove('hidden');
+    } else {
+      errorRef.classList.add('hidden');
+    }
+    errorBox.classList.remove('hidden');
+  }
+
+  async function startOAuth(role: 'organizer' | 'elyse') {
+    const res = await fetch(`/api/calendarOAuthStart?role=${role}`, { headers: { Accept: 'application/json' } });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.url) {
+      showError(data.error || 'Could not start Google sign-in.', data.correlationId);
+      return;
+    }
+    window.location.href = data.url;
+  }
+
+  async function disconnect(role: 'organizer' | 'elyse') {
+    const res = await fetch('/api/calendarDisconnect', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showError(data.error || 'Could not disconnect Google.', data.correlationId);
+      return;
+    }
+    await loadStatus();
+  }
+
+  function connectedCopy(label: string, connected: boolean, email: string) {
+    if (!connected) return `${label}: disconnected`;
+    return email ? `${label}: connected as ${email}` : `${label}: connected`;
+  }
+
+  async function loadStatus() {
+    const res = await fetch('/api/calendarStatus', { headers: { Accept: 'application/json' } });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showError(data.error || 'Could not load Calendar status.', data.correlationId);
+      return;
+    }
+    oauthMissing.classList.toggle('hidden', Boolean(data.oauthConfigured));
+    organizerStatus.textContent = connectedCopy('Studio organizer', Boolean(data.organizer?.connected), data.organizer?.email || '');
+    elyseStatus.textContent = connectedCopy('Elyse', Boolean(data.elyse?.connected), data.elyse?.email || '');
+    organizerDisconnect.classList.toggle('hidden', !data.organizer?.connected);
+    elyseDisconnect.classList.toggle('hidden', !data.elyse?.connected);
+
+    const selected = new Set(data.availability?.calendarIds || []);
+    calendarFields.replaceChildren();
+    for (const cal of (data.calendars || []) as CalendarItem[]) {
+      const row = document.createElement('label');
+      row.className = 'flex items-start gap-2 text-sm text-spotlight';
+      const checked = selected.size ? selected.has(cal.id) : Boolean(cal.primary);
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.value = cal.id;
+      input.checked = checked;
+      row.append(input, document.createTextNode(` ${cal.summary}${cal.primary ? ' (primary)' : ''}`));
+      calendarFields.append(row);
+    }
+    calendarsForm.classList.toggle('hidden', !data.elyse?.connected || !(data.calendars || []).length);
+    bufferInput.value = String(data.availability?.bufferMinutes ?? 15);
+    noticeInput.value = String(data.availability?.minNoticeHours ?? 12);
+  }
+
+  organizerConnect.addEventListener('click', () => startOAuth('organizer'));
+  elyseConnect.addEventListener('click', () => startOAuth('elyse'));
+  organizerDisconnect.addEventListener('click', () => disconnect('organizer'));
+  elyseDisconnect.addEventListener('click', () => disconnect('elyse'));
+
+  calendarsForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const calendarIds = [...calendarFields.querySelectorAll('input:checked')].map(
+      (input) => (input as HTMLInputElement).value,
+    );
+    const res = await fetch('/api/calendarSettings', {
+      method: 'PATCH',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        calendarIds,
+        bufferMinutes: Number(bufferInput.value),
+        minNoticeHours: Number(noticeInput.value),
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showError(data.error || 'Could not save availability.', data.correlationId);
+      return;
+    }
+    await loadStatus();
+  });
+
+  const session = await fetchStudioSession();
+  const canConnect = hasStudioPermission(session, STUDIO_PERMISSION.CALENDAR_CONNECT);
+  const canRead = hasStudioPermission(session, STUDIO_PERMISSION.CALENDAR_READ);
+  if (!canConnect && !canRead) {
+    if (session.correlationId) {
+      gateId.textContent = session.correlationId;
+      gateRef.classList.remove('hidden');
+    }
+    if (!session.signedIn) gateMsg.textContent = 'Sign in to use Studio.';
+    gate.classList.remove('hidden');
+  } else {
+    workspace.classList.remove('hidden');
+    if (!canConnect) {
+      organizerConnect.classList.add('hidden');
+      elyseConnect.classList.add('hidden');
+    }
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const state = params.get('state');
+    if (code && state && canConnect) {
+      const res = await fetch('/api/calendarOAuthCallback', {
+        method: 'POST',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, state }),
+      });
+      const data = await res.json().catch(() => ({}));
+      window.history.replaceState({}, '', '/studio/admin/calendar');
+      if (!res.ok) {
+        showError(data.error || 'Google sign-in did not finish. Try connecting again.', data.correlationId);
+      }
+    }
+    await loadStatus();
+  }
+</script>

@@ -9,6 +9,9 @@ export const STUDIO_PERMISSION = {
   PEOPLE_WRITE: 'people.write',
   USERS_READ: 'users.read',
   USERS_MANAGE: 'users.manage',
+  CALENDAR_CONNECT: 'calendar.connect',
+  CALENDAR_READ: 'calendar.read',
+  CALENDAR_WRITE: 'calendar.write',
 } as const;
 
 export type StudioPermission = (typeof STUDIO_PERMISSION)[keyof typeof STUDIO_PERMISSION];

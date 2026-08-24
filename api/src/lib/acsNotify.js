@@ -136,3 +136,66 @@ function escapeHtml(text) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;');
 }
+
+/**
+ * ICS fallback when Google Calendar is disconnected or the API fails (STUDIO-P3-006).
+ * Recipient is SITE-CONTACT-EMAIL / CONTACT_NOTIFY_EMAIL — never ALERT-*.
+ */
+export async function sendLessonIcsEmail({ lesson, to, confirmUrl, declineUrl, correlationId }) {
+  const connectionString = requireEnv('ACS_CONNECTION_STRING');
+  const sender = requireEnv('ACS_EMAIL_SENDER');
+  const recipient = String(to || '').trim() || requireEnv('CONTACT_NOTIFY_EMAIL');
+
+  const format = lesson.format === 'nyc' ? 'NYC in person' : 'Zoom';
+  const when = lesson.startAt || '';
+  const lines = [
+    'A voice lesson was requested in Studio.',
+    '',
+    `When: ${when}`,
+    `Format: ${format}`,
+    `Status: Requested`,
+    '',
+    'Google Calendar is not connected or the invite could not be created.',
+    'This message includes a calendar invite (ICS).',
+    '',
+    confirmUrl ? `Confirm in Studio (degraded): ${confirmUrl}` : null,
+    declineUrl ? `Decline: ${declineUrl}` : null,
+    '',
+    `Reference: ${correlationId || ''}`,
+  ].filter(Boolean);
+
+  const plainText = lines.join('\n');
+  const { buildLessonRequestIcs } = await import('./ics.js');
+  const ics = buildLessonRequestIcs({
+    lesson,
+    organizerEmail: sender,
+    attendeeEmail: recipient,
+  });
+
+  const client = new EmailClient(connectionString);
+  const poller = await client.beginSend({
+    senderAddress: sender,
+    recipients: {
+      to: [{ address: recipient }],
+    },
+    content: {
+      subject: 'Voice lesson requested',
+      plainText,
+      html: `<pre style="font-family:system-ui,sans-serif;white-space:pre-wrap">${escapeHtml(plainText)}</pre>`,
+    },
+    attachments: [
+      {
+        name: 'lesson.ics',
+        contentType: 'text/calendar',
+        contentInBase64: Buffer.from(ics, 'utf8').toString('base64'),
+      },
+    ],
+  });
+
+  const result = await poller.pollUntilDone();
+  if (result.status !== 'Succeeded') {
+    const err = new Error(`ACS email status: ${result.status}`);
+    err.name = 'ContactAcsError';
+    throw err;
+  }
+}

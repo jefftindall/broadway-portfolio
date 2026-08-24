@@ -8,7 +8,8 @@
 #
 # Shared (bootstrap kv-elyse-shared): SITE-CONTACT-*, TURNSTILE-SECRET-KEY, ACS-*,
 # Stripe TEST/LIVE API keys
-# Per-env vault: Gemini, GitHub App, allowlist, AAD, Stripe webhook secret, Payment Links
+# Per-env vault: Gemini, GitHub App, allowlist, AAD, Stripe webhook secret, Payment Links,
+# Google Calendar OAuth (STUDIO-P3)
 #
 # Usage:
 #   ./scripts/sync-swa-api-secrets.sh staging
@@ -74,6 +75,10 @@ STRIPE_PUBLISHABLE="$(kv_value "$SHARED_VAULT" "${STRIPE_PREFIX}-PUBLISHABLE-KEY
 STRIPE_WEBHOOK="$(kv_value "$VAULT" STRIPE-WEBHOOK-SECRET)"
 STRIPE_LINK_30="$(kv_value "$VAULT" STRIPE-PAYMENT-LINK-30MIN)"
 STRIPE_LINK_60="$(kv_value "$VAULT" STRIPE-PAYMENT-LINK-60MIN)"
+GCAL_CLIENT_ID="$(kv_value "$VAULT" GOOGLE-CALENDAR-CLIENT-ID)"
+GCAL_CLIENT_SECRET="$(kv_value "$VAULT" GOOGLE-CALENDAR-CLIENT-SECRET)"
+GCAL_ORGANIZER_REFRESH="$(kv_value "$VAULT" GOOGLE-CALENDAR-ORGANIZER-REFRESH-TOKEN)"
+GCAL_ELYSE_REFRESH="$(kv_value "$VAULT" GOOGLE-CALENDAR-ELYSE-REFRESH-TOKEN)"
 AAD_REF="@Microsoft.KeyVault(SecretUri=https://${VAULT}.vault.azure.net/secrets/AAD-CLIENT-SECRET/)"
 
 # List is POST listAppSettings — GET on config/appsettings returns 405.
@@ -109,6 +114,10 @@ jq -n \
   --arg stripe_webhook "$STRIPE_WEBHOOK" \
   --arg stripe_link_30 "$STRIPE_LINK_30" \
   --arg stripe_link_60 "$STRIPE_LINK_60" \
+  --arg gcal_client_id "$GCAL_CLIENT_ID" \
+  --arg gcal_client_secret "$GCAL_CLIENT_SECRET" \
+  --arg gcal_organizer_refresh "$GCAL_ORGANIZER_REFRESH" \
+  --arg gcal_elyse_refresh "$GCAL_ELYSE_REFRESH" \
   '
   ($current.properties // {}) as $p
   | {
@@ -133,7 +142,11 @@ jq -n \
             STRIPE_PUBLISHABLE_KEY: $stripe_publishable,
             STRIPE_WEBHOOK_SECRET: $stripe_webhook,
             STRIPE_PAYMENT_LINK_30MIN: $stripe_link_30,
-            STRIPE_PAYMENT_LINK_60MIN: $stripe_link_60
+            STRIPE_PAYMENT_LINK_60MIN: $stripe_link_60,
+            GOOGLE_CALENDAR_CLIENT_ID: $gcal_client_id,
+            GOOGLE_CALENDAR_CLIENT_SECRET: $gcal_client_secret,
+            GOOGLE_CALENDAR_ORGANIZER_REFRESH_TOKEN: $gcal_organizer_refresh,
+            GOOGLE_CALENDAR_ELYSE_REFRESH_TOKEN: $gcal_elyse_refresh
           }
       )
     }

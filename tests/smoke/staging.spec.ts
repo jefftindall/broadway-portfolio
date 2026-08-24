@@ -103,6 +103,8 @@ test.describe('public smoke', () => {
     await expectAnonymousStudioRedirect(request, '/studio/students');
     await expectAnonymousStudioRedirect(request, '/studio/admin');
     await expectAnonymousStudioRedirect(request, '/studio/admin/access');
+    await expectAnonymousStudioRedirect(request, '/studio/admin/calendar');
+    await expectAnonymousStudioRedirect(request, '/studio/calendar');
   });
 
   test('anonymous studio people requires sign-in', async ({ request }) => {

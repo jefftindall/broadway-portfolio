@@ -11,9 +11,9 @@ import StudioLandingCard from '../../components/StudioLandingCard.astro';
 >
   <section class="mx-auto max-w-xl px-4 py-5 md:py-8">
     <p class="text-sm text-muted">
-      Teaching relationships and lesson ops. People and payment status are live. Lesson schedules
-      and reminders are not built yet. Studio-wide holidays and vacations will live under Admin →
-      Calendar — not here.
+      Teaching relationships and lesson ops. People, payment status, and lesson schedules are live.
+      Reminders are not built yet. Studio-wide holidays and vacations will live under Admin →
+      Calendar later — not here.
     </p>
     <div class="mt-5 grid gap-3">
       <StudioLandingCard
@@ -23,14 +23,14 @@ import StudioLandingCard from '../../components/StudioLandingCard.astro';
         primary
       />
       <StudioLandingCard
+        href="/studio/calendar"
         title="Schedules"
-        summary="Individual lesson times. Not available yet."
-        available={false}
+        summary="Request a voice lesson time. Confirmed when Elyse accepts the Google invite."
       />
       <StudioLandingCard
         href="/studio/students/payments"
         title="Payment status"
-        summary="Copy Payment Links and attach Stripe charges that need a person. Upcoming lesson paid/unpaid waits on Calendar."
+        summary="Copy Payment Links and attach Stripe charges that need a person. Upcoming lesson paid/unpaid still waits on joining confirmed lessons."
       />
       <StudioLandingCard
         title="Reminders"

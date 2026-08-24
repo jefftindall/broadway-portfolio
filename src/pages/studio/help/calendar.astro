@@ -1,0 +1,75 @@
+---
+import StudioLayout from '../../../layouts/StudioLayout.astro';
+import { studioCalendarNotes } from '../../../lib/studioHelp';
+---
+
+<StudioLayout
+  title="Calendar help"
+  description="Private guide to Studio lesson scheduling and Google Calendar."
+  heading="Calendar help"
+>
+  <article class="mx-auto max-w-xl px-4 py-5 md:py-8">
+    <p class="text-sm">
+      <a href="/studio/help" class="text-gel underline-offset-2 hover:text-gold hover:underline">
+        ← All help
+      </a>
+      {' · '}
+      <a href="/studio/calendar" class="text-gel underline-offset-2 hover:text-gold hover:underline">
+        Open Schedules
+      </a>
+    </p>
+
+    <section class="mt-8 space-y-4">
+      <h2 class="font-display text-3xl text-spotlight">{studioCalendarNotes.title}</h2>
+      <p class="text-sm text-muted">{studioCalendarNotes.summary}</p>
+      <ol class="list-decimal space-y-2 pl-5 text-sm text-muted">
+        <li>
+          Connect Google under{' '}
+          <a href="/studio/admin/calendar" class="text-gel hover:text-gold">Admin → Calendar</a>
+          {' '}(Connect Google permission). The Studio organizer account creates the invite. Elyse’s
+          own Google is optional and only used to read busy time.
+        </li>
+        <li>
+          Request a time under{' '}
+          <a href="/studio/calendar" class="text-gel hover:text-gold">Students → Schedules</a>.
+          The student sees <span class="text-spotlight">Requested</span> until Elyse accepts.
+        </li>
+        <li>
+          Elyse <span class="text-spotlight">Accepts</span> the invite in Google Calendar on her
+          phone. Studio then marks the lesson <span class="text-spotlight">Confirmed</span>.
+        </li>
+        <li>
+          If Google is disconnected, the request is still saved. Elyse gets an email with a
+          calendar file (ICS) and Confirm / Decline links.
+        </li>
+      </ol>
+    </section>
+
+    <section class="mt-10 space-y-3">
+      <h2 class="font-display text-2xl text-spotlight">Requested vs Confirmed</h2>
+      <p class="text-sm text-muted">
+        <span class="text-spotlight">Requested</span> means the time is held in Studio and Elyse
+        has an invite. <span class="text-spotlight">Confirmed</span> means she accepted (Google) or
+        tapped Confirm in Studio / the email link when Google is down. Decline or cancel one week
+        does not delete a weekly series.
+      </p>
+    </section>
+
+    <section class="mt-10 space-y-3">
+      <h2 class="font-display text-2xl text-spotlight">Weekly series</h2>
+      <p class="text-sm text-muted">
+        A weekly student can be booked for up to <span class="text-spotlight">12 weeks</span> (one
+        quarter). Canceling one week leaves the rest of the series.
+      </p>
+    </section>
+
+    <section class="mt-10 space-y-3">
+      <h2 class="font-display text-2xl text-spotlight">Google is the calendar</h2>
+      <p class="text-sm text-muted">
+        Studio does not keep a second calendar of times. Busy time comes from the Google calendars
+        Elyse selects. The public site, People, payments, and publish keep working when Google is
+        down.
+      </p>
+    </section>
+  </article>
+</StudioLayout>

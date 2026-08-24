@@ -6,7 +6,7 @@
 
 **Keep this document current:** when a PR changes a store, schema, relation, or access path, update the matching sections, mermaid, and source map **in that same PR**, then bump **Last updated**. Agent contract: [`.cursor/rules/data-persistence.mdc`](../../.cursor/rules/data-persistence.mdc) and [AGENTS.md](../../AGENTS.md).
 
-There is **no application database**. Durable records are split across **git** (public brand), **Azure Table Storage** (Studio People + access profiles + LTV ledger), **Stripe** (money), and **Key Vault** (secrets). Inquiries are **not** written to a store. Stripe webhook events are verified, then matched into the LTV ledger — Stripe remains the books.
+There is **no application database**. Durable records are split across **git** (public brand), **Azure Table Storage** (Studio People + access profiles + LTV ledger + lesson workflow + Calendar connection rows), **Stripe** (money), **Google Calendar** (time when connected), and **Key Vault** (secrets). Inquiries are **not** written to a store. Stripe webhook events are verified, then matched into the LTV ledger — Stripe remains the books.
 
 ## Systems of record
 
@@ -17,7 +17,7 @@ There is **no application database**. Durable records are split across **git** (
 | **Authorization** | Azure Table `studioUsers` | Roles + discrete permissions per Entra identity | Login itself (Entra) |
 | **Money** | Stripe (test on staging, live on prod) | Products, prices, Payment Links, Checkout / PaymentIntents | Studio LTV is a rollup only (`studioLedger`) |
 | **Secrets / config** | Azure Key Vault → SWA app settings | API keys, allowlist, ACS, Payment Link URLs | Business records |
-| **Time** | Google Calendar | *Planned* (`STUDIO-P3`) — not persisted here | — |
+| **Time** | Google Calendar + Table `studioLessons` | Busy time and invites on Google when connected; workflow status (`requested` / `confirmed` / `declined` / `cancelled`) in Table Storage | A second Studio calendar that can drift |
 | **Identity** | Microsoft Entra | Who can complete login | Permission to act |
 
 **Cheap store first:** People and profiles use Table Storage (Standard **RA-GRS**). Do not add PostgreSQL until list/query needs force it; a new billable SKU must update [`cost-and-quotas.md`](../runbooks/cost-and-quotas.md) and the subscription budget in the same PR.
@@ -50,6 +50,7 @@ flowchart TB
     Entra[Entra ID]
     Stripe[Stripe]
     GSC[GSC + GA4 APIs]
+    GCal[Google Calendar]
   end
 
   PublicSite --> SWA
@@ -65,6 +66,7 @@ flowchart TB
   GHApp --> SWA
   StudioUI --> Entra
   SWA --> Stripe
+  SWA --> GCal
   GHApp --> GSC
 ```
 
@@ -73,15 +75,15 @@ flowchart TB
 ## 1. Azure Table Storage (Studio CRM + access)
 
 **Infra:** [`infra/modules/portfolio/studio_crm.tf`](../../infra/modules/portfolio/studio_crm.tf)  
-**Stores:** [`api/src/lib/contacts.js`](../../api/src/lib/contacts.js), [`api/src/lib/users.js`](../../api/src/lib/users.js), [`api/src/lib/ledger.js`](../../api/src/lib/ledger.js)  
+**Stores:** [`api/src/lib/contacts.js`](../../api/src/lib/contacts.js), [`api/src/lib/users.js`](../../api/src/lib/users.js), [`api/src/lib/ledger.js`](../../api/src/lib/ledger.js), [`api/src/lib/lessons.js`](../../api/src/lib/lessons.js), [`api/src/lib/calendarSettings.js`](../../api/src/lib/calendarSettings.js)  
 **Geo reads:** [`api/src/lib/tableGeo.js`](../../api/src/lib/tableGeo.js)
 
 | Environment | Account | Tables | Replication |
 |-------------|---------|--------|-------------|
-| Staging | `stelysecrmstaging` | `contacts`, `studioUsers`, `studioLedger` | Standard RA-GRS (eastus2 → Central US) |
-| Production | `stelysecrmprod` | `contacts`, `studioUsers`, `studioLedger` | Same |
+| Staging | `stelysecrmstaging` | `contacts`, `studioUsers`, `studioLedger`, `studioLessons`, `studioCalendar` | Standard RA-GRS (eastus2 → Central US) |
+| Production | `stelysecrmprod` | `contacts`, `studioUsers`, `studioLedger`, `studioLessons`, `studioCalendar` | Same |
 
-Connection string is written into SWA app settings at apply (`STUDIO_CRM_STORAGE_CONNECTION_STRING`). Table names: `STUDIO_CRM_TABLE_NAME` (`contacts`), `STUDIO_USERS_TABLE_NAME` (`studioUsers`), `STUDIO_LEDGER_TABLE_NAME` (`studioLedger`). Values are never logged or committed.
+Connection string is written into SWA app settings at apply (`STUDIO_CRM_STORAGE_CONNECTION_STRING`). Table names: `STUDIO_CRM_TABLE_NAME` (`contacts`), `STUDIO_USERS_TABLE_NAME` (`studioUsers`), `STUDIO_LEDGER_TABLE_NAME` (`studioLedger`), `STUDIO_LESSONS_TABLE_NAME` (`studioLessons`), `STUDIO_CALENDAR_TABLE_NAME` (`studioCalendar`). Values are never logged or committed.
 
 **Reads** go to the primary first and fall back to the paired-region secondary when the primary is unreachable (timeouts / 5xx / network). **Writes** stay on the primary until an operator account failover — the secondary is read-only.
 
@@ -166,8 +168,8 @@ Catalog and implication rules live in [`api/src/lib/permissions.js`](../../api/s
 |------|-------------|
 | `super_administrator` | Full catalog (UI label **Super Administrator**; stored `owner` still expands to this bundle) |
 | `publisher` | `content.publish` |
-| `people` | `people.read`, `people.write` |
-| `people_reader` | `people.read` |
+| `people` | `people.read`, `people.write`, `calendar.read`, `calendar.write` |
+| `people_reader` | `people.read`, `calendar.read` |
 
 **Identity match:** `findByPrincipal` lists the partition and matches any of `userId`, `userDetails`, `emails[]` (lowercased) against SWA principal candidates. There is no secondary index.
 
@@ -186,6 +188,40 @@ Same CRM storage account — not a new SKU. Stripe stays the money SoT. Studio s
 
 **Contact rollup** (`setLtvRollup`) is not accepted from PATCH. Creating or changing a contact email rematches unmatched Stripe rows for that email.
 
+### 1.2c Lesson workflow (`studioLessons` table)
+
+Same CRM storage account — not a new SKU. Google Calendar owns **time** when connected. Studio owns **workflow** so a request is never lost if Google is down.
+
+| Property | Table column | Type | Notes |
+|----------|--------------|------|-------|
+| `id` | `RowKey` | string | UUID. ICS `UID` is `{id}@elysetindall.com` |
+| — | `PartitionKey` | `"lessons"` | Always (`STUDIO_LESSONS_PARTITION`) |
+| `contactId` | `contactId` | string | People row id |
+| `status` | `status` | string | `requested` \| `confirmed` \| `declined` \| `cancelled` |
+| `startAt` / `endAt` | ISO UTC | string | Wall time entered as America/New_York |
+| `durationMin` | `durationMin` | number | `30` or `60` |
+| `format` | `format` | string | `nyc` \| `zoom` |
+| `seriesId` | `seriesId` | string | Set for weekly series (max **12** instances) |
+| `occurrenceIndex` | `occurrenceIndex` | number | 0-based week in the series |
+| `googleEventId` | `googleEventId` | string | Series or single event id when invite succeeded |
+| `calendarFallback` | `calendarFallback` | string | `ics` when Google failed and ACS emailed `SITE-CONTACT-EMAIL` |
+
+**Create path:** persist `requested` **before** the Calendar API insert. Google 401/403/429/5xx / timeout → ICS `METHOD:REQUEST` to `CONTACT_NOTIFY_EMAIL` (shared KV `SITE-CONTACT-EMAIL`). Never `ALERT-*`. Student **Requested** / **Confirmed** mail is `STUDIO-P4-002`.
+
+**RSVP:** `events.watch` (`POST /api/calendarWatch`, channel token) plus incremental sync when listing lessons. Elyse `responseStatus=accepted` → `confirmed`; `declined` → `declined`. Studio Confirm / Decline (and signed email links) update the row and keep Google in sync when the API is up. Cancel one week of a series does not delete the series.
+
+**Last-write:** operator action in Studio wins if they Confirm / Decline / Cancel there; Google Accept / Decline wins when they RSVP on the invite and sync runs.
+
+### 1.2d Calendar connections (`studioCalendar` table)
+
+OAuth refresh tokens after Studio Connect, selected free/busy calendar ids, and the watch channel. Functions cannot write Key Vault; Table is the runtime SoT. Env KV names (`GOOGLE-CALENDAR-*-REFRESH-TOKEN`) are the operator bootstrap fallback until a Connect or Disconnect row exists. **Never** return refresh tokens to the UI. Logs: role + `correlationId` only.
+
+| Partition | Row key | What |
+|-----------|---------|------|
+| `oauth` | `organizer` / `elyse` | `status`, `refreshToken`, `googleEmail` |
+| `config` | `availability` | Buffer, minimum notice, selected calendar ids |
+| `watch` | `events` | Channel id, resource id, token, expiration |
+
 **Bootstrap:** `ALLOWED-USER-IDS` (env Key Vault → `ALLOWED_USER_IDS`) is **not** a second permission model. The first session for an allowlisted caller with no profile writes a **Super Administrator** row (`ensureOwnerFromAllowlist`). After that the table is SoT. Removing someone from the allowlist does not disable an existing profile. Authn vs authz: [`authentication-authorization.md`](./authentication-authorization.md).
 
 ### 1.3 Relations (Table Storage)
@@ -194,6 +230,8 @@ Same CRM storage account — not a new SKU. Stripe stays the money SoT. Studio s
 erDiagram
   Contact ||--o{ Contact : "relatedContacts bidirectional"
   Contact ||--o{ LedgerRow : "email match or assign"
+  Contact ||--o{ Lesson : "contactId"
+  Lesson }o--o| GoogleEvent : "googleEventId when connected"
   EntraPrincipal ||--o| StudioUser : "userId / emails match"
   StudioUser {
     string id PK
@@ -216,6 +254,14 @@ erDiagram
     string contactId
     string matchKind
   }
+  Lesson {
+    string partitionKey PK
+    string id PK
+    string contactId
+    string status
+    string googleEventId
+    string seriesId
+  }
   EntraPrincipal {
     string userId
     string userDetails
@@ -234,7 +280,7 @@ erDiagram
 
 `syncRelatedLinks` updates the other row on create/update. Self-links are rejected. Missing targets fail validation. Removing a link strips the inverse. Max 20 related ids per person. This is **not** a foreign-key constraint — the other row must already exist.
 
-Ledger rows store `contactId` after an email match or operator assign. There is **no** stored link from a contact to Google Calendar events or git content.
+Ledger rows store `contactId` after an email match or operator assign. Lesson rows store `contactId` plus optional `googleEventId` so pay status, RSVP, and reminders can join. Git content is still not linked from a contact.
 
 ### 1.4 Access flow — People
 
@@ -506,8 +552,7 @@ From [`studio-teaching-business.md`](../plans/studio-teaching-business.md):
 | Planned ID | Intended store | Today |
 |------------|----------------|-------|
 | `STUDIO-P1-006` | Export file (emailed / download) | People live only in Table Storage |
-| `STUDIO-P2-004` upcoming | Calendar write-back → paid/unpaid per lesson | Payment Links + unmatched attach ship now |
-| `STUDIO-P3-*` | Google Calendar (busy + write-back) | No calendar store |
+| `STUDIO-P2-004` upcoming | Confirmed lesson → paid/unpaid | Schedule rows ship now; pay join is residual |
 | `STUDIO-P4-*` | Inquiry → contact row | ACS notify only |
 | `STUDIO-P5-*` | Month report / public free-busy | Stripe Dashboard / email |
 
@@ -544,6 +589,8 @@ Do not invent a second calendar or a Studio ledger that can drift from Stripe.
 |-------|------|
 | Contact schema + store | `api/src/lib/contacts.js` |
 | LTV ledger + offline money | `api/src/lib/ledger.js` |
+| Lesson workflow store | `api/src/lib/lessons.js` |
+| Calendar OAuth / watch store | `api/src/lib/calendarSettings.js` |
 | User profile schema + store | `api/src/lib/users.js` |
 | RA-GRS table client | `api/src/lib/tableGeo.js` |
 | Permission catalog | `api/src/lib/permissions.js` |
@@ -552,6 +599,7 @@ Do not invent a second calendar or a Studio ledger that can drift from Stripe.
 | Astro collections | `src/content.config.ts` |
 | Git commits | `api/src/lib/github.js`, `api/src/lib/gemini.js` |
 | CRM HTTP | `api/src/functions/contacts.js`, `offlinePayments.js`, `unmatchedPayments.js` |
+| Lesson / Calendar HTTP | `api/src/functions/lessons.js`, `calendar.js`, `calendarWatch.js`, `lessonAction.js` |
 | Access HTTP | `api/src/functions/studioUsers.js` |
 | Inquiry HTTP | `api/src/functions/contactInquiry.js` |
 | Pay config / webhook | `api/src/functions/lessonPayConfig.js`, `stripeWebhook.js` |

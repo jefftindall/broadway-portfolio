@@ -75,7 +75,7 @@ Effective permissions are computed, not stored:
 permissions = expand(roles ∪ extraPermissions) − deniedPermissions
 ```
 
-`people.write` implies `people.read`. `users.manage` implies `users.read`. Unknown role/permission IDs are ignored.
+`people.write` implies `people.read`. `users.manage` implies `users.read`. `calendar.write` implies `calendar.read`. Unknown role/permission IDs are ignored.
 
 ### Permission catalog
 
@@ -88,6 +88,9 @@ Canonical IDs live in [`api/src/lib/permissions.js`](../../api/src/lib/permissio
 | `people.write` | Create, update, archive contacts; log offline money; attach unmatched Stripe (implies `people.read`) | `POST`/`PATCH` contacts; offline payments; assign unmatched |
 | `users.read` | View Access profiles | `GET /api/studioUsers` |
 | `users.manage` | Assign roles and discrete permissions (implies `users.read`) | Access writes at `/studio/admin/access` |
+| `calendar.connect` | Connect or disconnect Google Calendar OAuth | `/studio/admin/calendar`; OAuth start/callback/disconnect |
+| `calendar.read` | View lesson schedule and free/busy | `GET /api/lessons`, `GET /api/calendarStatus`, `GET /api/calendarFreeBusy` |
+| `calendar.write` | Create, confirm, decline, or cancel lessons (implies `calendar.read`) | `POST`/`PATCH /api/lessons` |
 
 ### Role catalog
 
@@ -97,8 +100,8 @@ Roles are UI/operator bundles. The picker shows these labels only:
 |---------|-------|-------------|
 | `super_administrator` | Super Administrator | Full catalog |
 | `publisher` | Publisher | `content.publish` |
-| `people` | People | `people.read`, `people.write` |
-| `people_reader` | People (view only) | `people.read` |
+| `people` | People | `people.read`, `people.write`, `calendar.read`, `calendar.write` |
+| `people_reader` | People (view only) | `people.read`, `calendar.read` |
 
 **Legacy alias:** stored id `owner` still expands to the Super Administrator bundle so existing Table rows keep working. Writes canonicalize to `super_administrator`. The Access UI does not offer “Owner” as a role.
 

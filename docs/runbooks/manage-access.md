@@ -6,12 +6,14 @@ Sign-in is not permission to act. Studio authorization is one catalog of **discr
 
 1. **Entra app registration** (Terraform) — single-tenant (`AzureADMyOrg`). Enterprise-app **Assignment required** is **off** (`require_app_role_assignment = false`) so login is not blocked with `AADSTS50105`. Do not turn assignment required on to “secure” publish or People.
 2. **SWA Authentication** — `/studio` and `/api/*` require a completed Entra login (`authenticated`). That only identifies the caller.
-3. **Route rules** — `/studio`, `/studio/*` (including help), and `/api/*` require `authenticated`. Exceptions: `POST /api/contactInquiry`, `GET /api/lessonPayConfig`, and `POST /api/stripeWebhook` allow anonymous (same `private, no-store` cache).
+3. **Route rules** — `/studio`, `/studio/*` (including help), and `/api/*` require `authenticated`. Exceptions: `POST /api/contactInquiry`, `GET /api/lessonPayConfig`, `POST /api/stripeWebhook`, `POST /api/calendarWatch`, and `GET /api/lessonAction` allow anonymous (same `private, no-store` cache).
 4. **Authorization (application)** — every privileged Function calls `permissionGate()` against the catalog in [`api/src/lib/permissions.js`](../../api/src/lib/permissions.js):
    - **Publish / upload / discrete / publish status** — `content.publish`
    - **People / CRM** — `people.read` / `people.write` (one CRM per environment)
+   - **Schedule** — `calendar.read` / `calendar.write` (People role includes these)
+   - **Calendar connect** — `calendar.connect` (Super Administrator by default)
    - **Access admin** — `users.read` / `users.manage`
-   - **Public exceptions** — Turnstile, sanitized Payment Links, or Stripe webhook signatures
+   - **Public exceptions** — Turnstile, sanitized Payment Links, Stripe webhook signatures, Google watch channel token, or signed lesson Confirm / Decline tokens
 
 | Environment | Key Vault | Enterprise app |
 |---|---|---|
@@ -69,8 +71,9 @@ Sign-in follows the tenant directory, not an enterprise-app assignment list.
 2. Open `/studio/admin/access` as a Super Administrator
 3. Add their email or user ID
 4. Assign:
-   - **People** — view and edit contacts, lifetime value, and unmatched Stripe rows (`people.read` + `people.write`)
-   - **People (view only)** — `people.read`
+   - **People** — view and edit contacts, lifetime value, unmatched Stripe rows, and lesson schedules (`people.read` + `people.write` + `calendar.read` + `calendar.write`)
+   - **People (view only)** — `people.read` + `calendar.read`
+   - **Connect Google Calendar** — extra permission `calendar.connect` (or Super Administrator)
    - **Publisher** — site updates only (`content.publish`)
    - **Super Administrator** — full catalog (not Azure / Entra Owner)
    - or tick **Extra permissions** for a single ID (for example `content.publish` without People)

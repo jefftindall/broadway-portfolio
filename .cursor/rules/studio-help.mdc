@@ -23,6 +23,6 @@ When you change Studio capabilities, update the help catalog in the same change:
 | Change sign-in vs People / publish / Access gates | `/studio/help/access` + `studioAccessNotes` / `studioPeopleNotes`; Home / Admin / Students landings |
 | Replace help screenshots | `public/images/studio-help/*.jpg` — reference device is **iPhone 17 · Safari**. Current set: hub (Content), gallery, rates, hold-to-speak, mic permission, preview, done. |
 
-Do not invent Studio features in help that Gemini cannot perform. Example prompts must match real tools and brand rules (voice lessons only — no acting-lesson marketing). Do not document Career tools, lesson schedules, or Admin calendar as shipped.
+Do not invent Studio features in help that Gemini cannot perform. Example prompts must match real tools and brand rules (voice lessons only — no acting-lesson marketing). Do not document Career tools or Admin holiday closures as shipped. Lesson schedules and Google Calendar connect are shipped (`/studio/calendar`, `/studio/admin/calendar`).
 
 After prompt/tool edits, follow `docs/runbooks/refine-studio-gemini.md` (includes the help-sync checklist).

@@ -171,6 +171,13 @@ export const studioCapabilities: StudioCapability[] = [
 
 export { studioPeopleNotes } from './studioPeople';
 
+export const studioCalendarNotes = {
+  path: '/studio/calendar',
+  title: 'Schedules & Calendar',
+  summary:
+    'Request voice-lesson times in Studio. Google Calendar is the calendar when connected. A lesson stays Requested until Elyse accepts the invite.',
+};
+
 export const studioAccessNotes = {
   path: '/studio/admin/access',
   title: 'Access',
