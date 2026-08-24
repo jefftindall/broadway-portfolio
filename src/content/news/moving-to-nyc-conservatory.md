@@ -1,7 +1,7 @@
 ---
 title: "Elyse Tindall Moves to New York City for Musical Theatre Conservatory"
-date: "2025-10-14"
-description: "Elyse Tindall is relocating to New York City on October 14th to begin Conservatory training in Musical Theatre."
+date: "2026-08-24"
+description: "Elyse Tindall is relocating to New York City in October to begin Conservatory training in Musical Theatre."
 tags:
   - "NYC"
   - "Conservatory"
