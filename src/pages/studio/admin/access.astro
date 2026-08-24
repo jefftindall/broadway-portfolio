@@ -106,7 +106,10 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
         </div>
       </form>
 
-      <p id="access-status" class="mt-4 text-sm text-muted" role="status">Loading access…</p>
+      <p id="access-status" class="busy-status mt-4 text-sm text-muted" role="status" aria-live="polite">
+        <span class="busy-spinner" aria-hidden="true"></span>
+        <span>Loading access…</span>
+      </p>
       <ul id="access-list" class="mt-3 space-y-3"></ul>
     </div>
   </section>
@@ -119,6 +122,7 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
     hasStudioPermission,
     type StudioSession,
   } from '../../../lib/studioSession';
+  import { clearStudioStatus, setStudioStatus } from '../../../lib/studioStatus';
 
   type CatalogPermission = { id: string; label: string; description: string };
   type CatalogRole = { id: string; label: string; description: string; permissions: string[] };
@@ -230,12 +234,14 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
 
   function renderList() {
     if (!users.length) {
-      statusEl.textContent =
-        'No access records yet. Super Administrator profiles are created on first sign-in.';
+      setStudioStatus(
+        statusEl,
+        'No access records yet. Super Administrator profiles are created on first sign-in.',
+      );
       listEl.replaceChildren();
       return;
     }
-    statusEl.textContent = `${users.length} ${users.length === 1 ? 'person' : 'people'}`;
+    setStudioStatus(statusEl, `${users.length} ${users.length === 1 ? 'person' : 'people'}`);
     listEl.replaceChildren(
       ...users.map((user) => {
         const li = document.createElement('li');
@@ -283,11 +289,12 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
 
   async function loadUsers() {
     clearError();
+    setStudioStatus(statusEl, 'Loading access…', true);
     const res = await fetch('/api/studioUsers', { headers: { Accept: 'application/json' } });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       showError(data.error || 'Could not load access.', data.correlationId);
-      statusEl.textContent = '';
+      clearStudioStatus(statusEl);
       return;
     }
     users = (data.users || []) as AccessUser[];

@@ -171,7 +171,10 @@ import {
       </label>
     </div>
 
-    <p id="people-status" class="mt-4 text-sm text-muted" role="status">Loading people…</p>
+    <p id="people-status" class="busy-status mt-4 text-sm text-muted" role="status" aria-live="polite">
+      <span class="busy-spinner" aria-hidden="true"></span>
+      <span>Loading people…</span>
+    </p>
     <ul id="people-list" class="mt-3 space-y-3"></ul>
     <nav
       id="people-pager"
@@ -213,6 +216,7 @@ import {
     fetchStudioSession,
     hasStudioPermission,
   } from '../../lib/studioSession';
+  import { clearStudioStatus, setStudioStatus } from '../../lib/studioStatus';
 
   type Contact = {
     id: string;
@@ -311,7 +315,7 @@ import {
 
   async function loadPeople() {
     clearError();
-    statusEl.textContent = 'Loading people…';
+    setStudioStatus(statusEl, 'Loading people…', true);
     const params = new URLSearchParams();
     if (searchEl.value.trim()) params.set('q', searchEl.value.trim());
     if (personaFilter) params.set('persona', personaFilter);
@@ -323,7 +327,7 @@ import {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         showError(data.error || 'Could not load people.', data.correlationId);
-        statusEl.textContent = '';
+        clearStudioStatus(statusEl);
         listEl.replaceChildren();
         pagerEl.classList.add('hidden');
         pagerEl.classList.remove('flex');
@@ -333,9 +337,12 @@ import {
       const total = Number(data.total) || contacts.length;
       const totalPages = Number(data.totalPages) || 1;
       page = Number(data.page) || page;
-      statusEl.textContent = total
-        ? `${total} ${total === 1 ? 'person' : 'people'} · last name, then first`
-        : 'No people match these filters yet.';
+      setStudioStatus(
+        statusEl,
+        total
+          ? `${total} ${total === 1 ? 'person' : 'people'} · last name, then first`
+          : 'No people match these filters yet.',
+      );
       const showPager = total > PAGE_SIZE;
       pagerEl.classList.toggle('hidden', !showPager);
       pagerEl.classList.toggle('flex', showPager);
@@ -371,7 +378,7 @@ import {
       );
     } catch {
       showError('Could not load people. Try again in a moment.');
-      statusEl.textContent = '';
+      clearStudioStatus(statusEl);
       listEl.replaceChildren();
       pagerEl.classList.add('hidden');
       pagerEl.classList.remove('flex');
@@ -474,7 +481,7 @@ import {
         peopleGateId.textContent = session.correlationId;
         peopleGateRef.classList.remove('hidden');
       }
-      statusEl.textContent = '';
+      clearStudioStatus(statusEl);
       return;
     }
     if (!hasStudioPermission(session, STUDIO_PERMISSION.PEOPLE_WRITE)) {

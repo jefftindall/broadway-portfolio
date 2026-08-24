@@ -225,4 +225,18 @@ const colors = [
       </div>
     </div>
   </section>
+
+  <section class="section-y border-b border-line" id="busy">
+    <div class="mx-auto max-w-6xl px-6">
+      <SectionHeader
+        eyebrow="Feedback"
+        title="Busy / loading"
+        support="Animated spinner beside status text while Studio waits on the API."
+      />
+      <p class="busy-status mt-10 text-sm text-muted" role="status" aria-live="polite">
+        <span class="busy-spinner" aria-hidden="true"></span>
+        <span>Loading people…</span>
+      </p>
+    </div>
+  </section>
 </BaseLayout>

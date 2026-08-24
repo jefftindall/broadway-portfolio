@@ -46,7 +46,7 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
           Share the matching 30- or 60-minute link. Studio does not charge a card from unconfirmed
           voice prompts.
         </p>
-        <div id="pay-link-buttons" class="flex flex-wrap gap-2"></div>
+        <div id="pay-link-buttons" class="flex flex-col gap-2 sm:flex-row sm:flex-wrap"></div>
         <p id="pay-link-empty" class="hidden text-sm text-muted">
           Payment Links are not configured in this environment yet.
         </p>
@@ -54,7 +54,10 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
 
       <div class="mt-6 space-y-3 rounded-sm border border-line bg-panel/40 p-4">
         <h2 class="font-display text-2xl text-spotlight">Needs a person</h2>
-        <p id="unmatched-status" class="text-sm text-muted" role="status">Loading payments…</p>
+        <p id="unmatched-status" class="busy-status text-sm text-muted" role="status" aria-live="polite">
+          <span class="busy-spinner" aria-hidden="true"></span>
+          <span>Loading payments…</span>
+        </p>
         <ul id="unmatched-list" class="space-y-3"></ul>
       </div>
 
@@ -66,12 +69,14 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
 </StudioLayout>
 
 <script>
-  import { STUDIO_PAY_LINK_LABELS, formatUsdFromCents } from '../../../lib/studioPeople';
+  import { formatUsdFromCents } from '../../../lib/studioPeople';
+  import { renderPayLinkMenus } from '../../../lib/studioPayLinks';
   import {
     STUDIO_PERMISSION,
     fetchStudioSession,
     hasStudioPermission,
   } from '../../../lib/studioSession';
+  import { clearStudioStatus, setStudioStatus } from '../../../lib/studioStatus';
 
   type Payment = {
     id: string;
@@ -123,51 +128,19 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
     return 'No matching person';
   }
 
-  async function copyLink(href: string, button: HTMLButtonElement, restore: string) {
-    try {
-      await navigator.clipboard.writeText(href);
-      button.textContent = 'Copied';
-      window.setTimeout(() => {
-        button.textContent = restore;
-      }, 1500);
-    } catch {
-      showError('Could not copy that link.');
-    }
-  }
-
   function renderPayLinks(links: Record<string, string>) {
     const entries = Object.entries(links || {});
     payLinkEmpty.classList.toggle('hidden', entries.length > 0);
-    payLinkButtons.replaceChildren(
-      ...entries.flatMap(([id, href]) => {
-        const label = STUDIO_PAY_LINK_LABELS[id] || id;
-        const copy = document.createElement('button');
-        copy.type = 'button';
-        copy.className = 'rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110';
-        copy.textContent = `Copy ${label}`;
-        copy.addEventListener('click', () => {
-          void copyLink(href, copy, `Copy ${label}`);
-        });
-        const out = [copy];
-        if (typeof navigator.share === 'function') {
-          const share = document.createElement('button');
-          share.type = 'button';
-          share.className = 'rounded-sm border border-line px-4 py-2 text-sm text-spotlight hover:border-gold';
-          share.textContent = `Share ${label}`;
-          share.addEventListener('click', () => {
-            void navigator.share({ title: label, url: href }).catch(() => undefined);
-          });
-          out.push(share);
-        }
-        return out;
-      }),
-    );
+    renderPayLinkMenus(payLinkButtons, links, (message) => showError(message));
   }
 
   function renderUnmatched(payments: Payment[]) {
-    statusEl.textContent = payments.length
-      ? `${payments.length} ${payments.length === 1 ? 'payment needs' : 'payments need'} a person.`
-      : 'No unmatched Stripe payments.';
+    setStudioStatus(
+      statusEl,
+      payments.length
+        ? `${payments.length} ${payments.length === 1 ? 'payment needs' : 'payments need'} a person.`
+        : 'No unmatched Stripe payments.',
+    );
     listEl.replaceChildren(
       ...payments.map((payment) => {
         const li = document.createElement('li');
@@ -224,6 +197,7 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
   }
 
   async function load() {
+    setStudioStatus(statusEl, 'Loading payments…', true);
     try {
       const [unmatchedRes, directoryRes] = await Promise.all([
         fetch('/api/unmatchedPayments', { headers: { Accept: 'application/json' } }),
@@ -233,7 +207,7 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
       const directory = await directoryRes.json().catch(() => ({}));
       if (!unmatchedRes.ok) {
         showError(unmatched.error || 'Could not load payments.', unmatched.correlationId);
-        statusEl.textContent = '';
+        clearStudioStatus(statusEl);
         return;
       }
       students = ((directory.contacts || []) as Contact[]).filter((row) => !row.archived);
@@ -241,7 +215,7 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
       renderUnmatched((unmatched.payments || []) as Payment[]);
     } catch {
       showError('Could not load payments. Try again in a moment.');
-      statusEl.textContent = '';
+      clearStudioStatus(statusEl);
     }
   }
 

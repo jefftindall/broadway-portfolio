@@ -52,7 +52,10 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
           The Studio Google account creates events and invites Elyse plus the student. Required for
           native Accept on Elyse’s phone.
         </p>
-        <p id="organizer-status" class="mt-3 text-sm text-spotlight">Checking…</p>
+        <p id="organizer-status" class="busy-status mt-3 text-sm text-spotlight" role="status" aria-live="polite">
+          <span class="busy-spinner" aria-hidden="true"></span>
+          <span>Checking…</span>
+        </p>
         <div class="mt-4 flex flex-wrap gap-2">
           <button
             id="organizer-connect"
@@ -77,7 +80,10 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
           Optional. Lets Studio read busy time on the calendars she already uses. Missing this does
           not block requesting a lesson.
         </p>
-        <p id="elyse-status" class="mt-3 text-sm text-spotlight">Checking…</p>
+        <p id="elyse-status" class="busy-status mt-3 text-sm text-spotlight" role="status" aria-live="polite">
+          <span class="busy-spinner" aria-hidden="true"></span>
+          <span>Checking…</span>
+        </p>
         <div class="mt-4 flex flex-wrap gap-2">
           <button
             id="elyse-connect"
@@ -133,6 +139,7 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
 
 <script>
   import { fetchStudioSession, hasStudioPermission, STUDIO_PERMISSION } from '../../../lib/studioSession';
+  import { setStudioStatus } from '../../../lib/studioStatus';
 
   type CalendarItem = { id: string; summary: string; primary?: boolean };
 
@@ -198,6 +205,8 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
   }
 
   async function loadStatus() {
+    setStudioStatus(organizerStatus, 'Checking…', true);
+    setStudioStatus(elyseStatus, 'Checking…', true);
     const res = await fetch('/api/calendarStatus', { headers: { Accept: 'application/json' } });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
@@ -205,8 +214,14 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
       return;
     }
     oauthMissing.classList.toggle('hidden', Boolean(data.oauthConfigured));
-    organizerStatus.textContent = connectedCopy('Studio organizer', Boolean(data.organizer?.connected), data.organizer?.email || '');
-    elyseStatus.textContent = connectedCopy('Elyse', Boolean(data.elyse?.connected), data.elyse?.email || '');
+    setStudioStatus(
+      organizerStatus,
+      connectedCopy('Studio organizer', Boolean(data.organizer?.connected), data.organizer?.email || ''),
+    );
+    setStudioStatus(
+      elyseStatus,
+      connectedCopy('Elyse', Boolean(data.elyse?.connected), data.elyse?.email || ''),
+    );
     organizerDisconnect.classList.toggle('hidden', !data.organizer?.connected);
     elyseDisconnect.classList.toggle('hidden', !data.elyse?.connected);
 

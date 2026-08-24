@@ -97,7 +97,28 @@ Use sparingly for presence:
 
 - `.fade-up`, `.fade-up-delay`, `.fade-up-delay-2` on hero/entry content
 - Image hover scale on `MediaCard` only
-- Prefer CSS; avoid noisy looping animation
+- Prefer CSS; avoid noisy looping animation on marketing surfaces
+
+### Busy / loading (Studio + API waits)
+
+When Studio (or any client UI) is waiting on the API — loading lists, checking access, preparing a preview — show the **animated busy spinner** beside the status text. Do not rely on static “Loading…” copy alone.
+
+| Piece | Class / utility | Use |
+|-------|-----------------|-----|
+| Spinner | `.busy-spinner` | Gold ring, 1rem, continuous rotation |
+| Status row | `.busy-status` | `inline-flex` with spinner + label |
+| JS helper | `setStudioStatus(el, message, busy)` in `src/lib/studioStatus.ts` | Pass `busy: true` while a fetch is in flight |
+
+Markup pattern:
+
+```html
+<p class="text-sm text-muted busy-status" role="status" aria-live="polite">
+  <span class="busy-spinner" aria-hidden="true"></span>
+  <span>Loading people…</span>
+</p>
+```
+
+Clear the line with `clearStudioStatus` or `setStudioStatus(el, '', false)` when data arrives. Non-busy status text stays plain (no spinner).
 
 ## Imagery
 

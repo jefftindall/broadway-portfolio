@@ -48,7 +48,10 @@ const imageHashIndex = buildPublicImageHashIndex();
       role="status"
       aria-live="polite"
     >
-      <p>Checking access…</p>
+      <p class="busy-status">
+        <span class="busy-spinner" aria-hidden="true"></span>
+        <span>Checking access…</span>
+      </p>
     </div>
 
     <div id="auth-gate" class="mt-6 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted">
@@ -692,6 +695,7 @@ const imageHashIndex = buildPublicImageHashIndex();
       hasStudioPermission,
       type StudioSession,
     } from '../../lib/studioSession';
+    import { clearStudioStatus, setStudioStatus, busyStatusChildrenMarkup } from '../../lib/studioStatus';
 
     type PhotoPayload = { name: string; contentType: string; dataBase64: string };
     type DiscretePreview =
@@ -1091,8 +1095,12 @@ const imageHashIndex = buildPublicImageHashIndex();
       return String(email || principal.userDetails || principal.userId || '').trim() || 'Unknown';
     }
 
-    function setStatus(text: string) {
-      statusEl.textContent = text;
+    function setStatus(text: string, busy = false) {
+      if (!text) {
+        clearStudioStatus(statusEl);
+        return;
+      }
+      setStudioStatus(statusEl, text, busy);
     }
 
     function setBusy(busy: boolean, primary?: HTMLButtonElement, workingLabel?: string) {
@@ -1444,7 +1452,7 @@ const imageHashIndex = buildPublicImageHashIndex();
         link.rel = 'noopener noreferrer';
         link.className =
           'pointer-events-none text-xs text-muted opacity-50';
-        link.textContent = 'Checking…';
+        link.innerHTML = `<span class="busy-status">${busyStatusChildrenMarkup('Checking…')}</span>`;
         link.dataset.live = 'false';
 
         li.append(label, link);
@@ -1541,7 +1549,7 @@ const imageHashIndex = buildPublicImageHashIndex();
 
       const elapsed = Date.now() - pollStartedAt;
       if (elapsed >= POLL_TIMEOUT_MS) {
-        setStatus('Still rebuilding — check back in a few minutes, or use View page if it appears.');
+        setStatus('Still rebuilding — check back in a few minutes, or use View page if it appears.', true);
         stopPolling();
         return;
       }
@@ -1584,12 +1592,12 @@ const imageHashIndex = buildPublicImageHashIndex();
       void refreshLiveLinks();
 
       if (!sha) {
-        setStatus('Accepted. Waiting for the site rebuild…');
+        setStatus('Accepted. Waiting for the site rebuild…', true);
         return;
       }
 
       pollStartedAt = Date.now();
-      setStatus('Accepted. Watching the rebuild…');
+      setStatus('Accepted. Watching the rebuild…', true);
       void pollOnce(sha);
     }
 
@@ -2343,7 +2351,7 @@ const imageHashIndex = buildPublicImageHashIndex();
       photo?: PhotoPayload,
     ) {
       setComposeBusy(true);
-      setStatus('Preparing preview…');
+      setStatus('Preparing preview…', true);
       try {
         const { changes, provisionalPhotoPath: provisional } = await composeDiscrete(
           tool,
@@ -2571,7 +2579,7 @@ const imageHashIndex = buildPublicImageHashIndex();
       }
 
       setComposeBusy(true);
-      setStatus('Preparing preview…');
+      setStatus('Preparing preview…', true);
 
       draftPhoto = undefined;
       if (photoEl.files?.[0]) {
@@ -2662,7 +2670,7 @@ const imageHashIndex = buildPublicImageHashIndex();
 
     publishBtn.addEventListener('click', async () => {
       setPreviewBusy(true);
-      setStatus('Preparing…');
+      setStatus('Preparing…', true);
       let changes: ContentChange[];
       try {
         changes = await readEditedChanges();
@@ -2679,7 +2687,7 @@ const imageHashIndex = buildPublicImageHashIndex();
 
       publishClickedAt = Date.now();
       prodLatencyEmitted = false;
-      setStatus('Publishing…');
+      setStatus('Publishing…', true);
 
       try {
         const res = await fetch('/api/updateContent', {
