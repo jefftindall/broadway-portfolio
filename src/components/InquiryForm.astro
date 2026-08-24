@@ -168,7 +168,8 @@ const fieldClass =
 
     <button
       type="submit"
-      class="inline-flex items-center justify-center rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+      class="inline-flex items-center justify-center gap-2 rounded-sm bg-gold px-5 py-3 text-sm font-semibold text-ink transition hover:brightness-110 disabled:cursor-wait disabled:opacity-60 disabled:hover:brightness-100"
+      data-label={submitLabel}
       data-testid={`${type}-submit`}
       disabled={!siteKey}
     >
@@ -183,6 +184,7 @@ const fieldClass =
 
 <script>
   import { trackGaEvent } from '../lib/analytics';
+  import { isButtonBusy, setButtonBusy } from '../lib/buttonBusy';
 
   type TurnstileApi = {
     render: (el: HTMLElement, opts: Record<string, unknown>) => string;
@@ -278,7 +280,10 @@ const fieldClass =
         }
       } catch {
         setStatus(statusEl, 'Verification widget failed to load. Refresh and try again.', 'err');
-        if (submitBtn) submitBtn.disabled = true;
+        if (submitBtn) {
+          setButtonBusy(submitBtn, false);
+          submitBtn.disabled = true;
+        }
       }
     }
 
@@ -291,7 +296,7 @@ const fieldClass =
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
-      if (!siteKey || !submitBtn) return;
+      if (!siteKey || !submitBtn || isButtonBusy(submitBtn)) return;
 
       const api = turnstileApi();
       const token =
@@ -335,7 +340,7 @@ const fieldClass =
         payload.format = String(fd.get('format') || '').trim();
       }
 
-      submitBtn.disabled = true;
+      setButtonBusy(submitBtn, true, 'Sending…');
       setStatus(statusEl, 'Sending…', 'idle');
 
       try {
@@ -373,7 +378,7 @@ const fieldClass =
         setStatus(statusEl, 'Network error — please try again.', 'err');
         if (widgetId !== undefined && api) api.reset(widgetId);
       } finally {
-        submitBtn.disabled = false;
+        setButtonBusy(submitBtn, false);
       }
     });
   }

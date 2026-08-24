@@ -696,6 +696,7 @@ const imageHashIndex = buildPublicImageHashIndex();
       type StudioSession,
     } from '../../lib/studioSession';
     import { clearStudioStatus, setStudioStatus, busyStatusChildrenMarkup } from '../../lib/studioStatus';
+    import { isButtonBusy, setButtonBusy } from '../../lib/buttonBusy';
 
     type PhotoPayload = { name: string; contentType: string; dataBase64: string };
     type DiscretePreview =
@@ -837,7 +838,7 @@ const imageHashIndex = buildPublicImageHashIndex();
     function applyPublishModeUi(mode: 'pr' | 'direct') {
       const label = mode === 'pr' ? 'Publish to staging branch' : 'Publish to site';
       publishBtn.dataset.label = label;
-      if (!publishBtn.disabled || publishBtn.textContent !== 'Publishing…') {
+      if (!isButtonBusy(publishBtn)) {
         publishBtn.textContent = label;
       }
     }
@@ -1111,15 +1112,11 @@ const imageHashIndex = buildPublicImageHashIndex();
         studioApp.classList.remove(BUSY_CLASS);
       }
 
-      if (primary && workingLabel) {
-        if (busy) {
-          primary.dataset.restoreLabel = primary.dataset.label || primary.textContent || '';
-          primary.textContent = workingLabel;
-        } else if (primary.dataset.restoreLabel) {
-          primary.textContent = primary.dataset.restoreLabel;
-          delete primary.dataset.restoreLabel;
-        } else if (primary.dataset.label) {
-          primary.textContent = primary.dataset.label;
+      if (primary) {
+        if (busy && workingLabel) {
+          setButtonBusy(primary, true, workingLabel);
+        } else if (!busy) {
+          setButtonBusy(primary, false);
         }
       }
     }

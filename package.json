@@ -25,7 +25,7 @@
     "test:api-contacts": "node --test api/src/lib/contacts.test.js api/src/lib/ledger.test.js api/src/lib/tableGeo.test.js scripts/lib/people-seed.test.mjs",
     "test:api-calendar": "node --test api/src/lib/lessons.test.js api/src/lib/calendarOAuth.test.js api/src/lib/googleCalendar.test.js",
     "test:api-studio-comms": "node --test api/src/lib/studioComms.test.js api/src/lib/agentTasks.test.js",
-    "test:studio-ui": "node --experimental-strip-types --test src/lib/studioNav.test.ts src/lib/studioPeople.test.ts src/lib/studioStatus.test.ts src/lib/studioPayLinks.test.ts",
+    "test:studio-ui": "node --experimental-strip-types --test src/lib/studioNav.test.ts src/lib/studioPeople.test.ts src/lib/studioStatus.test.ts src/lib/studioPayLinks.test.ts src/lib/buttonBusy.test.ts",
     "studio:seed-people": "node scripts/seed-studio-people.mjs",
     "test:lesson-rates": "node --test scripts/read-lesson-rates.test.mjs scripts/upsert-stripe-payment-links.test.mjs",
     "test:api-reel-poster": "node --test api/src/lib/reel-poster.test.js",

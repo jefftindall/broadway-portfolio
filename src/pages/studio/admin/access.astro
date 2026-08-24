@@ -92,7 +92,9 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
         <div class="flex flex-wrap gap-2">
           <button
             type="submit"
-            class="rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110"
+            id="user-save-btn"
+            data-label="Save"
+            class="inline-flex items-center justify-center gap-2 rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 disabled:hover:brightness-100"
           >
             Save
           </button>
@@ -123,6 +125,7 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
     type StudioSession,
   } from '../../../lib/studioSession';
   import { clearStudioStatus, setStudioStatus } from '../../../lib/studioStatus';
+  import { isButtonBusy, withButtonBusy } from '../../../lib/buttonBusy';
 
   type CatalogPermission = { id: string; label: string; description: string };
   type CatalogRole = { id: string; label: string; description: string; permissions: string[] };
@@ -307,8 +310,11 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
     form.classList.add('hidden');
   });
 
+  const saveBtn = document.getElementById('user-save-btn') as HTMLButtonElement;
+
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
+    if (isButtonBusy(saveBtn)) return;
     clearError();
     const editing = Boolean(idInput.value);
     const body: Record<string, unknown> = {
@@ -318,23 +324,25 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
       status: statusInput.value,
     };
     if (!editing) body.identity = identityInput.value.trim();
-    const res = await fetch(editing ? `/api/studioUsers/${encodeURIComponent(idInput.value)}` : '/api/studioUsers', {
-      method: editing ? 'PATCH' : 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        ...(editing && etagInput.value ? { 'If-Match': etagInput.value } : {}),
-      },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      showError(data.error || 'Could not save access.', data.correlationId);
-      return;
-    }
-    form.classList.add('hidden');
-    resetForm();
-    await loadUsers();
+    await withButtonBusy(saveBtn, async () => {
+      const res = await fetch(editing ? `/api/studioUsers/${encodeURIComponent(idInput.value)}` : '/api/studioUsers', {
+        method: editing ? 'PATCH' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          ...(editing && etagInput.value ? { 'If-Match': etagInput.value } : {}),
+        },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showError(data.error || 'Could not save access.', data.correlationId);
+        return;
+      }
+      form.classList.add('hidden');
+      resetForm();
+      await loadUsers();
+    }, 'Saving…');
   });
 
   async function bootstrap() {

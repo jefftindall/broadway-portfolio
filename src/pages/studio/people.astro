@@ -121,8 +121,10 @@ import {
       </label>
       <div class="flex flex-wrap gap-2">
         <button
+          id="create-save-btn"
           type="submit"
-          class="rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110"
+          data-label="Save person"
+          class="inline-flex items-center justify-center gap-2 rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 disabled:hover:brightness-100"
         >
           Save person
         </button>
@@ -217,6 +219,7 @@ import {
     hasStudioPermission,
   } from '../../lib/studioSession';
   import { clearStudioStatus, setStudioStatus } from '../../lib/studioStatus';
+  import { isButtonBusy, withButtonBusy } from '../../lib/buttonBusy';
 
   type Contact = {
     id: string;
@@ -249,6 +252,7 @@ import {
   const peopleGateId = document.getElementById('people-gate-id') as HTMLElement;
   const peopleWorkspace = document.getElementById('people-workspace') as HTMLElement;
   const cancelBtn = document.getElementById('create-cancel') as HTMLButtonElement;
+  const createSaveBtn = document.getElementById('create-save-btn') as HTMLButtonElement;
   const pagerEl = document.getElementById('people-pager') as HTMLElement;
   const pageLabelEl = document.getElementById('people-page-label') as HTMLElement;
   const prevBtn = document.getElementById('people-prev') as HTMLButtonElement;
@@ -404,31 +408,34 @@ import {
 
   createForm.addEventListener('submit', async (event) => {
     event.preventDefault();
+    if (isButtonBusy(createSaveBtn)) return;
     clearError();
     const personas = [...document.querySelectorAll<HTMLInputElement>('input[name="create-persona"]:checked')].map(
       (el) => el.value,
     );
-    try {
-      const res = await fetch('/api/contacts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({
-          displayName: (document.getElementById('create-name') as HTMLInputElement).value,
-          email: (document.getElementById('create-email') as HTMLInputElement).value,
-          phone: (document.getElementById('create-phone') as HTMLInputElement).value,
-          notes: (document.getElementById('create-notes') as HTMLTextAreaElement).value,
-          personas,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        showError(data.error || 'Could not save this person.', data.correlationId);
-        return;
+    await withButtonBusy(createSaveBtn, async () => {
+      try {
+        const res = await fetch('/api/contacts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            displayName: (document.getElementById('create-name') as HTMLInputElement).value,
+            email: (document.getElementById('create-email') as HTMLInputElement).value,
+            phone: (document.getElementById('create-phone') as HTMLInputElement).value,
+            notes: (document.getElementById('create-notes') as HTMLTextAreaElement).value,
+            personas,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          showError(data.error || 'Could not save this person.', data.correlationId);
+          return;
+        }
+        window.location.href = studioPersonPath(data.contact.id);
+      } catch {
+        showError('Could not save this person. Try again in a moment.');
       }
-      window.location.href = studioPersonPath(data.contact.id);
-    } catch {
-      showError('Could not save this person. Try again in a moment.');
-    }
+    }, 'Saving…');
   });
 
   document.querySelectorAll<HTMLButtonElement>('.persona-filter').forEach((btn) => {

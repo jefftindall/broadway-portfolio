@@ -140,6 +140,13 @@ h3,
   flex-shrink: 0;
 }
 
+.btn-busy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
 @keyframes busySpin {
   to {
     transform: rotate(360deg);

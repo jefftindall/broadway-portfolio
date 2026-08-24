@@ -60,14 +60,16 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
           <button
             id="organizer-connect"
             type="button"
-            class="rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110"
+            data-label="Connect Google"
+            class="inline-flex items-center justify-center gap-2 rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 disabled:hover:brightness-100"
           >
             Connect Google
           </button>
           <button
             id="organizer-disconnect"
             type="button"
-            class="hidden rounded-sm border border-line px-4 py-2 text-sm text-spotlight hover:border-gold"
+            data-label="Disconnect"
+            class="hidden inline-flex items-center justify-center gap-2 rounded-sm border border-line px-4 py-2 text-sm text-spotlight hover:border-gold disabled:cursor-wait disabled:opacity-60"
           >
             Disconnect
           </button>
@@ -88,14 +90,16 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
           <button
             id="elyse-connect"
             type="button"
-            class="rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110"
+            data-label="Connect Elyse’s Google"
+            class="inline-flex items-center justify-center gap-2 rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 disabled:hover:brightness-100"
           >
             Connect Elyse’s Google
           </button>
           <button
             id="elyse-disconnect"
             type="button"
-            class="hidden rounded-sm border border-line px-4 py-2 text-sm text-spotlight hover:border-gold"
+            data-label="Disconnect"
+            class="hidden inline-flex items-center justify-center gap-2 rounded-sm border border-line px-4 py-2 text-sm text-spotlight hover:border-gold disabled:cursor-wait disabled:opacity-60"
           >
             Disconnect
           </button>
@@ -126,8 +130,10 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
             />
           </label>
           <button
+            id="cal-settings-save"
             type="submit"
-            class="rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110"
+            data-label="Save availability"
+            class="inline-flex items-center justify-center gap-2 rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 disabled:hover:brightness-100"
           >
             Save availability
           </button>
@@ -140,6 +146,7 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
 <script>
   import { fetchStudioSession, hasStudioPermission, STUDIO_PERMISSION } from '../../../lib/studioSession';
   import { setStudioStatus } from '../../../lib/studioStatus';
+  import { isButtonBusy, withButtonBusy } from '../../../lib/buttonBusy';
 
   type CalendarItem = { id: string; summary: string; primary?: boolean };
 
@@ -175,28 +182,34 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
     errorBox.classList.remove('hidden');
   }
 
-  async function startOAuth(role: 'organizer' | 'elyse') {
-    const res = await fetch(`/api/calendarOAuthStart?role=${role}`, { headers: { Accept: 'application/json' } });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.url) {
-      showError(data.error || 'Could not start Google sign-in.', data.correlationId);
-      return;
-    }
-    window.location.href = data.url;
+  const settingsSaveBtn = document.getElementById('cal-settings-save') as HTMLButtonElement;
+
+  async function startOAuth(role: 'organizer' | 'elyse', button: HTMLButtonElement) {
+    await withButtonBusy(button, async () => {
+      const res = await fetch(`/api/calendarOAuthStart?role=${role}`, { headers: { Accept: 'application/json' } });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.url) {
+        showError(data.error || 'Could not start Google sign-in.', data.correlationId);
+        return;
+      }
+      window.location.href = data.url;
+    }, 'Connecting…');
   }
 
-  async function disconnect(role: 'organizer' | 'elyse') {
-    const res = await fetch('/api/calendarDisconnect', {
-      method: 'POST',
-      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      showError(data.error || 'Could not disconnect Google.', data.correlationId);
-      return;
-    }
-    await loadStatus();
+  async function disconnect(role: 'organizer' | 'elyse', button: HTMLButtonElement) {
+    await withButtonBusy(button, async () => {
+      const res = await fetch('/api/calendarDisconnect', {
+        method: 'POST',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showError(data.error || 'Could not disconnect Google.', data.correlationId);
+        return;
+      }
+      await loadStatus();
+    }, 'Disconnecting…');
   }
 
   function connectedCopy(label: string, connected: boolean, email: string) {
@@ -243,31 +256,34 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
     noticeInput.value = String(data.availability?.minNoticeHours ?? 12);
   }
 
-  organizerConnect.addEventListener('click', () => startOAuth('organizer'));
-  elyseConnect.addEventListener('click', () => startOAuth('elyse'));
-  organizerDisconnect.addEventListener('click', () => disconnect('organizer'));
-  elyseDisconnect.addEventListener('click', () => disconnect('elyse'));
+  organizerConnect.addEventListener('click', () => startOAuth('organizer', organizerConnect));
+  elyseConnect.addEventListener('click', () => startOAuth('elyse', elyseConnect));
+  organizerDisconnect.addEventListener('click', () => disconnect('organizer', organizerDisconnect));
+  elyseDisconnect.addEventListener('click', () => disconnect('elyse', elyseDisconnect));
 
   calendarsForm.addEventListener('submit', async (event) => {
     event.preventDefault();
-    const calendarIds = [...calendarFields.querySelectorAll('input:checked')].map(
-      (input) => (input as HTMLInputElement).value,
-    );
-    const res = await fetch('/api/calendarSettings', {
-      method: 'PATCH',
-      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        calendarIds,
-        bufferMinutes: Number(bufferInput.value),
-        minNoticeHours: Number(noticeInput.value),
-      }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      showError(data.error || 'Could not save availability.', data.correlationId);
-      return;
-    }
-    await loadStatus();
+    if (isButtonBusy(settingsSaveBtn)) return;
+    await withButtonBusy(settingsSaveBtn, async () => {
+      const calendarIds = [...calendarFields.querySelectorAll('input:checked')].map(
+        (input) => (input as HTMLInputElement).value,
+      );
+      const res = await fetch('/api/calendarSettings', {
+        method: 'PATCH',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          calendarIds,
+          bufferMinutes: Number(bufferInput.value),
+          minNoticeHours: Number(noticeInput.value),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showError(data.error || 'Could not save availability.', data.correlationId);
+        return;
+      }
+      await loadStatus();
+    }, 'Saving…');
   });
 
   const session = await fetchStudioSession();
