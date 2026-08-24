@@ -120,6 +120,51 @@ Markup pattern:
 
 Clear the line with `clearStudioStatus` or `setStudioStatus(el, '', false)` when data arrives. Non-busy status text stays plain (no spinner).
 
+### API action buttons (disable + spinner)
+
+When a button triggers an API call (form submit, save, connect, publish, attach payment, etc.), **disable it immediately** and show the **same gold spinner** inside the button until the request finishes — success or failure. This prevents double submits on slow admin and Studio screens.
+
+| Piece | Class / utility | Use |
+|-------|-----------------|-----|
+| Spinner in button | `.busy-spinner` inside `.btn-busy` | Gold ring beside the working label |
+| Disabled affordance | `disabled:cursor-wait disabled:opacity-60` on primary/secondary API buttons | Wait cursor + dimmed while disabled |
+| Primary API button | `API_BUTTON_PRIMARY_CLASSES` in `src/lib/buttonBusy.ts` | Gold fill CTAs (`Save`, `Connect Google`, …) |
+| Secondary API button | `API_BUTTON_SECONDARY_CLASSES` in `src/lib/buttonBusy.ts` | Outline actions (`Cancel` stays enabled; `Disconnect`, pager, etc.) |
+| JS helper | `setButtonBusy(btn, busy, workingLabel?)` / `withButtonBusy(btn, fn, workingLabel?)` | Pass `busy: true` before `fetch`; clear in `finally` (helper does this) |
+| Guard | `isButtonBusy(btn)` | Return early when a handler is already in flight |
+
+Markup pattern (static submit):
+
+```html
+<button
+  type="submit"
+  class="inline-flex items-center justify-center gap-2 rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 disabled:hover:brightness-100"
+  data-label="Save"
+>
+  Save
+</button>
+```
+
+Script pattern:
+
+```typescript
+import { isButtonBusy, withButtonBusy } from '../lib/buttonBusy';
+
+saveBtn.addEventListener('click', () => {
+  void withButtonBusy(saveBtn, async () => {
+    const res = await fetch('/api/example', { method: 'POST', … });
+    …
+  }, 'Saving…');
+});
+```
+
+Rules:
+
+- Only the acting button (or submit button) gets the spinner — status lines still use `.busy-status` above lists.
+- Re-enable after the call completes even on error; leave validation errors on the status/alert line.
+- Do not rely on label-only changes (`Publishing…` text without spinner) for API buttons.
+- Cancel / navigation links that do not call the API stay enabled unless the whole form is intentionally locked.
+
 ## Imagery
 
 - Prefer real photos under `public/images/photos/`, `gallery/`, `shows/`

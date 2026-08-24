@@ -231,12 +231,53 @@ const colors = [
       <SectionHeader
         eyebrow="Feedback"
         title="Busy / loading"
-        support="Animated spinner beside status text while Studio waits on the API."
+        support="Status lines and API buttons while the client waits on the server."
       />
       <p class="busy-status mt-10 text-sm text-muted" role="status" aria-live="polite">
         <span class="busy-spinner" aria-hidden="true"></span>
         <span>Loading people…</span>
       </p>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <button
+          id="style-guide-busy-primary"
+          type="button"
+          class="inline-flex items-center justify-center gap-2 rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 disabled:hover:brightness-100"
+          data-label="Save"
+        >
+          Save
+        </button>
+        <button
+          id="style-guide-busy-secondary"
+          type="button"
+          class="inline-flex items-center justify-center gap-2 rounded-sm border border-line px-4 py-2 text-sm text-spotlight hover:border-gold disabled:cursor-wait disabled:opacity-60"
+          data-label="Disconnect"
+        >
+          Disconnect
+        </button>
+      </div>
     </div>
   </section>
 </BaseLayout>
+
+<script>
+  import { withButtonBusy } from '../lib/buttonBusy';
+
+  const demoPrimary = document.getElementById('style-guide-busy-primary') as HTMLButtonElement | null;
+  const demoSecondary = document.getElementById('style-guide-busy-secondary') as HTMLButtonElement | null;
+
+  demoPrimary?.addEventListener('click', () => {
+    void withButtonBusy(
+      demoPrimary,
+      () => new Promise((resolve) => window.setTimeout(resolve, 1200)),
+      'Saving…',
+    );
+  });
+
+  demoSecondary?.addEventListener('click', () => {
+    void withButtonBusy(
+      demoSecondary,
+      () => new Promise((resolve) => window.setTimeout(resolve, 1200)),
+      'Disconnecting…',
+    );
+  });
+</script>

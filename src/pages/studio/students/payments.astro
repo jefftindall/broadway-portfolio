@@ -77,6 +77,7 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
     hasStudioPermission,
   } from '../../../lib/studioSession';
   import { clearStudioStatus, setStudioStatus } from '../../../lib/studioStatus';
+  import { isButtonBusy, withButtonBusy } from '../../../lib/buttonBusy';
 
   type Payment = {
     id: string;
@@ -154,11 +155,13 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
         }
         const assign = document.createElement('button');
         assign.type = 'button';
-        assign.className = 'mt-2 rounded-sm border border-line px-4 py-2 text-sm text-spotlight hover:border-gold';
+        assign.className =
+          'mt-2 inline-flex items-center justify-center gap-2 rounded-sm border border-line px-4 py-2 text-sm text-spotlight hover:border-gold disabled:cursor-wait disabled:opacity-60';
+        assign.dataset.label = 'Attach';
         assign.textContent = 'Attach';
         assign.disabled = !canWrite;
         assign.addEventListener('click', () => {
-          void assignPayment(payment.id, select.value);
+          void assignPayment(payment.id, select.value, assign);
         });
         li.innerHTML = `
           <p class="text-sm text-spotlight">${escapeHtml(formatUsdFromCents(payment.netCents))} · ${escapeHtml(payment.paidOn || '—')}</p>
@@ -173,27 +176,30 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
     );
   }
 
-  async function assignPayment(paymentId: string, contactId: string) {
+  async function assignPayment(paymentId: string, contactId: string, button: HTMLButtonElement) {
     if (!contactId) {
       showError('Choose a student.');
       return;
     }
+    if (isButtonBusy(button)) return;
     errorBox.classList.add('hidden');
-    try {
-      const res = await fetch(`/api/unmatchedPayments/${encodeURIComponent(paymentId)}/assign`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ contactId }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        showError(data.error || 'Could not attach that payment.', data.correlationId);
-        return;
+    await withButtonBusy(button, async () => {
+      try {
+        const res = await fetch(`/api/unmatchedPayments/${encodeURIComponent(paymentId)}/assign`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ contactId }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          showError(data.error || 'Could not attach that payment.', data.correlationId);
+          return;
+        }
+        await load();
+      } catch {
+        showError('Could not attach that payment. Try again in a moment.');
       }
-      await load();
-    } catch {
-      showError('Could not attach that payment. Try again in a moment.');
-    }
+    }, 'Attaching…');
   }
 
   async function load() {

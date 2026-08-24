@@ -315,15 +315,18 @@ import {
 
       <div class="flex flex-wrap gap-2">
         <button
+          id="edit-save-btn"
           type="submit"
-          class="rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110"
+          data-label="Save changes"
+          class="inline-flex items-center justify-center gap-2 rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 disabled:hover:brightness-100"
         >
           Save changes
         </button>
         <button
           id="archive-btn"
           type="button"
-          class="rounded-sm border border-line px-4 py-2 text-sm text-spotlight hover:border-gold"
+          data-label="Archive"
+          class="inline-flex items-center justify-center gap-2 rounded-sm border border-line px-4 py-2 text-sm text-spotlight hover:border-gold disabled:cursor-wait disabled:opacity-60"
         >
           Archive
         </button>
@@ -382,8 +385,10 @@ import {
           </label>
         </div>
         <button
+          id="offline-save-btn"
           type="submit"
-          class="rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110"
+          data-label="Add offline payment"
+          class="inline-flex items-center justify-center gap-2 rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110 disabled:cursor-wait disabled:opacity-60 disabled:hover:brightness-100"
         >
           Add offline payment
         </button>
@@ -430,6 +435,7 @@ import {
   } from '../../../lib/studioSession';
   import { renderPayLinkMenus } from '../../../lib/studioPayLinks';
   import { clearStudioStatus, setStudioStatus } from '../../../lib/studioStatus';
+  import { isButtonBusy, withButtonBusy } from '../../../lib/buttonBusy';
 
   type Related = { id: string; relation: string };
   type Contact = {
@@ -504,6 +510,8 @@ import {
   const relatedPick = document.getElementById('related-pick') as HTMLSelectElement;
   const relatedRelation = document.getElementById('related-relation') as HTMLSelectElement;
   const archiveBtn = document.getElementById('archive-btn') as HTMLButtonElement;
+  const saveBtn = document.getElementById('edit-save-btn') as HTMLButtonElement;
+  const offlineSaveBtn = document.getElementById('offline-save-btn') as HTMLButtonElement;
   const peopleGate = document.getElementById('people-gate') as HTMLElement;
   let canWrite = true;
 
@@ -587,7 +595,9 @@ import {
     castingRecency.textContent = contact.castingLastRequestOn
       ? `Recency: ${careerRecencyLabel(contact.castingLastRequestOn)}`
       : 'Recency: no date yet.';
-    archiveBtn.textContent = contact.archived ? 'Restore' : 'Archive';
+    const archiveLabel = contact.archived ? 'Restore' : 'Archive';
+    archiveBtn.dataset.label = archiveLabel;
+    archiveBtn.textContent = archiveLabel;
     togglePersonaSections();
     renderRelated();
     renderValue();
@@ -636,10 +646,12 @@ import {
         .map((row) => {
           const btn = document.createElement('button');
           btn.type = 'button';
-          btn.className = 'rounded-sm border border-line px-3 py-2 text-sm text-spotlight hover:border-gold';
+          btn.className =
+            'inline-flex items-center justify-center gap-2 rounded-sm border border-line px-3 py-2 text-sm text-spotlight hover:border-gold disabled:cursor-wait disabled:opacity-60';
+          btn.dataset.label = row.label;
           btn.textContent = row.label;
           btn.addEventListener('click', () => {
-            void sendTemplate(row.id, row.needsLesson);
+            void withButtonBusy(btn, () => sendTemplate(row.id, row.needsLesson), row.label);
           });
           return btn;
         }),
@@ -703,10 +715,12 @@ import {
             if (row.source === 'offline' && canWrite) {
               const remove = document.createElement('button');
               remove.type = 'button';
-              remove.className = 'ml-2 text-xs text-muted underline-offset-2 hover:text-gold hover:underline';
+              remove.className =
+                'ml-2 inline-flex items-center gap-1 text-xs text-muted underline-offset-2 hover:text-gold hover:underline disabled:cursor-wait disabled:opacity-60';
+              remove.dataset.label = 'Remove';
               remove.textContent = 'Remove';
               remove.addEventListener('click', () => {
-                void removeOffline(row.id);
+                void removeOffline(row.id, remove);
               });
               li.append(remove);
             }
@@ -723,25 +737,27 @@ import {
     renderPayLinkMenus(payLinkButtons, payLinkMap, (message) => showError(message));
   }
 
-  async function removeOffline(paymentId: string) {
+  async function removeOffline(paymentId: string, button: HTMLButtonElement) {
     if (!canWrite) return;
-    clearError();
-    try {
-      const res = await fetch(
-        `/api/contacts/${encodeURIComponent(contactId)}/offlinePayments/${encodeURIComponent(paymentId)}`,
-        { method: 'DELETE', headers: { Accept: 'application/json' } },
-      );
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        showError(data.error || 'Could not remove that payment.', data.correlationId);
-        return;
+    await withButtonBusy(button, async () => {
+      clearError();
+      try {
+        const res = await fetch(
+          `/api/contacts/${encodeURIComponent(contactId)}/offlinePayments/${encodeURIComponent(paymentId)}`,
+          { method: 'DELETE', headers: { Accept: 'application/json' } },
+        );
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          showError(data.error || 'Could not remove that payment.', data.correlationId);
+          return;
+        }
+        if (data.contact) current = { ...current!, ...(data.contact as Contact) };
+        payments = payments.filter((row) => row.id !== paymentId);
+        renderValue();
+      } catch {
+        showError('Could not remove that payment. Try again in a moment.');
       }
-      if (data.contact) current = { ...current!, ...(data.contact as Contact) };
-      payments = payments.filter((row) => row.id !== paymentId);
-      renderValue();
-    } catch {
-      showError('Could not remove that payment. Try again in a moment.');
-    }
+    }, 'Removing…');
   }
 
   function renderRelated() {
@@ -815,33 +831,45 @@ import {
     };
   }
 
-  async function save(extra: Partial<Contact> = {}) {
+  async function save(extra: Partial<Contact> = {}, button?: HTMLButtonElement) {
     if (!canWrite) return false;
-    clearError();
-    const payload = { ...formPayload(), ...extra };
-    const res = await fetch(`/api/contacts/${encodeURIComponent(contactId)}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      showError(data.error || 'Could not save this person.', data.correlationId);
-      return false;
+    const run = async () => {
+      clearError();
+      const payload = { ...formPayload(), ...extra };
+      const res = await fetch(`/api/contacts/${encodeURIComponent(contactId)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showError(data.error || 'Could not save this person.', data.correlationId);
+        return false;
+      }
+      fillForm(data.contact as Contact);
+      return true;
+    };
+    if (button) {
+      let ok = false;
+      await withButtonBusy(button, async () => {
+        ok = (await run()) ?? false;
+      }, button === archiveBtn ? (current?.archived ? 'Restoring…' : 'Archiving…') : 'Saving…');
+      return ok;
     }
-    fillForm(data.contact as Contact);
-    return true;
+    return run();
   }
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
-    const ok = await save();
+    if (isButtonBusy(saveBtn)) return;
+    const ok = await save({}, saveBtn);
     if (ok) setStudioStatus(statusEl, 'Saved.');
   });
 
   archiveBtn.addEventListener('click', async () => {
+    if (isButtonBusy(archiveBtn)) return;
     const next = !current?.archived;
-    const ok = await save({ archived: next });
+    const ok = await save({ archived: next }, archiveBtn);
     if (ok) setStudioStatus(statusEl, next ? 'Archived.' : 'Restored.');
   });
 
@@ -908,31 +936,33 @@ import {
     }
     offlineForm.addEventListener('submit', async (event) => {
       event.preventDefault();
-      if (!canWrite) return;
-      clearError();
-      try {
-        const res = await fetch(`/api/contacts/${encodeURIComponent(contactId)}/offlinePayments`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({
-            amountUsd: Number((document.getElementById('offline-amount') as HTMLInputElement).value),
-            method: (document.getElementById('offline-method') as HTMLSelectElement).value,
-            paidOn: (document.getElementById('offline-date') as HTMLInputElement).value,
-          }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          showError(data.error || 'Could not log that payment.', data.correlationId);
-          return;
+      if (!canWrite || isButtonBusy(offlineSaveBtn)) return;
+      await withButtonBusy(offlineSaveBtn, async () => {
+        clearError();
+        try {
+          const res = await fetch(`/api/contacts/${encodeURIComponent(contactId)}/offlinePayments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({
+              amountUsd: Number((document.getElementById('offline-amount') as HTMLInputElement).value),
+              method: (document.getElementById('offline-method') as HTMLSelectElement).value,
+              paidOn: (document.getElementById('offline-date') as HTMLInputElement).value,
+            }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            showError(data.error || 'Could not log that payment.', data.correlationId);
+            return;
+          }
+          if (data.contact) current = { ...current!, ...(data.contact as Contact) };
+          if (data.payment) payments = [data.payment as LedgerRow, ...payments];
+          offlineForm.reset();
+          renderValue();
+          setStudioStatus(statusEl, 'Offline payment saved.');
+        } catch {
+          showError('Could not log that payment. Try again in a moment.');
         }
-        if (data.contact) current = { ...current!, ...(data.contact as Contact) };
-        if (data.payment) payments = [data.payment as LedgerRow, ...payments];
-        offlineForm.reset();
-        renderValue();
-        setStudioStatus(statusEl, 'Offline payment saved.');
-      } catch {
-        showError('Could not log that payment. Try again in a moment.');
-      }
+      }, 'Saving…');
     });
     await load();
   }
