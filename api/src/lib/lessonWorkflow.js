@@ -18,6 +18,7 @@ import {
 } from './calendarSettings.js';
 import { CrmNotFoundError } from './contacts.js';
 import { lessonActionUrl } from './lessonActions.js';
+import { tryNotifyLessonStatus } from './studioComms.js';
 import {
   LessonValidationError,
   MAX_RECURRING_INSTANCES,
@@ -201,6 +202,23 @@ export async function createLessonsWithCalendar({
     created.push(await lessons.create(item));
   }
 
+  async function notifyCreated() {
+    for (const row of created) {
+      try {
+        await tryNotifyLessonStatus({
+          lesson: row,
+          previousStatus: '',
+          contact,
+          correlationId,
+          lessons,
+          env,
+        });
+      } catch {
+        // Student mail must not block lesson persistence.
+      }
+    }
+  }
+
   let calendar = { connected: false, fallback: '' };
   if (!settings) {
     try {
@@ -213,6 +231,7 @@ export async function createLessonsWithCalendar({
     } catch {
       calendar = { connected: false, fallback: 'none' };
     }
+    await notifyCreated();
     return { lessons: created, calendar };
   }
 
@@ -224,6 +243,7 @@ export async function createLessonsWithCalendar({
         await lessons.update(row.id, { calendarFallback: 'ics' });
         row.calendarFallback = 'ics';
       }
+      await notifyCreated();
       return { lessons: created, calendar: { connected: false, fallback: 'ics' } };
     }
 
@@ -266,6 +286,7 @@ export async function createLessonsWithCalendar({
     }
   }
 
+  await notifyCreated();
   return { lessons: created, calendar };
 }
 
@@ -274,10 +295,28 @@ export async function applyLessonStatus({
   status,
   lessons,
   settings,
+  contacts,
+  correlationId,
   env = process.env,
 }) {
+  const previousStatus = lesson.status;
   if (lesson.status === status) return lesson;
   const updated = await lessons.update(lesson.id, { status });
+  if (contacts) {
+    try {
+      const contact = await contacts.get(updated.contactId);
+      await tryNotifyLessonStatus({
+        lesson: updated,
+        previousStatus,
+        contact,
+        correlationId,
+        lessons,
+        env,
+      });
+    } catch {
+      // Mail failure must not roll back status.
+    }
+  }
   if (!settings || !lesson.googleEventId) return updated;
   try {
     const organizer = await organizerClient(settings, env);
@@ -334,7 +373,7 @@ function rsvpStatus(response) {
   return '';
 }
 
-export async function syncLessonRsvps({ lessons, settings, env = process.env }) {
+export async function syncLessonRsvps({ lessons, settings, contacts, correlationId, env = process.env }) {
   if (!settings) return { checked: 0, updated: 0 };
   const organizer = await settings.getConnection('organizer');
   if (!organizer.connected) return { checked: 0, updated: 0 };
@@ -357,7 +396,23 @@ export async function syncLessonRsvps({ lessons, settings, env = process.env }) 
         seenEvents.set(lesson.googleEventId, event);
       }
       if (event.status === 'cancelled') {
-        await lessons.update(lesson.id, { status: 'cancelled' });
+        const previousStatus = lesson.status;
+        const row = await lessons.update(lesson.id, { status: 'cancelled' });
+        if (contacts) {
+          try {
+            const contact = await contacts.get(row.contactId);
+            await tryNotifyLessonStatus({
+              lesson: row,
+              previousStatus,
+              contact,
+              correlationId,
+              lessons,
+              env,
+            });
+          } catch {
+            // best-effort
+          }
+        }
         updated += 1;
         continue;
       }
@@ -371,7 +426,26 @@ export async function syncLessonRsvps({ lessons, settings, env = process.env }) 
         });
         const instance = instances[0];
         if (instance?.status === 'cancelled') {
-          await lessons.update(lesson.id, { status: 'cancelled', googleInstanceId: instance.id || '' });
+          const previousStatus = lesson.status;
+          const row = await lessons.update(lesson.id, {
+            status: 'cancelled',
+            googleInstanceId: instance.id || '',
+          });
+          if (contacts) {
+            try {
+              const contact = await contacts.get(row.contactId);
+              await tryNotifyLessonStatus({
+                lesson: row,
+                previousStatus,
+                contact,
+                correlationId,
+                lessons,
+                env,
+              });
+            } catch {
+              // best-effort
+            }
+          }
           updated += 1;
           continue;
         }
@@ -381,7 +455,23 @@ export async function syncLessonRsvps({ lessons, settings, env = process.env }) 
       }
       const next = rsvpStatus(response);
       if (next) {
-        await lessons.update(lesson.id, { status: next });
+        const previousStatus = lesson.status;
+        const row = await lessons.update(lesson.id, { status: next });
+        if (contacts) {
+          try {
+            const contact = await contacts.get(row.contactId);
+            await tryNotifyLessonStatus({
+              lesson: row,
+              previousStatus,
+              contact,
+              correlationId,
+              lessons,
+              env,
+            });
+          } catch {
+            // best-effort
+          }
+        }
         updated += 1;
       }
     } catch (err) {

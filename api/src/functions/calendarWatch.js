@@ -2,6 +2,7 @@ import { app } from '@azure/functions';
 import { tryCalendarSettingsStoreFromEnv } from '../lib/calendarSettings.js';
 import { requireLessonScheduling } from '../lib/calendarGate.js';
 import { newCorrelationId } from '../lib/auth.js';
+import { tryContactsStoreFromEnv } from '../lib/contacts.js';
 import { tryLessonsStoreFromEnv } from '../lib/lessons.js';
 import { syncLessonRsvps } from '../lib/lessonWorkflow.js';
 import { flush, trackEvent } from '../lib/telemetry.js';
@@ -39,7 +40,12 @@ app.http('calendarWatch', {
         return { status: 401, headers: jsonHeaders() };
       }
       if (resourceState !== 'sync') {
-        await syncLessonRsvps({ lessons, settings });
+        await syncLessonRsvps({
+          lessons,
+          settings,
+          contacts: tryContactsStoreFromEnv(),
+          correlationId,
+        });
       }
       trackEvent('StudioCalendarWatch', { correlationId, resourceState });
       await flush();

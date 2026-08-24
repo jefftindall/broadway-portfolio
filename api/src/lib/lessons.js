@@ -233,6 +233,9 @@ function entityToLesson(entity) {
     confirmedAt: entity.confirmedAt || '',
     declinedAt: entity.declinedAt || '',
     cancelledAt: entity.cancelledAt || '',
+    requestedEmailSentAt: entity.requestedEmailSentAt || '',
+    confirmedEmailSentAt: entity.confirmedEmailSentAt || '',
+    reminderSentOn: entity.reminderSentOn || '',
     etag: entity.etag || '',
   };
 }
@@ -333,6 +336,9 @@ export function createLessonsStore({ tableClient }) {
         confirmedAt: '',
         declinedAt: '',
         cancelledAt: '',
+        requestedEmailSentAt: '',
+        confirmedEmailSentAt: '',
+        reminderSentOn: '',
       };
       try {
         await tableClient.createEntity(record);
@@ -383,6 +389,16 @@ export function createLessonsStore({ tableClient }) {
         confirmedAt: nextStatus === 'confirmed' ? current.confirmedAt || now : current.confirmedAt,
         declinedAt: nextStatus === 'declined' ? current.declinedAt || now : current.declinedAt,
         cancelledAt: nextStatus === 'cancelled' ? current.cancelledAt || now : current.cancelledAt,
+        requestedEmailSentAt:
+          patch.requestedEmailSentAt !== undefined
+            ? asIsoDate(patch.requestedEmailSentAt) || ''
+            : current.requestedEmailSentAt,
+        confirmedEmailSentAt:
+          patch.confirmedEmailSentAt !== undefined
+            ? asIsoDate(patch.confirmedEmailSentAt) || ''
+            : current.confirmedEmailSentAt,
+        reminderSentOn:
+          patch.reminderSentOn !== undefined ? trimTo(patch.reminderSentOn, 20) : current.reminderSentOn,
         etag: etag || current.etag,
       };
       try {

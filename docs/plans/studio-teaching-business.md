@@ -2,7 +2,7 @@
 
 **Artifact ID:** `ELYSE-STUDIO-001`  
 **Version:** 1.9  
-**Last updated:** 2026-08-23  
+**Last updated:** 2026-08-24  
 **Audience:** Agents, implementers, operators  
 **Scope:** Auth-gated Studio (`/studio`) as the ops home for the teaching business **and** career relationships — CRM (people + personas + LTV), Google Calendar scheduling, contact automation, payment status, and reports. Public site stays the portfolio + inquire/book surface. Money movement stays in [`lesson-payments.md`](./lesson-payments.md).
 
@@ -46,10 +46,10 @@ Record shapes, Table Storage keys, git collections, and access-flow diagrams: [`
 | Area | Today (in scope now) | Later (phased `STUDIO-*` below) |
 |------|----------------------|----------------------------------|
 | Content | Voice/text → Gemini → site publish | Keep; still part of running the brand |
-| People / CRM | `/studio/people` list + detail + student LTV (`STUDIO-P1`, `P2`) | Inquiry ingest (`STUDIO-P4`) |
-| Schedule | Email / manual | Google Calendar invites + free/busy (`STUDIO-P3`); ICS fallback if Google is down |
-| Payments | Stripe match + offline rows + copy Payment Links (`STUDIO-P2`) | Upcoming lesson paid/unpaid from Calendar (`STUDIO-P2-004` residual / `P3`) |
-| Communications | Inquiry forms → email (ACS notify) | Student **Requested** then **Confirmed** (Elyse RSVP); reminders; inquiry → CRM (`STUDIO-P4`) |
+| People / CRM | `/studio/people` list + detail + student LTV (`STUDIO-P1`, `P2`) | Inquiry ingest (`STUDIO-P4-001`) ships; export (`STUDIO-P1-006`) residual |
+| Schedule | Google Calendar invites + free/busy (`STUDIO-P3`) | ICS fallback if Google is down |
+| Payments | Stripe match + offline rows + copy Payment Links (`STUDIO-P2`) | Upcoming lesson paid/unpaid from Calendar (`STUDIO-P2-004` residual) |
+| Communications | Inquiry → CRM + student **Requested** / **Confirmed** mail + reminders (`STUDIO-P4`) | Agent stale tasks (`STUDIO-P4-004`); manual templates (`STUDIO-P4-005`) |
 | Financial reports | — | Month summary (gross / fees / net / refunds); deep ledger stays in Stripe/exports (`STUDIO-P5`) |
 | Public booking | Inquire-then-email | Optional slot picker that reads Google free/busy (`STUDIO-P5`) |
 | Help | `/studio/help` map + contextual guides (`/studio/help/content`, `/students`, `/admin`, `/access`) | Expand as ops capabilities ship (never before) |
@@ -82,12 +82,12 @@ Payments vendor choice and Phase 1 checkout live in [`lesson-payments.md`](./les
 | Phase 0 — Plan + Action IDs + SoT | `done` | — |
 | Phase 1 — People & personas | `done` | Residual: `STUDIO-P1-006` async export |
 | Phase 2 — Lifetime value + pay status | `done` | Residual: upcoming lesson paid/unpaid waits on `STUDIO-P3-003` |
-| Phase 3 — Google Calendar scheduling | `done` | Operator: GCP Testing client + KV client id/secret + Connect in Studio. Student Requested/Confirmed mail is `STUDIO-P4-002`. Upcoming paid/unpaid join is `STUDIO-P2-004` residual |
-| Phase 4 — Contact automation | `planned` | Inquiry ingest; student **Requested** → **Confirmed** |
+| Phase 3 — Google Calendar scheduling | `done` | Operator: GCP Testing client + KV client id/secret + Connect in Studio |
+| Phase 4 — Contact automation | `done` | Residual: operator confirms ACS mail on staging; `STUDIO-P2-004` upcoming paid/unpaid |
 | Phase 5 — Public slots + month report | `planned` | After P3 write-back is reliable |
 | Phase 6 — Roles, permissions, user profiles | `done` | Shipped after P1 in git (People needed the catalog). Listed last so phase numbers read 0–6. Live grants on `/studio/admin/access` |
 
-**Suggested next:** `STUDIO-P4-002` (student Requested → Confirmed ACS email) after operator Connect on staging. Residual `STUDIO-P2-004` upcoming paid/unpaid joins confirmed lessons. Phase 6 is already `done` — do not treat it as upcoming work.
+**Suggested next:** `STUDIO-P5-001` (public free/busy slot picker) after staging Calendar connect is verified. Residual `STUDIO-P2-004` upcoming paid/unpaid joins confirmed lessons.
 
 ---
 
@@ -510,7 +510,7 @@ Selected integration: **Studio Google identity as event organizer** (option F in
 
 - [x] Public site, inquire, book, People, payments, and publish succeed when Calendar tokens are missing, revoked, or Google returns 401/403/429/5xx / timeout
 - [x] On Google failure (or not connected): ACS **email** to `SITE-CONTACT-EMAIL` with `text/calendar` ICS `METHOD:REQUEST` (UID = lesson id) so Elyse still gets a calendar reminder in Mail/Google
-- [ ] Student still receives **Requested** (`STUDIO-P4-002`); they are not blocked on Google — residual: mail ships with Phase 4
+- [x] Student still receives **Requested** (`STUDIO-P4-002`); they are not blocked on Google
 - [x] Failures log kind + `correlationId` only — never token or PII bodies
 - [x] Calendar UI degrades (disconnected banner) — never uncaught 500s. Public slot picker remains Phase 5 (hidden until then)
 
@@ -524,22 +524,22 @@ Selected integration: **Studio Google identity as event organizer** (option F in
 
 | ID | Title | Status | Depends on | Primary files |
 |----|-------|--------|------------|---------------|
-| `STUDIO-P4-001` | Inquiry → create/update CRM contact | `planned` | `STUDIO-P1-003`; existing `POST /api/contactInquiry` | `api/src/functions/contactInquiry.js` |
-| `STUDIO-P4-002` | Student **Requested** then **Confirmed** (ACS email) | `planned` | `STUDIO-P3-003`; `STUDIO-P3-006` | ACS email; lesson status machine |
-| `STUDIO-P4-003` | Lesson reminders for **confirmed** lessons | `planned` | `STUDIO-P4-002` | Timer Function or equivalent |
-| `STUDIO-P4-004` | Agent / casting follow-up tasks | `planned` | `STUDIO-P2-003` | Studio task list — not a blast send |
-| `STUDIO-P4-005` | Manual send from Studio (templates) | `planned` | `STUDIO-P4-002` | People detail |
+| `STUDIO-P4-001` | Inquiry → create/update CRM contact | `done` | `STUDIO-P1-003`; existing `POST /api/contactInquiry` | `api/src/functions/contactInquiry.js` |
+| `STUDIO-P4-002` | Student **Requested** then **Confirmed** (ACS email) | `done` | `STUDIO-P3-003`; `STUDIO-P3-006` | `api/src/lib/studioComms.js`; lesson status machine |
+| `STUDIO-P4-003` | Lesson reminders for **confirmed** lessons | `done` | `STUDIO-P4-002` | `api/src/functions/lessonReminders.js` |
+| `STUDIO-P4-004` | Agent / casting follow-up tasks | `done` | `STUDIO-P2-003` | `api/src/functions/agentTasks.js`; Career UI |
+| `STUDIO-P4-005` | Manual send from Studio (templates) | `done` | `STUDIO-P4-002` | `api/src/functions/studioComms.js`; People detail |
 
 <details>
 <summary><code>STUDIO-P4-001</code> — Inquiry ingest</summary>
 
 **Acceptance criteria**
 
-- [ ] `type=lesson` upserts a contact with persona `student` (match on email)
-- [ ] `type=casting` upserts persona `casting`
-- [ ] Inquiry body stored as a note or activity — **not** written to git or App Insights message fields
-- [ ] Existing ACS notify-to-Elyse (`SITE-CONTACT-*`) still fires; this ID does not replace it
-- [ ] Duplicate email updates the same person (adds a persona if needed)
+- [x] `type=lesson` upserts a contact with persona `student` (match on email)
+- [x] `type=casting` upserts persona `casting`
+- [x] Inquiry body stored as a note or activity — **not** written to git or App Insights message fields
+- [x] Existing ACS notify-to-Elyse (`SITE-CONTACT-*`) still fires; this ID does not replace it
+- [x] Duplicate email updates the same person (adds a persona if needed)
 
 </details>
 
@@ -548,12 +548,12 @@ Selected integration: **Studio Google identity as event organizer** (option F in
 
 **Acceptance criteria**
 
-- [ ] On lesson create: ACS email to the student/parent whose subject and body clearly say **Requested** (time, Zoom vs NYC, “you’ll get Confirmed when Elyse accepts”)
-- [ ] When the lesson becomes `confirmed` (Elyse **Accept** on the Google invite, or Studio Confirm / signed email link in degraded mode): ACS email that clearly says **Confirmed**
-- [ ] Primary path is automatic — not an operator **Send confirmation** tap (`STUDIO-P4-005` is resend only)
-- [ ] Copy is voice-lessons only; recipients are the contact’s email — never `ALERT-*`
-- [ ] Privacy/Terms still cover transactional lesson mail
-- [ ] Studio People / schedule UI labels the same statuses (**Requested** / **Confirmed**) so Elyse and students share one vocabulary
+- [x] On lesson create: ACS email to the student/parent whose subject and body clearly say **Requested** (time, Zoom vs NYC, “you’ll get Confirmed when Elyse accepts”)
+- [x] When the lesson becomes `confirmed` (Elyse **Accept** on the Google invite, or Studio Confirm / signed email link in degraded mode): ACS email that clearly says **Confirmed**
+- [x] Primary path is automatic — not an operator **Send confirmation** tap (`STUDIO-P4-005` is resend only)
+- [x] Copy is voice-lessons only; recipients are the contact’s email — never `ALERT-*`
+- [x] Privacy/Terms still cover transactional lesson mail
+- [x] Studio People / schedule UI labels the same statuses (**Requested** / **Confirmed**) so Elyse and students share one vocabulary
 
 </details>
 
@@ -562,11 +562,11 @@ Selected integration: **Studio Google identity as event organizer** (option F in
 
 **Acceptance criteria**
 
-- [ ] Reminder job reads **confirmed** Studio lessons (join Google event id when present)
-- [ ] Do not remind `requested` lessons — the student has not been Confirmed yet
-- [ ] Default: email the day before; SMS only if the student has an explicit SMS-ok flag (do not SMS inquiry visitors)
-- [ ] Idempotent per event occurrence; failures log correlation id only
-- [ ] Quiet hours / timezone = America/New_York unless the contact overrides
+- [x] Reminder job reads **confirmed** Studio lessons (join Google event id when present)
+- [x] Do not remind `requested` lessons — the student has not been Confirmed yet
+- [x] Default: email the day before; SMS only if the student has an explicit SMS-ok flag (do not SMS inquiry visitors)
+- [x] Idempotent per event occurrence; failures log correlation id only
+- [x] Quiet hours / timezone = America/New_York unless the contact overrides
 
 </details>
 
@@ -575,9 +575,9 @@ Selected integration: **Studio Google identity as event organizer** (option F in
 
 **Acceptance criteria**
 
-- [ ] Studio shows “stale agent” when last contact exceeds a configurable number of days
-- [ ] Action is a **task** for Elyse (open note / log submission), not an automatic email to the agent
-- [ ] No casting-director drip campaigns
+- [x] Studio shows “stale agent” when last contact exceeds a configurable number of days
+- [x] Action is a **task** for Elyse (open note / log submission), not an automatic email to the agent
+- [x] No casting-director drip campaigns
 
 </details>
 
@@ -586,9 +586,9 @@ Selected integration: **Studio Google identity as event organizer** (option F in
 
 **Acceptance criteria**
 
-- [ ] Short templates: lesson confirm, reminder, “here is the pay link,” “thanks for the materials request”
-- [ ] Send is always an explicit tap
-- [ ] Help documents templates only after they ship
+- [x] Short templates: lesson confirm, reminder, “here is the pay link,” “thanks for the materials request”
+- [x] Send is always an explicit tap
+- [x] Help documents templates only after they ship
 
 </details>
 

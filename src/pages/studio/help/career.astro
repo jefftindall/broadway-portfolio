@@ -28,7 +28,11 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
       <ol class="list-decimal space-y-2 pl-5 text-sm text-muted">
         <li>Open <a href="/studio/career" class="text-gel hover:text-gold">Career</a>, then Agents or Casting.</li>
         <li>Open a person to edit warmth and last-touch dates. Recency is calculated from that date.</li>
-        <li>Stale follow-up tasks are not automatic yet. Recency is not a public score.</li>
+        <li>
+          Stale agents (default: no touch in 90 days) appear as tasks on{' '}
+          <a href="/studio/career" class="text-gel hover:text-gold">Career</a> — open the person to
+          log a submission or update last touch. Studio does not email agents automatically.
+        </li>
       </ol>
     </section>
   </article>
