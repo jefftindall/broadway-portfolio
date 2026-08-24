@@ -474,6 +474,7 @@ import {
   });
 
   async function bootstrap() {
+    setStudioStatus(statusEl, 'Checking access…', true);
     const session = await fetchStudioSession();
     if (session.apiUnavailable) {
       applyPersonaButtonState();

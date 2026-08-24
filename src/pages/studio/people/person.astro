@@ -917,6 +917,7 @@ import {
   }
 
   async function bootstrap() {
+    setStudioStatus(statusEl, 'Checking access…', true);
     const session = await fetchStudioSession();
     if (!session.apiUnavailable && !hasStudioPermission(session, STUDIO_PERMISSION.PEOPLE_READ)) {
       peopleGate.classList.remove('hidden');

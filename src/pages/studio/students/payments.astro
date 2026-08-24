@@ -20,6 +20,11 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
       schedule rows to Stripe.
     </p>
 
+    <p id="pay-bootstrap-status" class="busy-status mt-6 text-sm text-muted" role="status" aria-live="polite">
+      <span class="busy-spinner" aria-hidden="true"></span>
+      <span>Checking access…</span>
+    </p>
+
     <div
       id="people-gate"
       class="mt-6 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted"
@@ -39,7 +44,7 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
       </p>
     </div>
 
-    <div id="pay-workspace">
+    <div id="pay-workspace" class="hidden">
       <div class="mt-6 space-y-3 rounded-sm border border-line bg-panel/40 p-4">
         <h2 class="font-display text-2xl text-spotlight">Payment links</h2>
         <p class="text-sm text-muted">
@@ -90,6 +95,7 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
   };
   type Contact = { id: string; displayName: string; personas: string[]; archived?: boolean };
 
+  const bootstrapStatus = document.getElementById('pay-bootstrap-status') as HTMLElement;
   const errorBox = document.getElementById('pay-error') as HTMLElement;
   const errorMsg = document.getElementById('pay-error-msg') as HTMLElement;
   const errorRef = document.getElementById('pay-error-ref') as HTMLElement;
@@ -226,13 +232,18 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
   }
 
   async function bootstrap() {
+    setStudioStatus(bootstrapStatus, 'Checking access…', true);
     const session = await fetchStudioSession();
     if (!session.apiUnavailable && !hasStudioPermission(session, STUDIO_PERMISSION.PEOPLE_READ)) {
+      clearStudioStatus(bootstrapStatus);
+      bootstrapStatus.classList.add('hidden');
       gate.classList.remove('hidden');
-      workspace.classList.add('hidden');
       return;
     }
     canWrite = session.apiUnavailable || hasStudioPermission(session, STUDIO_PERMISSION.PEOPLE_WRITE);
+    clearStudioStatus(bootstrapStatus);
+    bootstrapStatus.classList.add('hidden');
+    workspace.classList.remove('hidden');
     await load();
   }
 
