@@ -11,8 +11,11 @@ globs:
   - api/src/lib/github.js
   - api/src/lib/lessonPayConfig.js
   - api/src/lib/stripeWebhook.js
+  - api/src/lib/ledger.js
   - api/src/lib/acsNotify.js
   - api/src/functions/contacts.js
+  - api/src/functions/offlinePayments.js
+  - api/src/functions/unmatchedPayments.js
   - api/src/functions/studioUsers.js
   - api/src/functions/contactInquiry.js
   - api/src/functions/lessonPayConfig.js

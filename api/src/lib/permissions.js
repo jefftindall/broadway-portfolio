@@ -30,12 +30,12 @@ export const PERMISSION_CATALOG = {
   [PERMISSION.PEOPLE_READ]: {
     id: PERMISSION.PEOPLE_READ,
     label: 'View People',
-    description: 'Open the People list and contact details.',
+    description: 'Open the People list, contact details, lifetime value, and unmatched payments.',
   },
   [PERMISSION.PEOPLE_WRITE]: {
     id: PERMISSION.PEOPLE_WRITE,
     label: 'Edit People',
-    description: 'Create, update, and archive contacts.',
+    description: 'Create, update, and archive contacts; log offline money; attach unmatched Stripe.',
   },
   [PERMISSION.USERS_READ]: {
     id: PERMISSION.USERS_READ,

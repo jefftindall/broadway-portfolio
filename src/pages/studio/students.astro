@@ -11,15 +11,15 @@ import StudioLandingCard from '../../components/StudioLandingCard.astro';
 >
   <section class="mx-auto max-w-xl px-4 py-5 md:py-8">
     <p class="text-sm text-muted">
-      Teaching relationships and lesson ops. People is live. Lesson schedules, payment status, and
-      reminders are not built yet. Studio-wide holidays and vacations will live under Admin →
+      Teaching relationships and lesson ops. People and payment status are live. Lesson schedules
+      and reminders are not built yet. Studio-wide holidays and vacations will live under Admin →
       Calendar — not here.
     </p>
     <div class="mt-5 grid gap-3">
       <StudioLandingCard
         href="/studio/people"
         title="People"
-        summary="Students, parents, and related contacts — notes and personas."
+        summary="Students, parents, and related contacts — notes, personas, and lifetime value."
         primary
       />
       <StudioLandingCard
@@ -28,9 +28,9 @@ import StudioLandingCard from '../../components/StudioLandingCard.astro';
         available={false}
       />
       <StudioLandingCard
+        href="/studio/students/payments"
         title="Payment status"
-        summary="Who is paid or unpaid per lesson. Not available yet."
-        available={false}
+        summary="Copy Payment Links and attach Stripe charges that need a person. Upcoming lesson paid/unpaid waits on Calendar."
       />
       <StudioLandingCard
         title="Reminders"

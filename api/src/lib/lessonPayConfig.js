@@ -76,3 +76,22 @@ export function publicLessonPayConfigFromEnv(env = process.env) {
     },
   });
 }
+
+/**
+ * Studio ops may copy Payment Links even when the public book-page flag is off.
+ * Still sanitized buy.stripe.com URLs only — never keys.
+ * @param {NodeJS.ProcessEnv} [env]
+ */
+export function studioLessonPayLinksFromEnv(env = process.env) {
+  /** @type {Record<string, string>} */
+  const links = {};
+  const raw = {
+    '30min': env.STRIPE_PAYMENT_LINK_30MIN,
+    '60min': env.STRIPE_PAYMENT_LINK_60MIN,
+  };
+  for (const id of LESSON_PAY_RATE_IDS) {
+    const href = sanitizeStripePaymentLink(raw[id]);
+    if (href) links[id] = href;
+  }
+  return links;
+}

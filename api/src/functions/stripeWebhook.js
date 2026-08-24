@@ -1,6 +1,9 @@
 import { app } from '@azure/functions';
 import { newCorrelationId } from '../lib/auth.js';
+import { CrmConfigError, contactsStoreFromEnv } from '../lib/contacts.js';
+import { tryLedgerStoreFromEnv } from '../lib/ledger.js';
 import {
+  applyStripeLedgerEvent,
   stripeEventTelemetry,
   stripeWebhookClient,
   verifyStripeWebhookEvent,
@@ -44,9 +47,30 @@ app.http('stripeWebhook', {
       };
     }
 
+    let applyResult = { applied: false, matchKind: 'no_ledger' };
+    try {
+      const contacts = contactsStoreFromEnv();
+      const ledger = tryLedgerStoreFromEnv(process.env, { contacts });
+      applyResult = await applyStripeLedgerEvent(verified.event, ledger);
+    } catch (err) {
+      if (!(err instanceof CrmConfigError)) {
+        trackException(err, {
+          correlationId,
+          errorKind: 'ledger',
+          ...stripeEventTelemetry(verified.event),
+        });
+        trackEvent('StripeWebhookLedgerFailed', {
+          correlationId,
+          ...stripeEventTelemetry(verified.event),
+        });
+        await flush();
+        return { status: 500, jsonBody: { received: false, correlationId } };
+      }
+    }
+
     trackEvent('StripeWebhookReceived', {
       correlationId,
-      ...stripeEventTelemetry(verified.event),
+      ...stripeEventTelemetry(verified.event, applyResult),
     });
     await flush();
     return { status: 200, jsonBody: { received: true, correlationId } };

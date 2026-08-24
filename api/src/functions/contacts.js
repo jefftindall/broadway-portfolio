@@ -7,6 +7,8 @@ import {
 } from '../lib/auth.js';
 import { contactsStoreFromEnv } from '../lib/contacts.js';
 import { crmFailureResponse } from '../lib/httpErrors.js';
+import { tryLedgerStoreFromEnv } from '../lib/ledger.js';
+import { studioLessonPayLinksFromEnv } from '../lib/lessonPayConfig.js';
 import { PERMISSION, permissionGate } from '../lib/studioAccess.js';
 import { flush, trackEvent, trackException } from '../lib/telemetry.js';
 
@@ -120,6 +122,10 @@ app.http('contacts', {
 
       const body = await request.json();
       const contact = await store.create(body || {});
+      if (contact.email) {
+        const ledger = tryLedgerStoreFromEnv(process.env, { contacts: store });
+        if (ledger) await ledger.rematchUnmatchedForEmail(contact.email);
+      }
       trackEvent('StudioCrmOp', { correlationId, operation: 'create', contactId: contact.id });
       await flush();
       return {
@@ -149,18 +155,30 @@ app.http('contactById', {
       const store = readStore();
       if (request.method === 'GET') {
         const contact = await store.get(contactId);
+        const ledger = tryLedgerStoreFromEnv(process.env, { contacts: store });
+        const payments = ledger ? await ledger.listForContact(contactId) : [];
         trackEvent('StudioCrmOp', { correlationId, operation: 'get', contactId });
         await flush();
         return {
           status: 200,
           headers: jsonHeaders(),
-          jsonBody: { contact, correlationId },
+          jsonBody: {
+            contact,
+            payments,
+            payLinks: studioLessonPayLinksFromEnv(),
+            correlationId,
+          },
         };
       }
 
       const body = await request.json();
       const etag = request.headers.get('if-match') || body?.etag || '';
+      const previous = await store.get(contactId);
       const contact = await store.update(contactId, body || {}, { etag });
+      if (contact.email && contact.email !== previous.email) {
+        const ledger = tryLedgerStoreFromEnv(process.env, { contacts: store });
+        if (ledger) await ledger.rematchUnmatchedForEmail(contact.email);
+      }
       trackEvent('StudioCrmOp', { correlationId, operation: 'update', contactId });
       await flush();
       return {

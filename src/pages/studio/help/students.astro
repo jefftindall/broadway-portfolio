@@ -32,8 +32,8 @@ import { studioPeopleNotes } from '../../../lib/studioHelp';
         </li>
         <li>Tap <span class="text-spotlight">Add person</span>, enter a name, and choose one or more personas.</li>
         <li>
-          Open a person to add student or agent fields, notes, and related links (student ↔ parent).
-          Archive hides them from the main list without deleting history.
+          Open a person to add student or agent fields, notes, related links (student ↔ parent),
+          and student lifetime value. Archive hides them from the main list without deleting history.
         </li>
         <li>
           The list shows 10 people per page, sorted by last name then first. Search and persona
@@ -47,11 +47,23 @@ import { studioPeopleNotes } from '../../../lib/studioHelp';
     </section>
 
     <section class="mt-10 space-y-3">
+      <h2 class="font-display text-2xl text-spotlight">Lifetime value and pay status</h2>
+      <p class="text-sm text-muted">
+        Stripe checkout emails are matched to a student (or a parent’s linked student). The person
+        page shows Stripe plus offline Venmo/cash/Zelle as lifetime value. Refunds lower the Stripe
+        rollup. Charges that do not match stay under{' '}
+        <a href="/studio/students/payments" class="text-gel hover:text-gold">Payment status</a>
+        {' '}as “needs a person.” Copy or share the 30- and 60-minute Payment Links from that page
+        or a student record. Studio never charges a card from voice.
+      </p>
+    </section>
+
+    <section class="mt-10 space-y-3">
       <h2 class="font-display text-2xl text-spotlight">Not built yet</h2>
       <p class="text-sm text-muted">
-        Individual lesson schedules, payment status, and appointment reminders will live under
-        Students. They are not available yet. Studio-wide holidays and vacations (when the entire
-        business is closed) will live under Admin → Calendar, not here.
+        Individual lesson schedules, upcoming-lesson paid/unpaid from Calendar, and appointment
+        reminders will live under Students. They are not available yet. Studio-wide holidays and
+        vacations (when the entire business is closed) will live under Admin → Calendar, not here.
       </p>
     </section>
   </article>

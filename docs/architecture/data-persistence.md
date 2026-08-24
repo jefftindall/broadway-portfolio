@@ -6,16 +6,16 @@
 
 **Keep this document current:** when a PR changes a store, schema, relation, or access path, update the matching sections, mermaid, and source map **in that same PR**, then bump **Last updated**. Agent contract: [`.cursor/rules/data-persistence.mdc`](../../.cursor/rules/data-persistence.mdc) and [AGENTS.md](../../AGENTS.md).
 
-There is **no application database**. Durable records are split across **git** (public brand), **Azure Table Storage** (Studio People + access profiles), **Stripe** (money), and **Key Vault** (secrets). Inquiries and Stripe webhook events are **not** written to a store.
+There is **no application database**. Durable records are split across **git** (public brand), **Azure Table Storage** (Studio People + access profiles + LTV ledger), **Stripe** (money), and **Key Vault** (secrets). Inquiries are **not** written to a store. Stripe webhook events are verified, then matched into the LTV ledger — Stripe remains the books.
 
 ## Systems of record
 
 | Concern | Store | What lives there | What does not |
 |---------|-------|------------------|---------------|
 | **Public brand** | Git (`src/content/`, `src/data/`, `public/`) | Shows, news, gallery, pages, casting landers, site settings, resume meta, original images | Studio contacts, payments, secrets |
-| **Relationships** | Azure Table `contacts` | People CRM: personas, notes, related-contact links | Stripe charges, calendar events |
+| **Relationships** | Azure Table `contacts` | People CRM: personas, notes, related-contact links, LTV rollup, career-value fields | Stripe charges as a second ledger, calendar events |
 | **Authorization** | Azure Table `studioUsers` | Roles + discrete permissions per Entra identity | Login itself (Entra) |
-| **Money** | Stripe (test on staging, live on prod) | Products, prices, Payment Links, Checkout / PaymentIntents | Student LTV in Studio (`STUDIO-P2` planned) |
+| **Money** | Stripe (test on staging, live on prod) | Products, prices, Payment Links, Checkout / PaymentIntents | Studio LTV is a rollup only (`studioLedger`) |
 | **Secrets / config** | Azure Key Vault → SWA app settings | API keys, allowlist, ACS, Payment Link URLs | Business records |
 | **Time** | Google Calendar | *Planned* (`STUDIO-P3`) — not persisted here | — |
 | **Identity** | Microsoft Entra | Who can complete login | Permission to act |
@@ -73,15 +73,15 @@ flowchart TB
 ## 1. Azure Table Storage (Studio CRM + access)
 
 **Infra:** [`infra/modules/portfolio/studio_crm.tf`](../../infra/modules/portfolio/studio_crm.tf)  
-**Stores:** [`api/src/lib/contacts.js`](../../api/src/lib/contacts.js), [`api/src/lib/users.js`](../../api/src/lib/users.js)  
+**Stores:** [`api/src/lib/contacts.js`](../../api/src/lib/contacts.js), [`api/src/lib/users.js`](../../api/src/lib/users.js), [`api/src/lib/ledger.js`](../../api/src/lib/ledger.js)  
 **Geo reads:** [`api/src/lib/tableGeo.js`](../../api/src/lib/tableGeo.js)
 
 | Environment | Account | Tables | Replication |
 |-------------|---------|--------|-------------|
-| Staging | `stelysecrmstaging` | `contacts`, `studioUsers` | Standard RA-GRS (eastus2 → Central US) |
-| Production | `stelysecrmprod` | `contacts`, `studioUsers` | Same |
+| Staging | `stelysecrmstaging` | `contacts`, `studioUsers`, `studioLedger` | Standard RA-GRS (eastus2 → Central US) |
+| Production | `stelysecrmprod` | `contacts`, `studioUsers`, `studioLedger` | Same |
 
-Connection string is written into SWA app settings at apply (`STUDIO_CRM_STORAGE_CONNECTION_STRING`). Table names: `STUDIO_CRM_TABLE_NAME` (`contacts`), `STUDIO_USERS_TABLE_NAME` (`studioUsers`). Values are never logged or committed.
+Connection string is written into SWA app settings at apply (`STUDIO_CRM_STORAGE_CONNECTION_STRING`). Table names: `STUDIO_CRM_TABLE_NAME` (`contacts`), `STUDIO_USERS_TABLE_NAME` (`studioUsers`), `STUDIO_LEDGER_TABLE_NAME` (`studioLedger`). Values are never logged or committed.
 
 **Reads** go to the primary first and fall back to the paired-region secondary when the primary is unreachable (timeouts / 5xx / network). **Writes** stay on the primary until an operator account failover — the secondary is read-only.
 
@@ -107,8 +107,18 @@ One row = one person. Partition = constant `people` (`STUDIO_CONTACTS_PARTITION`
 | `agentAgency` | `agentAgency` | string | Max 200 |
 | `agentTerritory` | `agentTerritory` | string | Max 200 |
 | `agentLastSubmission` | `agentLastSubmission` | string | Max 400 |
-| `agentLastBooking` | `agentLastBooking` | string | Max 400 |
+| `agentLastBooking` | `agentLastBooking` | string | Max 400 (title / show) |
+| `agentLastBookingYear` | `agentLastBookingYear` | number \| omitted | 1950–2100 |
+| `agentWarmth` | `agentWarmth` | `hot` \| `warm` \| `cool` \| `cold` \| `""` | Not a public score |
+| `agentLastTouch` | `agentLastTouch` | `YYYY-MM-DD` \| `""` | Recency is computed in the UI |
 | `agentNextStep` | `agentNextStep` | string | Max 400 |
+| `castingLastRequest` | `castingLastRequest` | string | Max 400 |
+| `castingLastRequestOn` | `castingLastRequestOn` | `YYYY-MM-DD` \| `""` | |
+| `castingWarmth` | `castingWarmth` | same as agent | |
+| `studentLtvCents` | `studentLtvCents` | number | Stripe net + offline. Server-set |
+| `studentLtvStripeCents` | `studentLtvStripeCents` | number | Server-set rollup |
+| `studentLtvOfflineCents` | `studentLtvOfflineCents` | number | Server-set rollup |
+| `studentLtvSyncedAt` | `studentLtvSyncedAt` | ISO-8601 \| `""` | Last ledger recompute |
 | `relatedContacts` | `relatedContactsJson` | `{ id, relation }[]` | Max 20; see relations |
 | `createdAt` / `updatedAt` | same | ISO-8601 | Server-set |
 | `etag` | OData etag | string | Optimistic concurrency (`If-Match` / body `etag`) |
@@ -161,6 +171,21 @@ Catalog and implication rules live in [`api/src/lib/permissions.js`](../../api/s
 
 **Identity match:** `findByPrincipal` lists the partition and matches any of `userId`, `userDetails`, `emails[]` (lowercased) against SWA principal candidates. There is no secondary index.
 
+### 1.2b Payment ledger (`studioLedger` table)
+
+Same CRM storage account — not a new SKU. Stripe stays the money SoT. Studio stores **match state** and a **contact rollup**, then recomputes LTV from these rows so webhook retries do not double-count.
+
+| Partition | Row key | What |
+|-----------|---------|------|
+| `stripe` | PaymentIntent id (else session / charge id) | One row per Stripe payment. `amountCents`, `refundedCents`, `email` / `emailKey`, `contactId`, `matchKind` |
+| `offline` | UUID | Manual `venmo` \| `cash` \| `zelle` \| `other` + date. Never treated as a Stripe charge |
+
+**Match:** lowercased charge/session email → active contact. If that person is a `student`, LTV lands there. If they are a `parent` with exactly one related student, LTV lands on the student. Multiple linked students → `ambiguous`. Agent/casting (or a parent with no student) → `needs_student`. No contact → `unmatched`. Unmatched rows are listed at `GET /api/unmatchedPayments` — they are not dropped. Operators attach them to a student (`people.write`).
+
+**Refunds:** `charge.refunded` raises `refundedCents` on the same row; net = max(0, amount − refunded); the student rollup decreases.
+
+**Contact rollup** (`setLtvRollup`) is not accepted from PATCH. Creating or changing a contact email rematches unmatched Stripe rows for that email.
+
 **Bootstrap:** `ALLOWED-USER-IDS` (env Key Vault → `ALLOWED_USER_IDS`) is **not** a second permission model. The first session for an allowlisted caller with no profile writes a **Super Administrator** row (`ensureOwnerFromAllowlist`). After that the table is SoT. Removing someone from the allowlist does not disable an existing profile. Authn vs authz: [`authentication-authorization.md`](./authentication-authorization.md).
 
 ### 1.3 Relations (Table Storage)
@@ -168,6 +193,7 @@ Catalog and implication rules live in [`api/src/lib/permissions.js`](../../api/s
 ```mermaid
 erDiagram
   Contact ||--o{ Contact : "relatedContacts bidirectional"
+  Contact ||--o{ LedgerRow : "email match or assign"
   EntraPrincipal ||--o| StudioUser : "userId / emails match"
   StudioUser {
     string id PK
@@ -181,6 +207,14 @@ erDiagram
     string personas
     string email
     string relatedContactsJson
+    int studentLtvCents
+  }
+  LedgerRow {
+    string partitionKey PK
+    string id PK
+    string source
+    string contactId
+    string matchKind
   }
   EntraPrincipal {
     string userId
@@ -200,7 +234,7 @@ erDiagram
 
 `syncRelatedLinks` updates the other row on create/update. Self-links are rejected. Missing targets fail validation. Removing a link strips the inverse. Max 20 related ids per person. This is **not** a foreign-key constraint — the other row must already exist.
 
-There is **no** stored link from a contact to Stripe customers, Calendar events, or git content.
+Ledger rows store `contactId` after an email match or operator assign. There is **no** stored link from a contact to Google Calendar events or git content.
 
 ### 1.4 Access flow — People
 
@@ -234,9 +268,13 @@ HTTP surface ([`api/src/functions/contacts.js`](../../api/src/functions/contacts
 | Method | Route | Permission | Store op |
 |--------|-------|------------|----------|
 | `GET` | `/api/contacts` | `people.read` | `list` (q, persona, page, includeArchived, directory) |
-| `POST` | `/api/contacts` | `people.write` | `create` |
-| `GET` | `/api/contacts/{id}` | `people.read` | `get` |
-| `PATCH` | `/api/contacts/{id}` | `people.write` | `update` (etag) |
+| `POST` | `/api/contacts` | `people.write` | `create` (rematch unmatched Stripe by email) |
+| `GET` | `/api/contacts/{id}` | `people.read` | `get` + payments + sanitized Payment Links |
+| `PATCH` | `/api/contacts/{id}` | `people.write` | `update` (etag); rematch if email changed |
+| `POST` | `/api/contacts/{id}/offlinePayments` | `people.write` | Offline Venmo/cash/Zelle/other |
+| `DELETE` | `/api/contacts/{id}/offlinePayments/{paymentId}` | `people.write` | Remove offline row + recompute LTV |
+| `GET` | `/api/unmatchedPayments` | `people.read` | Stripe rows that need a student |
+| `POST` | `/api/unmatchedPayments/{id}/assign` | `people.write` | Attach to a student |
 
 Access admin ([`api/src/functions/studioUsers.js`](../../api/src/functions/studioUsers.js)) uses `users.read` / `users.manage` against the same `studioUsers` table. Session payload (`GET /api/studioSession`) is UI convenience only — every privileged call re-checks the catalog.
 
@@ -381,7 +419,7 @@ Public pages **read** collections at **build time** (`getCollection` / `getEntry
 | Price (USD cents, one-time) | Env Terraform | Stripe | Same metadata; cents from `lessons-book.md` |
 | Webhook endpoint | Env Terraform | Stripe | URL `https://{host}/api/stripeWebhook` |
 | Payment Link | `scripts/upsert-stripe-payment-links.mjs` | Stripe + **env vault** `STRIPE-PAYMENT-LINK-*` | One link per rate |
-| Checkout / PaymentIntent / Charge | Stripe Checkout | Stripe | Not copied into Table Storage |
+| Checkout / PaymentIntent / Charge | Stripe Checkout | Stripe | Matched into `studioLedger` by email; Stripe remains the books |
 
 API keys live in **`kv-elyse-shared`** (`STRIPE-TEST-*` / `STRIPE-LIVE-*`). Staging consumes test keys; prod consumes live. Webhook signing secret and Payment Link URLs live in the **environment** vault so catalogs promote independently.
 
@@ -392,6 +430,7 @@ sequenceDiagram
   participant KV as Env vault via SWA settings
   participant Stripe as Stripe Checkout
   participant Hook as POST /api/stripeWebhook
+  participant Tables as studioLedger + contacts
   participant AI as App Insights
 
   Book->>API: anonymous
@@ -400,13 +439,13 @@ sequenceDiagram
   Book->>Stripe: Payment Link
   Stripe->>Hook: signed event
   Hook->>Hook: constructEvent
-  Hook->>AI: StripeWebhookReceived eventId + type only
-  Note over Hook: No Table write. LTV match is STUDIO-P2.
+  Hook->>Tables: upsert studioLedger + contact LTV rollup
+  Hook->>AI: StripeWebhookReceived eventId + type + matchKind (no email)
 ```
 
-`GET /api/lessonPayConfig` never returns secret/restricted keys. Links must be `https://buy.stripe.com/…`. Prod flag is **false** until go-live.
+`GET /api/lessonPayConfig` never returns secret/restricted keys. Links must be `https://buy.stripe.com/…`. Prod flag is **false** until go-live. Studio may still copy those URLs via `people.read` even when the public flag is off (`studioLessonPayLinksFromEnv`).
 
-Webhook handler **verifies and telemeters** (`checkout.session.*`, `payment_intent.*`, `charge.refunded`). It does not persist the payload or match a contact by email yet.
+Webhook handler **verifies**, upserts `studioLedger` (`checkout.session.*` paid, `payment_intent.succeeded`, `charge.refunded`), rematches by email, and telemeters event id + type + `matchKind` — never email or amount in App Insights.
 
 ---
 
@@ -467,7 +506,7 @@ From [`studio-teaching-business.md`](../plans/studio-teaching-business.md):
 | Planned ID | Intended store | Today |
 |------------|----------------|-------|
 | `STUDIO-P1-006` | Export file (emailed / download) | People live only in Table Storage |
-| `STUDIO-P2-*` | Stripe ↔ contact email match; LTV fields | Webhook is telemetry-only |
+| `STUDIO-P2-004` upcoming | Calendar write-back → paid/unpaid per lesson | Payment Links + unmatched attach ship now |
 | `STUDIO-P3-*` | Google Calendar (busy + write-back) | No calendar store |
 | `STUDIO-P4-*` | Inquiry → contact row | ACS notify only |
 | `STUDIO-P5-*` | Month report / public free-busy | Stripe Dashboard / email |
@@ -504,6 +543,7 @@ Do not invent a second calendar or a Studio ledger that can drift from Stripe.
 | Topic | Code |
 |-------|------|
 | Contact schema + store | `api/src/lib/contacts.js` |
+| LTV ledger + offline money | `api/src/lib/ledger.js` |
 | User profile schema + store | `api/src/lib/users.js` |
 | RA-GRS table client | `api/src/lib/tableGeo.js` |
 | Permission catalog | `api/src/lib/permissions.js` |
@@ -511,7 +551,7 @@ Do not invent a second calendar or a Studio ledger that can drift from Stripe.
 | Content Zod schemas | `api/src/lib/contentSchemas.js` |
 | Astro collections | `src/content.config.ts` |
 | Git commits | `api/src/lib/github.js`, `api/src/lib/gemini.js` |
-| CRM HTTP | `api/src/functions/contacts.js` |
+| CRM HTTP | `api/src/functions/contacts.js`, `offlinePayments.js`, `unmatchedPayments.js` |
 | Access HTTP | `api/src/functions/studioUsers.js` |
 | Inquiry HTTP | `api/src/functions/contactInquiry.js` |
 | Pay config / webhook | `api/src/functions/lessonPayConfig.js`, `stripeWebhook.js` |

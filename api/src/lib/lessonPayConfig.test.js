@@ -6,6 +6,7 @@ import {
   publicLessonPayConfig,
   publicLessonPayConfigFromEnv,
   sanitizeStripePaymentLink,
+  studioLessonPayLinksFromEnv,
 } from './lessonPayConfig.js';
 
 test('isUsableSecret rejects empty and REPLACE_ME', () => {
@@ -87,4 +88,15 @@ test('publicLessonPayConfigFromEnv never returns secret key fields', () => {
   assert.equal('secretKey' in result, false);
   assert.equal(JSON.stringify(result).includes('rk_test'), false);
   assert.equal(JSON.stringify(result).includes('whsec_'), false);
+});
+
+test('studioLessonPayLinksFromEnv returns sanitized links when the public flag is off', () => {
+  const links = studioLessonPayLinksFromEnv({
+    LESSON_PAYMENTS_ENABLED: 'false',
+    STRIPE_SECRET_KEY: 'rk_test_should_never_leak',
+    STRIPE_PAYMENT_LINK_30MIN: 'https://buy.stripe.com/test_30',
+    STRIPE_PAYMENT_LINK_60MIN: 'REPLACE_ME',
+  });
+  assert.deepEqual(links, { '30min': 'https://buy.stripe.com/test_30' });
+  assert.equal(JSON.stringify(links).includes('rk_test'), false);
 });

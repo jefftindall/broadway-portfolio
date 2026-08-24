@@ -7,6 +7,10 @@ import {
   STUDIO_RELATED_LABELS,
   STUDIO_STUDENT_FORMATS,
   STUDIO_STUDENT_FORMAT_LABELS,
+  STUDIO_WARMTH,
+  STUDIO_WARMTH_LABELS,
+  STUDIO_OFFLINE_METHODS,
+  STUDIO_OFFLINE_METHOD_LABELS,
 } from '../../../lib/studioPeople';
 
 // Contact ids live in Table Storage. This static shell reads `?id=` in the
@@ -182,6 +186,42 @@ import {
             class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
           />
         </label>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <label class="block text-sm text-muted">
+            Last booking year
+            <input
+              id="edit-last-booking-year"
+              type="number"
+              min="1950"
+              max="2100"
+              step="1"
+              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+            />
+          </label>
+          <label class="block text-sm text-muted">
+            Last touch
+            <input
+              id="edit-last-touch"
+              type="date"
+              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+            />
+          </label>
+        </div>
+        <label class="block text-sm text-muted">
+          Warmth
+          <select
+            id="edit-warmth"
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+          >
+            <option value="">Not set</option>
+            {
+              STUDIO_WARMTH.map((warmth) => (
+                <option value={warmth}>{STUDIO_WARMTH_LABELS[warmth]}</option>
+              ))
+            }
+          </select>
+        </label>
+        <p id="agent-recency" class="text-sm text-muted"></p>
         <label class="block text-sm text-muted">
           Next step
           <input
@@ -190,6 +230,44 @@ import {
             class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
           />
         </label>
+      </div>
+
+      <div id="casting-fields" class="hidden space-y-3 rounded-sm border border-line bg-panel/40 p-4">
+        <h2 class="font-display text-2xl text-spotlight">Casting</h2>
+        <p class="text-sm text-muted">Relationship value — not a dollar total.</p>
+        <label class="block text-sm text-muted">
+          Last materials request
+          <input
+            id="edit-casting-request"
+            type="text"
+            class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+          />
+        </label>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <label class="block text-sm text-muted">
+            Request date
+            <input
+              id="edit-casting-request-on"
+              type="date"
+              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+            />
+          </label>
+          <label class="block text-sm text-muted">
+            Warmth
+            <select
+              id="edit-casting-warmth"
+              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+            >
+              <option value="">Not set</option>
+              {
+                STUDIO_WARMTH.map((warmth) => (
+                  <option value={warmth}>{STUDIO_WARMTH_LABELS[warmth]}</option>
+                ))
+              }
+            </select>
+          </label>
+        </div>
+        <p id="casting-recency" class="text-sm text-muted"></p>
       </div>
 
       <div class="space-y-3 rounded-sm border border-line bg-panel/40 p-4">
@@ -244,11 +322,84 @@ import {
         </button>
       </div>
     </form>
+
+    <div id="student-value" class="mt-6 hidden space-y-4 rounded-sm border border-line bg-panel/40 p-4">
+      <h2 class="font-display text-2xl text-spotlight">Lifetime value</h2>
+      <p id="student-ltv" class="text-sm text-spotlight"></p>
+      <p id="student-ltv-sync" class="text-xs text-muted"></p>
+      <div id="pay-links" class="hidden space-y-2">
+        <h3 class="font-display text-xl text-spotlight">Payment links</h3>
+        <p class="text-sm text-muted">Copy or share a lesson Payment Link. Studio never charges a card from voice.</p>
+        <div id="pay-link-buttons" class="flex flex-wrap gap-2"></div>
+      </div>
+      <div>
+        <h3 class="font-display text-xl text-spotlight">Payments</h3>
+        <ul id="payment-list" class="mt-2 space-y-2 text-sm text-muted"></ul>
+      </div>
+      <form id="offline-form" class="space-y-3">
+        <h3 class="font-display text-xl text-spotlight">Log offline money</h3>
+        <p class="text-sm text-muted">Venmo, cash, Zelle, or other — not a Stripe charge.</p>
+        <div class="grid gap-3 sm:grid-cols-3">
+          <label class="block text-sm text-muted">
+            Amount ($)
+            <input
+              id="offline-amount"
+              type="number"
+              min="1"
+              step="1"
+              required
+              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+            />
+          </label>
+          <label class="block text-sm text-muted">
+            Method
+            <select
+              id="offline-method"
+              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+            >
+              {
+                STUDIO_OFFLINE_METHODS.map((method) => (
+                  <option value={method}>{STUDIO_OFFLINE_METHOD_LABELS[method]}</option>
+                ))
+              }
+            </select>
+          </label>
+          <label class="block text-sm text-muted">
+            Date
+            <input
+              id="offline-date"
+              type="date"
+              required
+              class="mt-1 w-full rounded-sm border border-line bg-ink px-3 py-2 text-sm text-spotlight outline-none focus:border-gold"
+            />
+          </label>
+        </div>
+        <button
+          type="submit"
+          class="rounded-sm bg-gold px-4 py-2 text-sm font-semibold text-ink hover:brightness-110"
+        >
+          Add offline payment
+        </button>
+      </form>
+    </div>
+
+    <div id="parent-value" class="mt-6 hidden space-y-2 rounded-sm border border-line bg-panel/40 p-4">
+      <h2 class="font-display text-2xl text-spotlight">Linked student value</h2>
+      <p id="parent-ltv" class="text-sm text-muted"></p>
+    </div>
   </section>
 </StudioLayout>
 
 <script>
-  import { STUDIO_RELATED_LABELS, studioPersonPath } from '../../../lib/studioPeople';
+  import {
+    STUDIO_OFFLINE_METHOD_LABELS,
+    STUDIO_PAY_LINK_LABELS,
+    STUDIO_RELATED_LABELS,
+    careerRecencyLabel,
+    formatUsdFromCents,
+    studioPersonPath,
+    type StudioOfflineMethod,
+  } from '../../../lib/studioPeople';
   import {
     STUDIO_PERMISSION,
     fetchStudioSession,
@@ -272,9 +423,29 @@ import {
     agentTerritory: string;
     agentLastSubmission: string;
     agentLastBooking: string;
+    agentLastBookingYear: number | null;
     agentNextStep: string;
+    agentWarmth: string;
+    agentLastTouch: string;
+    castingLastRequest: string;
+    castingLastRequestOn: string;
+    castingWarmth: string;
+    studentLtvCents: number;
+    studentLtvStripeCents: number;
+    studentLtvOfflineCents: number;
+    studentLtvSyncedAt: string;
     relatedContacts: Related[];
     etag?: string;
+  };
+  type LedgerRow = {
+    id: string;
+    source: string;
+    amountCents: number;
+    refundedCents: number;
+    netCents: number;
+    method: string;
+    paidOn: string;
+    matchKind: string;
   };
 
   const contactId = new URLSearchParams(window.location.search).get('id') || '';
@@ -287,6 +458,18 @@ import {
   const errorId = document.getElementById('people-error-id') as HTMLElement;
   const studentFields = document.getElementById('student-fields') as HTMLElement;
   const agentFields = document.getElementById('agent-fields') as HTMLElement;
+  const castingFields = document.getElementById('casting-fields') as HTMLElement;
+  const studentValue = document.getElementById('student-value') as HTMLElement;
+  const parentValue = document.getElementById('parent-value') as HTMLElement;
+  const studentLtv = document.getElementById('student-ltv') as HTMLElement;
+  const studentLtvSync = document.getElementById('student-ltv-sync') as HTMLElement;
+  const parentLtv = document.getElementById('parent-ltv') as HTMLElement;
+  const paymentList = document.getElementById('payment-list') as HTMLElement;
+  const payLinks = document.getElementById('pay-links') as HTMLElement;
+  const payLinkButtons = document.getElementById('pay-link-buttons') as HTMLElement;
+  const offlineForm = document.getElementById('offline-form') as HTMLFormElement;
+  const agentRecency = document.getElementById('agent-recency') as HTMLElement;
+  const castingRecency = document.getElementById('casting-recency') as HTMLElement;
   const relatedList = document.getElementById('related-list') as HTMLElement;
   const relatedPick = document.getElementById('related-pick') as HTMLSelectElement;
   const relatedRelation = document.getElementById('related-relation') as HTMLSelectElement;
@@ -296,6 +479,8 @@ import {
 
   let current: Contact | null = null;
   let directory: Contact[] = [];
+  let payments: LedgerRow[] = [];
+  let payLinkMap: Record<string, string> = {};
 
   function showError(message: string, correlationId?: string) {
     errorMsg.textContent = message;
@@ -322,6 +507,9 @@ import {
     const personas = selectedPersonas();
     studentFields.classList.toggle('hidden', !personas.includes('student'));
     agentFields.classList.toggle('hidden', !personas.includes('agent'));
+    castingFields.classList.toggle('hidden', !personas.includes('casting'));
+    studentValue.classList.toggle('hidden', !personas.includes('student'));
+    parentValue.classList.toggle('hidden', !personas.includes('parent'));
   }
 
   function fillForm(contact: Contact) {
@@ -349,12 +537,138 @@ import {
     (document.getElementById('edit-last-submission') as HTMLInputElement).value =
       contact.agentLastSubmission || '';
     (document.getElementById('edit-last-booking') as HTMLInputElement).value = contact.agentLastBooking || '';
+    (document.getElementById('edit-last-booking-year') as HTMLInputElement).value =
+      contact.agentLastBookingYear === null || contact.agentLastBookingYear === undefined
+        ? ''
+        : String(contact.agentLastBookingYear);
+    (document.getElementById('edit-last-touch') as HTMLInputElement).value = contact.agentLastTouch || '';
+    (document.getElementById('edit-warmth') as HTMLSelectElement).value = contact.agentWarmth || '';
     (document.getElementById('edit-next-step') as HTMLInputElement).value = contact.agentNextStep || '';
+    (document.getElementById('edit-casting-request') as HTMLInputElement).value =
+      contact.castingLastRequest || '';
+    (document.getElementById('edit-casting-request-on') as HTMLInputElement).value =
+      contact.castingLastRequestOn || '';
+    (document.getElementById('edit-casting-warmth') as HTMLSelectElement).value =
+      contact.castingWarmth || '';
+    agentRecency.textContent = contact.agentLastTouch
+      ? `Recency: ${careerRecencyLabel(contact.agentLastTouch)}`
+      : 'Recency: no date yet. Stale follow-up tasks come later — this is not a public score.';
+    castingRecency.textContent = contact.castingLastRequestOn
+      ? `Recency: ${careerRecencyLabel(contact.castingLastRequestOn)}`
+      : 'Recency: no date yet.';
     archiveBtn.textContent = contact.archived ? 'Restore' : 'Archive';
     togglePersonaSections();
     renderRelated();
+    renderValue();
     form.classList.remove('hidden');
     statusEl.textContent = contact.archived ? 'Archived — restore to show them in the main list.' : '';
+  }
+
+  function renderValue() {
+    if (!current) return;
+    const stripe = current.studentLtvStripeCents ?? 0;
+    const offline = current.studentLtvOfflineCents ?? 0;
+    const total = current.studentLtvCents ?? stripe + offline;
+    studentLtv.textContent = `${formatUsdFromCents(total)} lifetime · ${formatUsdFromCents(stripe)} Stripe · ${formatUsdFromCents(offline)} offline`;
+    studentLtvSync.textContent = current.studentLtvSyncedAt
+      ? `Last synced ${new Date(current.studentLtvSyncedAt).toLocaleString()}`
+      : 'No Stripe match yet.';
+    const linkedStudents = (current.relatedContacts || []).filter((rel) => rel.relation === 'student');
+    const linkedTotal = linkedStudents.reduce((sum, rel) => {
+      const other = directory.find((row) => row.id === rel.id);
+      return sum + (other?.studentLtvCents ?? 0);
+    }, 0);
+    parentLtv.textContent = linkedStudents.length
+      ? `Linked students: ${formatUsdFromCents(linkedTotal)} (not a second invoice).`
+      : 'Link a student to see their lifetime value here.';
+    paymentList.replaceChildren(
+      ...(payments.length
+        ? payments.map((row) => {
+            const li = document.createElement('li');
+            const method =
+              row.source === 'stripe'
+                ? 'Stripe'
+                : STUDIO_OFFLINE_METHOD_LABELS[row.method as StudioOfflineMethod] || row.method;
+            const refund =
+              row.refundedCents > 0 ? ` · refunded ${formatUsdFromCents(row.refundedCents)}` : '';
+            li.textContent = `${row.paidOn || '—'} · ${formatUsdFromCents(row.netCents)} · ${method}${refund}`;
+            if (row.source === 'offline' && canWrite) {
+              const remove = document.createElement('button');
+              remove.type = 'button';
+              remove.className = 'ml-2 text-xs text-muted underline-offset-2 hover:text-gold hover:underline';
+              remove.textContent = 'Remove';
+              remove.addEventListener('click', () => {
+                void removeOffline(row.id);
+              });
+              li.append(remove);
+            }
+            return li;
+          })
+        : [
+            Object.assign(document.createElement('li'), {
+              textContent: 'No Stripe or offline payments on this student yet.',
+            }),
+          ]),
+    );
+    const entries = Object.entries(payLinkMap);
+    payLinks.classList.toggle('hidden', entries.length === 0);
+    payLinkButtons.replaceChildren(
+      ...entries.flatMap(([id, href]) => {
+        const label = STUDIO_PAY_LINK_LABELS[id] || id;
+        const copy = document.createElement('button');
+        copy.type = 'button';
+        copy.className = 'rounded-sm border border-line px-4 py-2 text-sm text-spotlight hover:border-gold';
+        copy.textContent = `Copy ${label}`;
+        copy.addEventListener('click', () => {
+          void copyLink(href, copy, `Copy ${label}`);
+        });
+        const buttons = [copy];
+        if (typeof navigator.share === 'function') {
+          const share = document.createElement('button');
+          share.type = 'button';
+          share.className = 'rounded-sm border border-line px-4 py-2 text-sm text-spotlight hover:border-gold';
+          share.textContent = `Share ${label}`;
+          share.addEventListener('click', () => {
+            void navigator.share({ title: label, url: href }).catch(() => undefined);
+          });
+          buttons.push(share);
+        }
+        return buttons;
+      }),
+    );
+  }
+
+  async function copyLink(href: string, button: HTMLButtonElement, restore: string) {
+    try {
+      await navigator.clipboard.writeText(href);
+      button.textContent = 'Copied';
+      window.setTimeout(() => {
+        button.textContent = restore;
+      }, 1500);
+    } catch {
+      showError('Could not copy that link. Long-press it from the book page if needed.');
+    }
+  }
+
+  async function removeOffline(paymentId: string) {
+    if (!canWrite) return;
+    clearError();
+    try {
+      const res = await fetch(
+        `/api/contacts/${encodeURIComponent(contactId)}/offlinePayments/${encodeURIComponent(paymentId)}`,
+        { method: 'DELETE', headers: { Accept: 'application/json' } },
+      );
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showError(data.error || 'Could not remove that payment.', data.correlationId);
+        return;
+      }
+      if (data.contact) current = { ...current!, ...(data.contact as Contact) };
+      payments = payments.filter((row) => row.id !== paymentId);
+      renderValue();
+    } catch {
+      showError('Could not remove that payment. Try again in a moment.');
+    }
   }
 
   function renderRelated() {
@@ -413,7 +727,14 @@ import {
       agentTerritory: (document.getElementById('edit-territory') as HTMLInputElement).value,
       agentLastSubmission: (document.getElementById('edit-last-submission') as HTMLInputElement).value,
       agentLastBooking: (document.getElementById('edit-last-booking') as HTMLInputElement).value,
+      agentLastBookingYear: (document.getElementById('edit-last-booking-year') as HTMLInputElement).value,
+      agentLastTouch: (document.getElementById('edit-last-touch') as HTMLInputElement).value,
+      agentWarmth: (document.getElementById('edit-warmth') as HTMLSelectElement).value,
       agentNextStep: (document.getElementById('edit-next-step') as HTMLInputElement).value,
+      castingLastRequest: (document.getElementById('edit-casting-request') as HTMLInputElement).value,
+      castingLastRequestOn: (document.getElementById('edit-casting-request-on') as HTMLInputElement)
+        .value,
+      castingWarmth: (document.getElementById('edit-casting-warmth') as HTMLSelectElement).value,
       relatedContacts: current?.relatedContacts || [],
       archived: current?.archived || false,
       etag: current?.etag || '',
@@ -483,6 +804,8 @@ import {
         return;
       }
       directory = (list.contacts || []) as Contact[];
+      payments = (detail.payments || []) as LedgerRow[];
+      payLinkMap = (detail.payLinks || {}) as Record<string, string>;
       fillForm(detail.contact as Contact);
     } catch {
       showError('Could not load this person. Try again in a moment.');
@@ -504,7 +827,38 @@ import {
       form.querySelectorAll('input, textarea, select, button[type="submit"]').forEach((el) => {
         (el as HTMLInputElement).disabled = true;
       });
+      offlineForm.querySelectorAll('input, select, button').forEach((el) => {
+        (el as HTMLInputElement).disabled = true;
+      });
     }
+    offlineForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!canWrite) return;
+      clearError();
+      try {
+        const res = await fetch(`/api/contacts/${encodeURIComponent(contactId)}/offlinePayments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            amountUsd: Number((document.getElementById('offline-amount') as HTMLInputElement).value),
+            method: (document.getElementById('offline-method') as HTMLSelectElement).value,
+            paidOn: (document.getElementById('offline-date') as HTMLInputElement).value,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          showError(data.error || 'Could not log that payment.', data.correlationId);
+          return;
+        }
+        if (data.contact) current = { ...current!, ...(data.contact as Contact) };
+        if (data.payment) payments = [data.payment as LedgerRow, ...payments];
+        offlineForm.reset();
+        renderValue();
+        statusEl.textContent = 'Offline payment saved.';
+      } catch {
+        showError('Could not log that payment. Try again in a moment.');
+      }
+    });
     await load();
   }
 

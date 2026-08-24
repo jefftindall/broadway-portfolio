@@ -216,6 +216,7 @@ resource "azurerm_static_web_app" "main" {
     STUDIO_CRM_STORAGE_CONNECTION_STRING = azurerm_storage_account.studio_crm.primary_connection_string
     STUDIO_CRM_TABLE_NAME                = azurerm_storage_table.contacts.name
     STUDIO_USERS_TABLE_NAME              = azurerm_storage_table.studio_users.name
+    STUDIO_LEDGER_TABLE_NAME             = azurerm_storage_table.studio_ledger.name
   }
 
   depends_on = [

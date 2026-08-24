@@ -1,23 +1,31 @@
 ---
 import StudioLayout from '../../layouts/StudioLayout.astro';
+import StudioLandingCard from '../../components/StudioLandingCard.astro';
 ---
 
 <StudioLayout
   title="Career"
   description="Private Studio career tools for agents, casting, and performance."
   heading="Career"
-  helpHref="/studio/help"
+  helpHref="/studio/help/career"
 >
   <section class="mx-auto max-w-xl px-4 py-5 md:py-8">
     <p class="text-sm text-muted">
-      This is where agent, casting-director, and performance tools will live. Nothing to do here
-      yet — site updates are in Content, and contacts (including agents and casting) are in
-      Students → People.
+      Agent and casting relationships show career value — last submission, last booking, recency,
+      and warmth — not a fake dollar total. Site updates stay in Content.
     </p>
-    <p class="mt-6 text-sm">
-      <a href="/studio/content" class="text-gel underline-offset-2 hover:text-gold hover:underline">
-        Open Content
-      </a>
-    </p>
+    <div class="mt-5 grid gap-3">
+      <StudioLandingCard
+        href="/studio/people?persona=agent"
+        title="Agents"
+        summary="Representation contacts. Warmth and recency live on each person."
+        primary
+      />
+      <StudioLandingCard
+        href="/studio/people?persona=casting"
+        title="Casting"
+        summary="Casting offices and last materials request. Not tuition."
+      />
+    </div>
   </section>
 </StudioLayout>
