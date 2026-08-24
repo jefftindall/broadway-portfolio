@@ -52,7 +52,10 @@ import {
       </p>
     </div>
 
-    <p id="people-status" class="mt-4 text-sm text-muted" role="status">Loading…</p>
+    <p id="people-status" class="busy-status mt-4 text-sm text-muted" role="status" aria-live="polite">
+      <span class="busy-spinner" aria-hidden="true"></span>
+      <span>Loading…</span>
+    </p>
 
     <form id="edit-form" class="mt-6 hidden space-y-4">
       <label class="block text-sm text-muted">
@@ -334,7 +337,7 @@ import {
       <div id="pay-links" class="hidden space-y-2">
         <h3 class="font-display text-xl text-spotlight">Payment links</h3>
         <p class="text-sm text-muted">Copy or share a lesson Payment Link. Studio never charges a card from voice.</p>
-        <div id="pay-link-buttons" class="flex flex-wrap gap-2"></div>
+        <div id="pay-link-buttons" class="flex flex-col gap-2 sm:flex-row sm:flex-wrap"></div>
       </div>
       <div>
         <h3 class="font-display text-xl text-spotlight">Payments</h3>
@@ -414,7 +417,6 @@ import {
 <script>
   import {
     STUDIO_OFFLINE_METHOD_LABELS,
-    STUDIO_PAY_LINK_LABELS,
     STUDIO_RELATED_LABELS,
     careerRecencyLabel,
     formatUsdFromCents,
@@ -426,6 +428,8 @@ import {
     fetchStudioSession,
     hasStudioPermission,
   } from '../../../lib/studioSession';
+  import { renderPayLinkMenus } from '../../../lib/studioPayLinks';
+  import { clearStudioStatus, setStudioStatus } from '../../../lib/studioStatus';
 
   type Related = { id: string; relation: string };
   type Contact = {
@@ -589,6 +593,7 @@ import {
     renderValue();
     renderComms();
     form.classList.remove('hidden');
+    statusEl.classList.remove('busy-status');
     statusEl.textContent = contact.archived ? 'Archived — restore to show them in the main list.' : '';
   }
 
@@ -715,42 +720,7 @@ import {
     );
     const entries = Object.entries(payLinkMap);
     payLinks.classList.toggle('hidden', entries.length === 0);
-    payLinkButtons.replaceChildren(
-      ...entries.flatMap(([id, href]) => {
-        const label = STUDIO_PAY_LINK_LABELS[id] || id;
-        const copy = document.createElement('button');
-        copy.type = 'button';
-        copy.className = 'rounded-sm border border-line px-4 py-2 text-sm text-spotlight hover:border-gold';
-        copy.textContent = `Copy ${label}`;
-        copy.addEventListener('click', () => {
-          void copyLink(href, copy, `Copy ${label}`);
-        });
-        const buttons = [copy];
-        if (typeof navigator.share === 'function') {
-          const share = document.createElement('button');
-          share.type = 'button';
-          share.className = 'rounded-sm border border-line px-4 py-2 text-sm text-spotlight hover:border-gold';
-          share.textContent = `Share ${label}`;
-          share.addEventListener('click', () => {
-            void navigator.share({ title: label, url: href }).catch(() => undefined);
-          });
-          buttons.push(share);
-        }
-        return buttons;
-      }),
-    );
-  }
-
-  async function copyLink(href: string, button: HTMLButtonElement, restore: string) {
-    try {
-      await navigator.clipboard.writeText(href);
-      button.textContent = 'Copied';
-      window.setTimeout(() => {
-        button.textContent = restore;
-      }, 1500);
-    } catch {
-      showError('Could not copy that link. Long-press it from the book page if needed.');
-    }
+    renderPayLinkMenus(payLinkButtons, payLinkMap, (message) => showError(message));
   }
 
   async function removeOffline(paymentId: string) {
@@ -866,13 +836,13 @@ import {
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const ok = await save();
-    if (ok) statusEl.textContent = 'Saved.';
+    if (ok) setStudioStatus(statusEl, 'Saved.');
   });
 
   archiveBtn.addEventListener('click', async () => {
     const next = !current?.archived;
     const ok = await save({ archived: next });
-    if (ok) statusEl.textContent = next ? 'Archived.' : 'Restored.';
+    if (ok) setStudioStatus(statusEl, next ? 'Archived.' : 'Restored.');
   });
 
   document.getElementById('related-add')?.addEventListener('click', () => {
@@ -892,9 +862,10 @@ import {
   async function load() {
     if (!contactId) {
       showError('Open a person from the People list.');
-      statusEl.textContent = '';
+      clearStudioStatus(statusEl);
       return;
     }
+    setStudioStatus(statusEl, 'Loading…', true);
     try {
       const [detailRes, listRes] = await Promise.all([
         fetch(`/api/contacts/${encodeURIComponent(contactId)}`, { headers: { Accept: 'application/json' } }),
@@ -904,7 +875,7 @@ import {
       const list = await listRes.json().catch(() => ({}));
       if (!detailRes.ok) {
         showError(detail.error || 'That person isn’t in Studio.', detail.correlationId);
-        statusEl.textContent = '';
+        clearStudioStatus(statusEl);
         return;
       }
       directory = (list.contacts || []) as Contact[];
@@ -913,7 +884,7 @@ import {
       fillForm(detail.contact as Contact);
     } catch {
       showError('Could not load this person. Try again in a moment.');
-      statusEl.textContent = '';
+      clearStudioStatus(statusEl);
     }
   }
 
@@ -921,7 +892,7 @@ import {
     const session = await fetchStudioSession();
     if (!session.apiUnavailable && !hasStudioPermission(session, STUDIO_PERMISSION.PEOPLE_READ)) {
       peopleGate.classList.remove('hidden');
-      statusEl.textContent = '';
+      clearStudioStatus(statusEl);
       return;
     }
     canWrite =
@@ -958,7 +929,7 @@ import {
         if (data.payment) payments = [data.payment as LedgerRow, ...payments];
         offlineForm.reset();
         renderValue();
-        statusEl.textContent = 'Offline payment saved.';
+        setStudioStatus(statusEl, 'Offline payment saved.');
       } catch {
         showError('Could not log that payment. Try again in a moment.');
       }
