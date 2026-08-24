@@ -15,18 +15,20 @@ import StudioLandingCard from '../../components/StudioLandingCard.astro';
       Reminders are not built yet. Studio-wide holidays and vacations will live under Admin →
       Calendar later — not here.
     </p>
-    <div class="mt-5 grid gap-3">
+    <div class="mt-5 grid gap-3" id="students-cards">
       <StudioLandingCard
         href="/studio/people"
         title="People"
         summary="Students, parents, and related contacts — notes, personas, and lifetime value."
         primary
       />
-      <StudioLandingCard
-        href="/studio/calendar"
-        title="Schedules"
-        summary="Request a voice lesson time. Confirmed when Elyse accepts the Google invite."
-      />
+      <div id="schedules-card-wrap">
+        <StudioLandingCard
+          href="/studio/calendar"
+          title="Schedules"
+          summary="Request a voice lesson time. Confirmed when Elyse accepts the Google invite."
+        />
+      </div>
       <StudioLandingCard
         href="/studio/students/payments"
         title="Payment status"
@@ -40,3 +42,20 @@ import StudioLandingCard from '../../components/StudioLandingCard.astro';
     </div>
   </section>
 </StudioLayout>
+
+<script>
+  import { fetchStudioSession } from '../../lib/studioSession';
+
+  const wrap = document.getElementById('schedules-card-wrap');
+  if (wrap) {
+    const session = await fetchStudioSession();
+    if (!session.lessonSchedulingEnabled) {
+      wrap.innerHTML = `
+        <div class="block rounded-sm border border-line bg-panel/20 px-4 py-4 text-left opacity-80">
+          <span class="block font-display text-2xl text-spotlight">Schedules</span>
+          <span class="mt-1 block text-sm text-muted">Lesson scheduling is not enabled in this environment yet.</span>
+          <span class="mt-2 block text-xs uppercase tracking-[0.15em] text-gel">Not available yet</span>
+        </div>`;
+    }
+  }
+</script>

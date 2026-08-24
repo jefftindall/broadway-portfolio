@@ -34,6 +34,21 @@ export function publicSiteUrl(env = process.env) {
   return raw.replace(/\/+$/, '') || 'https://elysetindall.com';
 }
 
+/** Staging host or SWA default hostname — not production portfolio. */
+export function isStagingSite(env = process.env) {
+  try {
+    const host = new URL(publicSiteUrl(env)).hostname.toLowerCase();
+    return host === 'test.elysetindall.com' || host.endsWith('.azurestaticapps.net');
+  } catch {
+    return false;
+  }
+}
+
+/** Label for Google extended properties and invite copy. */
+export function studioEnvironment(env = process.env) {
+  return isStagingSite(env) ? 'staging' : 'production';
+}
+
 export function calendarOAuthRedirectUri(env = process.env) {
   return `${publicSiteUrl(env)}/studio/admin/calendar`;
 }

@@ -1,5 +1,6 @@
 import { app } from '@azure/functions';
 import { getClientPrincipal, newCorrelationId } from '../lib/auth.js';
+import { lessonSchedulingEnabledFromEnv } from '../lib/lessonPayConfig.js';
 import { resolveStudioAccess, sessionPayload } from '../lib/studioAccess.js';
 import { studioPublishMode } from '../lib/studioPublish.js';
 
@@ -24,6 +25,7 @@ app.http('studioSession', {
       jsonBody: sessionPayload(access, {
         publishMode,
         correlationId: newCorrelationId(),
+        lessonSchedulingEnabled: lessonSchedulingEnabledFromEnv(),
       }),
     };
   },

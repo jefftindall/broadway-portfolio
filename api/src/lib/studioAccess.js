@@ -184,7 +184,7 @@ export async function publisherGate(request, opts = {}) {
   return permissionGate(request, PERMISSION.CONTENT_PUBLISH, opts);
 }
 
-export function sessionPayload(access, { publishMode, correlationId } = {}) {
+export function sessionPayload(access, { publishMode, correlationId, lessonSchedulingEnabled } = {}) {
   const authorized = hasPermission(access, PERMISSION.CONTENT_PUBLISH);
   const identity = publisherIdentity(access.principal);
   const signedIn = Boolean(access.signedIn);
@@ -196,6 +196,7 @@ export function sessionPayload(access, { publishMode, correlationId } = {}) {
     permissions: access.permissions || [],
     source: access.source,
     catalog: accessCatalog(),
+    ...(typeof lessonSchedulingEnabled === 'boolean' ? { lessonSchedulingEnabled } : {}),
     ...(publishMode ? { publishMode } : {}),
     ...(signedIn
       ? {

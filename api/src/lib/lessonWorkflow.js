@@ -116,6 +116,7 @@ async function sendIcsFallback({ lesson, correlationId, env }) {
     confirmUrl,
     declineUrl,
     correlationId,
+    env,
   });
   return { sent: true };
 }
@@ -232,6 +233,7 @@ export async function createLessonsWithCalendar({
       elyseEmail,
       studentEmail: contact.email || '',
       recurringCount: count,
+      env,
     });
     const inserted = await organizer.client.insertEvent({ event, sendUpdates: 'all' });
     const eventId = inserted.id || '';

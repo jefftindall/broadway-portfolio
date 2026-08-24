@@ -3,6 +3,7 @@
  */
 import { EmailClient } from '@azure/communication-email';
 import { SmsClient } from '@azure/communication-sms';
+import { isStagingSite } from './calendarOAuth.js';
 
 function requireEnv(name) {
   const value = String(process.env[name] || '').trim();
@@ -141,15 +142,16 @@ function escapeHtml(text) {
  * ICS fallback when Google Calendar is disconnected or the API fails (STUDIO-P3-006).
  * Recipient is SITE-CONTACT-EMAIL / CONTACT_NOTIFY_EMAIL — never ALERT-*.
  */
-export async function sendLessonIcsEmail({ lesson, to, confirmUrl, declineUrl, correlationId }) {
+export async function sendLessonIcsEmail({ lesson, to, confirmUrl, declineUrl, correlationId, env = process.env }) {
   const connectionString = requireEnv('ACS_CONNECTION_STRING');
   const sender = requireEnv('ACS_EMAIL_SENDER');
   const recipient = String(to || '').trim() || requireEnv('CONTACT_NOTIFY_EMAIL');
+  const staging = isStagingSite(env);
 
   const format = lesson.format === 'nyc' ? 'NYC in person' : 'Zoom';
   const when = lesson.startAt || '';
   const lines = [
-    'A voice lesson was requested in Studio.',
+    staging ? 'A STAGING test voice lesson was requested in Studio.' : 'A voice lesson was requested in Studio.',
     '',
     `When: ${when}`,
     `Format: ${format}`,
@@ -170,6 +172,7 @@ export async function sendLessonIcsEmail({ lesson, to, confirmUrl, declineUrl, c
     lesson,
     organizerEmail: sender,
     attendeeEmail: recipient,
+    env,
   });
 
   const client = new EmailClient(connectionString);
@@ -179,7 +182,7 @@ export async function sendLessonIcsEmail({ lesson, to, confirmUrl, declineUrl, c
       to: [{ address: recipient }],
     },
     content: {
-      subject: 'Voice lesson requested',
+      subject: staging ? '[STAGING] Voice lesson requested' : 'Voice lesson requested',
       plainText,
       html: `<pre style="font-family:system-ui,sans-serif;white-space:pre-wrap">${escapeHtml(plainText)}</pre>`,
     },

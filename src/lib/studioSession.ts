@@ -23,6 +23,8 @@ export type StudioSession = {
   permissions: string[];
   source?: string;
   publishMode?: 'pr' | 'direct';
+  /** Same SWA flag as public Payment Links — gates Calendar + Schedules UI. */
+  lessonSchedulingEnabled?: boolean;
   correlationId?: string;
   catalog?: {
     permissions: Array<{ id: string; label: string; description: string }>;
@@ -50,6 +52,7 @@ export async function fetchStudioSession(): Promise<StudioSession> {
       permissions: Array.isArray(data?.permissions) ? data.permissions : [],
       source: data?.source,
       publishMode: data?.publishMode === 'pr' ? 'pr' : 'direct',
+      lessonSchedulingEnabled: Boolean(data?.lessonSchedulingEnabled),
       correlationId: typeof data?.correlationId === 'string' ? data.correlationId : undefined,
       catalog: data?.catalog,
     };

@@ -1,6 +1,7 @@
 import { app } from '@azure/functions';
 import { forbidden, newCorrelationId, publisherIdentity, signInRequired } from '../lib/auth.js';
 import { tryCalendarSettingsStoreFromEnv } from '../lib/calendarSettings.js';
+import { requireLessonScheduling } from '../lib/calendarGate.js';
 import { contactsStoreFromEnv } from '../lib/contacts.js';
 import { calendarFailureResponse } from '../lib/httpErrors.js';
 import { lessonsStoreFromEnv } from '../lib/lessons.js';
@@ -88,6 +89,8 @@ app.http('lessons', {
   route: 'lessons',
   handler: async (request, context) => {
     const correlationId = newCorrelationId();
+    const scheduling = requireLessonScheduling(correlationId);
+    if (scheduling.error) return { ...scheduling.error, headers: jsonHeaders() };
     const permission = request.method === 'POST' ? PERMISSION.CALENDAR_WRITE : PERMISSION.CALENDAR_READ;
     const authed = await requireCalendar(request, correlationId, permission);
     if (authed.error) return { ...authed.error, headers: jsonHeaders() };
@@ -158,6 +161,8 @@ app.http('lessonById', {
   route: 'lessons/{id}',
   handler: async (request, context) => {
     const correlationId = newCorrelationId();
+    const scheduling = requireLessonScheduling(correlationId);
+    if (scheduling.error) return { ...scheduling.error, headers: jsonHeaders() };
     const lessonId = request.params?.id;
     const permission = request.method === 'PATCH' ? PERMISSION.CALENDAR_WRITE : PERMISSION.CALENDAR_READ;
     const authed = await requireCalendar(request, correlationId, permission);

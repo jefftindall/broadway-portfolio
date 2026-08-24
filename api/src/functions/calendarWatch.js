@@ -1,5 +1,6 @@
 import { app } from '@azure/functions';
 import { tryCalendarSettingsStoreFromEnv } from '../lib/calendarSettings.js';
+import { requireLessonScheduling } from '../lib/calendarGate.js';
 import { newCorrelationId } from '../lib/auth.js';
 import { tryLessonsStoreFromEnv } from '../lib/lessons.js';
 import { syncLessonRsvps } from '../lib/lessonWorkflow.js';
@@ -19,6 +20,10 @@ app.http('calendarWatch', {
   route: 'calendarWatch',
   handler: async (request, context) => {
     const correlationId = newCorrelationId();
+    const scheduling = requireLessonScheduling(correlationId);
+    if (scheduling.error) {
+      return { status: 204, headers: jsonHeaders() };
+    }
     const channelToken = request.headers.get('x-goog-channel-token') || '';
     const resourceState = request.headers.get('x-goog-resource-state') || '';
     try {

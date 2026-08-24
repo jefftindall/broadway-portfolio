@@ -14,6 +14,7 @@ import {
   refreshAccessToken,
 } from '../lib/calendarOAuth.js';
 import { createGoogleCalendarClient } from '../lib/googleCalendar.js';
+import { requireLessonScheduling } from '../lib/calendarGate.js';
 import { calendarFailureResponse } from '../lib/httpErrors.js';
 import { PERMISSION, permissionGate } from '../lib/studioAccess.js';
 import { flush, trackEvent, trackException } from '../lib/telemetry.js';
@@ -84,6 +85,8 @@ app.http('calendarStatus', {
   route: 'calendarStatus',
   handler: async (request, context) => {
     const correlationId = newCorrelationId();
+    const scheduling = requireLessonScheduling(correlationId);
+    if (scheduling.error) return { ...scheduling.error, headers: jsonHeaders() };
     const authed = await requireCalendar(request, correlationId, PERMISSION.CALENDAR_READ);
     if (authed.error) return { ...authed.error, headers: jsonHeaders() };
     try {
@@ -128,6 +131,8 @@ app.http('calendarOAuthStart', {
   route: 'calendarOAuthStart',
   handler: async (request, context) => {
     const correlationId = newCorrelationId();
+    const scheduling = requireLessonScheduling(correlationId);
+    if (scheduling.error) return { ...scheduling.error, headers: jsonHeaders() };
     const authed = await requireCalendar(request, correlationId, PERMISSION.CALENDAR_CONNECT);
     if (authed.error) return { ...authed.error, headers: jsonHeaders() };
     try {
@@ -154,6 +159,8 @@ app.http('calendarOAuthCallback', {
   route: 'calendarOAuthCallback',
   handler: async (request, context) => {
     const correlationId = newCorrelationId();
+    const scheduling = requireLessonScheduling(correlationId);
+    if (scheduling.error) return { ...scheduling.error, headers: jsonHeaders() };
     const authed = await requireCalendar(request, correlationId, PERMISSION.CALENDAR_CONNECT);
     if (authed.error) return { ...authed.error, headers: jsonHeaders() };
     try {
@@ -185,6 +192,8 @@ app.http('calendarDisconnect', {
   route: 'calendarDisconnect',
   handler: async (request, context) => {
     const correlationId = newCorrelationId();
+    const scheduling = requireLessonScheduling(correlationId);
+    if (scheduling.error) return { ...scheduling.error, headers: jsonHeaders() };
     const authed = await requireCalendar(request, correlationId, PERMISSION.CALENDAR_CONNECT);
     if (authed.error) return { ...authed.error, headers: jsonHeaders() };
     try {
@@ -211,6 +220,8 @@ app.http('calendarSettings', {
   route: 'calendarSettings',
   handler: async (request, context) => {
     const correlationId = newCorrelationId();
+    const scheduling = requireLessonScheduling(correlationId);
+    if (scheduling.error) return { ...scheduling.error, headers: jsonHeaders() };
     const authed = await requireCalendar(request, correlationId, PERMISSION.CALENDAR_CONNECT);
     if (authed.error) return { ...authed.error, headers: jsonHeaders() };
     try {
@@ -236,6 +247,8 @@ app.http('calendarFreeBusy', {
   route: 'calendarFreeBusy',
   handler: async (request, context) => {
     const correlationId = newCorrelationId();
+    const scheduling = requireLessonScheduling(correlationId);
+    if (scheduling.error) return { ...scheduling.error, headers: jsonHeaders() };
     const authed = await requireCalendar(request, correlationId, PERMISSION.CALENDAR_READ);
     if (authed.error) return { ...authed.error, headers: jsonHeaders() };
     try {

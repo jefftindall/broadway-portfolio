@@ -258,7 +258,10 @@ import StudioLayout from '../../../layouts/StudioLayout.astro';
   const session = await fetchStudioSession();
   const canConnect = hasStudioPermission(session, STUDIO_PERMISSION.CALENDAR_CONNECT);
   const canRead = hasStudioPermission(session, STUDIO_PERMISSION.CALENDAR_READ);
-  if (!canConnect && !canRead) {
+  if (!session.lessonSchedulingEnabled) {
+    gateMsg.textContent = 'Lesson scheduling is not enabled in this environment yet.';
+    gate.classList.remove('hidden');
+  } else if (!canConnect && !canRead) {
     if (session.correlationId) {
       gateId.textContent = session.correlationId;
       gateRef.classList.remove('hidden');

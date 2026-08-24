@@ -8,10 +8,12 @@ import {
 } from './calendarSettings.js';
 import {
   createOAuthState,
+  isStagingSite,
   publicSiteUrl,
   readOAuthState,
+  studioEnvironment,
 } from './calendarOAuth.js';
-import { buildLessonRequestIcs, lessonIcsUid } from './ics.js';
+import { buildLessonRequestIcs, lessonIcsCopy, lessonIcsUid } from './ics.js';
 import { createLessonActionToken, readLessonActionToken } from './lessonActions.js';
 
 const env = {
@@ -22,6 +24,14 @@ const env = {
 
 test('publicSiteUrl strips a trailing slash', () => {
   assert.equal(publicSiteUrl({ SITE_URL: 'https://elysetindall.com/' }), 'https://elysetindall.com');
+});
+
+test('isStagingSite detects staging hostnames', () => {
+  assert.equal(isStagingSite({ SITE_URL: 'https://test.elysetindall.com' }), true);
+  assert.equal(isStagingSite({ SITE_URL: 'https://happy-abc.azurestaticapps.net' }), true);
+  assert.equal(isStagingSite({ SITE_URL: 'https://elysetindall.com' }), false);
+  assert.equal(studioEnvironment({ SITE_URL: 'https://test.elysetindall.com' }), 'staging');
+  assert.equal(studioEnvironment({ SITE_URL: 'https://elysetindall.com' }), 'production');
 });
 
 test('OAuth state is bound to a role and expires', () => {
@@ -78,6 +88,26 @@ test('ICS METHOD:REQUEST uses the lesson id as UID', () => {
   assert.match(ics, /METHOD:REQUEST/);
   assert.match(ics, /UID:lesson-123@elysetindall.com/);
   assert.equal(lessonIcsUid('lesson-123'), 'lesson-123@elysetindall.com');
+});
+
+test('staging ICS is labeled and transparent', () => {
+  const copy = lessonIcsCopy({ SITE_URL: 'https://test.elysetindall.com' });
+  assert.match(copy.summary, /^\[STAGING\]/);
+  assert.equal(copy.transparent, true);
+
+  const ics = buildLessonRequestIcs({
+    lesson: {
+      id: 'lesson-stg',
+      startAt: '2026-09-01T20:00:00.000Z',
+      endAt: '2026-09-01T21:00:00.000Z',
+      format: 'zoom',
+    },
+    organizerEmail: 'studio@example.com',
+    attendeeEmail: 'coach@example.com',
+    env: { SITE_URL: 'https://test.elysetindall.com' },
+  });
+  assert.match(ics, /SUMMARY:\[STAGING\]/);
+  assert.match(ics, /TRANSP:TRANSPARENT/);
 });
 
 test('lesson action tokens round-trip confirm and decline', () => {

@@ -1,7 +1,13 @@
 /**
  * Google Calendar REST client. Never log tokens, attendee emails, or event bodies.
  */
-import { CalendarOAuthError, calendarWatchUrl, refreshAccessToken } from './calendarOAuth.js';
+import {
+  CalendarOAuthError,
+  calendarWatchUrl,
+  isStagingSite,
+  refreshAccessToken,
+  studioEnvironment,
+} from './calendarOAuth.js';
 
 const CALENDAR_API = 'https://www.googleapis.com/calendar/v3';
 
@@ -78,13 +84,26 @@ export async function accessTokenForRefresh(refreshToken, env = process.env) {
   }
 }
 
-export function lessonExtendedProperties({ lessonId, contactId, seriesId }) {
+export function lessonExtendedProperties({ lessonId, contactId, seriesId, environment }) {
   return {
     private: {
       studioLessonId: String(lessonId || ''),
       studioContactId: String(contactId || ''),
       ...(seriesId ? { studioSeriesId: String(seriesId) } : {}),
+      ...(environment ? { studioEnvironment: String(environment) } : {}),
     },
+  };
+}
+
+export function lessonEventCopy(env = process.env) {
+  const staging = isStagingSite(env);
+  return {
+    summary: staging ? '[STAGING] Voice lesson' : 'Voice lesson',
+    description: staging
+      ? 'STAGING test invite — not a real lesson. Requested until Elyse accepts this invite.'
+      : 'Studio voice lesson. Requested until Elyse accepts this invite.',
+    transparency: staging ? 'transparent' : 'opaque',
+    environment: studioEnvironment(env),
   };
 }
 
@@ -93,10 +112,13 @@ export function buildLessonEvent({
   elyseEmail,
   studentEmail,
   recurringCount,
+  env = process.env,
 }) {
+  const copy = lessonEventCopy(env);
   const event = {
-    summary: 'Voice lesson',
-    description: 'Studio voice lesson. Requested until Elyse accepts this invite.',
+    summary: copy.summary,
+    description: copy.description,
+    transparency: copy.transparency,
     start: { dateTime: lesson.startAt, timeZone: lesson.timezone },
     end: { dateTime: lesson.endAt, timeZone: lesson.timezone },
     attendees: [],
@@ -106,6 +128,7 @@ export function buildLessonEvent({
       lessonId: lesson.id,
       contactId: lesson.contactId,
       seriesId: lesson.seriesId,
+      environment: copy.environment,
     }),
   };
   if (elyseEmail) {

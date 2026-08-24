@@ -1,6 +1,7 @@
 import { app } from '@azure/functions';
 import { newCorrelationId } from '../lib/auth.js';
 import { tryCalendarSettingsStoreFromEnv } from '../lib/calendarSettings.js';
+import { requireLessonScheduling } from '../lib/calendarGate.js';
 import { calendarFailureResponse } from '../lib/httpErrors.js';
 import { readLessonActionToken } from '../lib/lessonActions.js';
 import { applyLessonStatus } from '../lib/lessonWorkflow.js';
@@ -26,6 +27,14 @@ app.http('lessonAction', {
   route: 'lessonAction',
   handler: async (request, context) => {
     const correlationId = newCorrelationId();
+    const scheduling = requireLessonScheduling(correlationId);
+    if (scheduling.error) {
+      return {
+        status: scheduling.error.status,
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
+        body: htmlPage('Scheduling unavailable', scheduling.error.jsonBody?.error || 'Lesson scheduling is not enabled.'),
+      };
+    }
     const url = new URL(request.url);
     const token = url.searchParams.get('t') || '';
     try {

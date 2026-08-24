@@ -2,7 +2,19 @@
  * ICS METHOD:REQUEST for degraded Calendar (email to SITE-CONTACT-EMAIL).
  * UID is the Studio lesson id so a later Google connect can match.
  */
+import { isStagingSite } from './calendarOAuth.js';
 import { DEFAULT_LESSON_TIMEZONE } from './lessons.js';
+
+export function lessonIcsCopy(env = process.env) {
+  const staging = isStagingSite(env);
+  return {
+    summary: staging ? '[STAGING] Voice lesson request' : 'Voice lesson request',
+    description: staging
+      ? 'STAGING test invite — not a real lesson. Requested — you’ll get Confirmed when Elyse accepts.'
+      : 'Requested — you’ll get Confirmed when Elyse accepts.',
+    transparent: staging,
+  };
+}
 
 function foldLine(line) {
   const text = String(line);
@@ -36,9 +48,15 @@ export function buildLessonRequestIcs({
   lesson,
   organizerEmail,
   attendeeEmail,
-  summary = 'Voice lesson request',
-  description = 'Requested — you’ll get Confirmed when Elyse accepts.',
+  summary,
+  description,
+  transparent,
+  env = process.env,
 }) {
+  const defaults = lessonIcsCopy(env);
+  const resolvedSummary = summary ?? defaults.summary;
+  const resolvedDescription = description ?? defaults.description;
+  const resolvedTransparent = transparent ?? defaults.transparent;
   const uid = `${lesson.id}@elysetindall.com`;
   const dtStart = toIcsUtc(lesson.startAt);
   const dtEnd = toIcsUtc(lesson.endAt);
@@ -54,9 +72,10 @@ export function buildLessonRequestIcs({
     `DTSTAMP:${dtStamp}`,
     `DTSTART:${dtStart}`,
     `DTEND:${dtEnd}`,
-    `SUMMARY:${escapeText(summary)}`,
-    `DESCRIPTION:${escapeText(description)}`,
+    `SUMMARY:${escapeText(resolvedSummary)}`,
+    `DESCRIPTION:${escapeText(resolvedDescription)}`,
     `LOCATION:${lesson.format === 'nyc' ? 'NYC in person' : 'Zoom'}`,
+    ...(resolvedTransparent ? ['TRANSP:TRANSPARENT'] : []),
   ];
   if (organizerEmail) {
     lines.push(`ORGANIZER:MAILTO:${organizerEmail}`);

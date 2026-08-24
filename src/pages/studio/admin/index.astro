@@ -13,18 +13,20 @@ import StudioLandingCard from '../../../components/StudioLandingCard.astro';
     <p class="text-sm text-muted">
       Studio-wide settings. Access and Google Calendar connect are live. Reports are not built yet.
     </p>
-    <div class="mt-5 grid gap-3">
+    <div class="mt-5 grid gap-3" id="admin-cards">
       <StudioLandingCard
         href="/studio/admin/access"
         title="Access"
         summary="Who is signed in, roles, and publish vs People permissions."
         primary
       />
-      <StudioLandingCard
-        href="/studio/admin/calendar"
-        title="Calendar"
-        summary="Connect the Studio organizer and optional Elyse free/busy Google accounts. Holidays and studio-wide closures are not built yet. Per-student lessons live under Students → Schedules."
-      />
+      <div id="admin-calendar-card-wrap">
+        <StudioLandingCard
+          href="/studio/admin/calendar"
+          title="Calendar"
+          summary="Connect the Studio organizer and optional Elyse free/busy Google accounts. Holidays and studio-wide closures are not built yet. Per-student lessons live under Students → Schedules."
+        />
+      </div>
       <StudioLandingCard
         title="Reports"
         summary="Studio-wide reporting. Not available yet."
@@ -33,3 +35,20 @@ import StudioLandingCard from '../../../components/StudioLandingCard.astro';
     </div>
   </section>
 </StudioLayout>
+
+<script>
+  import { fetchStudioSession } from '../../../lib/studioSession';
+
+  const wrap = document.getElementById('admin-calendar-card-wrap');
+  if (wrap) {
+    const session = await fetchStudioSession();
+    if (!session.lessonSchedulingEnabled) {
+      wrap.innerHTML = `
+        <div class="block rounded-sm border border-line bg-panel/20 px-4 py-4 text-left opacity-80">
+          <span class="block font-display text-2xl text-spotlight">Calendar</span>
+          <span class="mt-1 block text-sm text-muted">Google Calendar connect ships with lesson payments — not enabled in this environment yet.</span>
+          <span class="mt-2 block text-xs uppercase tracking-[0.15em] text-gel">Not available yet</span>
+        </div>`;
+    }
+  }
+</script>
