@@ -11,9 +11,9 @@ import StudioLandingCard from '../../components/StudioLandingCard.astro';
 >
   <section class="mx-auto max-w-xl px-4 py-5 md:py-8">
     <p class="text-sm text-muted">
-      Teaching relationships and lesson ops. People, payment status, and lesson schedules are live.
-      Reminders are not built yet. Studio-wide holidays and vacations will live under Admin →
-      Calendar later — not here.
+      Teaching relationships and lesson ops. People, schedules, and payment status are live.
+      Confirmed lessons get an email reminder the day before (SMS only with explicit opt-in on the
+      student). Studio-wide holidays will live under Admin → Calendar later.
     </p>
     <div class="mt-5 grid gap-3" id="students-cards">
       <StudioLandingCard
@@ -22,22 +22,15 @@ import StudioLandingCard from '../../components/StudioLandingCard.astro';
         summary="Students, parents, and related contacts — notes, personas, and lifetime value."
         primary
       />
-      <div id="schedules-card-wrap">
-        <StudioLandingCard
-          href="/studio/calendar"
-          title="Schedules"
-          summary="Request a voice lesson time. Confirmed when Elyse accepts the Google invite."
-        />
-      </div>
+      <StudioLandingCard
+        href="/studio/calendar"
+        title="Schedules"
+        summary="Request a voice lesson time. Students get Requested mail, then Confirmed when Elyse accepts."
+      />
       <StudioLandingCard
         href="/studio/students/payments"
         title="Payment status"
-        summary="Copy Payment Links and attach Stripe charges that need a person. Upcoming lesson paid/unpaid still waits on joining confirmed lessons."
-      />
-      <StudioLandingCard
-        title="Reminders"
-        summary="Appointment reminder settings. Not available yet."
-        available={false}
+        summary="Copy Payment Links and attach Stripe charges that need a person."
       />
     </div>
   </section>
@@ -46,11 +39,11 @@ import StudioLandingCard from '../../components/StudioLandingCard.astro';
 <script>
   import { fetchStudioSession } from '../../lib/studioSession';
 
-  const wrap = document.getElementById('schedules-card-wrap');
-  if (wrap) {
-    const session = await fetchStudioSession();
-    if (!session.lessonSchedulingEnabled) {
-      wrap.innerHTML = `
+  const wrap = document.getElementById('students-cards');
+  if (wrap && !(await fetchStudioSession()).lessonSchedulingEnabled) {
+    const schedules = wrap.querySelector('a[href="/studio/calendar"]')?.closest('div');
+    if (schedules) {
+      schedules.innerHTML = `
         <div class="block rounded-sm border border-line bg-panel/20 px-4 py-4 text-left opacity-80">
           <span class="block font-display text-2xl text-spotlight">Schedules</span>
           <span class="mt-1 block text-sm text-muted">Lesson scheduling is not enabled in this environment yet.</span>

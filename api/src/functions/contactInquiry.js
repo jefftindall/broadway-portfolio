@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { newCorrelationId } from '../lib/auth.js';
 import { contactFailureResponse } from '../lib/httpErrors.js';
 import { sendInquiryEmail, sendInquirySms } from '../lib/acsNotify.js';
+import { tryContactsStoreFromEnv } from '../lib/contacts.js';
 import { verifyTurnstile } from '../lib/turnstile.js';
 import { flush, trackEvent, trackException } from '../lib/telemetry.js';
 
@@ -132,11 +133,40 @@ app.http('contactInquiry', {
         });
       }
 
+      let crmIngested = false;
+      try {
+        const store = tryContactsStoreFromEnv();
+        if (store) {
+          await store.upsertFromInquiry({
+            type: inquiry.type,
+            name: inquiry.name,
+            email: inquiry.email || undefined,
+            phone: inquiry.phone || undefined,
+            organization: inquiry.organization || undefined,
+            format: inquiry.format,
+            message: inquiry.message,
+          });
+          crmIngested = true;
+        }
+      } catch (crmErr) {
+        context.warn('Contact inquiry CRM ingest failed after notify', {
+          correlationId,
+          type: inquiry.type,
+          errorKind: crmErr instanceof Error ? crmErr.name : 'error',
+        });
+        trackException(crmErr, {
+          operation: 'contactInquiryCrm',
+          correlationId,
+          type: inquiry.type,
+        });
+      }
+
       trackEvent('ContactInquiryReceived', {
         correlationId,
         type: inquiry.type,
         preferredContact: inquiry.preferredContact,
         smsSent: String(smsSent),
+        crmIngested: String(crmIngested),
       });
       await flush();
 

@@ -27,5 +27,68 @@ import StudioLandingCard from '../../components/StudioLandingCard.astro';
         summary="Casting offices and last materials request. Not tuition."
       />
     </div>
+
+    <div
+      id="agent-tasks-gate"
+      class="mt-8 hidden rounded-sm border border-line bg-panel/60 p-4 text-sm text-muted"
+      role="alert"
+    >
+      <p>Sign in with People permission to see stale-agent tasks.</p>
+    </div>
+
+    <section id="agent-tasks" class="mt-8 hidden space-y-3">
+      <h2 class="font-display text-2xl text-spotlight">Stale agent tasks</h2>
+      <p class="text-sm text-muted">
+        Follow-up tasks for Elyse — not automatic email to agents. Default stale threshold is 90
+        days since last touch.
+      </p>
+      <ul id="agent-task-list" class="space-y-3"></ul>
+      <p id="agent-task-empty" class="hidden text-sm text-muted">No stale agents right now.</p>
+    </section>
   </section>
 </StudioLayout>
+
+<script>
+  import { fetchStudioSession, hasStudioPermission, STUDIO_PERMISSION } from '../../lib/studioSession';
+  import { studioPersonPath } from '../../lib/studioPeople';
+
+  type AgentTask = {
+    contactId: string;
+    displayName: string;
+    agency: string;
+    recency: string;
+    agentNextStep: string;
+    task: string;
+  };
+
+  const gate = document.getElementById('agent-tasks-gate') as HTMLElement;
+  const section = document.getElementById('agent-tasks') as HTMLElement;
+  const list = document.getElementById('agent-task-list') as HTMLUListElement;
+  const empty = document.getElementById('agent-task-empty') as HTMLElement;
+
+  const session = await fetchStudioSession();
+  if (!hasStudioPermission(session, STUDIO_PERMISSION.PEOPLE_READ)) {
+    gate.classList.remove('hidden');
+  } else {
+    section.classList.remove('hidden');
+    const res = await fetch('/api/agentTasks', { headers: { Accept: 'application/json' } });
+    const data = await res.json().catch(() => ({}));
+    const tasks = (data.tasks || []) as AgentTask[];
+    empty.classList.toggle('hidden', tasks.length > 0);
+    list.replaceChildren(
+      ...tasks.map((task) => {
+        const li = document.createElement('li');
+        li.className = 'rounded-sm border border-line bg-panel/40 px-4 py-3';
+        const title = document.createElement('p');
+        title.className = 'text-sm text-spotlight';
+        const agency = task.agency ? ` · ${task.agency}` : '';
+        title.innerHTML = `<a href="${studioPersonPath(task.contactId)}" class="text-gel underline-offset-2 hover:text-gold hover:underline">${task.displayName}</a>${agency}`;
+        const meta = document.createElement('p');
+        meta.className = 'mt-1 text-sm text-muted';
+        meta.textContent = `${task.recency} · ${task.task}`;
+        li.append(title, meta);
+        return li;
+      }),
+    );
+  }
+</script>

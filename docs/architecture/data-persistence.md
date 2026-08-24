@@ -1,12 +1,12 @@
 # Data persistence
 
 **Audience:** Agents, implementers  
-**Last updated:** 2026-08-23  
+**Last updated:** 2026-08-24  
 **Scope:** Where durable data lives today, the record shapes, how records relate, and the access paths. This is the architecture SoT for stores — not a backlog. Phased work stays in [`docs/plans/`](../plans/).
 
 **Keep this document current:** when a PR changes a store, schema, relation, or access path, update the matching sections, mermaid, and source map **in that same PR**, then bump **Last updated**. Agent contract: [`.cursor/rules/data-persistence.mdc`](../../.cursor/rules/data-persistence.mdc) and [AGENTS.md](../../AGENTS.md).
 
-There is **no application database**. Durable records are split across **git** (public brand), **Azure Table Storage** (Studio People + access profiles + LTV ledger + lesson workflow + Calendar connection rows), **Stripe** (money), **Google Calendar** (time when connected), and **Key Vault** (secrets). Inquiries are **not** written to a store. Stripe webhook events are verified, then matched into the LTV ledger — Stripe remains the books.
+There is **no application database**. Durable records are split across **git** (public brand), **Azure Table Storage** (Studio People + access profiles + LTV ledger + lesson workflow + Calendar connection rows), **Stripe** (money), **Google Calendar** (time when connected), and **Key Vault** (secrets). Public inquiries also **upsert** People rows when CRM storage is configured. Stripe webhook events are verified, then matched into the LTV ledger — Stripe remains the books.
 
 ## Systems of record
 
@@ -106,6 +106,7 @@ One row = one person. Partition = constant `people` (`STUDIO_CONTACTS_PARTITION`
 | `studentFormat` | `studentFormat` | `nyc` \| `zoom` \| `""` | Lesson format |
 | `studentPackageRemaining` | `studentPackageRemaining` | number \| omitted | 0–500 |
 | `studentLastLesson` | `studentLastLesson` | `YYYY-MM-DD` \| `""` | Day only |
+| `studentSmsOk` | `studentSmsOk` | boolean | Explicit opt-in for lesson reminder SMS (`STUDIO-P4-003`) |
 | `agentAgency` | `agentAgency` | string | Max 200 |
 | `agentTerritory` | `agentTerritory` | string | Max 200 |
 | `agentLastSubmission` | `agentLastSubmission` | string | Max 400 |
@@ -205,8 +206,11 @@ Same CRM storage account — not a new SKU. Google Calendar owns **time** when c
 | `occurrenceIndex` | `occurrenceIndex` | number | 0-based week in the series |
 | `googleEventId` | `googleEventId` | string | Series or single event id when invite succeeded |
 | `calendarFallback` | `calendarFallback` | string | `ics` when Google failed and ACS emailed `SITE-CONTACT-EMAIL` |
+| `requestedEmailSentAt` | `requestedEmailSentAt` | ISO \| `""` | Student **Requested** mail (`STUDIO-P4-002`) |
+| `confirmedEmailSentAt` | `confirmedEmailSentAt` | ISO \| `""` | Student **Confirmed** mail |
+| `reminderSentOn` | `reminderSentOn` | `YYYY-MM-DD` \| `""` | Idempotent day-before reminder (`STUDIO-P4-003`) |
 
-**Create path:** persist `requested` **before** the Calendar API insert. Google 401/403/429/5xx / timeout → ICS `METHOD:REQUEST` to `CONTACT_NOTIFY_EMAIL` (shared KV `SITE-CONTACT-EMAIL`). Never `ALERT-*`. Student **Requested** / **Confirmed** mail is `STUDIO-P4-002`.
+**Create path:** persist `requested` **before** the Calendar API insert. Google 401/403/429/5xx / timeout → ICS `METHOD:REQUEST` to `CONTACT_NOTIFY_EMAIL` (shared KV `SITE-CONTACT-EMAIL`). Never `ALERT-*`. Student **Requested** / **Confirmed** ACS mail (`STUDIO-P4-002`) sends to the contact email on create / confirm / RSVP.
 
 **RSVP:** `events.watch` (`POST /api/calendarWatch`, channel token) plus incremental sync when listing lessons. Elyse `responseStatus=accepted` → `confirmed`; `declined` → `declined`. Studio Confirm / Decline (and signed email links) update the row and keep Google in sync when the API is up. Cancel one week of a series does not delete the series.
 
@@ -510,11 +514,9 @@ Managed Functions **do not** resolve `@Microsoft.KeyVault(...)` app settings. Te
 
 ## 5. Transient and derived (not business SoT)
 
-### 5.1 Contact inquiries — notify only
+### 5.1 Contact inquiries — notify + CRM ingest
 
-[`POST /api/contactInquiry`](../../api/src/functions/contactInquiry.js) validates Turnstile + Zod, then sends ACS **email** (and SMS when `ACS_SMS_FROM` is a real E.164). Payload fields: `type` (`casting` \| `lesson`), `name`, `preferredContact`, `email` / `phone`, `organization`, `format` (`nyc` \| `zoom`, required for lesson), `message`.
-
-Nothing is written to Table Storage or git. `STUDIO-P4` (inquiry → CRM) is planned. Telemetry records type + correlation id, not PII.
+[`POST /api/contactInquiry`](../../api/src/functions/contactInquiry.js) validates Turnstile + Zod, sends ACS **email** (and SMS when `ACS_SMS_FROM` is a real E.164) to `SITE-CONTACT-*`, then **upserts** a People row (`STUDIO-P4-001`): `type=lesson` → persona `student`; `type=casting` → persona `casting`; match on email when present; inquiry body appended to `notes` (never App Insights message fields). Telemetry: type + correlation id + `crmIngested` flag — not PII.
 
 ```mermaid
 flowchart LR
@@ -522,6 +524,7 @@ flowchart LR
   API --> TS[Turnstile]
   API --> Email[ACS email to SITE-CONTACT-EMAIL]
   API --> SMS[ACS SMS to SITE-CONTACT-PHONE]
+  API --> CRM[contacts upsertFromInquiry]
   API --> AI[App Insights counts]
 ```
 
@@ -553,7 +556,6 @@ From [`studio-teaching-business.md`](../plans/studio-teaching-business.md):
 |------------|----------------|-------|
 | `STUDIO-P1-006` | Export file (emailed / download) | People live only in Table Storage |
 | `STUDIO-P2-004` upcoming | Confirmed lesson → paid/unpaid | Schedule rows ship now; pay join is residual |
-| `STUDIO-P4-*` | Inquiry → contact row | ACS notify only |
 | `STUDIO-P5-*` | Month report / public free-busy | Stripe Dashboard / email |
 
 Do not invent a second calendar or a Studio ledger that can drift from Stripe.
@@ -602,6 +604,8 @@ Do not invent a second calendar or a Studio ledger that can drift from Stripe.
 | Lesson / Calendar HTTP | `api/src/functions/lessons.js`, `calendar.js`, `calendarWatch.js`, `lessonAction.js` |
 | Access HTTP | `api/src/functions/studioUsers.js` |
 | Inquiry HTTP | `api/src/functions/contactInquiry.js` |
+| Lesson comms + reminders | `api/src/lib/studioComms.js`, `api/src/functions/lessonReminders.js`, `api/src/functions/studioComms.js` |
+| Agent tasks | `api/src/lib/agentTasks.js`, `api/src/functions/agentTasks.js` |
 | Pay config / webhook | `api/src/functions/lessonPayConfig.js`, `stripeWebhook.js` |
 | Table infra | `infra/modules/portfolio/studio_crm.tf` |
 | Stripe catalog | `infra/modules/stripe_catalog/main.tf` |

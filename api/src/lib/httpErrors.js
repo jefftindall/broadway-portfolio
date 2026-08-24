@@ -200,6 +200,13 @@ export function classifyCrmError(err) {
       error: message || 'Please check the person fields and try again.',
     };
   }
+  if (name === 'StudioCommsError') {
+    return {
+      errorKind: 'comms',
+      status: 400,
+      error: message || 'Could not send that message.',
+    };
+  }
   if (name === 'CrmNotFoundError') {
     return { errorKind: 'not_found', status: 404, error: MSG_CRM_NOT_FOUND };
   }

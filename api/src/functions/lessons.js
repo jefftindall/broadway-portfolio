@@ -102,7 +102,7 @@ app.http('lessons', {
       if (request.method === 'GET') {
         if (settings) {
           try {
-            await syncLessonRsvps({ lessons, settings });
+            await syncLessonRsvps({ lessons, settings, contacts: readContacts(), correlationId });
           } catch {
             // RSVP sync is best-effort; listing still succeeds.
           }
@@ -191,6 +191,8 @@ app.http('lessonById', {
           status,
           lessons,
           settings: tryCalendarSettingsStoreFromEnv(),
+          contacts: readContacts(),
+          correlationId,
         });
       } else if (body?.startAt) {
         updated = await lessons.update(lessonId, body, { etag: request.headers.get('if-match') || body?.etag });
