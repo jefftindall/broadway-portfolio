@@ -1,10 +1,10 @@
 # Plan: Studio as teaching-business ops
 
 **Artifact ID:** `ELYSE-STUDIO-001`  
-**Version:** 1.9  
-**Last updated:** 2026-08-24  
+**Version:** 2.1  
+**Last updated:** 2026-08-28  
 **Audience:** Agents, implementers, operators  
-**Scope:** Auth-gated Studio (`/studio`) as the ops home for the teaching business **and** career relationships — CRM (people + personas + LTV), Google Calendar scheduling, contact automation, payment status, and reports. Public site stays the portfolio + inquire/book surface. Money movement stays in [`lesson-payments.md`](./lesson-payments.md).
+**Scope:** Auth-gated Studio (`/studio`) as the ops home for the teaching business **and** career relationships — CRM (people + personas + LTV), Google Calendar scheduling, contact automation, payment status, and reports. Public site stays the portfolio; **lesson and casting inquiries stay anonymous**. Contact accounts (flag-gated schedule/book/history) live in [`contact-accounts.md`](./contact-accounts.md) (`ACCOUNT-*`). Money movement stays in [`lesson-payments.md`](./lesson-payments.md).
 
 Use the **Action ID** column (`STUDIO-*`) to reference items in PRs, issues, and commits.
 
@@ -18,7 +18,7 @@ Example PR title: `STUDIO-P1-003: Add /studio/people contact list`
 
 ## North star
 
-**Studio** (`/studio` and `/studio/*`) is the login-protected workspace for running the teaching business **and** managing relationships with students and agents — not only a content publisher. It is the place to operate lessons and career follow-up: people, schedule, payment status, communications, and financial visibility — while the public site stays the portfolio + inquire/book surface.
+**Studio** (`/studio` and `/studio/*`) is the login-protected workspace for running the teaching business **and** managing relationships with students and agents — not only a content publisher. It is the place to operate lessons and career follow-up: people, schedule, payment status, communications, and financial visibility. The public site stays the portfolio; **lesson and casting inquiries stay anonymous**. When [`contact-accounts.md`](./contact-accounts.md) (`ACCOUNT-*`) is flagged **on**, students (and parents) sign in on **`/account`** with Google, Apple, or Microsoft to see the **schedule**, **book a slot**, and **view history** — not a Studio tab.
 
 ### Systems of record
 
@@ -29,13 +29,14 @@ Record shapes, Table Storage keys, git collections, and access-flow diagrams: [`
 | **Relationships** | Studio CRM (`/studio/people`) | Create, edit, persona tags, notes, LTV display |
 | **Time / availability** | **Google Calendar** (Elyse’s calendars) when connected | Read busy time; create lesson invites; never fork a second calendar. **Disconnected is valid:** the public site and Studio keep working; Elyse still gets an ICS reminder at `SITE-CONTACT-EMAIL` |
 | **Money** | **Stripe** (Dashboard / Payment Links / webhooks) | Show paid/unpaid and student LTV; do not invoice or charge here |
-| **Public brand** | Astro site (`/lessons/book`, inquire forms) | Later: offer free slots that already exist on Google Calendar |
+| **Public brand** | Astro site (`/lessons/book`, **anonymous inquire**) | Rates + lesson/casting inquire always public. **See schedule / book a slot** require a contact session when `CONTACT_ACCOUNTS_ENABLED` (`ACCOUNT-P1-006` / `P3`). Slot picker: `STUDIO-P5-001` |
+| **Contact identity** | Entra External ID (students/parents) vs workforce Entra (operators) | Studio never authenticates students. Link login → People row (`ACCOUNT-P2`) |
 
 ### Non-negotiables
 
 | Rule | Meaning |
 |------|---------|
-| **Auth-gated** | SWA `authenticated` on `/studio` and `/studio/*`; never public nav or sitemap. Entra Assignment required stays **off** so tenant users can sign in; APIs still authorize every call (`permissionGate` against the catalog — not login, not a separate publish allowlist) |
+| **Auth-gated** | `/studio` is operator-only (workforce Entra). After `ACCOUNT-P1`, SWA role `studio` — not mere `authenticated` — so a student Google/Apple/Microsoft session cannot open Studio. Entra Assignment required stays **off** so tenant users can sign in; APIs still authorize every call (`permissionGate` against the catalog — not login, not a separate publish allowlist) |
 | **Personalized** | UI and data scoped by the signed-in user’s **permissions**. Publish and People share one catalog; profiles are SoT |
 | **Teaching-first** | Voice lessons only (pedagogy, vocal health, CCM)—no acting-lesson ops or marketing |
 | **One home for ops** | Deepen Studio rather than scattering people/schedule/pay/comms across SaaS CRMs. Stripe stays money; Google Calendar stays time |
@@ -51,7 +52,7 @@ Record shapes, Table Storage keys, git collections, and access-flow diagrams: [`
 | Payments | Stripe match + offline rows + copy Payment Links (`STUDIO-P2`) | Upcoming lesson paid/unpaid from Calendar (`STUDIO-P2-004` residual) |
 | Communications | Inquiry → CRM + student **Requested** / **Confirmed** mail + reminders (`STUDIO-P4`) | Agent stale tasks (`STUDIO-P4-004`); manual templates (`STUDIO-P4-005`) |
 | Financial reports | — | Month summary (gross / fees / net / refunds); deep ledger stays in Stripe/exports (`STUDIO-P5`) |
-| Public booking | Inquire-then-email | Optional slot picker that reads Google free/busy (`STUDIO-P5`) |
+| Public booking | Inquire-then-email (**always anonymous**) | Flag-gated contact login to **see schedule + book** (`ACCOUNT-P3`); history on `/account` (`ACCOUNT-P4-001`); slot picker (`STUDIO-P5-001`, depends on `ACCOUNT-P3` + flag) |
 | Help | `/studio/help` map + contextual guides (`/studio/help/content`, `/students`, `/admin`, `/access`) | Expand as ops capabilities ship (never before) |
 | Access | Roles + discrete permissions (`STUDIO-P6`) at `/studio/admin/access` | Grant People without publish (and the reverse) |
 
@@ -84,10 +85,10 @@ Payments vendor choice and Phase 1 checkout live in [`lesson-payments.md`](./les
 | Phase 2 — Lifetime value + pay status | `done` | Residual: upcoming lesson paid/unpaid waits on `STUDIO-P3-003` |
 | Phase 3 — Google Calendar scheduling | `done` | Operator: GCP Testing client + KV client id/secret + Connect in Studio |
 | Phase 4 — Contact automation | `done` | Residual: operator confirms ACS mail on staging; `STUDIO-P2-004` upcoming paid/unpaid |
-| Phase 5 — Public slots + month report | `planned` | After P3 write-back is reliable |
+| Phase 5 — Public slots + month report | `planned` | Slot picker (`STUDIO-P5-001`) waits on `ACCOUNT-P3` + `CONTACT_ACCOUNTS_ENABLED`; inquire stays anonymous |
 | Phase 6 — Roles, permissions, user profiles | `done` | Shipped after P1 in git (People needed the catalog). Listed last so phase numbers read 0–6. Live grants on `/studio/admin/access` |
 
-**Suggested next:** `STUDIO-P5-001` (public free/busy slot picker) after staging Calendar connect is verified. Residual `STUDIO-P2-004` upcoming paid/unpaid joins confirmed lessons.
+**Suggested next:** [`ACCOUNT-P1-001`](./contact-accounts.md) (student Google / Apple / Microsoft sign-in) before the public slot picker. Residual `STUDIO-P2-004` upcoming paid/unpaid joins confirmed lessons. `STUDIO-P5-001` after `ACCOUNT-P3` (flag on) and staging Calendar connect. Lesson inquire never waits on accounts.
 
 ---
 
@@ -141,6 +142,8 @@ Lesson inquiry (`type=lesson` on [`InquiryForm`](../../src/components/InquiryFor
          ▼                         ▼                    ▼
    Public site              Google Calendar         Stripe (money)
    /lessons/book            busy + events           Dashboard / APIs
+   inquire (always)         (student is a guest)    Payment Links (no account)
+   /account history + book (CONTACT_ACCOUNTS_ENABLED)
 ```
 
 ### Payment-related Studio functions (when payments ship)
@@ -164,6 +167,7 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 7. **Calendar is Google’s** — Availability is free/busy on Elyse’s Google calendars when connected. Studio never becomes a competing calendar that can drift. Lesson **workflow** state (`requested` / `confirmed` / `declined`) lives in Table Storage so the site can operate without Google.
 8. **Automation is transactional** — Confirmations and reminders for people who already have a relationship. No marketing lists. No SMS to inquiry visitors beyond today’s ACS notify-to-Elyse pattern. Never use `ALERT-*` for student/agent comms.
 9. **Calendar auth is optional at runtime** — Missing tokens, revoked consent, Google 401/403, timeouts, or quota must **not** take down the public site, inquire/book, People, payments, or publish. Degrade: persist the lesson as `requested`, email Elyse an ICS at `SITE-CONTACT-EMAIL`, send the student **Requested**, log `correlationId` only. Calendar UI shows disconnected — never a 500.
+10. **Contact accounts are not Studio** — Students never receive the `studio` SWA role or a `studioUsers` row. Self-serve profile **and history** live on `/account`. **Inquire stays anonymous.** Schedule + book are behind `CONTACT_ACCOUNTS_ENABLED` (`ACCOUNT-*`).
 
 ---
 
@@ -171,7 +175,7 @@ Do not invent Gemini tools that silently charge a card from free-form speech wit
 
 Pick the option that is **most user-friendly for Elyse and students** and that **supports unattended automation**. Do **not** pick the option that is merely easiest to click through in Google Cloud Console.
 
-Elyse signs into Studio with **Microsoft Entra**. Time still lives in **Google Calendar** (personal Gmail or Workspace — do not assume Domain-Wide Delegation). Students should not need a Google account to request a lesson.
+Elyse signs into Studio with **Microsoft Entra** (workforce). Time still lives in **Google Calendar** (personal Gmail or Workspace — do not assume Domain-Wide Delegation). Students sign in on the **public site** with Google, Apple, or Microsoft ([`contact-accounts.md`](./contact-accounts.md)) — that is **not** Calendar OAuth and **not** the Studio app. They do not need a Google Calendar account; the invite still uses their lesson email.
 
 ### Options evaluated
 
@@ -233,7 +237,7 @@ Studio owns **workflow** state. Google Calendar owns **time** when connected.
 
 | Status | When | Student / parent sees | Elyse |
 |--------|------|------------------------|-------|
-| `requested` | Lesson created (Studio or public book/inquire) | ACS email + any Studio/public copy labeled **Requested**. Not on their calendar as confirmed. | Google invite to Accept, **or** ICS at `SITE-CONTACT-EMAIL` if Google failed |
+| `requested` | Lesson created (Studio, **signed-in slot book** when the accounts flag is on, or still from operator) | ACS email + any Studio/public copy labeled **Requested**. Not on their calendar as confirmed. | Google invite to Accept, **or** ICS at `SITE-CONTACT-EMAIL` if Google failed |
 | `confirmed` | Elyse **accepted** the invite (`responseStatus=accepted`) or tapped Confirm in Studio (degraded) | ACS email labeled **Confirmed**. Google guest update / ICS when we have an event. | Event confirmed on Google when API works |
 | `declined` | Elyse declined the Google invite or tapped Decline in Studio | Short ACS “cannot do that time” (voice-lessons copy) | Event cancelled when API works |
 | `cancelled` | Either party cancels after confirm | Cancel notice | Event cancelled |
@@ -241,6 +245,7 @@ Studio owns **workflow** state. Google Calendar owns **time** when connected.
 Rules:
 
 - Persist the lesson row **before** calling Google. Google failure cannot lose the request or 500 the book/inquire API.
+- Public **slot book** uses the signed-in contact’s `contactId` (`ACCOUNT-P3-002`). Do not take a contact id from the body. **Lesson inquire stays anonymous** and must not be gated on that session.
 - **Requested** mail is automatic on create. **Confirmed** mail is automatic on Elyse accept — not an operator “Send confirmation” as the primary path (`STUDIO-P4-005` remains a manual resend).
 - Reminders (`STUDIO-P4-003`) fire only for `confirmed`.
 - Upcoming paid/unpaid (`STUDIO-P2-004`) joins `confirmed` lessons.
@@ -269,6 +274,7 @@ Rules:
 - [x] Lesson lifecycle: student **Requested** then **Confirmed** when Elyse accepts
 - [x] Cross-link from [`lesson-payments.md`](./lesson-payments.md) backlog item 8
 - [x] `AGENTS.md` Studio north star mentions people / calendar / automations
+- [x] Contact accounts (`ACCOUNT-*`) cross-linked; inquire stays anonymous; schedule/book/history are flag-gated in [`contact-accounts.md`](./contact-accounts.md) (plan v2.1)
 
 </details>
 
@@ -596,11 +602,11 @@ Selected integration: **Studio Google identity as event organizer** (option F in
 
 ### Phase 5 — Public slots and month report
 
-**Goal:** Only after Google write-back is trustworthy. Public booker offers times that are actually free. Month rollup stays a thin Stripe + offline view.
+**Goal:** Only after Google write-back is trustworthy **and** contact login can bind a booker (`ACCOUNT-P3`) with `CONTACT_ACCOUNTS_ENABLED` on. Signed-in booker sees times that are actually free. **Lesson inquire stays on the page with no login.** Month rollup stays a thin Stripe + offline view.
 
 | ID | Title | Status | Depends on | Primary files |
 |----|-------|--------|------------|---------------|
-| `STUDIO-P5-001` | Public free/busy slot picker on `/lessons/book` | `planned` | `STUDIO-P3-003` | `src/pages/lessons/book.astro`; public API (rate-limited) |
+| `STUDIO-P5-001` | Public free/busy slot picker on `/lessons/book` | `planned` | `STUDIO-P3-003`; `ACCOUNT-P3-002` | `src/pages/lessons/book.astro`; contact-session book API (rate-limited) |
 | `STUDIO-P5-002` | In-Studio month summary + Stripe export link | `planned` | `STUDIO-P2-001` | Studio reports UI |
 | `STUDIO-P5-003` | Help for public booking + reports | `planned` | `STUDIO-P5-001` or `002` | `studioHelp.ts` |
 
@@ -610,12 +616,13 @@ Selected integration: **Studio Google identity as event organizer** (option F in
 **Acceptance criteria**
 
 - [ ] Slot picker reads Google free/busy when connected; never invents open times
-- [ ] If free/busy is unavailable, hide the picker and keep inquire — do not 500 `/lessons/book`
-- [ ] Booking uses the same `STUDIO-P3-003` path (persist `requested`, then Google invite or ICS fallback)
+- [ ] Hidden when `CONTACT_ACCOUNTS_ENABLED` is **off** — **lesson inquire remains** (do not 500 `/lessons/book`)
+- [ ] If free/busy is unavailable while the flag is on, hide the picker and keep inquire — do not 500
+- [ ] Booking a **slot** uses the same `STUDIO-P3-003` path with `contactId` from the **contact session** (`ACCOUNT-P3-002`) — no anonymous book POST
 - [ ] Success copy: **Requested** — Confirmed comes when Elyse accepts
-- [ ] Voice-lessons-only copy; inquire form remains for people who prefer email
-- [ ] Anonymous endpoint is rate-limited + Turnstile; no contact dump
-- [ ] Replaces email coordination only when Elyse turns it on (flag) — aligns with lesson-payments “Phase 3 scheduling if email breaks”
+- [ ] Voice-lessons-only copy; rates, **lesson inquire**, and Payment Links remain usable without login
+- [ ] Create-slot endpoint requires `contact` SWA role **and** the contact-accounts flag; still rate-limited; no contact dump
+- [ ] Depends on [`ACCOUNT-P3`](./contact-accounts.md) + `ACCOUNT-P1-006` — do not ship this ID first
 
 </details>
 
@@ -735,7 +742,8 @@ STUDIO-P0-001 (done)
                                                             ├─► P3-004 recurring [done] ─► P3-005 docs [done]
                                                             ├─► P4-002 Requested/Confirmed ─► P4-003 reminders
                                                             │         └─► P4-005 templates
-                                                            └─► P5-001 public slots
+                                                            └─► P5-001 public slots [after ACCOUNT-P3]
+ACCOUNT-P3-002 ─► P5-001 public slots
 P1-003 + contactInquiry ─► P4-001 inquiry ingest
 P1-003 ─► P6-003 People gate
 P2-001 ─► P5-002 month summary
@@ -753,11 +761,12 @@ lesson-payments #7 (Checkout / webhook polish) ║ P2-001 / P2-004
 | Gemini silent charges or silent CRM writes | Confirm UI required |
 | Marketing SMS / email lists | Privacy + current inquiry SMS is notify-to-Elyse only |
 | `ALERT-*` for student/agent mail | On-call stays ops-only |
-| Multi-teacher payroll / student portal SaaS | One coach; add only if asked |
+| Multi-teacher payroll / full student-portal SaaS | Homework, video library, multi-coach — not this site. Thin `/account` + login-to-schedule is [`contact-accounts.md`](./contact-accounts.md) |
 | Always-on Postgres “because CRM” | Table Storage first; cost-sync if that changes |
 | PagerDuty / `OPS-P3-002` | Unrelated; do not implement until asked |
 | Cal.com / Calendly as time SoT | Easier to configure; splits calendar away from Google |
-| Requiring Google login on the public site | Book/inquire must work with no Google auth |
+| Inviting students as workforce Entra guests | Mixes operators and contacts; use External ID (`ACCOUNT-P1`) |
+| Requiring **Google Calendar** login to book | Account IdP may be Apple or Microsoft; Calendar invite still uses lesson email |
 
 ---
 
@@ -765,7 +774,8 @@ lesson-payments #7 (Checkout / webhook polish) ║ P2-001 / P2-004
 
 | Doc | Role |
 |-----|------|
-| [`lesson-payments.md`](./lesson-payments.md) | Stripe money SoT; backlog **#7** / **#8** point here (`STUDIO-P2`, `P3`, `P5`) |
+| [`contact-accounts.md`](./contact-accounts.md) | Public Google / Apple / Microsoft login, `/account` (profile + **history**), flag-gated schedule/book (`ACCOUNT-*`). Inquire never requires login. `STUDIO-P5-001` waits on `ACCOUNT-P3` + `CONTACT_ACCOUNTS_ENABLED` |
+| [`lesson-payments.md`](./lesson-payments.md) | Stripe money SoT; backlog **#7** / **#8** point here (`STUDIO-P2`, `P3`, `P5`). Pay links stay no-account |
 | [`rotate-secrets.md`](../runbooks/rotate-secrets.md) | Google Calendar OAuth names (`STUDIO-P3-001`) |
 | [`studio-calendar.md`](../runbooks/studio-calendar.md) | Connect, ICS fallback, Requested vs Confirmed, weekly max 12 |
 | [`cost-and-quotas.md`](../runbooks/cost-and-quotas.md) | Recalc if Phase 1+ adds a billable Azure SKU |

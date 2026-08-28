@@ -4,7 +4,7 @@
 
 Private **voice** lessons are currently inquire-then-schedule: rates live on [`/lessons/book`](../../src/content/pages/lessons-book.md) ($60 / 30 min, $100 / 60 min; NYC in-person or Zoom), and payment is off-site / informal. The public site is Astro on Azure Static Web Apps; Studio publish already uses Azure Functions.
 
-**Studio north star:** `/studio` is the login-protected, personalized workspace for **running the teaching business** (not only content publish). CRM (people + personas + LTV), Google Calendar scheduling, and contact automation are phased as `STUDIO-*` in [`studio-teaching-business.md`](./studio-teaching-business.md). Those ops surfaces are **out of scope for the first payments rollout** but vendor and data choices below should not paint us into a corner.
+**Studio north star:** `/studio` is the login-protected, personalized workspace for **running the teaching business** (not only content publish). CRM (people + personas + LTV), Google Calendar scheduling, and contact automation are phased as `STUDIO-*` in [`studio-teaching-business.md`](./studio-teaching-business.md). **Student/parent sign-in** (Google / Apple / Microsoft, `/account` history, flag-gated **schedule/book**) is [`contact-accounts.md`](./contact-accounts.md) (`ACCOUNT-*`, `CONTACT_ACCOUNTS_ENABLED`). **Lesson inquire stays anonymous.** Payment Links stay **no account required**. Those ops surfaces are **out of scope for the first payments rollout** but vendor and data choices below should not paint us into a corner.
 
 **Goals for payments:**
 
@@ -18,7 +18,7 @@ Private **voice** lessons are currently inquire-then-schedule: rates live on [`/
 
 This plan compares options and recommends a phased path. Phase 1 Payment Links are **in progress**: test/live **API keys** live in `kv-elyse-shared`; each environment stack owns products, prices (synced from `lessons-book.md`), webhooks, and Payment Links (staging = test, prod = live) so catalog changes promote with the env.
 
-_Last updated: 2026-08-23._ Cross-link: Studio CRM / calendar / automation phases are `STUDIO-*` in [`studio-teaching-business.md`](./studio-teaching-business.md).
+_Last updated: 2026-08-28._ Cross-link: Studio CRM / calendar / automation phases are `STUDIO-*` in [`studio-teaching-business.md`](./studio-teaching-business.md). Contact login / schedule-gate is `ACCOUNT-*` in [`contact-accounts.md`](./contact-accounts.md).
 
 ---
 
@@ -26,7 +26,7 @@ _Last updated: 2026-08-23._ Cross-link: Studio CRM / calendar / automation phase
 
 | Need | What “good” looks like |
 |------|------------------------|
-| Personal / casual pay | Shareable link or QR; no account creation for the student; works on iPhone Safari |
+| Personal / casual pay | Shareable link or QR; **no account required to pay**; works on iPhone Safari. Scheduling login is separate (`ACCOUNT-*`) |
 | Before-lesson charge | Charge in under a minute from phone or send a one-time link in the reminder text/email |
 | Refunds | Full/partial from the same console that took the payment; audit trail |
 | Monthly ledger | One export (CSV/PDF) with date, student/memo, method, gross, fee, net, refunds |
@@ -321,6 +321,6 @@ Do not charge cards from unconfirmed voice prompts. Keep `/studio` and `/studio/
 | 5 | Journey test: inquiry flow + legal copy; pay CTA when flag+links (`LESSON-01` / `LESSON-03`) | `done` |
 | 6 | Per-env catalog: products, prices (cents from `lessons-book.md`), webhook endpoints, Payment Link upsert (staging = test keys, prod = live); `POST /api/stripeWebhook` | `done` |
 | 7 | Later: Checkout Session Function. Webhook → Studio LTV / unmatched (`STUDIO-P2-001`) is **done**; upcoming lesson paid/unpaid still needs Calendar (`STUDIO-P2-004` / `P3`) | `planned` (Checkout only) |
-| 8 | Later: Studio GCal / comms / reports (`STUDIO-P3`–`P5`) per [`studio-teaching-business.md`](./studio-teaching-business.md). CRM + LTV (`STUDIO-P1` / `P2`) are done | `planned` |
+| 8 | Later: Studio GCal / comms / reports (`STUDIO-P3`–`P5`) per [`studio-teaching-business.md`](./studio-teaching-business.md). CRM + LTV (`STUDIO-P1` / `P2`) are done. Public slot picker waits on contact login + `CONTACT_ACCOUNTS_ENABLED` (`ACCOUNT-P3`); inquire stays anonymous | `planned` |
 
 CD ships **one Astro artifact** to staging and prod, so the pay-flow flag and Payment Link URLs are **runtime** SWA app settings (`GET /api/lessonPayConfig`), not baked `PUBLIC_*` vars. Restricted API keys (`rk_test_` / `rk_live_`) stay in **`kv-elyse-shared`**; webhook secrets and Payment Links live in the **env vault** and are never returned by that endpoint. Rate changes in `lessons-book.md` require an **environment re-apply** (staging, then prod) so Stripe prices follow the site. Populate commands: [rotate-secrets.md](../runbooks/rotate-secrets.md#stripe-lesson-payments). Go-live on production: `terraform apply -var='lesson_payments_enabled=true'` in `infra/environments/prod` after live Payment Links are set.
