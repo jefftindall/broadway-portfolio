@@ -8,11 +8,14 @@ import {
   patchContactOidcIssuerFile,
 } from './patch-contact-oidc-issuer.mjs';
 
-const SAMPLE =
+const PREFIX_METADATA =
   'https://elysecontacts.ciamlogin.com/11111111-2222-3333-4444-555555555555/v2.0';
+const CANONICAL_ISSUER =
+  'https://11111111-2222-3333-4444-555555555555.ciamlogin.com/11111111-2222-3333-4444-555555555555/v2.0';
 
 test('normalizeContactOidcIssuer accepts CIAM issuer URLs', () => {
-  assert.equal(normalizeContactOidcIssuer(SAMPLE), SAMPLE);
+  assert.equal(normalizeContactOidcIssuer(CANONICAL_ISSUER), CANONICAL_ISSUER);
+  assert.equal(normalizeContactOidcIssuer(PREFIX_METADATA), PREFIX_METADATA);
 });
 
 test('normalizeContactOidcIssuer rejects placeholders and bad hosts', () => {
@@ -47,10 +50,10 @@ test('patchContactOidcIssuerFile updates customOpenIdConnectProviders.contact', 
     'utf8',
   );
 
-  patchContactOidcIssuerFile(configPath, SAMPLE);
+  patchContactOidcIssuerFile(configPath, CANONICAL_ISSUER);
   const parsed = JSON.parse(fs.readFileSync(configPath, 'utf8'));
   assert.equal(
     parsed.auth.identityProviders.customOpenIdConnectProviders.contact.registration.openIdIssuer,
-    SAMPLE,
+    CANONICAL_ISSUER,
   );
 });

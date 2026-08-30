@@ -38,6 +38,31 @@ export function normalizeContactOidcIssuer(issuer) {
 }
 
 /**
+ * Resolve the canonical issuer from CIAM OIDC discovery. Metadata may be fetched
+ * using either {prefix}.ciamlogin.com/{tenant-id}/v2.0 or {tenant-id}.ciamlogin.com/{tenant-id}/v2.0,
+ * but the discovery document's `issuer` always uses the tenant-id hostname.
+ *
+ * @param {string} issuerOrMetadataUrl
+ * @returns {Promise<string>}
+ */
+export async function resolveCanonicalContactOidcIssuer(issuerOrMetadataUrl) {
+  const seed = normalizeContactOidcIssuer(issuerOrMetadataUrl);
+  const wellKnownUrl = `${seed}/.well-known/openid-configuration`;
+  const response = await fetch(wellKnownUrl, { redirect: 'follow' });
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch CIAM OIDC discovery (${response.status}) from ${wellKnownUrl}`,
+    );
+  }
+  /** @type {{ issuer?: unknown }} */
+  const body = await response.json();
+  if (typeof body.issuer !== 'string' || body.issuer.trim() === '') {
+    throw new Error(`CIAM OIDC discovery at ${wellKnownUrl} did not include issuer`);
+  }
+  return normalizeContactOidcIssuer(body.issuer);
+}
+
+/**
  * @param {string} configPath
  * @param {string} issuer
  */

@@ -41,7 +41,11 @@ terraform plan -input=false -out=tfplan
 terraform apply tfplan
 ```
 
-Default prefix **`elysecontacts`** → `https://elysecontacts.ciamlogin.com/{tenant-id}/v2.0`. If taken:
+Default prefix **`elysecontacts`**. SWA **`openIdIssuer`** must match OIDC discovery’s **`issuer`** field (tenant-id hostname):
+
+`https://692675c7-5ecc-44d7-a2e6-f8e49e250e3e.ciamlogin.com/692675c7-5ecc-44d7-a2e6-f8e49e250e3e/v2.0`
+
+CD resolves this from discovery when patching `dist/staticwebapp.config.json`. If taken:
 
 ```bash
 terraform plan -var='contact_ciam_domain_prefix=elysetindallcontacts' -out=tfplan

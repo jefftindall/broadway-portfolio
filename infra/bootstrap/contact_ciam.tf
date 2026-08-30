@@ -14,10 +14,11 @@ locals {
     var.contact_ciam_domain_prefix
   ) : trimspace(var.contact_ciam_domain_prefix)
 
-  contact_ciam_oidc_issuer = (
-    local.contact_ciam_tenant_id_effective != "REPLACE_ME" &&
-    local.contact_ciam_domain_prefix_effective != ""
-  ) ? "https://${local.contact_ciam_domain_prefix_effective}.ciamlogin.com/${local.contact_ciam_tenant_id_effective}/v2.0" : "REPLACE_ME"
+  # SWA custom OIDC must match the `issuer` from OIDC discovery (tenant-id hostname),
+  # not the marketing prefix hostname used in authorize URLs.
+  contact_ciam_oidc_issuer = local.contact_ciam_tenant_id_effective != "REPLACE_ME" ? (
+    "https://${local.contact_ciam_tenant_id_effective}.ciamlogin.com/${local.contact_ciam_tenant_id_effective}/v2.0"
+  ) : "REPLACE_ME"
 }
 
 resource "azapi_resource" "contact_ciam" {
