@@ -11,10 +11,11 @@ test.describe('lessons journeys', () => {
     await page.getByRole('link', { name: 'Book a lesson' }).first().click();
     await expect(page).toHaveURL(/\/lessons\/book\/?$/);
     await expect(page.getByRole('heading', { name: /Rates & scheduling/i })).toBeVisible();
-    await expect(page.getByText('30-minute session')).toBeVisible();
-    await expect(page.getByText('60-minute session')).toBeVisible();
-    await expect(page.getByText(/\$60/)).toBeVisible();
-    await expect(page.getByText(/\$100/)).toBeVisible();
+    const ratesList = page.locator('#booking-heading ul');
+    await expect(ratesList.getByText('30-minute session', { exact: true })).toBeVisible();
+    await expect(ratesList.getByText('60-minute session', { exact: true })).toBeVisible();
+    await expect(ratesList.getByText('$60')).toBeVisible();
+    await expect(ratesList.getByText('$100')).toBeVisible();
 
     await page.getByRole('link', { name: /Send lesson inquiry/i }).first().click();
     await expect(page.locator('#lesson-inquiry')).toBeVisible();

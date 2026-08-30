@@ -42,6 +42,7 @@
     "test:search-signals": "node --test scripts/search-ops-signals-refresh.test.mjs",
     "test:staging-noindex": "node --test scripts/apply-staging-noindex.test.mjs",
     "test:contact-oidc-issuer": "node --test scripts/patch-contact-oidc-issuer.test.mjs",
+    "test:contact-auth-config": "node --test scripts/patch-contact-auth-config.test.mjs",
     "test:studio-auth-token": "node scripts/studio-auth-token-check.mjs",
     "test:azure-oidc-login": "node --test scripts/azure-oidc-login.test.mjs",
     "test:appinsights-event": "node --test scripts/emit-appinsights-event.test.mjs",
