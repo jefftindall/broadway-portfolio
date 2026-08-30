@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { fetchContactAccountsEnabled } from '../helpers/contactAccounts';
 import { isStaticWebAppHost, waitForOk, waitForRequestOk } from '../helpers/propagation';
+import { expectAuthRedirectToExternalIdp } from '../helpers/swaAuth';
 
 test.describe('contact accounts smoke', () => {
   let contactAccountsEnabled = false;
@@ -40,14 +41,11 @@ test.describe('contact accounts smoke', () => {
   test('contact auth starts CIAM login when enabled', async ({ request }) => {
     test.skip(!isStaticWebAppHost(), 'SWA auth is only enforced on deployed hosts');
     test.skip(!contactAccountsEnabled, 'CONTACT_ACCOUNTS_ENABLED is false');
-    const res = await request.get('/.auth/login/contact?post_login_redirect_uri=%2Flessons%2Fbook', {
-      maxRedirects: 0,
-    });
-    expect(res.status(), '/.auth/login/contact should redirect, not 404').toBeGreaterThanOrEqual(300);
-    expect(res.status()).toBeLessThan(400);
-    const location = res.headers()['location'] ?? '';
-    expect(location).toMatch(/ciamlogin\.com/i);
-    expect(location).not.toMatch(/post_login_redirect_uri=%7burl%7d/i);
+    await expectAuthRedirectToExternalIdp(
+      request,
+      '/.auth/login/contact?post_login_redirect_uri=%2Flessons%2Fbook',
+      /ciamlogin\.com/i,
+    );
   });
 
   test('anonymous /account redirects when enabled', async ({ request }) => {
