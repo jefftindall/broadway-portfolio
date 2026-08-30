@@ -3,6 +3,7 @@ import { unlinkSync } from 'node:fs';
 import { completeEntraLogin } from '../helpers/entraLogin';
 import { redactHarFile } from '../helpers/redactHar';
 import { isStaticWebAppHost } from '../helpers/propagation';
+import { beginStudioEntraLogin } from '../helpers/studioLogin';
 
 const ready = process.env.MONITOR_AUTH_READY === '1';
 const upn = process.env.MONITOR_UPN ?? '';
@@ -61,10 +62,7 @@ test.describe('studio auth smoke', () => {
   test('signed-in monitor reaches /studio/health marker', async ({ page }) => {
     const marks: Record<string, number> = { start: Date.now() };
 
-    await page.goto('/studio/health');
-    await page.waitForURL(/\/login(\?|$)/i, { timeout: 45_000 });
-    await page.getByTestId('login-operator').click();
-    await page.waitForURL(/login\.microsoftonline\.com/i, { timeout: 45_000 });
+    await beginStudioEntraLogin(page, '/studio/health');
     marks.redirect = Date.now();
 
     await completeEntraLogin(page, upn, password, totpSeed);
