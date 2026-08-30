@@ -72,12 +72,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+          TF_VAR_contact_ciam_azuread_use_oidc: "true"
         run: terraform plan -input=false -out=tfplan
 
       - name: Terraform apply
         env:
           GITHUB_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+          TF_VAR_contact_ciam_azuread_use_oidc: "true"
         run: terraform apply -input=false tfplan
 
       - name: Sync SWA API secrets

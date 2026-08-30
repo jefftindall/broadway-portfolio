@@ -2,7 +2,7 @@
 
 **Artifact ID:** `ELYSE-ACCOUNT-001`  
 **Version:** 1.1  
-**Last updated:** 2026-08-28  
+**Last updated:** 2026-08-29  
 **Audience:** Agents, implementers, operators  
 **Scope:** Public-site **contact accounts** so students (and parents) can sign in with Google, Apple, or Microsoft, maintain profile and preferences, **see the schedule and book a slot**, and **review their lesson history**. The whole contact-account surface is behind a **runtime feature flag**. **Lesson and casting inquiries stay anonymous forever** — potential clients must never be forced to log in to write Elyse. Studio (`/studio`) stays the operator workspace. People CRM stays the relationship SoT. Stripe stays money. Google Calendar stays time.
 
@@ -74,12 +74,12 @@ Operator ──Microsoft work/school────────►  Workforce Entra
 | Phase / area | Status | Open residuals |
 |--------------|--------|----------------|
 | Phase 0 — Plan + Action IDs + SoT | `done` | — |
-| Phase 1 — Student identity (External ID + SWA roles) | `planned` | Operator: External ID tenant, Google/Apple/Microsoft apps, Apple Developer Program |
+| Phase 1 — Student identity (External ID + SWA roles) | `done` | Terraform automates CIAM tenant + OIDC apps; operator: Application Admin on CIAM tenant, social IdPs ([`contact-accounts-ciam-terraform.md`](../runbooks/contact-accounts-ciam-terraform.md), [`contact-accounts-social-idps.md`](../runbooks/contact-accounts-social-idps.md)); iPhone Safari IdP round-trips on staging |
 | Phase 2 — Link login → People + `/account` | `planned` | After P1 |
 | Phase 3 — Flag + login-gated schedule/book | `planned` | Inquiry stays anonymous; `STUDIO-P5-001` uses this bind |
 | Phase 4 — Lesson history + parent booking | `planned` | History is part of `/account`; required before prod flag-on |
 
-**Suggested next:** `ACCOUNT-P1-001` (External ID tenant + SWA custom OIDC), then `ACCOUNT-P1-006` (flag). Do **not** start `STUDIO-P5-001` until Phase 3 can bind a booker. Inquiry never waits on this track.
+**Suggested next:** `ACCOUNT-P2-001` (link login → People). Do **not** start `STUDIO-P5-001` until Phase 3 can bind a booker. Inquiry never waits on this track.
 
 ---
 
@@ -260,24 +260,24 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 
 | ID | Title | Status | Depends on | Primary files |
 |----|-------|--------|------------|---------------|
-| `ACCOUNT-P1-001` | External ID tenant + SWA OIDC + KV placeholders | `planned` | `ACCOUNT-P0-001` | `infra/` (bootstrap vs env — **never env → bootstrap**); env vault names; `staticwebapp.config.json` |
-| `ACCOUNT-P1-002` | `rolesSource` + `/studio` requires `studio` | `planned` | `ACCOUNT-P1-001` | `api/src/functions/` auth-roles; SWA routes; [`authentication-authorization.md`](../architecture/authentication-authorization.md) |
-| `ACCOUNT-P1-003` | Public `/login` chooser; fix 401 override | `planned` | `ACCOUNT-P1-002` | `src/pages/login.astro`; `staticwebapp.config.json` `responseOverrides` |
-| `ACCOUNT-P1-004` | Federate Google, Apple, Microsoft on the user flow | `planned` | `ACCOUNT-P1-001` | Operator runbook; IdP apps (not Calendar clients) |
-| `ACCOUNT-P1-005` | Auth runbook, secret names, privacy mention, cost note | `planned` | `ACCOUNT-P1-004` | `docs/runbooks/`; `rotate-secrets.md`; `privacy.astro`; `cost-and-quotas.md` |
-| `ACCOUNT-P1-006` | `CONTACT_ACCOUNTS_ENABLED` Terraform + SWA + public config GET | `planned` | `ACCOUNT-P1-001` | env `variables.tf`; SWA app settings; anonymous config API |
+| `ACCOUNT-P1-001` | External ID tenant + SWA OIDC + KV secrets | `done` | `ACCOUNT-P0-001` | `infra/bootstrap/contact_ciam.tf`; `infra/modules/portfolio/contact_ciam_entra.tf`; CD issuer patch |
+| `ACCOUNT-P1-002` | `rolesSource` + `/studio` requires `studio` | `done` | `ACCOUNT-P1-001` | `api/src/functions/` auth-roles; SWA routes; [`authentication-authorization.md`](../architecture/authentication-authorization.md) |
+| `ACCOUNT-P1-003` | Public `/login` chooser; fix 401 override | `done` | `ACCOUNT-P1-002` | `src/pages/login.astro`; `staticwebapp.config.json` `responseOverrides` |
+| `ACCOUNT-P1-004` | Federate Google, Apple, Microsoft on the user flow | `done` (runbook) | `ACCOUNT-P1-001` | Operator runbook; IdP apps (not Calendar clients) |
+| `ACCOUNT-P1-005` | Auth runbook, secret names, privacy mention, cost note | `done` | `ACCOUNT-P1-004` | `docs/runbooks/`; `rotate-secrets.md`; `privacy.astro`; `cost-and-quotas.md` |
+| `ACCOUNT-P1-006` | `CONTACT_ACCOUNTS_ENABLED` Terraform + SWA + public config GET | `done` | `ACCOUNT-P1-001` | env `variables.tf`; SWA app settings; anonymous config API |
 
 <details>
 <summary><code>ACCOUNT-P1-001</code> — External ID + SWA</summary>
 
 **Acceptance criteria**
 
-- [ ] One **external** Entra tenant (CIAM), not the workforce teaching tenant. Staging and prod are **app registrations** (redirect URIs per SWA host), not two CIAM tenants unless product limits force it
-- [ ] SWA `customOpenIdConnectProviders` (e.g. `contact`) + existing `azureActiveDirectory`. Login URLs: `/.auth/login/contact` vs `/.auth/login/aad`
-- [ ] KV placeholders + `lifecycle { ignore_changes }` for client secrets. Names only in git. [`.cursor/rules/never-echo-secrets.mdc`](../../.cursor/rules/never-echo-secrets.mdc)
-- [ ] Terraform stack direction: shared tenant/app scaffolding may live in **bootstrap**; env stacks consume well-known names. No `terraform_remote_state` of staging/prod into bootstrap
-- [ ] If any new billable Azure SKU appears: `cost-and-quotas.md` + `budget.tf` + `SUBSCRIPTION_BUDGET_USD` in the **same** PR
-- [ ] GitHub is still 404 at `/.auth/login/github`
+- [x] One **external** Entra tenant (CIAM), not the workforce teaching tenant. Staging and prod are **app registrations** (redirect URIs per SWA host), not two CIAM tenants — bootstrap Terraform creates the tenant + shared KV metadata; env Terraform creates per-env OIDC apps ([`contact-accounts-ciam-terraform.md`](../runbooks/contact-accounts-ciam-terraform.md))
+- [x] SWA `customOpenIdConnectProviders` (e.g. `contact`) + existing `azureActiveDirectory`. Login URLs: `/.auth/login/contact` vs `/.auth/login/aad`
+- [x] KV secret names only in git; client secrets Terraform-managed in env vault. CD patches issuer from `CONTACT-CIAM-OIDC-ISSUER` ([`.cursor/rules/never-echo-secrets.mdc`](../../.cursor/rules/never-echo-secrets.mdc))
+- [x] Terraform stack direction: shared tenant/app scaffolding may live in **bootstrap**; env stacks consume well-known names. No `terraform_remote_state` of staging/prod into bootstrap
+- [x] If any new billable Azure SKU appears: `cost-and-quotas.md` + `budget.tf` + `SUBSCRIPTION_BUDGET_USD` in the **same** PR — none added; External ID MAU documented as $0 at expected volume
+- [x] GitHub is still 404 at `/.auth/login/github`
 
 </details>
 
@@ -286,12 +286,12 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 
 **Acceptance criteria**
 
-- [ ] `rolesSource` Function assigns `studio` iff the principal is workforce AAD; `contact` iff External ID. Never both. Never use the permission catalog here
-- [ ] `/studio` and `/studio/*` `allowedRoles`: `["studio"]` (not `authenticated`)
-- [ ] Monitor user still reaches `/studio/health` (workforce AAD → `studio`, no profile)
-- [ ] Contact principal calling `GET /api/contacts` (list) still 403 — `permissionGate(people.read)` unchanged
-- [ ] Architecture SoT + [`manage-access.md`](../runbooks/manage-access.md) + [`.cursor/rules/studio-auth.mdc`](../../.cursor/rules/studio-auth.mdc) updated in this PR
-- [ ] Logs: provider kind + `correlationId` only — no tokens or emails
+- [x] `rolesSource` Function assigns `studio` iff the principal is workforce AAD; `contact` iff External ID. Never both. Never use the permission catalog here
+- [x] `/studio` and `/studio/*` `allowedRoles`: `["studio"]` (not `authenticated`)
+- [x] Monitor user still reaches `/studio/health` (workforce AAD → `studio`, no profile)
+- [x] Contact principal calling `GET /api/contacts` (list) still 403 — `permissionGate(people.read)` unchanged
+- [x] Architecture SoT + [`manage-access.md`](../runbooks/manage-access.md) + [`.cursor/rules/studio-auth.mdc`](../../.cursor/rules/studio-auth.mdc) updated in this PR
+- [x] Logs: provider kind + `correlationId` only — no tokens or emails
 
 </details>
 
@@ -300,10 +300,10 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 
 **Acceptance criteria**
 
-- [ ] Public `/login` (indexable? **no** — `noIndex`; not in sitemap). Copy: two paths, voice-lessons tone, no Studio jargon on the student button
-- [ ] SWA 401 override → `/login` (honor `post_login_redirect_uri` / query so Studio deep links still return to `/studio/...`)
-- [ ] Student button uses External ID (optional `domain_hint` later). Operator button uses AAD
-- [ ] iPhone Safari: complete Google, Apple, and Microsoft round-trips on staging
+- [x] Public `/login` (indexable? **no** — `noIndex`; not in sitemap). Copy: two paths, voice-lessons tone, no Studio jargon on the student button
+- [x] SWA 401 override → `/login` (honor `post_login_redirect_uri` / query so Studio deep links still return to `/studio/...`)
+- [x] Student button uses External ID (optional `domain_hint` later). Operator button uses AAD
+- [ ] iPhone Safari: complete Google, Apple, and Microsoft round-trips on staging — operator after CIAM + IdP setup
 
 </details>
 
@@ -312,11 +312,11 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 
 **Acceptance criteria**
 
-- [ ] External ID user flow enables **Google**, **Apple**, and **Microsoft personal** (MSA as custom OIDC to the consumers endpoint per current External ID docs — not workforce `AzureADMyOrg`)
+- [ ] External ID user flow enables **Google**, **Apple**, and **Microsoft personal** (MSA as custom OIDC to the consumers endpoint per current External ID docs — not workforce `AzureADMyOrg`) — operator configures in CIAM tenant
 - [ ] Google OAuth client is **not** the Calendar organizer/Elyse client. Redirects include External ID federation URIs ([Google federation](https://learn.microsoft.com/en-us/entra/external-id/customers/how-to-google-federation-customers))
 - [ ] Apple: Services ID + Sign in with Apple; Hide My Email must not 500 the callback
-- [ ] No local email+password on v1 (social only). Email OTP is out of scope unless social is blocked
-- [ ] Operator residual checklist in the runbook: Apple Developer Program enrollment, Google consent screen, MSA app
+- [x] No local email+password on v1 (social only). Email OTP is out of scope unless social is blocked
+- [x] Operator residual checklist in the runbook: Apple Developer Program enrollment, Google consent screen, MSA app
 
 </details>
 
@@ -325,11 +325,11 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 
 **Acceptance criteria**
 
-- [ ] Runbook: how operators vs students sign in, how to add a test user, what to do if External ID is down (booking disabled, rates + casting inquire still up)
-- [ ] `rotate-secrets.md` lists new secret **names**
-- [ ] Privacy policy names student/parent **sign-in** and which providers (no sample PII)
-- [ ] `cost-and-quotas.md`: External ID MAU $0 at expected volume; Apple Developer on the **non-Azure** table; no silent “negligible” if a meter appears
-- [ ] Smoke: unauthenticated `/studio` still redirects; contact login cannot render Studio home
+- [x] Runbook index + Terraform automation guide + social IdP checklist ([`contact-accounts-auth.md`](../runbooks/contact-accounts-auth.md), [`contact-accounts-ciam-terraform.md`](../runbooks/contact-accounts-ciam-terraform.md), [`contact-accounts-social-idps.md`](../runbooks/contact-accounts-social-idps.md))
+- [x] `rotate-secrets.md` lists new secret **names**
+- [x] Privacy policy names student/parent **sign-in** and which providers (no sample PII)
+- [x] `cost-and-quotas.md`: External ID MAU $0 at expected volume; Apple Developer on the **non-Azure** table; no silent “negligible” if a meter appears
+- [x] Smoke: unauthenticated `/studio` still redirects; contact login cannot render Studio home — staging smoke accepts `/login` redirect; studio-auth clicks operator chooser
 
 </details>
 
@@ -338,13 +338,13 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 
 **Acceptance criteria**
 
-- [ ] Terraform `contact_accounts_enabled` → SWA `CONTACT_ACCOUNTS_ENABLED` (string `true`/`false`). Staging default **true**, prod default **false**
-- [ ] Not the same variable as `lesson_payments_enabled`
-- [ ] Anonymous public GET returns `{ enabled }` only — no tokens, emails, or contact ids. Same one-artifact rule as `GET /api/lessonPayConfig` (not baked `PUBLIC_*`)
-- [ ] Flag **off**: public header has no student Sign in; `/account` and schedule/book UI hidden; **lesson inquire still submits**
-- [ ] Flag **on**: Sign in / Account, `/account`, schedule + book surfaces appear (still require `contact` session for those actions)
-- [ ] Go-live documented: `terraform apply -var='contact_accounts_enabled=true'` in prod after identity is verified on staging
-- [ ] [`rotate-secrets.md`](../runbooks/rotate-secrets.md) / setup mention the flag (it is not a secret)
+- [x] Terraform `contact_accounts_enabled` → SWA `CONTACT_ACCOUNTS_ENABLED` (string `true`/`false`). Staging default **true**, prod default **false**
+- [x] Not the same variable as `lesson_payments_enabled`
+- [x] Anonymous public GET returns `{ enabled }` only — no tokens, emails, or contact ids. Same one-artifact rule as `GET /api/lessonPayConfig` (not baked `PUBLIC_*`)
+- [x] Flag **off**: public header has no student Sign in; `/account` and schedule/book UI hidden; **lesson inquire still submits**
+- [x] Flag **on**: Sign in / Account, `/account`, schedule + book surfaces appear (still require `contact` session for those actions) — schedule/book UI ships Phase 3; header + `/account` stub in Phase 1
+- [x] Go-live documented: `terraform apply -var='contact_accounts_enabled=true'` in prod after identity is verified on staging
+- [x] [`rotate-secrets.md`](../runbooks/rotate-secrets.md) / setup mention the flag (it is not a secret)
 
 </details>
 

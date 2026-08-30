@@ -37,6 +37,7 @@ const pathname = Astro.url.pathname;
           );
         })
       }
+      <span id="nav-account-slot" class="hidden items-center gap-4" hidden></span>
     </nav>
     <details class="relative md:hidden">
       <summary
@@ -57,7 +58,81 @@ const pathname = Astro.url.pathname;
             </a>
           ))
         }
+        <div id="nav-account-slot-mobile" class="hidden border-t border-line pt-2" hidden></div>
       </div>
     </details>
   </div>
 </header>
+
+<script>
+  import {
+    hasContactSession,
+    parseContactAccountConfig,
+    type SwaMeResponse,
+  } from '../lib/contactAccounts';
+
+  function linkClass(desktop: boolean): string {
+    return desktop
+      ? 'text-sm text-muted transition hover:text-spotlight'
+      : 'block min-h-11 rounded-sm px-3 py-2 text-sm text-muted hover:bg-stage hover:text-spotlight';
+  }
+
+  function renderAccountLinks(enabled: boolean, signedIn: boolean) {
+    const desktop = document.getElementById('nav-account-slot');
+    const mobile = document.getElementById('nav-account-slot-mobile');
+    if (!desktop || !mobile) return;
+
+    desktop.replaceChildren();
+    mobile.replaceChildren();
+
+    if (!enabled) {
+      desktop.hidden = true;
+      mobile.hidden = true;
+      desktop.classList.add('hidden');
+      mobile.classList.add('hidden');
+      return;
+    }
+
+    const href = signedIn ? '/account' : '/login';
+    const label = signedIn ? 'Account' : 'Sign in';
+
+    const desktopLink = document.createElement('a');
+    desktopLink.href = href;
+    desktopLink.className = linkClass(true);
+    desktopLink.textContent = label;
+    desktop.appendChild(desktopLink);
+
+    const mobileLink = document.createElement('a');
+    mobileLink.href = href;
+    mobileLink.className = linkClass(false);
+    mobileLink.textContent = label;
+    mobile.appendChild(mobileLink);
+
+    desktop.hidden = false;
+    mobile.hidden = false;
+    desktop.classList.remove('hidden');
+    desktop.classList.add('inline-flex');
+    mobile.classList.remove('hidden');
+  }
+
+  async function refreshNavAccountChrome() {
+    try {
+      const [configRes, meRes] = await Promise.all([
+        fetch('/api/contactAccountConfig', { cache: 'no-store' }),
+        fetch('/.auth/me', { cache: 'no-store' }),
+      ]);
+      const config = configRes.ok
+        ? parseContactAccountConfig(await configRes.json())
+        : { enabled: false };
+      let me: SwaMeResponse | null = null;
+      if (meRes.ok) {
+        me = (await meRes.json()) as SwaMeResponse;
+      }
+      renderAccountLinks(config.enabled, hasContactSession(me));
+    } catch {
+      renderAccountLinks(false, false);
+    }
+  }
+
+  refreshNavAccountChrome();
+</script>

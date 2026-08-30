@@ -72,3 +72,50 @@ variable "monitor_upn" {
   description = "UPN for the dedicated Studio smoke monitor user. Empty uses studio-monitor@<initial tenant domain>."
   default     = ""
 }
+
+variable "manage_contact_ciam_tenant" {
+  type        = bool
+  description = "When true, create the shared Entra External ID (CIAM) tenant via azapi. Set false after the tenant exists to avoid recreate churn."
+  default     = true
+}
+
+variable "contact_ciam_domain_prefix" {
+  type        = string
+  description = "CIAM tenant domain prefix (becomes {prefix}.ciamlogin.com). Must be globally unique."
+  default     = "elysecontacts"
+
+  validation {
+    condition     = can(regex("^[a-z0-9-]{3,24}$", var.contact_ciam_domain_prefix))
+    error_message = "contact_ciam_domain_prefix must be 3–24 lowercase alphanumeric characters or hyphens."
+  }
+}
+
+variable "contact_ciam_display_name" {
+  type        = string
+  description = "Display name for the CIAM tenant in Entra admin center"
+  default     = "Elyse Tindall Contact Accounts"
+}
+
+variable "contact_ciam_country_code" {
+  type        = string
+  description = "ISO 3166 country code for CIAM tenant creation"
+  default     = "US"
+}
+
+variable "contact_ciam_location" {
+  type        = string
+  description = "Azure region label for CIAM directory resource (Microsoft.AzureActiveDirectory/ciamDirectories location)"
+  default     = "United States"
+}
+
+variable "contact_ciam_tenant_id" {
+  type        = string
+  description = "When manage_contact_ciam_tenant is false, optionally set the existing CIAM tenant GUID for shared Key Vault metadata (CONTACT-CIAM-* secrets)."
+  default     = ""
+}
+
+variable "manage_contact_ciam_gha" {
+  type        = bool
+  description = "When true and the CIAM tenant exists, register elyse-portfolio-gha-ciam-terraform (GitHub OIDC + Application Administrator) in that tenant."
+  default     = true
+}

@@ -7,8 +7,9 @@ terraform {
       version = "~> 4.0"
     }
     azuread = {
-      source  = "hashicorp/azuread"
-      version = "~> 3.0"
+      source                = "hashicorp/azuread"
+      version               = "~> 3.0"
+      configuration_aliases = [azuread.contact_ciam]
     }
     time = {
       source  = "hashicorp/time"
@@ -280,12 +281,15 @@ resource "azurerm_static_web_app" "main" {
     ACS_SMS_FROM          = data.azurerm_key_vault_secret.acs_sms_from.value
     TURNSTILE_SECRET      = data.azurerm_key_vault_secret.turnstile_secret_key.value
     # Lesson payments (Stripe). Secret/restricted key is server-side only.
-    LESSON_PAYMENTS_ENABLED   = local.lesson_payments_enabled_setting
-    STRIPE_SECRET_KEY         = data.azurerm_key_vault_secret.stripe_secret_key.value
-    STRIPE_PUBLISHABLE_KEY    = data.azurerm_key_vault_secret.stripe_publishable_key.value
-    STRIPE_WEBHOOK_SECRET     = data.azurerm_key_vault_secret.stripe_webhook_secret.value
-    STRIPE_PAYMENT_LINK_30MIN = data.azurerm_key_vault_secret.stripe_payment_link_30min.value
-    STRIPE_PAYMENT_LINK_60MIN = data.azurerm_key_vault_secret.stripe_payment_link_60min.value
+    LESSON_PAYMENTS_ENABLED    = local.lesson_payments_enabled_setting
+    CONTACT_ACCOUNTS_ENABLED   = local.contact_accounts_enabled_setting
+    CONTACT_OIDC_CLIENT_ID     = data.azurerm_key_vault_secret.contact_oidc_client_id.value
+    CONTACT_OIDC_CLIENT_SECRET = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault.main.vault_uri}secrets/CONTACT-OIDC-CLIENT-SECRET/)"
+    STRIPE_SECRET_KEY          = data.azurerm_key_vault_secret.stripe_secret_key.value
+    STRIPE_PUBLISHABLE_KEY     = data.azurerm_key_vault_secret.stripe_publishable_key.value
+    STRIPE_WEBHOOK_SECRET      = data.azurerm_key_vault_secret.stripe_webhook_secret.value
+    STRIPE_PAYMENT_LINK_30MIN  = data.azurerm_key_vault_secret.stripe_payment_link_30min.value
+    STRIPE_PAYMENT_LINK_60MIN  = data.azurerm_key_vault_secret.stripe_payment_link_60min.value
     # Studio CRM (Table Storage). People and access profiles require catalog permissions.
     STUDIO_CRM_STORAGE_CONNECTION_STRING    = azurerm_storage_account.studio_crm.primary_connection_string
     STUDIO_CRM_TABLE_NAME                   = azurerm_storage_table.contacts.name

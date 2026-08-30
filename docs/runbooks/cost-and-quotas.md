@@ -42,6 +42,8 @@ The monthly OPS scorecard digest also reports last-month spend and MoM trend to 
 | Gemini API — **Studio** | Env `GEMINI_MODEL` (default **`gemini-3.6-flash`**). Independent free-tier-style limits on that model ID: plan against **5 requests/minute** and **20 requests/day** (confirm in Google AI Studio / Cloud for the live `GEMINI_API_KEY` project). Set a billing alert if on paid. |
 | Gemini API — **search ops / lander drafts** | Env **`GEMINI_MODEL_SEARCH_OPS`** (default **`gemini-3.5-flash`**). **Separate** from Studio’s model — **3.5 Flash and 3.6 Flash have independent RPM/RPD**. Same API key may call both; do **not** point search-ops jobs at `GEMINI_MODEL` / 3.6. Plan against **5 RPM / 20 RPD** on the search-ops model unless the console shows higher. Lander automation (`DISC-P4-*`): **zero Gemini** for GSC/GA extract (`SEARCH-P4-002`); **≤2–3 lander body calls/month** on `GEMINI_MODEL_SEARCH_OPS`; one call per draft page; 429 → backoff + defer; prefer templates for catalog fill (`DISC-P4-001`). See [casting-discoverability.md](../plans/casting-discoverability.md) `DISC-P4-000`. |
 | GitHub | Free for private/public depending on plan |
+| Apple Developer Program | ~$99/year when Sign in with Apple is enabled for contact accounts (non-Azure; see [contact-accounts-auth.md](contact-accounts-auth.md)) |
+| Entra External ID (CIAM) | Core tier free through 50,000 MAU/month — expected student volume is far below this |
 
 ## Quotas / limits
 

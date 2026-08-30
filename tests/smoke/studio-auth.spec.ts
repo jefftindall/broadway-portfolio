@@ -62,13 +62,15 @@ test.describe('studio auth smoke', () => {
     const marks: Record<string, number> = { start: Date.now() };
 
     await page.goto('/studio/health');
+    await page.waitForURL(/\/login(\?|$)/i, { timeout: 45_000 });
+    await page.getByTestId('login-operator').click();
     await page.waitForURL(/login\.microsoftonline\.com/i, { timeout: 45_000 });
     marks.redirect = Date.now();
 
     await completeEntraLogin(page, upn, password, totpSeed);
     marks.idp = Date.now();
 
-    // 401 override hardcodes post_login_redirect_uri=/studio.
+    // 401 override sends unauthenticated users to /login, then operator path returns here.
     await page.waitForURL(/\/studio(\/health)?\/?(\?|$)/i, { timeout: 45_000 });
     expect(page.url(), 'must not bounce back to Entra login').not.toMatch(/login\.microsoftonline\.com/i);
     const me = await page.request.get('/.auth/me');

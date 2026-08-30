@@ -1,0 +1,79 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { buildAuthLoginHref } from '../lib/contactAccounts';
+
+const redirectParam =
+  Astro.url.searchParams.get('post_login_redirect_uri') ??
+  Astro.url.searchParams.get('redirect') ??
+  '';
+
+function safeRedirectPath(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed.startsWith('/') || trimmed.startsWith('//')) return '/lessons/book';
+  if (trimmed.startsWith('/studio')) return trimmed;
+  if (trimmed.startsWith('/account')) return trimmed;
+  if (trimmed.startsWith('/lessons')) return trimmed;
+  return '/lessons/book';
+}
+
+const redirectPath = safeRedirectPath(redirectParam);
+const studentHref = buildAuthLoginHref('contact', redirectPath);
+const operatorHref = buildAuthLoginHref('aad', redirectPath.startsWith('/studio') ? redirectPath : '/studio');
+const isStudioRedirect = redirectPath.startsWith('/studio');
+---
+
+<BaseLayout
+  title="Sign in"
+  description="Sign in to book voice lessons or open Studio."
+  noIndex={true}
+  hideFooterCta={true}
+>
+  <section class="mx-auto max-w-xl px-6 py-16 md:py-24">
+    <p class="text-sm uppercase tracking-[0.2em] text-gel">Sign in</p>
+    <h1 class="mt-3 font-display text-4xl text-spotlight md:text-5xl">Choose how to continue</h1>
+    <p class="mt-4 text-muted">
+      Private voice lessons and lesson scheduling use a student or parent account. Teaching and site
+      publishing use a separate Studio sign-in.
+    </p>
+
+    <div class="mt-10 flex flex-col gap-4">
+      <a
+        href={studentHref}
+        data-testid="login-contact"
+        class="glass-panel-strong block rounded-sm border border-line px-5 py-4 transition hover:border-gold"
+      >
+        <span class="block font-display text-xl text-spotlight">Book or manage lessons</span>
+        <span class="mt-1 block text-sm text-muted">
+          Students and parents — sign in with Google, Apple, or Microsoft
+        </span>
+      </a>
+
+      <a
+        href={operatorHref}
+        data-testid="login-operator"
+        class="glass-panel block rounded-sm border border-line px-5 py-4 transition hover:border-gel"
+      >
+        <span class="block font-display text-xl text-spotlight">Studio workspace</span>
+        <span class="mt-1 block text-sm text-muted">
+          Operators — sign in with your Microsoft work or school account
+        </span>
+      </a>
+    </div>
+
+    {
+      isStudioRedirect ? (
+        <p class="mt-8 text-sm text-muted">
+          After Studio sign-in you will return to <code class="text-spotlight">{redirectPath}</code>.
+        </p>
+      ) : (
+        <p class="mt-8 text-sm text-muted">
+          You can always send a lesson inquiry without signing in from{' '}
+          <a href="/lessons/book" class="text-gel underline-offset-2 hover:text-gold hover:underline">
+            Rates &amp; scheduling
+          </a>
+          .
+        </p>
+      )
+    }
+  </section>
+</BaseLayout>

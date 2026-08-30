@@ -1,7 +1,7 @@
 # Authentication and authorization
 
 **Audience:** Agents, implementers  
-**Last updated:** 2026-08-23  
+**Last updated:** 2026-08-29  
 **Scope:** How Studio proves identity, how it grants capabilities, and the permission catalog. This is the architecture SoT for authn/authz — not a backlog. Phased work stays in [`docs/plans/`](../plans/). Store shapes for profiles live in [`data-persistence.md`](./data-persistence.md). Operator steps live in [`manage-access.md`](../runbooks/manage-access.md).
 
 **Keep this document current:** when a PR changes login gates, the permission catalog, role bundles, bootstrap, or how APIs authorize, update the matching sections and mermaid **in that same PR**, then bump **Last updated**. Agent contract: [`.cursor/rules/studio-auth.mdc`](../../.cursor/rules/studio-auth.mdc).
@@ -10,10 +10,21 @@
 
 | Layer | Question | Answered by |
 |-------|----------|-------------|
-| **Authentication** | Who is calling? | Microsoft Entra + SWA Easy Auth (`x-ms-client-principal`) |
-| **Authorization** | What may they do? | Application catalog on `studioUsers` rows (`api/src/lib/permissions.js`) |
+| **Authentication** | Who is calling? | SWA Easy Auth — workforce Entra (`aad`) for operators; Entra External ID custom OIDC (`contact`) for students/parents |
+| **Authorization** | What may they do? | Application catalog on `studioUsers` rows for **Studio** APIs (`api/src/lib/permissions.js`). Contact APIs use ownership gates (Phase 2+) — not the Studio catalog |
 
-Sign-in is not permission to act. A completed Entra login may open `/studio`, `/studio/help`, and `/studio/health`. Content publish, People, and Access require discrete permission IDs on the caller’s profile. Every privileged Function re-checks with `permissionGate()`.
+Sign-in is not permission to act. A completed login may open route surfaces allowed by **SWA roles** (`studio` vs `contact`). Content publish, People, and Access require discrete permission IDs on the caller’s Studio profile. Every privileged Function re-checks with `permissionGate()`.
+
+### Two audiences (contact accounts)
+
+| Audience | IdP | SWA role | Primary routes |
+|----------|-----|----------|----------------|
+| Operators | Workforce Entra (`/.auth/login/aad`) | `studio` | `/studio`, `/studio/*` |
+| Students / parents | External ID (`/.auth/login/contact`) | `contact` | `/account`, `/account/*` (booking APIs when flagged — later phases) |
+
+`POST /api/authRoles` (`rolesSource`) assigns `studio` when `identityProvider` is `aad`, and `contact` when it is `contact`. Never both. The monitor smoke user is workforce AAD → `studio` with zero catalog grants. A contact principal must not receive `studio` or open Studio chrome.
+
+Unauthenticated access to a protected route redirects to `/login` (401 override), then the chooser sends the user to the correct IdP. See [`contact-accounts-auth.md`](../runbooks/contact-accounts-auth.md).
 
 ```mermaid
 flowchart LR
@@ -35,7 +46,7 @@ These platform identities must never be conflated with the Studio **Super Admini
 | Azure RBAC **Owner** | Subscription / resource-group control plane | Infrastructure only. Never assigned as a stand-in for Studio access. |
 | Entra **app owner** | Who can edit the app registration | Terraform / operators. Not a Studio permission. |
 | Entra **Assignment required** | Enterprise-app Users and groups gate | **Must stay off** (`require_app_role_assignment = false`). Turning it on yields `AADSTS50105` and blocks login before the app can authorize. |
-| SWA `authenticated` | Route requires a login | Identity gate only. |
+| SWA `authenticated` | Route requires a login | Identity gate only. `/studio` requires **`studio`** role; `/account` requires **`contact`**. |
 | GitHub `owner/repo` | Repository path | Unrelated. |
 | GSC / Azure Budget **Owner** | Vendor console role | Unrelated. |
 
@@ -43,9 +54,11 @@ Studio does **not** use Entra app roles for authorization. There is no “Owner�
 
 ## Authentication
 
-1. **Entra app registration** (Terraform, `AzureADMyOrg`) — staging and prod are separate apps in the same tenant.
-2. **SWA Authentication** presents `x-ms-client-principal` to Functions (`authLevel: 'anonymous'` because SWA already identified the caller).
-3. **Route rules** require `authenticated` for `/studio`, `/studio/*`, and `/api/*`.
+1. **Workforce Entra app registration** (Terraform, `AzureADMyOrg`) — staging and prod are separate apps in the teaching tenant (operators).
+2. **External ID (CIAM)** — separate tenant; SWA `customOpenIdConnectProviders.contact` (students/parents). Operator setup: [`contact-accounts-auth.md`](../runbooks/contact-accounts-auth.md).
+3. **SWA Authentication** presents `x-ms-client-principal` to Functions (`authLevel: 'anonymous'` because SWA already identified the caller).
+4. **Route rules** — `/studio` and `/studio/*` require SWA role **`studio`**. `/account` and `/account/*` require **`contact`**. `/api/*` requires `authenticated` except documented anonymous routes.
+5. **rolesSource** — `POST /api/authRoles` maps `identityProvider` → `studio` | `contact`.
 
 Anonymous exceptions (same `private, no-store` cache; not Studio login):
 
@@ -53,7 +66,11 @@ Anonymous exceptions (same `private, no-store` cache; not Studio login):
 |-------|-------|
 | `POST /api/contactInquiry` | Cloudflare Turnstile + schema |
 | `GET /api/lessonPayConfig` | Feature flag + sanitized Payment Link URLs |
+| `GET /api/contactAccountConfig` | Feature flag `{ enabled }` only |
+| `POST /api/authRoles` | SWA platform roles assignment |
 | `POST /api/stripeWebhook` | Stripe signature |
+| `POST /api/calendarWatch` | Google channel token |
+| `GET /api/lessonAction` | Signed Confirm / Decline token |
 
 Local Functions (`AZURE_FUNCTIONS_ENVIRONMENT=Development`) skip the SWA principal and grant the **full catalog** so `func start` works without headers.
 
@@ -156,10 +173,13 @@ Studio screens read `GET /api/studioSession` (same payload as publisher status) 
 | Access resolution + gates | `api/src/lib/studioAccess.js` |
 | Profile store | `api/src/lib/users.js` |
 | Principal parsing | `api/src/lib/auth.js` |
+| SWA role assignment | `api/src/lib/authRoles.js`, `api/src/functions/authRoles.js` |
+| Contact account flag | `api/src/lib/contactAccountConfig.js` |
 | Access HTTP | `api/src/functions/studioUsers.js` |
 | Access UI | `src/pages/studio/admin/access.astro` |
 | Entra / assignment-required | `infra/modules/portfolio/entra.tf` |
 | SWA route rules | `staticwebapp.config.json` / `public/staticwebapp.config.json` |
 | Operator runbook | [`docs/runbooks/manage-access.md`](../runbooks/manage-access.md) |
+| Contact sign-in runbook | [`docs/runbooks/contact-accounts-auth.md`](../runbooks/contact-accounts-auth.md) |
 | Profile schema | [`data-persistence.md`](./data-persistence.md) §1.2 |
 | Agent rule | [`.cursor/rules/studio-auth.mdc`](../../.cursor/rules/studio-auth.mdc) |

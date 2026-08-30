@@ -70,6 +70,21 @@ output "entra_openid_issuer" {
   value       = "https://login.microsoftonline.com/${data.azurerm_client_config.current.tenant_id}/v2.0"
 }
 
+output "contact_oidc_issuer" {
+  description = "OpenID issuer for customOpenIdConnectProviders.contact (also in kv-elyse-shared CONTACT-CIAM-OIDC-ISSUER)"
+  value       = trimspace(data.azurerm_key_vault_secret.contact_ciam_oidc_issuer.value)
+}
+
+output "contact_oidc_client_id" {
+  description = "CIAM OIDC client ID written to env vault CONTACT-OIDC-CLIENT-ID"
+  value       = try(azuread_application.contact_swa[0].client_id, data.azurerm_key_vault_secret.contact_oidc_client_id.value)
+}
+
+output "contact_ciam_tenant_id" {
+  description = "Shared CIAM tenant GUID (kv-elyse-shared CONTACT-CIAM-TENANT-ID)"
+  value       = trimspace(data.azurerm_key_vault_secret.contact_ciam_tenant_id.value)
+}
+
 output "entra_redirect_uris" {
   description = "Redirect URIs registered for this environment (Azure hostname + custom domains)"
   value       = local.redirect_uris

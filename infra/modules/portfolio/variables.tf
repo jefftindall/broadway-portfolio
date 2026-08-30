@@ -101,6 +101,17 @@ variable "lesson_payments_enabled" {
   description = "When true, GET /api/lessonPayConfig may return Stripe Payment Links so /lessons/book can show pay CTAs. Staging should be true (test mode); prod stays false until go-live. Not baked into the shared Astro artifact."
 }
 
+variable "contact_accounts_enabled" {
+  type        = bool
+  description = "When true, GET /api/contactAccountConfig returns enabled and public header may show student Sign in / Account. Staging default true; prod false until go-live. Independent of lesson_payments_enabled."
+}
+
+variable "manage_contact_oidc_app" {
+  type        = bool
+  description = "When true and CONTACT-CIAM-TENANT-ID is populated in kv-elyse-shared, create the CIAM OIDC app registration and write CONTACT-OIDC-* secrets."
+  default     = true
+}
+
 variable "additional_auth_hostnames" {
   type        = list(string)
   description = "Extra hostnames allowed to complete Entra sign-in (e.g. www.elysetindall.com)"

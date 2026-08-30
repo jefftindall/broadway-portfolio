@@ -24,7 +24,7 @@ globs:
 - Any user who can complete Entra login for this tenant (members and guests) must be able to sign in.
 - Keep `require_app_role_assignment` **false** (`azuread_service_principal.swa`). Setting it true causes **AADSTS50105** and blocks login before the app can authorize.
 - Do **not** use Entra “Assignment required?”, Users and groups assignments, or SWA `authenticated` as the publish/CRM permission model.
-- SWA still requires `authenticated` for `/studio`, `/studio/*`, and `/api/*` (except the documented public exceptions). That is a login gate, not an action grant.
+- SWA still requires SWA role **`studio`** for `/studio`, `/studio/*`, and `authenticated` for `/api/*` (except the documented public exceptions). That is a login + role gate, not an action grant.
 - Apps stay `AzureADMyOrg` with the tenant-specific `openIdIssuer`. Do not switch to `/common/v2.0`.
 
 ## Authorization (one catalog)
@@ -40,6 +40,8 @@ Discrete permissions live in [`api/src/lib/permissions.js`](api/src/lib/permissi
 | Lesson schedule | `permissionGate(..., 'calendar.read' \| 'calendar.write')` |
 | Public `contactInquiry` | Turnstile + schema; no Studio principal |
 | Public `lessonPayConfig` | Flag + sanitized Payment Link URLs only |
+| Public `contactAccountConfig` | Flag `{ enabled }` only |
+| Public `authRoles` | SWA rolesSource assignment (`studio` \| `contact`) |
 | Public `stripeWebhook` | Stripe signature verification |
 | Public `calendarWatch` | Google channel token |
 | Public `lessonAction` | Signed Confirm / Decline token (ICS fallback) |

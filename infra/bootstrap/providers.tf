@@ -18,6 +18,10 @@ terraform {
       source  = "hashicorp/random"
       version = "~> 3.6"
     }
+    azapi = {
+      source  = "Azure/azapi"
+      version = "~> 2.0"
+    }
   }
 
   # Local state only — this stack creates the remote backend used by staging/prod.
@@ -38,11 +42,22 @@ provider "azurerm" {
     "Microsoft.Communication",
     "Microsoft.Consumption",
     "Microsoft.CostManagement",
+    "Microsoft.AzureActiveDirectory",
   ]
   features {}
 }
 
+provider "azapi" {}
+
 provider "azuread" {}
+
+provider "azuread" {
+  alias = "contact_ciam"
+  tenant_id = (
+    trimspace(var.contact_ciam_tenant_id) != "" ? trimspace(var.contact_ciam_tenant_id) :
+    try(azapi_resource.contact_ciam[0].output.properties.tenantId, data.azuread_client_config.current.tenant_id)
+  )
+}
 
 provider "github" {
   owner = var.github_owner

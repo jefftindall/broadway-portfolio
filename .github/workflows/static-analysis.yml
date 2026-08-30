@@ -221,6 +221,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+          TF_VAR_contact_ciam_azuread_use_oidc: "true"
         run: |
           set -euo pipefail
           # PR plans are read-only against remote state; skip the lock so they

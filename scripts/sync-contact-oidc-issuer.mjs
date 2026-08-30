@@ -1,0 +1,85 @@
+/**
+ * Fetch CONTACT-CIAM-OIDC-ISSUER from Key Vault and patch staticwebapp.config.json
+ * targets (dist/ for CD, or repo copies for local dev).
+ *
+ * Usage:
+ *   node scripts/sync-contact-oidc-issuer.mjs dist
+ *   node scripts/sync-contact-oidc-issuer.mjs repo
+ */
+import { spawnSync } from 'node:child_process';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { patchContactOidcIssuer } from './patch-contact-oidc-issuer.mjs';
+
+const SHARED_VAULT = process.env.AZURE_SHARED_KEY_VAULT_NAME || 'kv-elyse-shared';
+
+/**
+ * @returns {string}
+ */
+export function fetchContactOidcIssuerFromVault() {
+  const result = spawnSync(
+    'az',
+    [
+      'keyvault',
+      'secret',
+      'show',
+      '--vault-name',
+      SHARED_VAULT,
+      '--name',
+      'CONTACT-CIAM-OIDC-ISSUER',
+      '--query',
+      'value',
+      '-o',
+      'tsv',
+    ],
+    { encoding: 'utf8' },
+  );
+  if (result.status !== 0) {
+    const err = (result.stderr || result.stdout || '').trim();
+    throw new Error(`Failed to read CONTACT-CIAM-OIDC-ISSUER from ${SHARED_VAULT}: ${err}`);
+  }
+  return String(result.stdout || '').trim();
+}
+
+/**
+ * @param {string} issuer
+ * @returns {boolean}
+ */
+export function isContactOidcIssuerReady(issuer) {
+  const trimmed = String(issuer ?? '').trim();
+  return trimmed !== '' && trimmed !== 'REPLACE_ME';
+}
+
+/**
+ * @param {'dist' | 'repo'} mode
+ * @returns {{ synced: boolean; issuer: string }}
+ */
+export function syncContactOidcIssuer(mode) {
+  const issuer = fetchContactOidcIssuerFromVault();
+  if (!isContactOidcIssuerReady(issuer)) {
+    return { synced: false, issuer };
+  }
+  if (mode === 'dist') {
+    patchContactOidcIssuer('dist', issuer);
+    return { synced: true, issuer };
+  }
+  if (mode === 'repo') {
+    patchContactOidcIssuer('public/staticwebapp.config.json', issuer);
+    patchContactOidcIssuer('staticwebapp.config.json', issuer);
+    return { synced: true, issuer };
+  }
+  throw new Error('mode must be "dist" or "repo"');
+}
+
+const isCli = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isCli) {
+  const mode = process.argv[2] || 'dist';
+  const { synced, issuer } = syncContactOidcIssuer(mode === 'repo' ? 'repo' : 'dist');
+  if (synced) {
+    console.log(`Synced contact OIDC issuer to ${mode}.`);
+  } else {
+    console.log(
+      `Skipped contact OIDC issuer sync (${issuer || 'empty'}); bootstrap CIAM not ready yet.`,
+    );
+  }
+}

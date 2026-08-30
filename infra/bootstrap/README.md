@@ -11,6 +11,10 @@
 #   Storage account:   stelysetfstateeu2
 #   Container:         tfstate
 #   Shared RG/vault:   rg-elyse-shared / kv-elyse-shared (SITE-*, Turnstile, ACS, ALERT-*, GA-*, GSC-*, MONITOR-*, Stripe TEST/LIVE API keys)
+#   Contact CIAM:      Entra External ID tenant (default prefix elysecontacts) + CONTACT-CIAM-* secrets in shared KV
+#                      elyse-portfolio-gha-ciam-terraform (GitHub OIDC + Application Administrator in CIAM tenant)
+#                      Env stacks create per-environment OIDC apps in that tenant. Social IdPs: manual runbook.
+#                      docs/runbooks/contact-accounts-ciam-terraform.md
 #   Shared ACS:        acs-elyse-shared + email-elyse-shared (one MailFrom / SMS number)
 #   Stripe API keys:   STRIPE-TEST-SECRET-KEY / PUBLISHABLE-KEY and STRIPE-LIVE-* placeholders.
 #                      Staging/prod initialize the Stripe provider from these secrets and own

@@ -133,6 +133,25 @@ Prefer a **restricted API key** (`rk_test_` / `rk_live_`) with Products, Prices,
 
 Feature flag (not a Key Vault secret): SWA app setting `LESSON_PAYMENTS_ENABLED`, Terraform `lesson_payments_enabled` — **true on staging**, **false on prod** until go-live. `GET /api/lessonPayConfig` returns links only when the flag is on **and** at least one Payment Link is a real `https://buy.stripe.com/…` URL (not `REPLACE_ME`). Prod with the flag off does not expose live links.
 
+## Contact accounts (External ID)
+
+Student/parent sign-in uses a **separate Entra External ID (CIAM) tenant** — not the workforce teaching tenant. Terraform creates the tenant (bootstrap), OIDC apps (env stacks), and most secrets. Social IdPs stay manual. Calendar Google OAuth clients are unrelated.
+
+| Secret name | SWA app setting / use | Where | Managed by |
+|-------------|----------------------|-------|------------|
+| `CONTACT-CIAM-TENANT-ID` | CIAM tenant GUID (env `azuread.contact_ciam`) | `kv-elyse-shared` | bootstrap Terraform |
+| `CONTACT-CIAM-DOMAIN-PREFIX` | CIAM domain prefix (`{prefix}.ciamlogin.com`) | `kv-elyse-shared` | bootstrap Terraform |
+| `CONTACT-CIAM-OIDC-ISSUER` | CD patches `dist/staticwebapp.config.json` issuer | `kv-elyse-shared` | bootstrap Terraform; CD reads via `scripts/sync-contact-oidc-issuer.mjs` |
+| `CONTACT-CIAM-TF-CLIENT-ID` | GitHub Actions Terraform `azuread.contact_ciam` OIDC client | `kv-elyse-shared` | bootstrap Terraform (`elyse-portfolio-gha-ciam-terraform`) |
+| `CONTACT-OIDC-CLIENT-ID` | `CONTACT_OIDC_CLIENT_ID` | env vault | env Terraform (`elyse-portfolio-contact-{env}` app) |
+| `CONTACT-OIDC-CLIENT-SECRET` | `CONTACT_OIDC_CLIENT_SECRET` | env vault (SWA Key Vault reference) | env Terraform (rotates with `entra_secret_rotation_days`) |
+
+Feature flag (not a Key Vault secret): SWA app setting `CONTACT_ACCOUNTS_ENABLED`, Terraform `contact_accounts_enabled` — **true on staging**, **false on prod** until go-live. `GET /api/contactAccountConfig` returns `{ enabled: boolean }` only. Independent of `LESSON_PAYMENTS_ENABLED`. Prod go-live: `terraform apply -var='contact_accounts_enabled=true'`.
+
+Setup (in order): [contact-accounts-ciam-terraform.md](./contact-accounts-ciam-terraform.md) → [contact-accounts-social-idps.md](./contact-accounts-social-idps.md). Index: [contact-accounts-auth.md](./contact-accounts-auth.md).
+
+Committed `staticwebapp.config.json` keeps a **REPLACE_ME** issuer placeholder; CD injects the live issuer from `CONTACT-CIAM-OIDC-ISSUER` before SWA upload. Local optional sync: `node scripts/sync-contact-oidc-issuer.mjs repo`.
+
 When advertised rates in `lessons-book.md` change, **re-apply the environment stack** (staging first, then prod) so Stripe prices and Payment Links follow the website (Stripe prices are immutable; Terraform replaces them).
 
 ```bash

@@ -82,3 +82,23 @@ output "shared_acs_name" {
 output "shared_acs_email_name" {
   value = azurerm_email_communication_service.shared.name
 }
+
+output "contact_ciam_tenant_id" {
+  description = "Entra External ID (CIAM) tenant GUID for student/parent sign-in"
+  value       = local.contact_ciam_tenant_id_effective
+}
+
+output "contact_ciam_domain_prefix" {
+  description = "CIAM login domain prefix ({prefix}.ciamlogin.com)"
+  value       = local.contact_ciam_domain_prefix_effective
+}
+
+output "contact_ciam_oidc_issuer" {
+  description = "OpenID issuer for SWA customOpenIdConnectProviders.contact"
+  value       = local.contact_ciam_oidc_issuer
+}
+
+output "contact_ciam_tf_client_id" {
+  description = "Entra app id for GitHub Actions Terraform in the CIAM tenant (kv-elyse-shared CONTACT-CIAM-TF-CLIENT-ID)"
+  value       = try(azuread_application.terraform_ciam[0].client_id, "REPLACE_ME")
+}

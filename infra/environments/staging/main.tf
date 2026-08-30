@@ -84,8 +84,14 @@ module "portfolio" {
   ga_measurement_id         = var.ga_measurement_id
   monitor_upn               = var.monitor_upn
   lesson_payments_enabled   = var.lesson_payments_enabled
+  contact_accounts_enabled  = var.contact_accounts_enabled
+  manage_contact_oidc_app   = local.contact_ciam_ready
   # Sign-in is open to the tenant; Studio APIs enforce publish/CRM authorization.
   require_app_role_assignment = false
+
+  providers = {
+    azuread.contact_ciam = azuread.contact_ciam
+  }
 }
 
 output "resource_group_name" {
@@ -165,4 +171,13 @@ output "application_insights_connection_string" {
 
 output "log_analytics_workspace_name" {
   value = module.portfolio.log_analytics_workspace_name
+}
+
+output "contact_ciam_oidc_issuer" {
+  value     = module.portfolio.contact_oidc_issuer
+  sensitive = true
+}
+
+output "contact_oidc_client_id" {
+  value = module.portfolio.contact_oidc_client_id
 }
