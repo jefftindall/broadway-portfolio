@@ -37,5 +37,6 @@ provider "azuread" {
   alias     = "contact_ciam"
   tenant_id = local.contact_ciam_ready ? local.contact_ciam_tenant_id : data.azurerm_client_config.current.tenant_id
   client_id = local.contact_ciam_azuread_oidc && local.contact_ciam_tf_ready ? local.contact_ciam_tf_client_id : null
-  use_cli   = !local.contact_ciam_azuread_oidc
+  use_cli   = !(local.contact_ciam_azuread_oidc && local.contact_ciam_tf_ready)
+  use_oidc  = local.contact_ciam_azuread_oidc && local.contact_ciam_tf_ready
 }

@@ -174,7 +174,8 @@ output "log_analytics_workspace_name" {
 }
 
 output "contact_ciam_oidc_issuer" {
-  value = module.portfolio.contact_oidc_issuer
+  value     = module.portfolio.contact_oidc_issuer
+  sensitive = true
 }
 
 output "contact_oidc_client_id" {
