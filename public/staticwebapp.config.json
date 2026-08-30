@@ -192,6 +192,8 @@
         "Cache-Control": "private, no-store"
       }
     },
+    {
+      "route": "/api/contactInquiry",
       "allowedRoles": ["anonymous", "authenticated"],
       "headers": {
         "Cache-Control": "private, no-store"
