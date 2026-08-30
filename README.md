@@ -48,6 +48,7 @@ func start
 - Plans:
   - [Lesson payments](docs/plans/lesson-payments.md) — vendor comparison and phased checkout
   - [Studio as teaching business](docs/plans/studio-teaching-business.md) — auth-only ops north star + `STUDIO-*` CRM / GCal / automation phases
+  - [Contact accounts](docs/plans/contact-accounts.md) — student/parent Google / Apple / Microsoft login, `/account` history, flag-gated schedule/book (`ACCOUNT-*`); inquire stays anonymous
 - Runbooks:
   - [GitHub Actions naming (Scheme A)](docs/runbooks/github-actions-naming.md) — display names + file-rename tech debt
   - [GitHub App (Studio)](docs/runbooks/github-app.md)
