@@ -5,22 +5,25 @@ Sign-in is not permission to act. Studio authorization is one catalog of **discr
 ## Layers
 
 1. **Entra app registration** (Terraform) — single-tenant (`AzureADMyOrg`). Enterprise-app **Assignment required** is **off** (`require_app_role_assignment = false`) so login is not blocked with `AADSTS50105`. Do not turn assignment required on to “secure” publish or People.
-2. **SWA Authentication** — `/studio` and `/api/*` require a completed Entra login (`authenticated`). That only identifies the caller.
-3. **Route rules** — `/studio`, `/studio/*` (including help), and `/api/*` require `authenticated`. Exceptions: `POST /api/contactInquiry`, `GET /api/lessonPayConfig`, `POST /api/stripeWebhook`, `POST /api/calendarWatch`, and `GET /api/lessonAction` allow anonymous (same `private, no-store` cache).
-4. **Authorization (application)** — every privileged Function calls `permissionGate()` against the catalog in [`api/src/lib/permissions.js`](../../api/src/lib/permissions.js):
+2. **SWA Authentication** — `/studio` and `/studio/*` require SWA role **`studio`** (workforce AAD via `/login` or `/.auth/login/aad`). `/account` requires **`contact`**. `/api/*` requires authentication except documented public routes.
+3. **Route rules** — anonymous exceptions: `POST /api/contactInquiry`, `GET /api/lessonPayConfig`, `GET /api/contactAccountConfig`, `POST /api/authRoles`, `POST /api/stripeWebhook`, `POST /api/calendarWatch`, and `GET /api/lessonAction` (same `private, no-store` cache).
+4. **rolesSource** — `POST /api/authRoles` assigns `studio` vs `contact` by IdP. Not the permission catalog.
+5. **Authorization (application)** — every privileged Function calls `permissionGate()` against the catalog in [`api/src/lib/permissions.js`](../../api/src/lib/permissions.js):
    - **Publish / upload / discrete / publish status** — `content.publish`
    - **People / CRM** — `people.read` / `people.write` (one CRM per environment)
    - **Schedule** — `calendar.read` / `calendar.write` (People role includes these)
    - **Calendar connect** — `calendar.connect` (Super Administrator by default)
    - **Access admin** — `users.read` / `users.manage`
-   - **Public exceptions** — Turnstile, sanitized Payment Links, Stripe webhook signatures, Google watch channel token, or signed lesson Confirm / Decline tokens
+   - **Public exceptions** — Turnstile, sanitized Payment Links, contact-account flag, SWA roles assignment, Stripe webhook signatures, Google watch channel token, or signed lesson Confirm / Decline tokens
 
 | Environment | Key Vault | Enterprise app |
 |---|---|---|
 | Staging | `kv-elyse-staging` | `elyse-portfolio-staging` |
 | Production | `kv-elyse-prod` | `elyse-portfolio-prod` |
 
-**Sign-in ≠ permission.** A user who can authenticate may open `/studio`, `/studio/help`, and `/studio/health`. Content publish, People, and Access forms appear only for the permissions on their profile. The API re-checks every call (`GET /api/studioSession` is UI convenience only).
+**Sign-in ≠ permission.** A user with the **`studio`** SWA role may open `/studio`, `/studio/help`, and `/studio/health`. Students with the **`contact`** role may open `/account` only — never Studio. Content publish, People, and Access forms appear only for Studio catalog permissions on their profile. The API re-checks every call (`GET /api/studioSession` is UI convenience only).
+
+Contact sign-in (External ID) is documented in [`contact-accounts-auth.md`](./contact-accounts-auth.md).
 
 Look up a shared reference in App Insights (`StudioAccessDenied` / `StudioPublishDenied`) for `userId` / `userDetails` — see [observability.md](./observability.md).
 

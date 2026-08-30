@@ -195,12 +195,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+          TF_VAR_contact_ciam_azuread_use_oidc: "true"
         run: terraform plan -input=false -out=tfplan
 
       - name: Terraform apply
         env:
           GITHUB_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+          TF_VAR_contact_ciam_azuread_use_oidc: "true"
         run: terraform apply -input=false tfplan
 
       - name: Sync SWA API secrets
@@ -299,6 +301,9 @@ jobs:
           AZURE_LOGIN_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
           AZURE_LOGIN_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
         run: bash scripts/azure-oidc-login.sh
+
+      - name: Patch contact OIDC issuer in dist
+        run: node scripts/sync-contact-oidc-issuer.mjs dist
 
       - name: Install API dependencies
         run: npm ci --prefix api
@@ -508,12 +513,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+          TF_VAR_contact_ciam_azuread_use_oidc: "true"
         run: terraform plan -input=false -out=tfplan
 
       - name: Terraform apply
         env:
           GITHUB_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.TF_GITHUB_TOKEN }}
+          TF_VAR_contact_ciam_azuread_use_oidc: "true"
         run: terraform apply -input=false tfplan
 
       - name: Sync SWA API secrets
@@ -546,12 +553,20 @@ jobs:
         with:
           name: release-${{ github.sha }}
 
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
       - name: Azure login (OIDC)
         env:
           AZURE_LOGIN_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
           AZURE_LOGIN_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
           AZURE_LOGIN_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
         run: bash scripts/azure-oidc-login.sh
+
+      - name: Patch contact OIDC issuer in dist
+        run: node scripts/sync-contact-oidc-issuer.mjs dist
 
       - name: Resolve Static Web Apps deploy token
         id: swa

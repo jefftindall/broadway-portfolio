@@ -1,0 +1,28 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Account"
+  description="Student and parent account for voice lessons."
+  noIndex={true}
+  hideFooterCta={true}
+>
+  <section class="mx-auto max-w-xl px-6 py-16 md:py-24">
+    <p class="text-sm uppercase tracking-[0.2em] text-gel">Account</p>
+    <h1 class="mt-3 font-display text-4xl text-spotlight md:text-5xl">You are signed in</h1>
+    <p class="mt-4 text-muted">
+      Profile, preferences, and lesson history will appear here in a future update. Lesson inquiries
+      and rates stay available without an account.
+    </p>
+    <p class="mt-8 text-sm">
+      <a href="/lessons/book" class="text-gel underline-offset-2 hover:text-gold hover:underline">
+        ← Back to rates &amp; scheduling
+      </a>
+      {' · '}
+      <a href="/.auth/logout" class="text-gel underline-offset-2 hover:text-gold hover:underline">
+        Sign out
+      </a>
+    </p>
+  </section>
+</BaseLayout>

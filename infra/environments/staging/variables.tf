@@ -81,3 +81,15 @@ variable "lesson_payments_enabled" {
   default     = true
 }
 
+variable "contact_accounts_enabled" {
+  type        = bool
+  description = "Student/parent Sign in and /account via GET /api/contactAccountConfig. Staging default is on."
+  default     = true
+}
+
+variable "contact_ciam_azuread_use_oidc" {
+  type        = bool
+  description = "When true, azuread.contact_ciam authenticates with CONTACT-CIAM-TF-CLIENT-ID (GitHub Actions Terraform). Local applies leave false."
+  default     = false
+}
+

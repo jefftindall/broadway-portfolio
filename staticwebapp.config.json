@@ -1,11 +1,21 @@
 {
   "auth": {
+    "rolesSource": "/api/authRoles",
     "identityProviders": {
       "azureActiveDirectory": {
         "registration": {
           "openIdIssuer": "https://login.microsoftonline.com/e78bb87b-bdca-4a5f-8f90-a1c388528a5f/v2.0",
           "clientIdSettingName": "AAD_CLIENT_ID",
           "clientSecretSettingName": "AAD_CLIENT_SECRET"
+        }
+      },
+      "customOpenIdConnectProviders": {
+        "contact": {
+          "registration": {
+            "openIdIssuer": "https://REPLACE_ME.ciamlogin.com/00000000-0000-0000-0000-000000000000/v2.0",
+            "clientIdSettingName": "CONTACT_OIDC_CLIENT_ID",
+            "clientSecretSettingName": "CONTACT_OIDC_CLIENT_SECRET"
+          }
         }
       }
     }
@@ -136,20 +146,52 @@
     },
     {
       "route": "/studio",
-      "allowedRoles": ["authenticated"],
+      "allowedRoles": ["studio"],
       "headers": {
         "Cache-Control": "private, no-store"
       }
     },
     {
       "route": "/studio/*",
-      "allowedRoles": ["authenticated"],
+      "allowedRoles": ["studio"],
       "headers": {
         "Cache-Control": "private, no-store"
       }
     },
     {
-      "route": "/api/contactInquiry",
+      "route": "/account",
+      "allowedRoles": ["contact"],
+      "headers": {
+        "Cache-Control": "private, no-store"
+      }
+    },
+    {
+      "route": "/account/*",
+      "allowedRoles": ["contact"],
+      "headers": {
+        "Cache-Control": "private, no-store"
+      }
+    },
+    {
+      "route": "/login",
+      "headers": {
+        "Cache-Control": "private, no-store"
+      }
+    },
+    {
+      "route": "/api/authRoles",
+      "allowedRoles": ["anonymous", "authenticated"],
+      "headers": {
+        "Cache-Control": "private, no-store"
+      }
+    },
+    {
+      "route": "/api/contactAccountConfig",
+      "allowedRoles": ["anonymous", "authenticated"],
+      "headers": {
+        "Cache-Control": "private, no-store"
+      }
+    },
       "allowedRoles": ["anonymous", "authenticated"],
       "headers": {
         "Cache-Control": "private, no-store"
@@ -203,7 +245,7 @@
   ],
   "responseOverrides": {
     "401": {
-      "redirect": "/.auth/login/aad?post_login_redirect_uri=/studio",
+      "redirect": "/login?post_login_redirect_uri={url}",
       "statusCode": 302
     }
   },
