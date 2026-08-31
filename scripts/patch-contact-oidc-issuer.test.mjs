@@ -36,8 +36,14 @@ test('patchContactOidcIssuerFile updates customOpenIdConnectProviders.contact', 
             customOpenIdConnectProviders: {
               contact: {
                 registration: {
-                  openIdIssuer:
-                    'https://REPLACE_ME.ciamlogin.com/00000000-0000-0000-0000-000000000000/v2.0',
+                  clientIdSettingName: 'CONTACT_OIDC_CLIENT_ID',
+                  clientCredential: {
+                    clientSecretSettingName: 'CONTACT_OIDC_CLIENT_SECRET',
+                  },
+                  openIdConnectConfiguration: {
+                    wellKnownOpenIdConfiguration:
+                      'https://REPLACE_ME.ciamlogin.com/00000000-0000-0000-0000-000000000000/v2.0/.well-known/openid-configuration',
+                  },
                 },
               },
             },
@@ -53,7 +59,12 @@ test('patchContactOidcIssuerFile updates customOpenIdConnectProviders.contact', 
   patchContactOidcIssuerFile(configPath, CANONICAL_ISSUER);
   const parsed = JSON.parse(fs.readFileSync(configPath, 'utf8'));
   assert.equal(
+    parsed.auth.identityProviders.customOpenIdConnectProviders.contact.registration
+      .openIdConnectConfiguration.wellKnownOpenIdConfiguration,
+    `${CANONICAL_ISSUER}/.well-known/openid-configuration`,
+  );
+  assert.equal(
     parsed.auth.identityProviders.customOpenIdConnectProviders.contact.registration.openIdIssuer,
-    CANONICAL_ISSUER,
+    undefined,
   );
 });

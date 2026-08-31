@@ -140,6 +140,20 @@ jobs:
       - name: Apply staging noindex (robots.txt + X-Robots-Tag)
         run: node scripts/apply-staging-noindex.mjs dist
 
+      - name: Patch contact auth in dist
+        env:
+          AZURE_STATIC_WEB_APP_NAME: ${{ vars.AZURE_STATIC_WEB_APP_NAME }}
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+        run: |
+          node scripts/patch-contact-auth-config.mjs dist --from-swa
+          ENABLED=$(az staticwebapp appsettings list \
+            --name "$AZURE_STATIC_WEB_APP_NAME" \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --query "properties.CONTACT_ACCOUNTS_ENABLED" -o tsv)
+          if [[ "$ENABLED" == "true" ]]; then
+            node scripts/sync-contact-oidc-issuer.mjs dist
+          fi
+
       - name: Resolve Static Web Apps deploy token
         id: swa
         run: |

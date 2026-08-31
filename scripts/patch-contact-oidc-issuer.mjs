@@ -63,6 +63,15 @@ export async function resolveCanonicalContactOidcIssuer(issuerOrMetadataUrl) {
 }
 
 /**
+ * @param {string} issuer
+ * @returns {string}
+ */
+export function contactOidcWellKnownConfigurationUrl(issuer) {
+  const normalized = normalizeContactOidcIssuer(issuer);
+  return `${normalized}/.well-known/openid-configuration`;
+}
+
+/**
  * @param {string} configPath
  * @param {string} issuer
  */
@@ -72,6 +81,7 @@ export function patchContactOidcIssuerFile(configPath, issuer) {
     throw new Error(`Config file not found: ${resolved}`);
   }
   const normalized = normalizeContactOidcIssuer(issuer);
+  const wellKnownOpenIdConfiguration = contactOidcWellKnownConfigurationUrl(normalized);
   const raw = fs.readFileSync(resolved, 'utf8');
   /** @type {Record<string, unknown>} */
   let config;
@@ -99,7 +109,15 @@ export function patchContactOidcIssuerFile(configPath, issuer) {
       ? contact.registration
       : {};
 
-  registration.openIdIssuer = normalized;
+  delete registration.openIdIssuer;
+  delete registration.clientSecretSettingName;
+  registration.clientIdSettingName = 'CONTACT_OIDC_CLIENT_ID';
+  registration.clientCredential = {
+    clientSecretSettingName: 'CONTACT_OIDC_CLIENT_SECRET',
+  };
+  registration.openIdConnectConfiguration = {
+    wellKnownOpenIdConfiguration,
+  };
   contact.registration = registration;
   custom.contact = contact;
   providers.customOpenIdConnectProviders = custom;
