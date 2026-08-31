@@ -14,7 +14,7 @@ CD workflows share concurrency group `portfolio-cd` (`cancel-in-progress: false`
 
 **Smoke Staging** runs Playwright against the live staging hostname (`test.elysetindall.com` when that custom domain is Ready, else `*.azurestaticapps.net`) and **blocks** production. Journey scope depends on what changed: full suite for UI/infra changes, `@content` journeys for markdown-only updates, smoke-only for API-only changes. See [testing-strategy.md](testing-strategy.md). Production deploys the **same build artifact** that passed staging verification (staging adds crawler `noindex` on its copy only — `SEARCH-P2-008`).
 
-**Smoke Production** (`TEST-D-003`) re-runs the same Playwright smoke suite against the live public prod host after **Deploy Production** succeeds (Ready custom domain when configured — not only `*.azurestaticapps.net`, which 301s to the default custom domain). It does **not** auto-rollback. On failure, CD emits `SmokeFailed` → `ag-elyse-critical-prod` (email + SMS + voice).
+**Smoke Production** (`TEST-D-003`) re-runs the same Playwright smoke suite against the live public prod host after **Deploy Production** succeeds (Ready custom domain when configured — not only `*.azurestaticapps.net`, which 301s to the default custom domain). It does **not** auto-rollback. On failure, CD emits `SmokeFailed` → `ag-elyse-notify-prod` (email + SMS; no voice).
 
 Optional: add required reviewers on the GitHub Environment **prod** for a manual approval gate after smoke.
 
@@ -62,7 +62,7 @@ Same as above on the commit that broke the build/UI. Confirm **Deploy Staging**,
 
 ## Deploy Production / Smoke Production failure (Sev1)
 
-When **Deploy Production** fails, CD emits `DeployFailed` to prod App Insights (`OPS-P3-003`). When **Smoke Production** fails after a successful deploy, CD emits `SmokeFailed` (`TEST-D-003`). Either event pages `ag-elyse-critical-prod` (email + SMS + voice via `ALERT-*`). Staging deploy/smoke failures are **not** Sev1. There is **no** automatic rollback on smoke failure.
+When **Deploy Production** fails, CD emits `DeployFailed` to prod App Insights (`OPS-P3-003`). When **Smoke Production** fails after a successful deploy, CD emits `SmokeFailed` (`TEST-D-003`). Either event pages `ag-elyse-notify-prod` (email + SMS via `ALERT-*`; no voice). Staging deploy/smoke failures are **not** Sev1. There is **no** automatic rollback on smoke failure.
 
 1. Open the failed Actions run; fix or revert ([incident-response.md](incident-response.md)).
 2. Re-run CD from `main` (or merge a revert) so staging → smoke → prod → prod smoke succeeds.

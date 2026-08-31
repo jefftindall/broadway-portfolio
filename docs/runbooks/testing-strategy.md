@@ -25,10 +25,10 @@ This document defines how we validate user experience before production deploys.
 | **Smoke** | After staging deploy | `npm run test:smoke` — job **Smoke Staging** | Route availability, SEO shell, downloads, anonymous `/studio` redirect (desktop + mobile); `client_credentials` token check; signed-in `/studio/health` when `MONITOR-TOTP-SEED` is set (`TEST-C-005`) |
 | **Lab FCP** | After smoke (soft) | `npm run test:lab-fcp` | Homepage median FCP vs 1.5s policy (`OPS-P2-003`); warn-only unless `LAB_FCP_HARD=1` |
 | **Journeys** | After smoke (profile-dependent) | `npm run test:journey` or `test:journey:content` | Persona flows; scope depends on what changed (see below) |
-| **Smoke Production** | After prod deploy | `npm run test:smoke` — job **Smoke Production** (`TEST-D-003`) | Same Tier A suite against the public prod host (Ready custom domain when set, else default SWA hostname), plus token check + `/studio/health` when TOTP is enrolled; failure → Sev1 SMS+voice (`SmokeFailed`); **no** auto-rollback |
+| **Smoke Production** | After prod deploy | `npm run test:smoke` — job **Smoke Production** (`TEST-D-003`) | Same Tier A suite against the public prod host (Ready custom domain when set, else default SWA hostname), plus token check + `/studio/health` when TOTP is enrolled; failure → Sev1 SMS (`SmokeFailed`); **no** auto-rollback |
 | Prod availability | Continuous | App Insights synthetics (prod) | Homepage + resume PDF + theatrical headshot every 10 minutes |
 
-Production deploy (`deploy_prod`) reuses the **same build artifact** verified on staging — no second site build. **Smoke Production** is a post-release canary (does not block the deploy that already finished); when it fails, CD emits `SmokeFailed` and the critical Action Group pages email + SMS + voice.
+Production deploy (`deploy_prod`) reuses the **same build artifact** verified on staging — no second site build. **Smoke Production** is a post-release canary (does not block the deploy that already finished); when it fails, CD emits `SmokeFailed` and the notify Action Group pages email + SMS (no voice).
 
 ### Verification profiles (change-aware)
 

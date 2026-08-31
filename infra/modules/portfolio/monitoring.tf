@@ -189,7 +189,7 @@ resource "azurerm_monitor_action_group" "notify" {
   }
 }
 
-# Sev1 — email + SMS + voice (OPS-P1-002). Homepage + materials availability, DeployFailed, and SmokeFailed use this group.
+# Sev1 — email + SMS + voice (OPS-P1-002). Homepage + materials availability use this group.
 resource "azurerm_monitor_action_group" "critical" {
   count = local.alert_critical_enabled ? 1 : 0
 
@@ -327,16 +327,16 @@ resource "azurerm_monitor_metric_alert" "availability" {
 }
 
 # Sev1 — Deploy Production or post-release Smoke Production failure (OPS-P3-003 / TEST-D-003).
-# CD emits DeployFailed or SmokeFailed; this pages critical AG (email + SMS + voice).
-# Count aggregation: any matching row in the window fires. Staging failures are out of scope.
+# CD emits DeployFailed or SmokeFailed; pages notify AG (email + SMS, no voice).
+# Homepage/materials availability still pages critical AG (email + SMS + voice).
 resource "azurerm_monitor_scheduled_query_rules_alert_v2" "deploy_failed" {
-  count = local.alert_critical_enabled && var.environment == "prod" ? 1 : 0
+  count = local.alert_notify_enabled && var.environment == "prod" ? 1 : 0
 
   name                    = "alert-elyse-deploy-failed-${local.name_suffix}"
   resource_group_name     = azurerm_resource_group.main.name
   location                = azurerm_resource_group.main.location
   scopes                  = [azurerm_application_insights.main.id]
-  description             = "Deploy Production or Smoke Production failed (DeployFailed/SmokeFailed; Sev1 → critical SMS+voice)"
+  description             = "Deploy Production or Smoke Production failed (DeployFailed/SmokeFailed; Sev1 → notify email+SMS, no voice)"
   severity                = 1
   enabled                 = true
   evaluation_frequency    = "PT5M"
@@ -362,7 +362,7 @@ resource "azurerm_monitor_scheduled_query_rules_alert_v2" "deploy_failed" {
   }
 
   action {
-    action_groups = [azurerm_monitor_action_group.critical[0].id]
+    action_groups = [azurerm_monitor_action_group.notify[0].id]
   }
 }
 

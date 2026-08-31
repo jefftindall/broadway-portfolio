@@ -2,7 +2,7 @@
 
 **Artifact ID:** `ELYSE-OPS-001`  
 **Version:** 2.7  
-**Last updated:** 2026-08-23  
+**Last updated:** 2026-08-31  
 **Audience:** Agents, implementers, operators  
 **Scope:** Reliability posture scorecard, committed SLOs, critical alerting (SMS/voice), monthly refresh loop, and **site performance / activity** (visits, updates, contacts, top pages) in that same monthly artifact. Calibrated for a lean personal portfolio — not enterprise multi-team SRE.
 
@@ -293,7 +293,8 @@ Exact Kusto for contacts/updates lives in [observability.md](../runbooks/observa
 
 | Severity | Examples | Channels | Ack expectation |
 |----------|----------|----------|-----------------|
-| **Sev1 — critical** | Homepage or materials availability fail; Deploy Production failed; post-release Smoke Production failed | Email + SMS immediately; native voice on critical AG (Phase 1); optional vendor escalate-if-unacked (`OPS-P3-002`) | Respond / silence within 15 min |
+| **Sev1 — critical** | Homepage or materials availability fail | Email + SMS + voice on critical AG (Phase 1); optional vendor escalate-if-unacked (`OPS-P3-002`) | Respond / silence within 15 min |
+| **Sev1 — deploy/smoke** | Deploy Production failed; post-release Smoke Production failed | Email + SMS on notify AG (no voice) | Investigate; no auto-rollback on smoke |
 | **Sev2 — urgent** | API error-budget burn vs SLO-7 99.9%/7d; Studio publish failures ≥2 / 24h | Email + SMS (no voice) | Same day |
 | **Sev3 — watch** | FCP p75 burn; error-budget Watch state | Email only (`ag-elyse-watch-*`) | Next working session |
 
@@ -362,7 +363,7 @@ Do **not** send ops alerts through ACS contact-form SMS (`ACS-SMS-FROM` + `SITE-
 |-----------|------|---------------------|--------|
 | `OPS-P3-001` | Kusto + cadence for SLO-2 / SLO-3 in observability runbook | Queries documented; monthly scorecard can cite them | `done` |
 | `OPS-P3-002` | Optional PagerDuty/Better Stack + 5-minute escalate | Routing key in vault/GH secrets; mobile ack works | `planned` |
-| `OPS-P3-003` | Deploy Production failure → Sev1 path | CD break pages SMS (and Phase 1 voice policy). Post-release **Smoke Production** failure also pages via `SmokeFailed` (`TEST-D-003`) | `done` |
+| `OPS-P3-003` | Deploy Production failure → Sev1 path | CD break pages email + SMS (notify AG; no voice). Post-release **Smoke Production** failure also pages via `SmokeFailed` (`TEST-D-003`) | `done` |
 | `OPS-P3-004` | Inquiry accept-rate SLO (optional) | Contact 5xx SLI excluding Turnstile bots | `done` |
 | `OPS-P3-005` | Short incident severity + response stub runbook | Links severity table; no private phones in doc | `done` |
 | `OPS-P3-006` | Prod KV purge protection (optional harden) | Documented decision + TF if accepted | `done` |
