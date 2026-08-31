@@ -225,10 +225,16 @@ https://login.microsoftonline.com/consumers/v2.0
 
 ## User flow (enable buttons + link SWA apps)
 
+### Enterprise app (service principal)
+
+CIAM user flows associate **enterprise applications** (service principals), not bare app registrations. Env Terraform creates **`azuread_service_principal.contact_swa`** alongside the OIDC app registration. After staging/prod apply, confirm under **Enterprise applications** → `elyse-portfolio-contact-{staging|prod}`.
+
+### Configure the flow
+
 1. CIAM tenant → **External Identities** → **User flows** (or **Get started** / default sign-in experience for customers).
 2. Edit the sign-up/sign-in flow used for external users.
 3. **Identity providers**: enable **Google**, **Apple**, and **Microsoft Account**. Leave **local email/password disabled** on v1.
-4. **Applications** → associate:
+4. **Applications** → **Add application** → select:
   - **Staging (now):** `elyse-portfolio-contact-staging` (`961894e2-e231-4b01-8a13-56fa85cf0492`)
   - **Production (after prod apply):** `elyse-portfolio-contact-prod` (client ID from `kv-elyse-prod` / `az ad app list` above)
 
