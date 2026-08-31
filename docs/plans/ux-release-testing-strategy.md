@@ -311,13 +311,13 @@ Do **not** call live Gemini on every `main` deploy until cost, rate limits, and 
 |----|------|--------|--------------|
 | `TEST-D-001` | On Playwright failure: upload trace/video artifacts | `planned` | Workflow `actions/upload-artifact` (release artifact already exists — not test traces) |
 | `TEST-D-002` | Map failures to App Insights / correlation IDs | `planned` | [observability.md](../runbooks/observability.md) |
-| `TEST-D-003` | Post-release prod smoke + Sev1 alert (SMS+voice) | `done` | **Smoke Production** after deploy; `SmokeFailed` → critical AG; no auto-rollback |
+| `TEST-D-003` | Post-release prod smoke + Sev1 alert (SMS) | `done` | **Smoke Production** after deploy; `SmokeFailed` → notify AG; no auto-rollback |
 
 <details>
 <summary><code>TEST-D-003</code> acceptance</summary>
 
 - [x] CD runs Playwright smoke against prod hostname after **Deploy Production** succeeds
-- [x] Failure emits `SmokeFailed` → `ag-elyse-critical-prod` (email + SMS + voice; same alert rule as `DeployFailed`)
+- [x] Failure emits `SmokeFailed` → `ag-elyse-notify-prod` (email + SMS; same alert rule as `DeployFailed`; no voice)
 - [x] No automatic rollback on smoke failure
 - [x] Runbooks + severity docs cite the path ([testing-strategy.md](../runbooks/testing-strategy.md), [deploy-and-rollback.md](../runbooks/deploy-and-rollback.md))
 

@@ -9,7 +9,7 @@ name: "CD: main"
 # Display names follow docs/runbooks/github-actions-naming.md (Scheme A).
 # After Deploy Staging: Smoke Staging (Playwright desktop + mobile) must pass before prod.
 # After Deploy Production: Smoke Production re-runs the same suite against prod; failure → Sev1
-# (SmokeFailed → ag-elyse-critical-prod: email + SMS + voice). No auto-rollback (TEST-D-003).
+# (SmokeFailed → ag-elyse-notify-prod: email + SMS, no voice). No auto-rollback (TEST-D-003).
 # DeployStarted is emitted immediately before each SWA upload so the Sev2 failed-request
 # alert (OPS-P6-001) can ignore Function-recycle 5xx in the deploy quiet window.
 # Build once per release; staging and prod deploy the same HTML/JS artifact that was
@@ -631,7 +631,7 @@ jobs:
         run: bash scripts/emit-appinsights-event.sh DeployCompleted
 
   # OPS-P3-003 — Sev1 path when Deploy Production fails. Emits DeployFailed → App Insights;
-  # prod scheduled-query alert pages ag-elyse-critical-prod (email + SMS + voice).
+  # prod scheduled-query alert pages ag-elyse-notify-prod (email + SMS, no voice).
   notify_prod_deploy_failure:
     name: Notify prod deploy failure
     needs: [deploy_prod]
@@ -651,10 +651,10 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           bash scripts/emit-appinsights-event.sh DeployFailed
-          echo "Emitted DeployFailed (Sev1 SLI). Critical Action Group alert evaluates within ~5m."
+          echo "Emitted DeployFailed (Sev1 SLI). Notify Action Group alert evaluates within ~5m."
 
   # TEST-D-003 — post-release prod smoke. Same Playwright suite as staging, against prod hostname.
-  # Failures page Sev1 (SMS + voice via critical AG); no auto-rollback.
+  # Failures page Sev1 (SMS via notify AG; no voice); no auto-rollback.
   smoke_prod:
     name: Smoke Production
     needs: [deploy_prod]
@@ -775,4 +775,4 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           bash scripts/emit-appinsights-event.sh SmokeFailed
-          echo "Emitted SmokeFailed (Sev1 SLI). Critical Action Group alert evaluates within ~5m."
+          echo "Emitted SmokeFailed (Sev1 SLI). Notify Action Group alert evaluates within ~5m."

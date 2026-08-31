@@ -8,6 +8,11 @@ name: "CD: staging"
 # Display names follow docs/runbooks/github-actions-naming.md (Scheme A).
 on:
   workflow_dispatch:
+    inputs:
+      prod_smoke_only:
+        description: Run production smoke only (skip staging deploy)
+        type: boolean
+        default: false
 
 concurrency:
   group: portfolio-cd
@@ -22,6 +27,7 @@ permissions:
 jobs:
   terraform_staging:
     name: Terraform Apply Staging
+    if: github.event.inputs.prod_smoke_only != 'true'
     runs-on: ubuntu-latest
     environment: staging
     defaults:
@@ -91,6 +97,7 @@ jobs:
   deploy_staging:
     name: Deploy Staging
     needs: terraform_staging
+    if: github.event.inputs.prod_smoke_only != 'true'
     runs-on: ubuntu-latest
     environment: staging
     env:
@@ -197,7 +204,7 @@ jobs:
   smoke_staging:
     name: Smoke Staging
     needs: [deploy_staging]
-    if: needs.deploy_staging.result == 'success'
+    if: github.event.inputs.prod_smoke_only != 'true' && needs.deploy_staging.result == 'success'
     runs-on: ubuntu-latest
     environment: staging
     steps:
@@ -277,3 +284,97 @@ jobs:
           BASE_URL: https://${{ steps.host.outputs.hostname }}
           CI: true
         run: npm run test:journey
+
+  smoke_prod_verify:
+    name: Smoke Production
+    if: github.event.inputs.prod_smoke_only == 'true'
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Azure login (OIDC)
+        env:
+          AZURE_LOGIN_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_LOGIN_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          AZURE_LOGIN_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+        run: bash scripts/azure-oidc-login.sh
+
+      - name: Resolve production hostname
+        id: host
+        run: |
+          SWA_NAME="${{ vars.AZURE_STATIC_WEB_APP_NAME }}"
+          SWA_RG="${{ vars.AZURE_RESOURCE_GROUP }}"
+          DEFAULT=$(az staticwebapp show \
+            --name "$SWA_NAME" \
+            --resource-group "$SWA_RG" \
+            --query defaultHostname -o tsv)
+          CUSTOM=$(az staticwebapp hostname list \
+            --name "$SWA_NAME" \
+            --resource-group "$SWA_RG" \
+            -o json | jq -r '
+              def domain: .domainName // .name // .properties.domainName // empty;
+              def ready_status: .status // .properties.status // empty;
+              def is_default: (.isDefault // .properties.isDefault // false) == true;
+              [ .[] | select(ready_status == "Ready") ] as $ready
+              | ($ready | map(select(is_default)) | .[0])
+                // ($ready | map(select((domain | ascii_downcase | startswith("www.") | not))) | .[0])
+                // $ready[0]
+                // empty
+              | if . == null then empty else domain end
+            ')
+          if [ "$CUSTOM" = "null" ] || [ "$CUSTOM" = "None" ]; then
+            CUSTOM=
+          fi
+          HOST=${CUSTOM:-$DEFAULT}
+          if [ -z "$HOST" ]; then
+            echo "::error::Could not resolve production Static Web App hostname"
+            exit 1
+          fi
+          echo "hostname=$HOST" >> "$GITHUB_OUTPUT"
+          echo "Production URL: https://$HOST (defaultHostname=$DEFAULT)"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Fetch Studio auth secrets
+        env:
+          AZURE_SHARED_KEY_VAULT_NAME: ${{ vars.AZURE_SHARED_KEY_VAULT_NAME }}
+          AZURE_KEY_VAULT_NAME: ${{ vars.AZURE_KEY_VAULT_NAME }}
+          AZURE_STATIC_WEB_APP_NAME: ${{ vars.AZURE_STATIC_WEB_APP_NAME }}
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          AAD_CLIENT_ID: ${{ vars.AAD_CLIENT_ID }}
+          AAD_MONITOR_TOKEN_SCOPE: ${{ vars.AAD_MONITOR_TOKEN_SCOPE }}
+          DEPLOY_ENVIRONMENT: prod
+        run: |
+          chmod +x scripts/fetch-studio-auth-secrets.sh
+          ./scripts/fetch-studio-auth-secrets.sh
+
+      - name: SWA client_credentials check
+        env:
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+        run: npm run test:studio-auth-token
+
+      - name: Run production smoke (desktop + mobile)
+        env:
+          BASE_URL: https://${{ steps.host.outputs.hostname }}
+          CI: true
+        run: npm run test:smoke
+
+      - name: Upload smoke traces (failure)
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: smoke-prod-verify-playwright
+          path: test-results
+          retention-days: 7
+          if-no-files-found: ignore

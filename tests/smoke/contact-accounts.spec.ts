@@ -21,13 +21,11 @@ test.describe('contact accounts smoke', () => {
   test('workforce AAD auth route responds when contact accounts disabled', async ({ request }) => {
     test.skip(!isStaticWebAppHost(), 'SWA auth is only enforced on deployed hosts');
     test.skip(contactAccountsEnabled, 'covered alongside contact login when enabled');
-    const res = await request.get('/.auth/login/aad?post_login_redirect_uri=%2Fstudio', {
-      maxRedirects: 0,
-    });
-    expect(res.status(), '/.auth/login/aad should redirect, not 404').toBeGreaterThanOrEqual(300);
-    expect(res.status()).toBeLessThan(400);
-    const location = res.headers()['location'] ?? '';
-    expect(location).toMatch(/login\.microsoftonline\.com/i);
+    await expectAuthRedirectToExternalIdp(
+      request,
+      '/.auth/login/aad?post_login_redirect_uri=%2Fstudio',
+      /login\.microsoftonline\.com/i,
+    );
   });
 
   test('login chooser exposes student and operator paths when enabled', async ({ page }) => {

@@ -44,7 +44,8 @@ Availability (metric) and API error-budget (scheduled query, `OPS-P6-002`) alert
 | Group | Name pattern | Channels | Wired alerts |
 |-------|--------------|----------|--------------|
 | Notify (Sev2) | `ag-elyse-notify-{env}` | Email ± SMS | API error-budget burn vs SLO-7 99.9%/7d (`OPS-P6-002`) |
-| Critical (Sev1) | `ag-elyse-critical-{env}` | Email + SMS + voice | Prod homepage + materials availability; **DeployFailed** / **SmokeFailed** (`OPS-P3-003` / `TEST-D-003`) |
+| Critical (Sev1) | `ag-elyse-critical-{env}` | Email + SMS + voice | Prod homepage + materials availability |
+| Deploy/smoke (Sev1) | `ag-elyse-notify-{env}` | Email + SMS | Prod **DeployFailed** / **SmokeFailed** (`OPS-P3-003` / `TEST-D-003`) |
 | Watch (Sev3) | `ag-elyse-watch-{env}` | Email only | Homepage field FCP p75 burn (`HomepageFcpMs`; 2d watch window; SLO-6 scored over 7d in scorecard) |
 
 Contacts: `ALERT-EMAIL`, `ALERT-SMS-PHONE`, `ALERT-VOICE-PHONE` in `kv-elyse-shared`. Invalid / `REPLACE_ME` values skip that receiver; if all contacts are placeholders, Action Groups and metric alerts are not created. Watch group requires a real `ALERT-EMAIL`.
@@ -98,8 +99,8 @@ User-facing messages stay short and non-technical. Full provider/SDK detail is o
 | `StudioAuthOutcome` | `/studio/health` after a successful signed-in load (`TEST-C-005`; always sampled) |
 | `DeployStarted` | GitHub Actions immediately **before** SWA upload (staging or prod; `OPS-P6-001` quiet window) |
 | `DeployCompleted` | GitHub Actions after SWA upload (staging or prod) |
-| `DeployFailed` | GitHub Actions when **Deploy Production** job fails (`OPS-P3-003`; pages critical AG) |
-| `SmokeFailed` | GitHub Actions when **Smoke Production** fails after deploy (`TEST-D-003`; pages critical AG; no auto-rollback) |
+| `DeployFailed` | GitHub Actions when **Deploy Production** job fails (`OPS-P3-003`; pages notify AG: email + SMS) |
+| `SmokeFailed` | GitHub Actions when **Smoke Production** fails after deploy (`TEST-D-003`; pages notify AG; no auto-rollback) |
 | `ContactInquiryReceived` / `ContactInquiryFailed` | Contact form API (`errorKind` on failures; see inquiry SLI below) |
 
 Gemini model-side traces stay in Google — not App Insights. Coarse `errorKind` values include `gemini_quota`, `gemini`, `github`, `config`, `unknown`.
