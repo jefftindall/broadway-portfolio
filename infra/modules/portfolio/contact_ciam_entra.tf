@@ -51,6 +51,20 @@ resource "azuread_application" "contact_swa" {
   }
 }
 
+# User flows list applications that have a service principal (enterprise app).
+# Portal registration creates both objects; Terraform must create the SP explicitly.
+resource "azuread_service_principal" "contact_swa" {
+  count    = local.contact_ciam_ready ? 1 : 0
+  provider = azuread.contact_ciam
+
+  client_id = azuread_application.contact_swa[0].client_id
+  owners    = [data.azuread_client_config.contact_ciam[0].object_id]
+
+  lifecycle {
+    ignore_changes = [owners]
+  }
+}
+
 resource "azuread_application_redirect_uris" "contact_swa_web" {
   count    = local.contact_ciam_ready ? 1 : 0
   provider = azuread.contact_ciam
