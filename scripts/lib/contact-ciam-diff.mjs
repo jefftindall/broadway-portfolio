@@ -4,6 +4,8 @@
 import {
   brandingDesiredFingerprint,
   brandingLocalizationFingerprint,
+  brandingThemeMetadataDrift,
+  normalizeBrandingSpec,
 } from './contact-ciam-branding.mjs';
 import {
   findRemoteIdp,
@@ -250,8 +252,14 @@ export function planBrandingSync(brandingManifest, remoteBranding) {
       ? /** @type {Record<string, unknown>} */ (localization)
       : null,
   );
+  const theme = remoteBranding?.theme;
+  const themeDrift = brandingThemeMetadataDrift(
+    theme && typeof theme === 'object' ? /** @type {Record<string, unknown>} */ (theme) : null,
+    /** @type {Record<string, unknown>} */ (spec),
+  );
 
-  const logoUrl = String(/** @type {Record<string, unknown>} */ (spec).bannerLogoUrl ?? '').trim();
+  const normalized = normalizeBrandingSpec(/** @type {Record<string, unknown>} */ (spec));
+  const logoSource = normalized.bannerLogoFile || normalized.bannerLogoUrl;
   const resyncLogo = /** @type {Record<string, unknown>} */ (spec).resyncLogo === true;
   const hasRemoteLogo = Boolean(
     localization &&
@@ -259,30 +267,40 @@ export function planBrandingSync(brandingManifest, remoteBranding) {
       /** @type {Record<string, unknown>} */ (localization).bannerLogoRelativeUrl,
   );
 
-  if (!remoteBranding?.orgId) {
+  if (!remoteBranding?.orgId || !theme?.id) {
     return [
       {
         kind: 'create',
         resource: 'branding',
         name: 'theme',
-        details: { uploadLogo: Boolean(logoUrl) },
+        details: { uploadLogo: Boolean(logoSource) },
       },
     ];
   }
 
-  if (desiredFingerprint !== remoteFingerprint || (logoUrl && (resyncLogo || !hasRemoteLogo))) {
+  if (
+    themeDrift ||
+    desiredFingerprint !== remoteFingerprint ||
+    (logoSource && (resyncLogo || !hasRemoteLogo))
+  ) {
     return [
       {
         kind: 'update',
         resource: 'branding',
         name: 'theme',
         reason:
-          desiredFingerprint !== remoteFingerprint
-            ? 'branding localization drift'
-            : logoUrl
-              ? 'banner logo upload pending'
-              : undefined,
-        details: { orgId: remoteBranding.orgId, uploadLogo: Boolean(logoUrl) },
+          themeDrift
+            ? 'branding theme metadata drift'
+            : desiredFingerprint !== remoteFingerprint
+              ? 'branding theme localization drift'
+              : logoSource
+                ? 'banner logo upload pending'
+                : undefined,
+        details: {
+          orgId: remoteBranding.orgId,
+          themeId: theme.id,
+          uploadLogo: Boolean(logoSource),
+        },
       },
     ];
   }

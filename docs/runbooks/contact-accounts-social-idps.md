@@ -247,7 +247,7 @@ https://login.microsoftonline.com/consumers/v2.0
 
 ## CIAM login theme (tenant-level)
 
-Branding is automated separately from IdPs ([`ACCOUNT-P1-011`](../plans/contact-ciam-automation.md)). Desired state: [`infra/contact-ciam/branding/theme.json`](../../infra/contact-ciam/branding/theme.json) (ink background `#0e0d0c`, Elyse sign-in copy, logo from `elysetindall.com`).
+Branding is automated separately from IdPs ([`ACCOUNT-P1-011`](../plans/contact-ciam-automation.md)). Desired state: [`infra/contact-ciam/branding/theme.json`](../../infra/contact-ciam/branding/theme.json) + [`banner-logo.png`](../../infra/contact-ciam/branding/banner-logo.png) (ink `#0e0d0c`, Elyse sign-in copy, CIAM-sized banner logo ≤245×36px). External ID user flows use Graph **beta** `organizationalBrandingTheme` with `isDefaultTheme: true`, not company branding alone.
 
 ```bash
 node scripts/apply-contact-ciam-config.mjs --dry-run --env staging

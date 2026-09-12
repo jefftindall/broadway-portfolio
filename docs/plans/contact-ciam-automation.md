@@ -79,7 +79,7 @@ Phase 1 shipped SWA → CIAM OIDC wiring, roles, `/login`, and the feature flag.
 
 | Layer | What users see | Status |
 |-------|----------------|--------|
-| **A. Company branding theme** | Dark stage background, gold CTAs, Figtree/Cormorant where Entra allows; logo from `/images/` | **`done`** (`P1-011`) — Graph `organizationalBranding` in `infra/contact-ciam/branding/` |
+| **A. Branding theme** | Dark stage background, gold CTAs, Figtree/Cormorant where Entra allows; CIAM-sized banner logo in repo | **`done`** (`P1-011`) — Graph `organizationalBrandingTheme` (beta) in `infra/contact-ciam/branding/` |
 | **B. Custom URL domain** | `https://login.elysetindall.com/{tenant-id}/…` instead of `*.ciamlogin.com` | **`wont_fix`** (`P1-012`) — Microsoft requires **Azure Front Door Standard ~$35/mo**; no supported cheaper proxy; low login volume does not justify doubling Azure spend |
 
 Brand tokens (from [`style-guide.md`](../style-guide.md)):
@@ -207,10 +207,10 @@ Script reads env: `CONTACT_CIAM_ENV=staging|prod`, `CONTACT_CIAM_TENANT_ID`, flo
 
 **Acceptance criteria**
 
-- [x] Theme uses ink / gold / gel / spotlight palette and site logo (`infra/contact-ciam/branding/theme.json`; ink `#0e0d0c`, logo `https://elysetindall.com/images/photos/brand-mark.png`)
+- [x] Theme uses ink / gold / gel / spotlight palette and CIAM-sized banner logo (`infra/contact-ciam/branding/theme.json` + `banner-logo.png`; ink `#0e0d0c`)
 - [x] Sign-in page copy matches voice-lessons tone (no “Azure AD” jargon)
 - [ ] Staging visually recognizable as Elyse Tindall on iPhone Safari (operator after apply)
-- [x] Theme JSON in repo; apply script syncs to Graph (`patchBrandingLocalization` + optional banner logo upload)
+- [x] Theme JSON in repo; apply script syncs to Graph beta branding theme (`isDefaultTheme`, `pageBackgroundColor`, banner logo upload)
 
 </details>
 
