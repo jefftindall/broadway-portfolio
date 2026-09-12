@@ -13,7 +13,7 @@ Students and parents sign in with **Google, Apple, or Microsoft** through **Entr
 | Step | Document | Who |
 |------|----------|-----|
 | 1 | **[contact-accounts-ciam-terraform.md](./contact-accounts-ciam-terraform.md)** | Terraform: CIAM tenant, OIDC apps, enterprise apps, vault, SWA, CD issuer patch, Graph apply hook (`ACCOUNT-P1-007`) |
-| 2 | **[contact-accounts-social-idps.md](./contact-accounts-social-idps.md)** | Vendor consoles (Google / Apple / MSA) + CIAM user-flow association (portal interim; as-code in `ACCOUNT-P1-008`–`P1-010`) |
+| 2 | **[contact-accounts-social-idps.md](./contact-accounts-social-idps.md)** | Vendor consoles (Google / Apple / MSA) + Graph apply for IdPs, theme, and staging user flow (`ACCOUNT-P1-008`–`P1-011`) |
 | 3 | This page | Architecture reference |
 
 Configuration as code: [`infra/contact-ciam/README.md`](../../infra/contact-ciam/README.md) · [`contact-ciam-automation.md`](../plans/contact-ciam-automation.md).
@@ -27,9 +27,11 @@ Secret names: [rotate-secrets.md](./rotate-secrets.md) § Contact accounts.
 | Audience | Login | SWA role | Routes |
 |----------|-------|----------|--------|
 | Operators | `/login` → Studio workspace or `/.auth/login/aad` | `studio` | `/studio`, `/studio/*` |
-| Students / parents | `/login` → Book or manage lessons or `/.auth/login/contact` | `contact` | `/account`, `/account/*` |
+| Students / parents | `/login` → **Book or manage lessons**, **Continue with Google / Apple / Microsoft** (`domain_hint`), or `/.auth/login/contact` | `contact` | `/account`, `/account/*` |
 
 `POST /api/authRoles` assigns roles by IdP. Unauthenticated protected routes → `/login?post_login_redirect_uri={url}`.
+
+**Direct social sign-in (`ACCOUNT-P1-013`):** `/login` offers **Continue with Google / Apple / Microsoft** links that call `/.auth/login/contact?...&domain_hint={google|apple|live.com}`. SWA forwards `domain_hint` when `loginParameterNames` includes it in [`staticwebapp.config.json`](../../public/staticwebapp.config.json). Helpers: [`src/lib/contactAccounts.ts`](../../src/lib/contactAccounts.ts).
 
 ---
 

@@ -1,6 +1,11 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { buildAuthLoginHref } from '../lib/contactAccounts';
+import {
+  buildAuthLoginHref,
+  buildContactAuthLoginHref,
+  buildContactSocialLoginHref,
+  CONTACT_SOCIAL_LOGIN_OPTIONS,
+} from '../lib/contactAccounts';
 
 const redirectParam =
   Astro.url.searchParams.get('post_login_redirect_uri') ??
@@ -17,7 +22,7 @@ function safeRedirectPath(raw: string): string {
 }
 
 const redirectPath = safeRedirectPath(redirectParam);
-const studentHref = buildAuthLoginHref('contact', redirectPath);
+const studentHref = buildContactAuthLoginHref(redirectPath);
 const operatorHref = buildAuthLoginHref('aad', redirectPath.startsWith('/studio') ? redirectPath : '/studio');
 const isStudioRedirect = redirectPath.startsWith('/studio');
 ---
@@ -44,9 +49,26 @@ const isStudioRedirect = redirectPath.startsWith('/studio');
       >
         <span class="block font-display text-xl text-spotlight">Book or manage lessons</span>
         <span class="mt-1 block text-sm text-muted">
-          Students and parents — sign in with Google, Apple, or Microsoft
+          Students and parents — choose Google, Apple, or Microsoft on the next screen
         </span>
       </a>
+
+      <div class="glass-panel rounded-sm border border-line px-5 py-4">
+        <p class="text-sm text-muted">Or continue directly with your account provider:</p>
+        <div class="mt-4 flex flex-col gap-2">
+          {
+            CONTACT_SOCIAL_LOGIN_OPTIONS.map((option) => (
+              <a
+                href={buildContactSocialLoginHref(option.id, redirectPath)}
+                data-testid={option.testId}
+                class="rounded-sm border border-line px-4 py-3 text-center text-spotlight transition hover:border-gold hover:text-gold"
+              >
+                Continue with {option.label}
+              </a>
+            ))
+          }
+        </div>
+      </div>
 
       <a
         href={operatorHref}

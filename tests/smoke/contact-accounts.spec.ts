@@ -33,7 +33,24 @@ test.describe('contact accounts smoke', () => {
     test.skip(!contactAccountsEnabled, 'CONTACT_ACCOUNTS_ENABLED is false');
     await waitForOk(page, '/login');
     await expect(page.getByTestId('login-contact')).toBeVisible();
+    await expect(page.getByTestId('login-contact-google')).toBeVisible();
+    await expect(page.getByTestId('login-contact-apple')).toBeVisible();
+    await expect(page.getByTestId('login-contact-microsoft')).toBeVisible();
     await expect(page.getByTestId('login-operator')).toBeVisible();
+  });
+
+  test('contact Google login passes domain_hint to CIAM when enabled', async ({ request }) => {
+    test.skip(!isStaticWebAppHost(), 'SWA auth is only enforced on deployed hosts');
+    test.skip(!contactAccountsEnabled, 'CONTACT_ACCOUNTS_ENABLED is false');
+    const res = await request.get(
+      '/.auth/login/contact?post_login_redirect_uri=%2Flessons%2Fbook&domain_hint=google',
+      { maxRedirects: 0 },
+    );
+    expect(res.status()).toBeGreaterThanOrEqual(300);
+    expect(res.status()).toBeLessThan(400);
+    const location = res.headers()['location'] ?? '';
+    expect(location).toMatch(/ciamlogin\.com/i);
+    expect(location.toLowerCase()).toMatch(/domain_hint=google|idp=google|accounts\.google/i);
   });
 
   test('contact auth starts CIAM login when enabled', async ({ request }) => {

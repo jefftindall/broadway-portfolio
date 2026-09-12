@@ -75,12 +75,12 @@ Operator ──Microsoft work/school────────►  Workforce Entra
 |--------------|--------|----------------|
 | Phase 0 — Plan + Action IDs + SoT | `done` | — |
 | Phase 1 — Student identity (External ID + SWA roles) | `done` | SWA OIDC + roles + flag shipped; CIAM user flows / IdPs / branding still portal or partial — see Phase 1b |
-| Phase 1b — CIAM user flows as code (per env) | `in_progress` | `ACCOUNT-P1-007` / `P1-010` / `P1-011` done; next `P1-008` per-env flow bodies |
+| Phase 1b — CIAM user flows as code (per env) | `in_progress` | `P1-007`–`P1-011` + staging flow (`P1-008`/`P1-009`) + `/login` UX (`P1-013`) done; prod flow + validation (`P1-014`) next |
 | Phase 2 — Link login → People + `/account` | `planned` | After P1 |
 | Phase 3 — Flag + login-gated schedule/book | `planned` | Inquiry stays anonymous; `STUDIO-P5-001` uses this bind |
 | Phase 4 — Lesson history + parent booking | `planned` | History is part of `/account`; required before prod flag-on |
 
-**Suggested next:** `ACCOUNT-P1-008` (per-env user flow `spec` in `infra/contact-ciam/flows/`). Do **not** start `STUDIO-P5-001` until Phase 3 can bind a booker. Inquiry never waits on this track.
+**Suggested next:** `ACCOUNT-P1-014` (staging Graph apply + IdP round-trips, then promote `flows/prod.json`). Do **not** start `STUDIO-P5-001` until Phase 3 can bind a booker. Inquiry never waits on this track.
 
 ---
 
@@ -275,12 +275,12 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 | ID | Title | Status | Depends on | Primary files |
 |----|-------|--------|------------|---------------|
 | `ACCOUNT-P1-007` | Graph apply script + env Terraform hook | `done` | `ACCOUNT-P1-001` | `scripts/apply-contact-ciam-config.mjs`; `infra/contact-ciam/` |
-| `ACCOUNT-P1-008` | Per-env user flows (`contact-signin-staging` / `-prod`) | `planned` | `P1-007` | `infra/contact-ciam/flows/` |
-| `ACCOUNT-P1-009` | Minimal attribute collection (social-only friction) | `planned` | `P1-008` | flow JSON |
+| `ACCOUNT-P1-008` | Per-env user flows (`contact-signin-staging` / `-prod`) | `in_progress` | `P1-007` | staging `spec` in `infra/contact-ciam/flows/staging.json` |
+| `ACCOUNT-P1-009` | Minimal attribute collection (social-only friction) | `done` | `P1-008` | staging flow `spec.onAttributeCollection` |
 | `ACCOUNT-P1-010` | IdP federation from KV (Google / Apple / MSA) | `done` | `P1-007` | `infra/contact-ciam/idps/` |
 | `ACCOUNT-P1-011` | CIAM branding theme (site colors) | `done` | `P1-007` | `infra/contact-ciam/branding/` |
 | `ACCOUNT-P1-012` | Custom URL domain `login.elysetindall.com` | `planned` | `P1-011` | Front Door + DNS; CD issuer |
-| `ACCOUNT-P1-013` | `/login` direct provider buttons | `planned` | `P1-008` | `src/pages/login.astro` |
+| `ACCOUNT-P1-013` | `/login` direct provider buttons | `done` | `P1-008` | `src/pages/login.astro`; `contactAccounts.ts` |
 | `ACCOUNT-P1-014` | Promotion runbook + smoke/journey updates | `planned` | `P1-008`–`P1-013` | runbooks; smoke tests |
 
 <details>
@@ -332,7 +332,7 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 
 - [x] Public `/login` (indexable? **no** — `noIndex`; not in sitemap). Copy: two paths, voice-lessons tone, no Studio jargon on the student button
 - [x] SWA 401 override → `/login` (honor `post_login_redirect_uri` / query so Studio deep links still return to `/studio/...`)
-- [x] Student button uses External ID (optional `domain_hint` later). Operator button uses AAD
+- [x] Student button uses External ID with optional **`domain_hint`** direct social buttons (`ACCOUNT-P1-013`). Operator button uses AAD
 - [ ] iPhone Safari: complete Google, Apple, and Microsoft round-trips on staging — operator after CIAM + IdP setup
 
 </details>
@@ -342,7 +342,7 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 
 **Acceptance criteria**
 
-- [ ] External ID **per-env** user flow enables **Google**, **Apple**, and **Microsoft personal** on the flow — **`ACCOUNT-P1-008`** / **`P1-009`** flow `spec` ([`contact-ciam-automation.md`](./contact-ciam-automation.md)); IdP **credentials** sync **`ACCOUNT-P1-010`** (`done` — operator validates staging round-trips)
+- [ ] External ID **per-env** user flow enables **Google**, **Apple**, and **Microsoft personal** on the flow — staging **`ACCOUNT-P1-008`** / **`P1-009`** `spec` shipped ([`contact-ciam-automation.md`](./contact-ciam-automation.md)); operator validates after Graph apply; prod flow pending **`P1-014`**
 - [ ] Google OAuth client is **not** the Calendar organizer/Elyse client. Redirects include External ID federation URIs ([Google federation](https://learn.microsoft.com/en-us/entra/external-id/customers/how-to-google-federation-customers))
 - [ ] Apple: Services ID + Sign in with Apple; Hide My Email must not 500 the callback
 - [x] No local email+password on v1 (social only). Email OTP is out of scope unless social is blocked

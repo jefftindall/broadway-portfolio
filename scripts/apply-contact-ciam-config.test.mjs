@@ -26,6 +26,13 @@ import {
   normalizeBrandingSpec,
 } from './lib/contact-ciam-branding.mjs';
 import {
+  buildUserFlowRequestBody,
+  DEFAULT_CONTACT_FLOW_IDPS,
+  normalizeFlowSpec,
+  userFlowDesiredFingerprint,
+  userFlowRemoteFingerprint,
+} from './lib/contact-ciam-flow.mjs';
+import {
   loadContactCiamManifest,
   manifestContentHash,
   resolveContactCiamManifest,
@@ -52,6 +59,7 @@ test('loadContactCiamManifest loads repo infra/contact-ciam files', () => {
   assert.equal(manifest.environment, 'staging');
   assert.ok(manifest.flow);
   assert.equal(manifest.flow?.displayName, 'contact-signin-staging');
+  assert.ok(manifest.flow?.spec);
   assert.ok(manifest.idps.length >= 3);
   assert.ok(manifest.branding);
   assert.equal(manifest.branding?.enabled, true);
@@ -99,12 +107,16 @@ test('planUserFlowSync skips when spec missing (P1-008 gate)', () => {
 });
 
 test('planUserFlowSync plans create when spec present and remote missing', () => {
+  const spec = {
+    onInteractiveAuthFlowStart: { isSignUpAllowed: true },
+    identityProviders: DEFAULT_CONTACT_FLOW_IDPS,
+  };
   const actions = planUserFlowSync(
     {
       schemaVersion: 1,
       enabled: true,
       displayName: 'contact-signin-staging',
-      spec: { onInteractiveAuthFlowStart: { isSignUpAllowed: true } },
+      spec,
     },
     null,
     '961894e2-e231-4b01-8a13-56fa85cf0492',
@@ -119,18 +131,103 @@ test('planUserFlowSync plans create when spec present and remote missing', () =>
   ]);
 });
 
-test('planUserFlowSync noop when remote flow matches displayName', () => {
+test('planUserFlowSync noop when remote flow matches desired fingerprint', () => {
+  const spec = {
+    onInteractiveAuthFlowStart: { isSignUpAllowed: true },
+    identityProviders: DEFAULT_CONTACT_FLOW_IDPS,
+    onAttributeCollection: {
+      email: { hidden: true, editable: false, required: true },
+      displayName: { hidden: true, editable: false, required: false },
+    },
+  };
+  const remote = buildUserFlowRequestBody(
+    'contact-signin-staging',
+    '961894e2-e231-4b01-8a13-56fa85cf0492',
+    spec,
+  );
+  remote.id = 'flow-id-1';
   const actions = planUserFlowSync(
     {
       schemaVersion: 1,
       enabled: true,
       displayName: 'contact-signin-staging',
-      spec: { onInteractiveAuthFlowStart: { isSignUpAllowed: true } },
+      spec,
     },
-    { id: 'flow-id-1', displayName: 'contact-signin-staging' },
+    remote,
     '961894e2-e231-4b01-8a13-56fa85cf0492',
   );
   assert.equal(actions[0].kind, 'noop');
+});
+
+test('planUserFlowSync plans update when social IdPs drift', () => {
+  const spec = {
+    onInteractiveAuthFlowStart: { isSignUpAllowed: true },
+    identityProviders: DEFAULT_CONTACT_FLOW_IDPS,
+  };
+  const remote = buildUserFlowRequestBody(
+    'contact-signin-staging',
+    '961894e2-e231-4b01-8a13-56fa85cf0492',
+    {
+      ...spec,
+      identityProviders: ['Google-OAUTH'],
+    },
+  );
+  remote.id = 'flow-id-1';
+  const actions = planUserFlowSync(
+    {
+      schemaVersion: 1,
+      enabled: true,
+      displayName: 'contact-signin-staging',
+      spec,
+    },
+    remote,
+    '961894e2-e231-4b01-8a13-56fa85cf0492',
+  );
+  assert.equal(actions[0].kind, 'update');
+  assert.match(String(actions[0].reason), /drift/);
+});
+
+test('buildUserFlowRequestBody enables social IdPs only and minimal attributes', () => {
+  const body = buildUserFlowRequestBody('contact-signin-staging', '961894e2-e231-4b01-8a13-56fa85cf0492', {
+    onInteractiveAuthFlowStart: { isSignUpAllowed: true },
+  });
+  const idps = /** @type {Array<{ id?: string }>} */ (
+    /** @type {Record<string, unknown>} */ (body.onAuthenticationMethodLoadStart).identityProviders
+  );
+  assert.deepEqual(
+    idps.map((provider) => provider.id).sort(),
+    [...DEFAULT_CONTACT_FLOW_IDPS].sort(),
+  );
+  assert.equal(
+    /** @type {Record<string, unknown>} */ (body.onInteractiveAuthFlowStart).isSignUpAllowed,
+    true,
+  );
+  const inputs = /** @type {Array<Record<string, unknown>>} */ (
+    /** @type {Record<string, unknown>} */ (
+      /** @type {Record<string, unknown>} */ (body.onAttributeCollection).attributeCollectionPage
+    ).views
+  )[0].inputs;
+  const email = inputs.find((input) => input.attribute === 'email');
+  const displayName = inputs.find((input) => input.attribute === 'displayName');
+  assert.equal(email?.hidden, true);
+  assert.equal(email?.editable, false);
+  assert.equal(displayName?.hidden, true);
+  assert.equal(displayName?.editable, false);
+});
+
+test('userFlow fingerprints match for equivalent remote and desired state', () => {
+  const spec = normalizeFlowSpec({
+    identityProviders: DEFAULT_CONTACT_FLOW_IDPS,
+    onAttributeCollection: {
+      email: { hidden: true, editable: false, required: true },
+      displayName: { hidden: true, editable: false, required: false },
+    },
+  });
+  const remote = buildUserFlowRequestBody('contact-signin-staging', '961894e2-e231-4b01-8a13-56fa85cf0492', spec);
+  assert.equal(
+    userFlowDesiredFingerprint('contact-signin-staging', '961894e2-e231-4b01-8a13-56fa85cf0492', spec),
+    userFlowRemoteFingerprint(remote),
+  );
 });
 
 test('planIdentityProviderSync skips disabled idps', () => {
