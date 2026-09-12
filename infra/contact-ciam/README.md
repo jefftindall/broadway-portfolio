@@ -9,7 +9,7 @@ Version-controlled desired state for Entra External ID **user flows**, **identit
 | `flows/staging.json` | Staging user flow only | `ACCOUNT-P1-008` / `P1-009` |
 | `flows/prod.json` | Production user flow only | `ACCOUNT-P1-008` |
 | `idps/*.json` | Tenant-level IdPs (shared) | `ACCOUNT-P1-010` |
-| `branding/theme.json` | Tenant-level sign-in theme | `ACCOUNT-P1-011` |
+| `branding/theme.json` + `branding/banner-logo.png` | Tenant-level sign-in branding theme (Graph beta) | `ACCOUNT-P1-011` |
 
 **Promotion:** change staging → apply staging → validate on `test.elysetindall.com` → reconcile prod JSON → apply prod. See [`contact-ciam-automation.md`](../../docs/plans/contact-ciam-automation.md).
 

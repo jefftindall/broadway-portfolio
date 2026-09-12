@@ -389,6 +389,120 @@ export async function getOrganizationId(tenantId) {
 
 /**
  * @param {string} tenantId
+ * @param {string} themeName
+ * @returns {Promise<{ orgId: string; theme: Record<string, unknown> | null; localization: Record<string, unknown> | null } | null>}
+ */
+export async function getContactBrandingTheme(tenantId, themeName) {
+  const orgId = await getOrganizationId(tenantId);
+  if (!orgId) return null;
+  const trimmedName = themeName.trim();
+  try {
+    const themesPayload = /** @type {{ value?: Array<Record<string, unknown>> }} */ (
+      await graphBetaRequest({ tenantId, path: `/organization/${orgId}/branding/themes` })
+    );
+    const theme =
+      themesPayload.value?.find((item) => String(item.name ?? '').trim() === trimmedName) ?? null;
+    let localization = null;
+    if (theme?.id) {
+      try {
+        localization = /** @type {Record<string, unknown>} */ (
+          await graphBetaRequest({
+            tenantId,
+            path: `/organization/${orgId}/branding/themes/${encodeURIComponent(String(theme.id))}/localizations/0`,
+          })
+        );
+      } catch {
+        localization = null;
+      }
+    }
+    return { orgId, theme, localization };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * @param {string} tenantId
+ * @param {string} orgId
+ * @param {{ name: string; isDefaultTheme?: boolean }} body
+ */
+export async function createBrandingTheme(tenantId, orgId, body) {
+  return graphBetaRequest({
+    tenantId,
+    method: 'POST',
+    path: `/organization/${orgId}/branding/themes`,
+    body,
+  });
+}
+
+/**
+ * @param {string} tenantId
+ * @param {string} orgId
+ * @param {string} themeId
+ * @param {{ name?: string; isDefaultTheme?: boolean }} body
+ */
+export async function patchBrandingTheme(tenantId, orgId, themeId, body) {
+  return graphBetaRequest({
+    tenantId,
+    method: 'PATCH',
+    path: `/organization/${orgId}/branding/themes/${encodeURIComponent(themeId)}`,
+    body,
+  });
+}
+
+/**
+ * @param {string} tenantId
+ * @param {string} orgId
+ * @param {string} themeId
+ * @param {string} locale
+ * @param {Record<string, string>} body
+ */
+export async function patchBrandingThemeLocalization(tenantId, orgId, themeId, locale, body) {
+  return graphBetaRequest({
+    tenantId,
+    method: 'PATCH',
+    path: `/organization/${orgId}/branding/themes/${encodeURIComponent(themeId)}/localizations/${encodeURIComponent(locale)}`,
+    body,
+  });
+}
+
+/**
+ * @param {string} tenantId
+ * @param {string} orgId
+ * @param {string} themeId
+ * @param {string} locale
+ * @param {Record<string, string>} body
+ */
+export async function createBrandingThemeLocalization(tenantId, orgId, themeId, locale, body) {
+  return graphBetaRequest({
+    tenantId,
+    method: 'POST',
+    path: `/organization/${orgId}/branding/themes/${encodeURIComponent(themeId)}/localizations`,
+    body: { locale, ...body },
+  });
+}
+
+/**
+ * @param {string} tenantId
+ * @param {string} orgId
+ * @param {string} themeId
+ * @param {string} locale
+ * @param {Buffer} bytes
+ * @param {string} contentType
+ */
+export async function uploadBrandingThemeBannerLogo(tenantId, orgId, themeId, locale, bytes, contentType) {
+  return graphBetaRequest({
+    tenantId,
+    method: 'PUT',
+    path: `/organization/${orgId}/branding/themes/${encodeURIComponent(themeId)}/localizations/${encodeURIComponent(locale)}/bannerLogo/$value`,
+    rawBody: bytes,
+    contentType,
+  });
+}
+
+/**
+ * @deprecated Use getContactBrandingTheme for CIAM user-flow sign-in pages.
+ * @param {string} tenantId
  * @returns {Promise<Record<string, unknown> | null>}
  */
 export async function getDefaultBranding(tenantId) {
@@ -448,7 +562,7 @@ export async function uploadBannerLogo(tenantId, orgId, locale, bytes, contentTy
  * @param {string} tenantId
  * @param {string} applicationClientId
  * @param {string[]} [idpGraphKeys]
- * @param {{ skipUserFlow?: boolean }} [options]
+ * @param {{ skipUserFlow?: boolean; brandingThemeName?: string }} [options]
  * @returns {Promise<{ flow: { id?: string; displayName?: string } | null; idps: Map<string, { id?: string; displayName?: string }>; branding: Record<string, unknown> | null; idpDetails: Map<string, Record<string, unknown>> }>}
  */
 export async function fetchRemoteContactCiamState(
@@ -457,12 +571,13 @@ export async function fetchRemoteContactCiamState(
   idpGraphKeys = [],
   options = {},
 ) {
+  const themeName = String(options.brandingThemeName ?? 'Elyse Contact Accounts').trim();
   const [flowSummary, idps, branding] = await Promise.all([
     options.skipUserFlow || !applicationClientId.trim()
       ? Promise.resolve(null)
       : findUserFlowForApplication(tenantId, applicationClientId),
     listIdentityProvidersByKey(tenantId),
-    getDefaultBranding(tenantId),
+    getContactBrandingTheme(tenantId, themeName),
   ]);
 
   let flow = null;

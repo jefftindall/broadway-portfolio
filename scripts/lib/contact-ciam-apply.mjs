@@ -2,9 +2,10 @@
  * Graph apply handlers for CIAM IdPs and branding (ACCOUNT-P1-010 / P1-011).
  */
 import {
-  buildBrandingLocalizationPatch,
-  bannerLogoContentType,
+  buildBrandingThemeLocalizationPatch,
+  fetchBannerLogoFromUrl,
   normalizeBrandingSpec,
+  resolveBannerLogoAsset,
 } from './contact-ciam-branding.mjs';
 import { buildUserFlowRequestBody } from './contact-ciam-flow.mjs';
 import {
@@ -14,12 +15,15 @@ import {
 } from './contact-ciam-idp.mjs';
 import {
   createAuthenticationEventsFlow,
+  createBrandingTheme,
+  createBrandingThemeLocalization,
   createIdentityProvider,
   getOrganizationId,
   patchAuthenticationEventsFlow,
-  patchBrandingLocalization,
+  patchBrandingTheme,
+  patchBrandingThemeLocalization,
   patchIdentityProvider,
-  uploadBannerLogo,
+  uploadBrandingThemeBannerLogo,
 } from './contact-ciam-graph.mjs';
 
 /**
@@ -116,8 +120,18 @@ export async function applyUserFlowAction(context) {
 }
 
 /**
+ * @param {unknown} err
+ * @returns {boolean}
+ */
+function isMissingThemeLocalization(err) {
+  const message = err instanceof Error ? err.message : String(err);
+  return /localizations\/0|ResourceNotFound|Not Found|404/i.test(message);
+}
+
+/**
  * @param {{
  *   tenantId: string;
+ *   repoRoot: string;
  *   action: import('./contact-ciam-diff.mjs').PlanAction;
  *   brandingManifest: Record<string, unknown>;
  * }} context
@@ -130,26 +144,61 @@ export async function applyBrandingAction(context) {
     fail('Organization id not found for branding apply');
   }
 
-  const patch = buildBrandingLocalizationPatch(spec);
-  if (Object.keys(patch).length > 0) {
-    await patchBrandingLocalization(context.tenantId, orgId, normalized.locale, patch);
+  let themeId = String(context.action.details?.themeId ?? '').trim();
+  if (!themeId) {
+    const created = /** @type {{ id?: string }} */ (
+      await createBrandingTheme(context.tenantId, orgId, {
+        name: normalized.themeName,
+        isDefaultTheme: normalized.isDefaultTheme,
+      })
+    );
+    themeId = String(created.id ?? '').trim();
+    if (!themeId) {
+      fail('Branding theme create did not return id');
+    }
+  } else {
+    await patchBrandingTheme(context.tenantId, orgId, themeId, {
+      name: normalized.themeName,
+      isDefaultTheme: normalized.isDefaultTheme,
+    });
   }
 
-  if (normalized.bannerLogoUrl) {
-    if (!/^https:\/\//i.test(normalized.bannerLogoUrl)) {
-      fail('branding.spec.bannerLogoUrl must be an https URL');
+  const patch = buildBrandingThemeLocalizationPatch(spec);
+  if (Object.keys(patch).length > 0) {
+    try {
+      await patchBrandingThemeLocalization(
+        context.tenantId,
+        orgId,
+        themeId,
+        normalized.locale,
+        patch,
+      );
+    } catch (err) {
+      if (!isMissingThemeLocalization(err)) {
+        throw err;
+      }
+      await createBrandingThemeLocalization(
+        context.tenantId,
+        orgId,
+        themeId,
+        normalized.locale,
+        patch,
+      );
     }
-    const response = await fetch(normalized.bannerLogoUrl);
-    if (!response.ok) {
-      fail(`Failed to fetch banner logo (HTTP ${response.status})`);
-    }
-    const bytes = Buffer.from(await response.arrayBuffer());
-    await uploadBannerLogo(
+  }
+
+  let logoAsset = resolveBannerLogoAsset(context.repoRoot, spec);
+  if (!logoAsset && normalized.bannerLogoUrl) {
+    logoAsset = await fetchBannerLogoFromUrl(normalized.bannerLogoUrl);
+  }
+  if (logoAsset) {
+    await uploadBrandingThemeBannerLogo(
       context.tenantId,
       orgId,
+      themeId,
       normalized.locale,
-      bytes,
-      bannerLogoContentType(normalized.bannerLogoUrl),
+      logoAsset.bytes,
+      logoAsset.contentType,
     );
   }
 }

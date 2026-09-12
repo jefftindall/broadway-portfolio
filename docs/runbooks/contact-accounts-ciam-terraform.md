@@ -193,7 +193,7 @@ Reads **`CONTACT-CIAM-OIDC-ISSUER`** from `kv-elyse-shared`.
 | Piece | Today | Target (`ACCOUNT-*`) |
 |-------|-------|----------------------|
 | IdP credentials in Entra | Graph apply from `CONTACT-IDP-*` in `kv-elyse-shared` | `ACCOUNT-P1-010` |
-| Login theme | Graph organizational branding from `infra/contact-ciam/branding/theme.json` | `ACCOUNT-P1-011` |
+| Login theme | Graph beta `organizationalBrandingTheme` from `infra/contact-ciam/branding/` | `ACCOUNT-P1-011` |
 | User flow per environment | Staging `spec` in repo; prod after promotion | `ACCOUNT-P1-008`: `contact-signin-staging` via Graph apply; prod JSON pending `P1-014` |
 | Apply on env Terraform | Step 3b (`apply-contact-ciam-config.mjs`) | Idempotent; prod flow skips until `flows/prod.json` gains `spec` |
 

@@ -2,10 +2,12 @@
   "schemaVersion": 1,
   "enabled": true,
   "spec": {
+    "themeName": "Elyse Contact Accounts",
+    "isDefaultTheme": true,
     "locale": "0",
     "backgroundColor": "#0e0d0c",
     "signInPageText": "Sign in to book voice lessons or manage your lesson account with Elyse Tindall.",
     "usernameHintText": "Email address",
-    "bannerLogoUrl": "https://elysetindall.com/images/photos/brand-mark.png"
+    "bannerLogoFile": "banner-logo.png"
   }
 }

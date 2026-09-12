@@ -22,7 +22,7 @@ import {
 import {
   brandingDesiredFingerprint,
   brandingLocalizationFingerprint,
-  buildBrandingLocalizationPatch,
+  buildBrandingThemeLocalizationPatch,
   normalizeBrandingSpec,
 } from './lib/contact-ciam-branding.mjs';
 import {
@@ -311,9 +311,10 @@ test('planBrandingSync plans create when remote branding missing', () => {
       schemaVersion: 1,
       enabled: true,
       spec: {
+        themeName: 'Elyse Contact Accounts',
         backgroundColor: '#0e0d0c',
         signInPageText: 'Sign in to book voice lessons.',
-        bannerLogoUrl: 'https://elysetindall.com/images/photos/brand-mark.png',
+        bannerLogoFile: 'banner-logo.png',
       },
     },
     null,
@@ -323,17 +324,20 @@ test('planBrandingSync plans create when remote branding missing', () => {
 
 test('planBrandingSync noop when localization matches desired fingerprint', () => {
   const spec = {
+    themeName: 'Elyse Contact Accounts',
+    isDefaultTheme: true,
     backgroundColor: '#0e0d0c',
     signInPageText: 'Sign in to book voice lessons.',
     usernameHintText: 'Email address',
-    bannerLogoUrl: 'https://elysetindall.com/images/photos/brand-mark.png',
+    bannerLogoFile: 'banner-logo.png',
   };
   const actions = planBrandingSync(
     { schemaVersion: 1, enabled: true, spec },
     {
       orgId: 'org-1',
+      theme: { id: 'theme-1', name: 'Elyse Contact Accounts', isDefaultTheme: true },
       localization: {
-        backgroundColor: '#0e0d0c',
+        pageBackgroundColor: '#0e0d0c',
         signInPageText: 'Sign in to book voice lessons.',
         usernameHintText: 'Email address',
         bannerLogoRelativeUrl: 'bannerLogo',
@@ -377,13 +381,13 @@ test('buildAppleIdentityProviderBody maps team and service ids', () => {
   assert.equal(body.keyId, 'KEY');
 });
 
-test('branding patch includes ink background and sign-in copy', () => {
-  const patch = buildBrandingLocalizationPatch(normalizeBrandingSpec({
+test('branding patch maps ink background to pageBackgroundColor', () => {
+  const patch = buildBrandingThemeLocalizationPatch(normalizeBrandingSpec({
     backgroundColor: '#0e0d0c',
     signInPageText: 'Sign in to book voice lessons.',
     usernameHintText: 'Email address',
   }));
-  assert.equal(patch.backgroundColor, '#0e0d0c');
+  assert.equal(patch.pageBackgroundColor, '#0e0d0c');
   assert.match(patch.signInPageText, /voice lessons/);
 });
 

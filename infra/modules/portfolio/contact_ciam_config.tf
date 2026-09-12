@@ -13,6 +13,7 @@ locals {
     [
       "${local.contact_ciam_config_repo_root}/infra/contact-ciam/flows/${var.environment}.json",
       "${local.contact_ciam_config_repo_root}/infra/contact-ciam/branding/theme.json",
+      "${local.contact_ciam_config_repo_root}/infra/contact-ciam/branding/banner-logo.png",
     ],
   )
   contact_ciam_config_manifest_hash = local.contact_ciam_ready ? sha256(join("", [

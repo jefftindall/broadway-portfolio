@@ -92,6 +92,7 @@ function parseCliArgs() {
  *   brandingManifest: Record<string, unknown> | null;
  *   flowManifest: Record<string, unknown> | null;
  *   applicationClientId: string;
+ *   repoRoot: string;
  * }} context
  */
 async function applyPlan(actions, dryRun, context) {
@@ -129,6 +130,7 @@ async function applyPlan(actions, dryRun, context) {
       }
       await applyBrandingAction({
         tenantId: context.tenantId,
+        repoRoot: context.repoRoot,
         action,
         brandingManifest: context.brandingManifest,
       });
@@ -170,6 +172,10 @@ export async function applyContactCiamConfig(options) {
     tfClientId: options.tfClientId,
   });
 
+  const brandingThemeName = String(
+    /** @type {Record<string, unknown>} */ (manifest.branding?.spec ?? {}).themeName ?? 'Elyse Contact Accounts',
+  ).trim();
+
   let remote = EMPTY_CONTACT_CIAM_REMOTE;
   let graphReadFailed = false;
   try {
@@ -177,7 +183,10 @@ export async function applyContactCiamConfig(options) {
       options.tenantId,
       options.applicationClientId,
       idpGraphKeys,
-      { skipUserFlow: !flowManifestNeedsRemoteLookup(manifest.flow) },
+      {
+        skipUserFlow: !flowManifestNeedsRemoteLookup(manifest.flow),
+        brandingThemeName,
+      },
     );
   } catch (err) {
     if (!isGraphAccessError(err)) {
@@ -219,6 +228,7 @@ export async function applyContactCiamConfig(options) {
 
   await applyPlan(actions, options.dryRun, {
     tenantId: options.tenantId,
+    repoRoot: options.repoRoot,
     idpManifests: manifest.idps,
     idpCredentials,
     remoteByKey: remote.idps,
