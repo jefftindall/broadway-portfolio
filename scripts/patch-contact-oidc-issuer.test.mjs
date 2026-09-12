@@ -68,3 +68,36 @@ test('patchContactOidcIssuerFile updates customOpenIdConnectProviders.contact', 
     undefined,
   );
 });
+
+test('patchContactOidcIssuerFile updates all contact* custom OIDC providers', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'contact-oidc-'));
+  const configPath = path.join(dir, 'staticwebapp.config.json');
+  fs.writeFileSync(
+    configPath,
+    JSON.stringify(
+      {
+        auth: {
+          identityProviders: {
+            customOpenIdConnectProviders: {
+              contact: { registration: { openIdIssuer: 'https://old.test/v2.0' } },
+              'contact-google': { registration: { openIdIssuer: 'https://old.test/v2.0' } },
+            },
+          },
+        },
+      },
+      null,
+      2,
+    ),
+    'utf8',
+  );
+
+  patchContactOidcIssuerFile(configPath, CANONICAL_ISSUER);
+  const parsed = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  for (const key of ['contact', 'contact-google']) {
+    assert.equal(
+      parsed.auth.identityProviders.customOpenIdConnectProviders[key].registration
+        .openIdConnectConfiguration.wellKnownOpenIdConfiguration,
+      `${CANONICAL_ISSUER}/.well-known/openid-configuration`,
+    );
+  }
+});

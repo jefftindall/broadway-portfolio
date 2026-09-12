@@ -9,8 +9,22 @@ export const STUDIO_IDENTITY_PROVIDER = 'aad';
 /** External ID custom OIDC provider id (staticwebapp.config.json). */
 export const CONTACT_IDENTITY_PROVIDER = 'contact';
 
+/** Per-IdP SWA providers that still map to the contact role. */
+export const CONTACT_SOCIAL_IDENTITY_PROVIDERS = [
+  'contact-google',
+  'contact-apple',
+  'contact-microsoft',
+];
+
 export const STUDIO_SWA_ROLE = 'studio';
 export const CONTACT_SWA_ROLE = 'contact';
+
+function isContactIdentityProvider(provider) {
+  return (
+    provider === CONTACT_IDENTITY_PROVIDER ||
+    CONTACT_SOCIAL_IDENTITY_PROVIDERS.includes(provider)
+  );
+}
 
 /**
  * @param {{ identityProvider?: unknown }} [principal]
@@ -19,7 +33,7 @@ export const CONTACT_SWA_ROLE = 'contact';
 export function assignSwRoles(principal) {
   const provider = String(principal?.identityProvider ?? '').trim().toLowerCase();
   if (provider === STUDIO_IDENTITY_PROVIDER) return [STUDIO_SWA_ROLE];
-  if (provider === CONTACT_IDENTITY_PROVIDER) return [CONTACT_SWA_ROLE];
+  if (isContactIdentityProvider(provider)) return [CONTACT_SWA_ROLE];
   return [];
 }
 
@@ -30,7 +44,7 @@ export function assignSwRoles(principal) {
 export function providerKindForLog(principal) {
   const provider = String(principal?.identityProvider ?? '').trim().toLowerCase();
   if (provider === STUDIO_IDENTITY_PROVIDER) return 'workforce_aad';
-  if (provider === CONTACT_IDENTITY_PROVIDER) return 'external_id_contact';
+  if (isContactIdentityProvider(provider)) return 'external_id_contact';
   if (!provider) return 'unknown';
   return 'other';
 }

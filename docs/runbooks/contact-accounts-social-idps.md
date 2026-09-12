@@ -134,7 +134,7 @@ Use a **new** Google Cloud project (not the Studio Calendar project).
 3. **Credentials** → **Create credentials** → **OAuth client ID**
    - Application type: **Web application**
    - Name: `Elyse CIAM federation`
-   - **Authorized redirect URIs** — add **all** of the following (tenant name = `elysecontacts`, tenant ID = `692675c7-5ecc-44d7-a2e6-f8e49e250e3e`):
+   - **Authorized redirect URIs** — add **all** of the following (tenant name = `elysecontacts`, tenant ID = `692675c7-5ecc-44d7-a2e6-f8e49e250e3e`). SWA OIDC discovery uses the **tenant-ID hostname** (`692675c7-….ciamlogin.com`); missing those URIs causes Google **`redirect_uri_mismatch`** even when the `elysecontacts.ciamlogin.com` paths are present.
 
      ```
      https://login.microsoftonline.com
@@ -144,6 +144,10 @@ Use a **new** Google Cloud project (not the Studio Calendar project).
      https://elysecontacts.ciamlogin.com/elysecontacts.onmicrosoft.com/federation/oidc/accounts.google.com
      https://elysecontacts.ciamlogin.com/692675c7-5ecc-44d7-a2e6-f8e49e250e3e/federation/oauth2
      https://elysecontacts.ciamlogin.com/elysecontacts.onmicrosoft.com/federation/oauth2
+     https://692675c7-5ecc-44d7-a2e6-f8e49e250e3e.ciamlogin.com/692675c7-5ecc-44d7-a2e6-f8e49e250e3e/federation/oauth2
+     https://692675c7-5ecc-44d7-a2e6-f8e49e250e3e.ciamlogin.com/692675c7-5ecc-44d7-a2e6-f8e49e250e3e/federation/oidc/accounts.google.com
+     https://692675c7-5ecc-44d7-a2e6-f8e49e250e3e.ciamlogin.com/elysecontacts.onmicrosoft.com/federation/oauth2
+     https://692675c7-5ecc-44d7-a2e6-f8e49e250e3e.ciamlogin.com/elysecontacts.onmicrosoft.com/federation/oidc/accounts.google.com
      ```
 
    - Do **not** add `test.elysetindall.com` or `elysetindall.com` redirect URIs here — Google redirects to CIAM, not SWA.
@@ -339,6 +343,18 @@ Then:
    node scripts/sync-contact-oidc-issuer.mjs dist   # or let CD patch issuer
   ```
 5. Smoke on **`https://elysetindall.com/login`** and **`https://www.elysetindall.com/login`**.
+
+---
+
+## Troubleshooting
+
+| Symptom | Likely cause | Fix |
+|---------|--------------|-----|
+| Google **`Error 400: redirect_uri_mismatch`** after choosing Google on CIAM | Google OAuth client missing **tenant-ID hostname** redirect URIs | Add the four `https://692675c7-5ecc-44d7-a2e6-f8e49e250e3e.ciamlogin.com/.../federation/...` URIs above (especially `.../692675c7-.../federation/oauth2`). Save, wait ~5 min, retry. |
+| **Continue with Google** still shows CIAM IdP picker first | Old deploy used query `domain_hint` on `/.auth/login/contact` (SWA does not forward dynamic hints) | Redeploy with **`contact-google`** / **`contact-apple`** / **`contact-microsoft`** SWA providers (`loginParameterNames: ["domain_hint=google"]`, etc.). Generic **Book or manage lessons** still uses `contact` and shows the picker. |
+| CIAM page loads but Google/Apple/MSA buttons missing | IdP secrets `REPLACE_ME` or Graph apply not run | Populate `CONTACT-IDP-*` in `kv-elyse-shared`, run `node scripts/apply-contact-ciam-config.mjs --env staging`. |
+
+To confirm the redirect URI Google rejected: open browser devtools → Network on the Google error page → inspect the `redirect_uri` query param on `accounts.google.com/o/oauth2/v2/auth`. It must match an **Authorized redirect URI** exactly.
 
 ---
 

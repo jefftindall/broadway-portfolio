@@ -88,9 +88,13 @@ export function patchContactAuthConfigFile(configPath, { contactAccountsEnabled 
       typeof providers.customOpenIdConnectProviders === 'object'
         ? providers.customOpenIdConnectProviders
         : null;
-    if (custom && 'contact' in custom) {
-      delete custom.contact;
-      removedContactProvider = true;
+    if (custom) {
+      for (const key of Object.keys(custom)) {
+        if (key === 'contact' || key.startsWith('contact-')) {
+          delete custom[key];
+          removedContactProvider = true;
+        }
+      }
       if (Object.keys(custom).length === 0) {
         delete providers.customOpenIdConnectProviders;
       } else {

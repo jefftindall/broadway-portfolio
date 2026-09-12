@@ -3,7 +3,6 @@ import test from 'node:test';
 import {
   buildAuthLoginHref,
   buildContactSocialLoginHref,
-  CONTACT_SOCIAL_IDP_HINTS,
 } from './contactAccounts.ts';
 
 test('buildAuthLoginHref encodes post_login_redirect_uri', () => {
@@ -13,14 +12,25 @@ test('buildAuthLoginHref encodes post_login_redirect_uri', () => {
   );
 });
 
-test('buildAuthLoginHref passes domain_hint for contact social direct sign-in', () => {
+test('buildAuthLoginHref passes domain_hint for generic contact provider only', () => {
   assert.equal(
     buildAuthLoginHref('contact', '/account', { domainHint: 'google' }),
     '/.auth/login/contact?post_login_redirect_uri=%2Faccount&domain_hint=google',
   );
+});
+
+test('buildContactSocialLoginHref uses dedicated SWA providers', () => {
   assert.equal(
-    buildContactSocialLoginHref('apple', '/lessons/book'),
-    `/.auth/login/contact?post_login_redirect_uri=%2Flessons%2Fbook&domain_hint=${CONTACT_SOCIAL_IDP_HINTS.apple}`,
+    buildContactSocialLoginHref('google', '/lessons/book'),
+    '/.auth/login/contact-google?post_login_redirect_uri=%2Flessons%2Fbook',
+  );
+  assert.equal(
+    buildContactSocialLoginHref('apple', '/account'),
+    '/.auth/login/contact-apple?post_login_redirect_uri=%2Faccount',
+  );
+  assert.equal(
+    buildContactSocialLoginHref('microsoft', '/lessons/book'),
+    '/.auth/login/contact-microsoft?post_login_redirect_uri=%2Flessons%2Fbook',
   );
 });
 

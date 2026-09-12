@@ -39,7 +39,7 @@ test.describe('contact accounts smoke', () => {
     await expect(page.getByTestId('login-operator')).toBeVisible();
   });
 
-  test('contact Google login exposes domain_hint and reaches CIAM when enabled', async ({
+  test('contact Google login uses dedicated SWA provider and reaches CIAM when enabled', async ({
     page,
     request,
   }) => {
@@ -47,13 +47,11 @@ test.describe('contact accounts smoke', () => {
     test.skip(!contactAccountsEnabled, 'CONTACT_ACCOUNTS_ENABLED is false');
     await waitForOk(page, '/login');
     const googleHref = await page.getByTestId('login-contact-google').getAttribute('href');
-    expect(googleHref ?? '').toMatch(/domain_hint=google/i);
+    expect(googleHref ?? '').toMatch(/\/\.auth\/login\/contact-google/i);
 
-    // SWA may hop through staticWebAppsAuthNonce before CIAM; domain_hint is not always
-    // forwarded to the upstream authorize URL even with loginParameterNames.
     await expectAuthRedirectToExternalIdp(
       request,
-      '/.auth/login/contact?post_login_redirect_uri=%2Flessons%2Fbook&domain_hint=google',
+      '/.auth/login/contact-google?post_login_redirect_uri=%2Flessons%2Fbook',
       /ciamlogin\.com/i,
     );
   });

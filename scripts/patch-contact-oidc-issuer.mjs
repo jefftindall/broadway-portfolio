@@ -102,24 +102,28 @@ export function patchContactOidcIssuerFile(configPath, issuer) {
     typeof providers.customOpenIdConnectProviders === 'object'
       ? providers.customOpenIdConnectProviders
       : {};
-  const contact =
-    custom.contact && typeof custom.contact === 'object' ? custom.contact : {};
-  const registration =
-    contact.registration && typeof contact.registration === 'object'
-      ? contact.registration
-      : {};
 
-  delete registration.openIdIssuer;
-  delete registration.clientSecretSettingName;
-  registration.clientIdSettingName = 'CONTACT_OIDC_CLIENT_ID';
-  registration.clientCredential = {
-    clientSecretSettingName: 'CONTACT_OIDC_CLIENT_SECRET',
-  };
-  registration.openIdConnectConfiguration = {
-    wellKnownOpenIdConfiguration,
-  };
-  contact.registration = registration;
-  custom.contact = contact;
+  for (const [key, value] of Object.entries(custom)) {
+    if (key !== 'contact' && !key.startsWith('contact-')) continue;
+    const contact = value && typeof value === 'object' ? value : {};
+    const registration =
+      contact.registration && typeof contact.registration === 'object'
+        ? contact.registration
+        : {};
+
+    delete registration.openIdIssuer;
+    delete registration.clientSecretSettingName;
+    registration.clientIdSettingName = 'CONTACT_OIDC_CLIENT_ID';
+    registration.clientCredential = {
+      clientSecretSettingName: 'CONTACT_OIDC_CLIENT_SECRET',
+    };
+    registration.openIdConnectConfiguration = {
+      wellKnownOpenIdConfiguration,
+    };
+    contact.registration = registration;
+    custom[key] = contact;
+  }
+
   providers.customOpenIdConnectProviders = custom;
   auth.identityProviders = providers;
   config.auth = auth;
