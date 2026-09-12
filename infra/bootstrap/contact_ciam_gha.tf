@@ -15,7 +15,7 @@ locals {
     identity_provider_rw = "898868ce-daac-4334-9a4c-57d6860f305b" # IdentityProvider.ReadWrite.All
     organization_rw      = "62a82d76-70ea-41e2-9197-370581704d8e" # Organization.ReadWrite.All
     policy_rw            = "242b12ff-6bd3-4138-b447-eb1afa57df2c" # Policy.ReadWrite.ApplicationConfiguration
-    application_rw       = "1bf51d35-d8a6-4cae-b3a8-752462ef0fe"  # Application.ReadWrite.All
+    application_rw       = "1bfefb4e-e0b5-418b-a88f-73c46d2cc8e9" # Application.ReadWrite.All
   }
 }
 
