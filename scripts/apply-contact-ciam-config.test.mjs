@@ -32,6 +32,7 @@ import {
   resolveManifestPlaceholders,
   stableJson,
 } from './lib/contact-ciam-manifest.mjs';
+import { isGraphAccessError } from './lib/contact-ciam-graph.mjs';
 import { isSecretReady } from './lib/contact-ciam-secrets.mjs';
 
 test('resolveManifestPlaceholders resolves {{ENV_VAR}} tokens', () => {
@@ -296,6 +297,12 @@ test('idp fingerprints detect clientId drift only on public fields', () => {
   const desired = idpDesiredPublicFingerprint(doc, { values: { clientId: 'a', clientSecret: 'secret-1' } });
   const remote = idpPublicFingerprint(doc, { clientId: 'b' });
   assert.notEqual(desired, remote);
+});
+
+test('isGraphAccessError matches CIAM permission failures', () => {
+  assert.equal(isGraphAccessError(new Error('Graph GET /identity/identityProviders failed (AADB2C)')), true);
+  assert.equal(isGraphAccessError(new Error('Graph GET /organization failed (Authorization_RequestDenied)')), true);
+  assert.equal(isGraphAccessError(new Error('Graph GET /me failed (http-404)')), false);
 });
 
 test('isSecretReady rejects REPLACE_ME and empty values', () => {

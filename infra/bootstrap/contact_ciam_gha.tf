@@ -8,6 +8,15 @@ locals {
     local.contact_ciam_tenant_id_effective != "REPLACE_ME" &&
     can(regex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", local.contact_ciam_tenant_id_effective))
   )
+
+  # Microsoft Graph application permissions for apply-contact-ciam-config.mjs (ACCOUNT-P1-010+).
+  ms_graph_app_id = "00000003-0000-0000-c000-000000000000"
+  contact_ciam_graph_app_roles = {
+    identity_provider_rw = "898868ce-daac-4334-9a4c-57d6860f305b" # IdentityProvider.ReadWrite.All
+    organization_rw      = "62a82d76-70ea-41e2-9197-370581704d8e" # Organization.ReadWrite.All
+    policy_rw            = "242b12ff-6bd3-4138-b447-eb1afa57df2c" # Policy.ReadWrite.ApplicationConfiguration
+    application_rw       = "1bfefb4e-e0b5-418b-a88f-73c46d2cc8e9" # Application.ReadWrite.All
+  }
 }
 
 resource "azuread_application" "terraform_ciam" {
@@ -20,6 +29,18 @@ resource "azuread_application" "terraform_ciam" {
 
   api {
     requested_access_token_version = 2
+  }
+
+  required_resource_access {
+    resource_app_id = local.ms_graph_app_id
+
+    dynamic "resource_access" {
+      for_each = local.contact_ciam_graph_app_roles
+      content {
+        id   = resource_access.value
+        type = "Role"
+      }
+    }
   }
 
   lifecycle {
@@ -88,6 +109,22 @@ resource "azuread_directory_role_assignment" "terraform_ciam_app_admin" {
 
   role_id             = azuread_directory_role.contact_ciam_app_admin[0].template_id
   principal_object_id = azuread_service_principal.terraform_ciam[0].object_id
+}
+
+data "azuread_service_principal" "ms_graph_ciam" {
+  count     = local.contact_ciam_ready && var.manage_contact_ciam_gha ? 1 : 0
+  provider  = azuread.contact_ciam
+  client_id = local.ms_graph_app_id
+}
+
+resource "azuread_app_role_assignment" "terraform_ciam_graph" {
+  for_each = local.contact_ciam_ready && var.manage_contact_ciam_gha ? local.contact_ciam_graph_app_roles : {}
+
+  provider = azuread.contact_ciam
+
+  app_role_id         = each.value
+  principal_object_id = azuread_service_principal.terraform_ciam[0].object_id
+  resource_object_id  = data.azuread_service_principal.ms_graph_ciam[0].object_id
 }
 
 resource "azurerm_key_vault_secret" "contact_ciam_tf_client_id" {

@@ -30,8 +30,10 @@ import {
 } from './lib/contact-ciam-diff.mjs';
 import { resolveGraphIdpKey } from './lib/contact-ciam-idp.mjs';
 import {
+  EMPTY_CONTACT_CIAM_REMOTE,
   ensureCiamGraphSession,
   fetchRemoteContactCiamState,
+  isGraphAccessError,
 } from './lib/contact-ciam-graph.mjs';
 import {
   loadContactCiamManifest,
@@ -157,12 +159,25 @@ export async function applyContactCiamConfig(options) {
     tfClientId: options.tfClientId,
   });
 
-  const remote = await fetchRemoteContactCiamState(
-    options.tenantId,
-    options.applicationClientId,
-    idpGraphKeys,
-    { skipUserFlow: !flowManifestNeedsRemoteLookup(manifest.flow) },
-  );
+  let remote = EMPTY_CONTACT_CIAM_REMOTE;
+  let graphReadFailed = false;
+  try {
+    remote = await fetchRemoteContactCiamState(
+      options.tenantId,
+      options.applicationClientId,
+      idpGraphKeys,
+      { skipUserFlow: !flowManifestNeedsRemoteLookup(manifest.flow) },
+    );
+  } catch (err) {
+    if (!isGraphAccessError(err)) {
+      throw err;
+    }
+    graphReadFailed = true;
+    process.stdout.write(
+      'CIAM Graph read failed (CONTACT-CIAM-TF app may lack Graph application permissions — run bootstrap Step 2).\n',
+    );
+  }
+
   const actions = [
     ...planUserFlowSync(manifest.flow, remote.flow, options.applicationClientId),
     ...planIdentityProviderSync(manifest.idps, remote.idps, idpCredentials, remote.idpDetails),
@@ -177,6 +192,13 @@ export async function applyContactCiamConfig(options) {
   if (interesting.length === 0 || !planHasPendingChanges(actions)) {
     process.stdout.write('CIAM config in sync (no pending changes).\n');
     return { changed: false, actions };
+  }
+
+  if (graphReadFailed) {
+    process.stdout.write(
+      'CIAM Graph apply deferred until bootstrap grants Graph application permissions on CONTACT-CIAM-TF.\n',
+    );
+    return { changed: false, actions, deferred: true };
   }
 
   if (options.dryRun) {
