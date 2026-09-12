@@ -1,7 +1,7 @@
 # Runbook: Contact accounts — CIAM Terraform automation
 
 **Audience:** Operators  
-**Last updated:** 2026-08-29  
+**Last updated:** 2026-08-31  
 **Plan:** `ACCOUNT-P1-001` · **Related:** [contact-accounts-auth.md](./contact-accounts-auth.md) · [contact-accounts-social-idps.md](./contact-accounts-social-idps.md)
 
 Terraform automates the **shared CIAM tenant**, **per-environment OIDC app registrations**, **Key Vault secrets**, **SWA app settings**, and **deploy-time issuer patching**. Social IdP buttons (Google / Apple / Microsoft personal) remain a **manual** Entra External ID step.
@@ -13,7 +13,7 @@ Terraform automates the **shared CIAM tenant**, **per-environment OIDC app regis
 | Layer | Stack | Resources |
 |-------|-------|-----------|
 | CIAM tenant (once) | `infra/bootstrap` | `azapi_resource.contact_ciam` → `kv-elyse-shared` secrets `CONTACT-CIAM-TENANT-ID`, `CONTACT-CIAM-DOMAIN-PREFIX`, `CONTACT-CIAM-OIDC-ISSUER` |
-| OIDC app per env | `infra/environments/staging` · `prod` | `azuread_application.contact_swa` in CIAM tenant; env vault `CONTACT-OIDC-CLIENT-ID`, `CONTACT-OIDC-CLIENT-SECRET` |
+| OIDC app per env | `infra/environments/staging` · `prod` | `azuread_application.contact_swa` + `azuread_service_principal.contact_swa` in CIAM tenant; env vault `CONTACT-OIDC-CLIENT-ID`, `CONTACT-OIDC-CLIENT-SECRET` |
 | Feature flag | env stacks | `contact_accounts_enabled` → SWA `CONTACT_ACCOUNTS_ENABLED` |
 | SWA auth settings | env stacks | `CONTACT_OIDC_CLIENT_ID`, `CONTACT_OIDC_CLIENT_SECRET` (Key Vault reference) |
 | Deploy artifact | CD | `scripts/sync-contact-oidc-issuer.mjs` patches `dist/staticwebapp.config.json` issuer from shared vault |
@@ -104,7 +104,7 @@ terraform plan -input=false -out=tfplan
 terraform apply tfplan
 ```
 
-When `CONTACT-CIAM-TENANT-ID` is a real GUID, Terraform creates **`elyse-portfolio-contact-staging`**, redirect URIs for `/.auth/login/contact/callback`, and env vault OIDC secrets.
+When `CONTACT-CIAM-TENANT-ID` is a real GUID, Terraform creates **`elyse-portfolio-contact-staging`**, its **enterprise application** (service principal — required for CIAM user-flow association), redirect URIs for `/.auth/login/contact/callback`, and env vault OIDC secrets.
 
 ```bash
 terraform output contact_oidc_client_id
@@ -118,7 +118,18 @@ Optional local config sync:
 node scripts/sync-contact-oidc-issuer.mjs repo
 ```
 
-Repeat for **`infra/environments/prod`** when ready.
+Repeat for **`infra/environments/prod`** when ready (creates `elyse-portfolio-contact-prod` app registration + enterprise app).
+
+### One-time import (staging SP created before Terraform)
+
+If the staging enterprise app was created manually (`az ad sp create`) before `azuread_service_principal.contact_swa` landed, import it once (object ID from **Enterprise applications** in the CIAM tenant):
+
+```bash
+cd infra/environments/staging
+terraform import 'module.portfolio.azuread_service_principal.contact_swa[0]' '/servicePrincipals/<service-principal-object-id>'
+```
+
+Prod needs no import when the SP is created by the first apply after this change.
 
 ---
 
@@ -157,5 +168,6 @@ Follow **[contact-accounts-social-idps.md](./contact-accounts-social-idps.md)**.
 | Authorization error on apply | Application Administrator in **CIAM** tenant |
 | SWA OIDC failure | Issuer patch + `CONTACT_OIDC_*` SWA settings |
 | Redirect URI mismatch | Re-apply env after custom domain bound |
+| App reg exists but missing from user flow **Add application** | Env apply must create `azuread_service_principal.contact_swa` (enterprise app). Re-apply staging/prod; for a pre-existing manual SP on staging, import per [contact-accounts-ciam-terraform.md](./contact-accounts-ciam-terraform.md) |
 
 See [rotate-secrets.md](./rotate-secrets.md) § Contact accounts for secret names.
