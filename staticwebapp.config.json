@@ -24,54 +24,6 @@
             "nameClaimType": "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
             "scopes": ["openid", "profile", "email"]
           }
-        },
-        "contact-google": {
-          "registration": {
-            "clientIdSettingName": "CONTACT_OIDC_CLIENT_ID",
-            "clientCredential": {
-              "clientSecretSettingName": "CONTACT_OIDC_CLIENT_SECRET"
-            },
-            "openIdConnectConfiguration": {
-              "wellKnownOpenIdConfiguration": "https://REPLACE_ME.ciamlogin.com/00000000-0000-0000-0000-000000000000/v2.0/.well-known/openid-configuration"
-            }
-          },
-          "login": {
-            "nameClaimType": "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
-            "scopes": ["openid", "profile", "email"],
-            "loginParameterNames": ["domain_hint=google"]
-          }
-        },
-        "contact-apple": {
-          "registration": {
-            "clientIdSettingName": "CONTACT_OIDC_CLIENT_ID",
-            "clientCredential": {
-              "clientSecretSettingName": "CONTACT_OIDC_CLIENT_SECRET"
-            },
-            "openIdConnectConfiguration": {
-              "wellKnownOpenIdConfiguration": "https://REPLACE_ME.ciamlogin.com/00000000-0000-0000-0000-000000000000/v2.0/.well-known/openid-configuration"
-            }
-          },
-          "login": {
-            "nameClaimType": "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
-            "scopes": ["openid", "profile", "email"],
-            "loginParameterNames": ["domain_hint=apple"]
-          }
-        },
-        "contact-microsoft": {
-          "registration": {
-            "clientIdSettingName": "CONTACT_OIDC_CLIENT_ID",
-            "clientCredential": {
-              "clientSecretSettingName": "CONTACT_OIDC_CLIENT_SECRET"
-            },
-            "openIdConnectConfiguration": {
-              "wellKnownOpenIdConfiguration": "https://REPLACE_ME.ciamlogin.com/00000000-0000-0000-0000-000000000000/v2.0/.well-known/openid-configuration"
-            }
-          },
-          "login": {
-            "nameClaimType": "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
-            "scopes": ["openid", "profile", "email"],
-            "loginParameterNames": ["domain_hint=live.com"]
-          }
         }
       }
     }

@@ -89,11 +89,9 @@ export function patchContactAuthConfigFile(configPath, { contactAccountsEnabled 
         ? providers.customOpenIdConnectProviders
         : null;
     if (custom) {
-      for (const key of Object.keys(custom)) {
-        if (key === 'contact' || key.startsWith('contact-')) {
-          delete custom[key];
-          removedContactProvider = true;
-        }
+      if ('contact' in custom) {
+        delete custom.contact;
+        removedContactProvider = true;
       }
       if (Object.keys(custom).length === 0) {
         delete providers.customOpenIdConnectProviders;

@@ -280,7 +280,7 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 | `ACCOUNT-P1-010` | IdP federation from KV (Google / Apple / MSA) | `done` | `P1-007` | `infra/contact-ciam/idps/` |
 | `ACCOUNT-P1-011` | CIAM branding theme (site colors) | `done` | `P1-007` | `infra/contact-ciam/branding/` |
 | `ACCOUNT-P1-012` | Custom URL domain `login.elysetindall.com` | `wont_fix` | — (Front Door ~$35/mo; cost-prohibitive) | — |
-| `ACCOUNT-P1-013` | `/login` direct provider buttons | `done` | `P1-008` | `src/pages/login.astro`; `contactAccounts.ts` |
+| `ACCOUNT-P1-013` | `/login` provider shortcut buttons (CIAM picker) | `done` (runbook) | `P1-008` | `src/pages/login.astro`; `contactAccounts.ts` |
 | `ACCOUNT-P1-014` | Promotion runbook + smoke/journey updates | `planned` | `P1-008`–`P1-013` | runbooks; smoke tests |
 
 <details>
@@ -332,7 +332,7 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 
 - [x] Public `/login` (indexable? **no** — `noIndex`; not in sitemap). Copy: two paths, voice-lessons tone, no Studio jargon on the student button
 - [x] SWA 401 override → `/login` (honor `post_login_redirect_uri` / query so Studio deep links still return to `/studio/...`)
-- [x] Student button uses External ID with optional **`domain_hint`** direct social buttons (`ACCOUNT-P1-013`). Operator button uses AAD
+- [x] Student button uses External ID (`contact`). Operator button uses AAD
 - [ ] iPhone Safari: complete Google, Apple, and Microsoft round-trips on staging — operator after CIAM + IdP setup
 
 </details>

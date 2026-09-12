@@ -104,7 +104,7 @@ export function patchContactOidcIssuerFile(configPath, issuer) {
       : {};
 
   for (const [key, value] of Object.entries(custom)) {
-    if (key !== 'contact' && !key.startsWith('contact-')) continue;
+    if (key !== 'contact') continue;
     const contact = value && typeof value === 'object' ? value : {};
     const registration =
       contact.registration && typeof contact.registration === 'object'

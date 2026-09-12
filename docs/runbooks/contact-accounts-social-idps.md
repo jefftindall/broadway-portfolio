@@ -351,7 +351,8 @@ Then:
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
 | Google **`Error 400: redirect_uri_mismatch`** after choosing Google on CIAM | Google OAuth client missing **tenant-ID hostname** redirect URIs | Add the four `https://692675c7-5ecc-44d7-a2e6-f8e49e250e3e.ciamlogin.com/.../federation/...` URIs above (especially `.../692675c7-.../federation/oauth2`). Save, wait ~5 min, retry. |
-| **Continue with Google** still shows CIAM IdP picker first | Old deploy used query `domain_hint` on `/.auth/login/contact` (SWA does not forward dynamic hints) | Redeploy with **`contact-google`** / **`contact-apple`** / **`contact-microsoft`** SWA providers (`loginParameterNames: ["domain_hint=google"]`, etc.). Generic **Book or manage lessons** still uses `contact` and shows the picker. |
+| **Continue with Google** shows `AADSTS90023` (`'google' '' pair is not an external identity provider`) | PR #136 used `loginParameterNames: ["domain_hint=google"]` on dedicated SWA providers | **Do not** send `domain_hint` for CIAM social IdPs on desktop web — [known External ID limitation](https://learn.microsoft.com/en-us/answers/questions/5916011/). All `/login` student paths use generic `contact`; user picks Google/Apple/MSA on the CIAM page. |
+| **Continue with Google** still shows CIAM IdP picker first | Expected on desktop web until Microsoft fixes `domain_hint` issuer acceleration | Use generic `/.auth/login/contact` (no `domain_hint`). One extra click on the CIAM page is required. |
 | CIAM page loads but Google/Apple/MSA buttons missing | IdP secrets `REPLACE_ME` or Graph apply not run | Populate `CONTACT-IDP-*` in `kv-elyse-shared`, run `node scripts/apply-contact-ciam-config.mjs --env staging`. |
 
 To confirm the redirect URI Google rejected: open browser devtools → Network on the Google error page → inspect the `redirect_uri` query param on `accounts.google.com/o/oauth2/v2/auth`. It must match an **Authorized redirect URI** exactly.
