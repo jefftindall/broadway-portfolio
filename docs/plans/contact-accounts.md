@@ -75,7 +75,7 @@ Operator ──Microsoft work/school────────►  Workforce Entra
 |--------------|--------|----------------|
 | Phase 0 — Plan + Action IDs + SoT | `done` | — |
 | Phase 1 — Student identity (External ID + SWA roles) | `done` | SWA OIDC + roles + flag shipped; CIAM user flows / IdPs / branding still portal or partial — see Phase 1b |
-| Phase 1b — CIAM user flows as code (per env) | `in_progress` | `ACCOUNT-P1-007` done; next `P1-008` per-env flow bodies + `P1-010` IdPs |
+| Phase 1b — CIAM user flows as code (per env) | `in_progress` | `ACCOUNT-P1-007` / `P1-010` / `P1-011` done; next `P1-008` per-env flow bodies |
 | Phase 2 — Link login → People + `/account` | `planned` | After P1 |
 | Phase 3 — Flag + login-gated schedule/book | `planned` | Inquiry stays anonymous; `STUDIO-P5-001` uses this bind |
 | Phase 4 — Lesson history + parent booking | `planned` | History is part of `/account`; required before prod flag-on |
@@ -277,8 +277,8 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 | `ACCOUNT-P1-007` | Graph apply script + env Terraform hook | `done` | `ACCOUNT-P1-001` | `scripts/apply-contact-ciam-config.mjs`; `infra/contact-ciam/` |
 | `ACCOUNT-P1-008` | Per-env user flows (`contact-signin-staging` / `-prod`) | `planned` | `P1-007` | `infra/contact-ciam/flows/` |
 | `ACCOUNT-P1-009` | Minimal attribute collection (social-only friction) | `planned` | `P1-008` | flow JSON |
-| `ACCOUNT-P1-010` | IdP federation from KV (Google / Apple / MSA) | `planned` | `P1-007` | `infra/contact-ciam/idps/` |
-| `ACCOUNT-P1-011` | CIAM branding theme (site colors) | `planned` | `P1-007` | `infra/contact-ciam/branding/` |
+| `ACCOUNT-P1-010` | IdP federation from KV (Google / Apple / MSA) | `done` | `P1-007` | `infra/contact-ciam/idps/` |
+| `ACCOUNT-P1-011` | CIAM branding theme (site colors) | `done` | `P1-007` | `infra/contact-ciam/branding/` |
 | `ACCOUNT-P1-012` | Custom URL domain `login.elysetindall.com` | `planned` | `P1-011` | Front Door + DNS; CD issuer |
 | `ACCOUNT-P1-013` | `/login` direct provider buttons | `planned` | `P1-008` | `src/pages/login.astro` |
 | `ACCOUNT-P1-014` | Promotion runbook + smoke/journey updates | `planned` | `P1-008`–`P1-013` | runbooks; smoke tests |
@@ -342,7 +342,7 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 
 **Acceptance criteria**
 
-- [ ] External ID **per-env** user flow enables **Google**, **Apple**, and **Microsoft personal** on the flow — **`ACCOUNT-P1-008`** / **`P1-009`** flow `spec` ([`contact-ciam-automation.md`](./contact-ciam-automation.md)); IdP **credentials** sync in **`ACCOUNT-P1-010`**
+- [ ] External ID **per-env** user flow enables **Google**, **Apple**, and **Microsoft personal** on the flow — **`ACCOUNT-P1-008`** / **`P1-009`** flow `spec` ([`contact-ciam-automation.md`](./contact-ciam-automation.md)); IdP **credentials** sync **`ACCOUNT-P1-010`** (`done` — operator validates staging round-trips)
 - [ ] Google OAuth client is **not** the Calendar organizer/Elyse client. Redirects include External ID federation URIs ([Google federation](https://learn.microsoft.com/en-us/entra/external-id/customers/how-to-google-federation-customers))
 - [ ] Apple: Services ID + Sign in with Apple; Hide My Email must not 500 the callback
 - [x] No local email+password on v1 (social only). Email OTP is out of scope unless social is blocked

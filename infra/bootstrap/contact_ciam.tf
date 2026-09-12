@@ -1,7 +1,7 @@
 # Shared Entra External ID (CIAM) tenant for student/parent sign-in (ACCOUNT-P1-001).
 # Env stacks create per-environment OIDC app registrations in this tenant.
-# Social IdP federation (Google / Apple / MSA) stays manual — see
-# docs/runbooks/contact-accounts-social-idps.md.
+# Social IdP federation (Google / Apple / MSA) is automated via apply-contact-ciam-config.mjs
+# (ACCOUNT-P1-010) reading CONTACT-IDP-* from this vault — see contact-accounts-social-idps.md.
 
 locals {
   contact_ciam_tenant_id_effective = var.manage_contact_ciam_tenant ? (

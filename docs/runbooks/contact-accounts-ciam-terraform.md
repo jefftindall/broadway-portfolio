@@ -21,7 +21,7 @@ Terraform automates the **shared CIAM tenant**, **per-environment OIDC app regis
 
 Committed `staticwebapp.config.json` files keep a **REPLACE_ME** issuer placeholder until bootstrap runs; CD injects the live issuer before SWA upload.
 
-Graph apply reads version-controlled manifests under [`infra/contact-ciam/`](../contact-ciam/README.md). Per-environment **user flows** (`flows/staging.json`, `flows/prod.json`) ship in `ACCOUNT-P1-008`; IdP federation and branding follow in `P1-010` / `P1-011`.
+Graph apply reads version-controlled manifests under [`infra/contact-ciam/`](../contact-ciam/README.md). Per-environment **user flows** (`flows/staging.json`, `flows/prod.json`) ship in `ACCOUNT-P1-008`; IdP federation (`P1-010`) and branding theme (`P1-011`) are implemented — populate `CONTACT-IDP-*` in `kv-elyse-shared` before apply creates/updates IdPs.
 
 ---
 
@@ -164,7 +164,7 @@ CONTACT_CIAM_SKIP_APPLY=true node scripts/apply-contact-ciam-config.mjs --env st
 
 **GitHub Actions** — the hook mints a CIAM federated session when `CONTACT_CIAM_TF_CLIENT_ID` and GitHub OIDC env vars are present (same app as `azuread.contact_ciam`). If Graph permissions are not yet consented, set `-var='contact_ciam_skip_apply=true'` until [`contact-ciam-automation.md`](../plans/contact-ciam-automation.md) `P1-010` admin-consent step is done.
 
-Create/update bodies for flows, IdPs, and branding land in **`ACCOUNT-P1-008`** / **`P1-010`** / **`P1-011`** when manifest `spec` blocks are added. Until then the script reports `SKIP` / `noop` and exits successfully.
+Create/update bodies for **user flows** land in **`ACCOUNT-P1-008`** when flow manifest `spec` blocks are added. **IdPs** (`P1-010`) and **branding** (`P1-011`) apply when KV secrets / theme spec are ready; Google/Apple skip gracefully while `CONTACT-IDP-*` values are `REPLACE_ME`.
 
 ---
 
@@ -188,9 +188,10 @@ Reads **`CONTACT-CIAM-OIDC-ISSUER`** from `kv-elyse-shared`.
 
 | Piece | Today | Target (`ACCOUNT-*`) |
 |-------|-------|----------------------|
-| IdP credentials in Entra | Portal paste or already configured | `ACCOUNT-P1-010` reads `CONTACT-IDP-*` from `kv-elyse-shared` |
+| IdP credentials in Entra | Graph apply from `CONTACT-IDP-*` in `kv-elyse-shared` | `ACCOUNT-P1-010` |
+| Login theme | Graph organizational branding from `infra/contact-ciam/branding/theme.json` | `ACCOUNT-P1-011` |
 | User flow per environment | Portal (interim) or none | `ACCOUNT-P1-008`: `contact-signin-staging` / `contact-signin-prod` via [`infra/contact-ciam/flows/`](../../infra/contact-ciam/flows/) |
-| Apply on env Terraform | Step 3b (`apply-contact-ciam-config.mjs`) | Idempotent; skips until manifest `spec` blocks land |
+| Apply on env Terraform | Step 3b (`apply-contact-ciam-config.mjs`) | Idempotent; user flows skip until P1-008 `spec` |
 
 If you already linked both SWA apps to **one** portal user flow, that works until P1-008 splits flows — see the runbook migration note.
 

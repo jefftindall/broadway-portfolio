@@ -1,10 +1,10 @@
-# Runbook: Contact accounts — social identity providers (manual)
+# Runbook: Contact accounts — social identity providers
 
 **Audience:** Operators  
 **Last updated:** 2026-09-12  
-**Plan:** `ACCOUNT-P1-004` · Phase 1b: [`contact-ciam-automation.md`](../plans/contact-ciam-automation.md) · **Prerequisite:** [contact-accounts-ciam-terraform.md](./contact-accounts-ciam-terraform.md)
+**Plan:** `ACCOUNT-P1-004` · Phase 1b: [`contact-ciam-automation.md`](../plans/contact-ciam-automation.md) (`ACCOUNT-P1-010`) · **Prerequisite:** [contact-accounts-ciam-terraform.md](./contact-accounts-ciam-terraform.md)
 
-Configure **Google**, **Apple**, and **Microsoft personal** in the **CIAM tenant**. Do not use Studio Calendar OAuth clients or SWA-native social providers.
+Configure **Google**, **Apple**, and **Microsoft personal** for the **CIAM tenant**. Vendor consoles create credentials; **`apply-contact-ciam-config.mjs`** syncs them from `kv-elyse-shared` to Entra. Do not use Studio Calendar OAuth clients or SWA-native social providers.
 
 ---
 
@@ -147,13 +147,25 @@ Use a **new** Google Cloud project (not the Studio Calendar project).
      ```
 
    - Do **not** add `test.elysetindall.com` or `elysetindall.com` redirect URIs here — Google redirects to CIAM, not SWA.
-4. Copy the **Client ID** and **Client secret**.
+4. Copy the **Client ID** and **Client secret** → set in **`kv-elyse-shared`**:
 
-### 2. CIAM tenant (Entra)
+   ```bash
+   az keyvault secret set --vault-name kv-elyse-shared --name CONTACT-IDP-GOOGLE-CLIENT-ID --value '<client-id>'
+   az keyvault secret set --vault-name kv-elyse-shared --name CONTACT-IDP-GOOGLE-CLIENT-SECRET --value '<client-secret>'
+   ```
 
-1. Open [CIAM tenant → External Identities → Identity providers](https://entra.microsoft.com/#view/Microsoft_AAD_IAM/ManagedAppMenuBlade/~/Overview&tenant=692675c7-5ecc-44d7-a2e6-f8e49e250e3e) and confirm directory **Elyse Tindall Contact Accounts**.
-2. **Identity** → **External Identities** → **All identity providers** → **Google**.
-3. Paste Google **Client ID** and **Client secret** → **Save**.
+### 2. Sync to CIAM (Graph apply — not portal paste)
+
+After KV secrets are set, run the apply script (or env `terraform apply` when `manage_contact_ciam_config=true`):
+
+```bash
+az login --tenant 692675c7-5ecc-44d7-a2e6-f8e49e250e3e --allow-no-subscriptions
+export CONTACT_CIAM_TENANT_ID="$(az keyvault secret show --vault-name kv-elyse-shared --name CONTACT-CIAM-TENANT-ID --query value -o tsv)"
+node scripts/apply-contact-ciam-config.mjs --dry-run --env staging
+node scripts/apply-contact-ciam-config.mjs --env staging
+```
+
+Dry-run lists `CREATE` / `UPDATE identityProvider Google` only — never prints secrets. To force a credential-only refresh when public fields match, set `"resyncCredentials": true` temporarily in [`infra/contact-ciam/idps/google.json`](../../infra/contact-ciam/idps/google.json).
 
 Docs: [Google federation for customers](https://learn.microsoft.com/en-us/entra/external-id/customers/how-to-google-federation-customers)
 
@@ -192,16 +204,18 @@ Requires [Apple Developer Program](https://developer.apple.com/programs/) (~$99/
      - Do **not** use only `https://elysecontacts.ciamlogin.com/692675c7-5ecc-44d7-a2e6-f8e49e250e3e/federation/oauth2` — that skips the required `*.ciamlogin.com` domains and the tenant-**name** path URLs above.
 3. **Keys** → create key with **Sign In with Apple** → download `.p8` once.
    - Note **Key ID** and **Team ID** (Membership page).
+4. Store in **`kv-elyse-shared`** (Services ID, Team ID, Key ID, `.p8` body):
 
-### 2. CIAM tenant (Entra)
+   ```bash
+   az keyvault secret set --vault-name kv-elyse-shared --name CONTACT-IDP-APPLE-SERVICES-ID --value '<services-id>'
+   az keyvault secret set --vault-name kv-elyse-shared --name CONTACT-IDP-APPLE-TEAM-ID --value '<team-id>'
+   az keyvault secret set --vault-name kv-elyse-shared --name CONTACT-IDP-APPLE-KEY-ID --value '<key-id>'
+   az keyvault secret set --vault-name kv-elyse-shared --name CONTACT-IDP-APPLE-PRIVATE-KEY --file AuthKey_XXXXX.p8
+   ```
 
-1. CIAM tenant → **External Identities** → **All identity providers** → **Apple**.
-2. Enter:
-  - **Services ID** (e.g. `com.elysetindall.contact.web`)
-  - **Apple Team ID**
-  - **Key ID**
-  - Upload **`.p8` private key**
-3. **Save**.
+### 2. Sync to CIAM (Graph apply)
+
+Same as Google — `node scripts/apply-contact-ciam-config.mjs --env staging` after KV is populated. Portal **Apple** paste is superseded by automation (`ACCOUNT-P1-010`).
 
 Test **Hide My Email** once on **staging** (`https://test.elysetindall.com/login`) — callback must not 500.
 
@@ -211,15 +225,32 @@ Test **Hide My Email** once on **staging** (`https://test.elysetindall.com/login
 
 Configured only in the **CIAM** tenant (`692675c7-5ecc-44d7-a2e6-f8e49e250e3e`).
 
-1. CIAM tenant → **External Identities** → **All identity providers**.
-2. Enable **Microsoft Account** (personal `@outlook.com` / `@hotmail.com` / `@live.com`) — **not** “Microsoft Entra ID” for your workforce tenant.
-3. No separate Google-style client is required when using the built-in Microsoft Account provider.
+Automation treats MSA as the **built-in Microsoft Account** provider (`Microsoft-OAuth` in [`microsoft-personal.json`](../../infra/contact-ciam/idps/microsoft-personal.json)). No separate Google-style client is required.
 
-If you ever wire MSA via custom OIDC instead, issuer:
+1. CIAM tenant → **External Identities** → **All identity providers**.
+2. Confirm **Microsoft Account** (personal `@outlook.com` / `@hotmail.com` / `@live.com`) is enabled — **not** “Microsoft Entra ID” for your workforce tenant.
+3. If the built-in provider is missing, enable it once in the portal; subsequent applies noop.
+
+Optional custom OIDC (consumers issuer) is supported via `spec.type: "oidc"` and `CONTACT-IDP-MSA-*` KV secrets — not used by default.
+
+Issuer if using custom OIDC:
 
 ```
 https://login.microsoftonline.com/consumers/v2.0
 ```
+
+---
+
+## CIAM login theme (tenant-level)
+
+Branding is automated separately from IdPs ([`ACCOUNT-P1-011`](../plans/contact-ciam-automation.md)). Desired state: [`infra/contact-ciam/branding/theme.json`](../../infra/contact-ciam/branding/theme.json) (ink background `#0e0d0c`, Elyse sign-in copy, logo from `elysetindall.com`).
+
+```bash
+node scripts/apply-contact-ciam-config.mjs --dry-run --env staging
+node scripts/apply-contact-ciam-config.mjs --env staging
+```
+
+Set `"resyncLogo": true` in `theme.json` temporarily to re-upload the banner logo when text/colors already match.
 
 ---
 
@@ -311,7 +342,7 @@ Then:
 
 - [contact-accounts-ciam-terraform.md](./contact-accounts-ciam-terraform.md)
 - [contact-accounts-auth.md](./contact-accounts-auth.md)
-- [contact-ciam-automation.md](../plans/contact-ciam-automation.md) (`ACCOUNT-P1-008`–`P1-010`)
+- [contact-ciam-automation.md](../plans/contact-ciam-automation.md) (`ACCOUNT-P1-008`–`P1-011`)
 - [infra/contact-ciam/README.md](../../infra/contact-ciam/README.md)
 - [rotate-secrets.md](./rotate-secrets.md) § Contact accounts
 

@@ -13,4 +13,4 @@ Version-controlled desired state for Entra External ID **user flows**, **identit
 
 **Promotion:** change staging → apply staging → validate on `test.elysetindall.com` → reconcile prod JSON → apply prod. See [`contact-ciam-automation.md`](../../docs/plans/contact-ciam-automation.md).
 
-**Secrets:** IdP credentials live in `kv-elyse-shared` (names only in git). The apply script reads secret **names** from idp manifests in `ACCOUNT-P1-010`; values never appear in this tree.
+**Secrets:** IdP credentials live in `kv-elyse-shared` (names only in git). The apply script reads secret **names** from idp manifests (`ACCOUNT-P1-010`); values never appear in this tree. Set `"resyncCredentials": true` in an idp manifest to force a credential-only PATCH when public fields match.

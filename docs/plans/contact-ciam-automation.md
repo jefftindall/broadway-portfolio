@@ -2,7 +2,7 @@
 
 **Artifact ID:** `ELYSE-ACCOUNT-CIAM-001`  
 **Version:** 1.0  
-**Last updated:** 2026-09-12  
+**Last updated:** 2026-09-12 (P1-010 IdPs + P1-011 theme)  
 **Audience:** Agents, implementers, operators  
 **Parent plan:** [`contact-accounts.md`](./contact-accounts.md) (`ACCOUNT-P1-007`–`P1-014`)  
 **Scope:** Replace portal click-ops for Entra External ID (CIAM) **user flows**, **social IdP federation**, and **login branding** with version-controlled automation. **One user flow per environment** so staging can be exercised before prod promotion. Reduce first-time sign-in friction (social-only, minimal attribute collection). Optional: branded CIAM login on an **`elysetindall.com` subdomain** with site colors.
@@ -144,8 +144,8 @@ Script reads env: `CONTACT_CIAM_ENV=staging|prod`, `CONTACT_CIAM_TENANT_ID`, flo
 | `ACCOUNT-P1-007` | Graph apply script + env Terraform hook | `done` | `ACCOUNT-P1-001` | `scripts/apply-contact-ciam-config.mjs`; `infra/contact-ciam/`; `contact_ciam_config.tf` |
 | `ACCOUNT-P1-008` | Per-env user flows (staging + prod JSON) | `planned` | `P1-007` | `infra/contact-ciam/flows/` |
 | `ACCOUNT-P1-009` | Minimal attribute collection (social-only) | `planned` | `P1-008` | flow JSON `onAttributeCollection` |
-| `ACCOUNT-P1-010` | IdP federation from KV (Google / Apple / MSA) | `planned` | `P1-007` | `infra/contact-ciam/idps/`; KV secrets |
-| `ACCOUNT-P1-011` | CIAM company branding theme (site colors) | `planned` | `P1-007` | `infra/contact-ciam/branding/` |
+| `ACCOUNT-P1-010` | IdP federation from KV (Google / Apple / MSA) | `done` | `P1-007` | `infra/contact-ciam/idps/`; KV secrets |
+| `ACCOUNT-P1-011` | CIAM company branding theme (site colors) | `done` | `P1-007` | `infra/contact-ciam/branding/` |
 | `ACCOUNT-P1-012` | Custom URL domain `login.elysetindall.com` | `planned` | `P1-011`; DNS + Front Door | bootstrap or env TF; CD issuer patch |
 | `ACCOUNT-P1-013` | `/login` direct provider buttons (`domain_hint`) | `planned` | `P1-008` | `src/pages/login.astro`; `contactAccounts.ts` |
 | `ACCOUNT-P1-014` | Promotion runbook + smoke/journey updates | `planned` | `P1-008`–`P1-013` | runbooks; `tests/smoke/contact-accounts.spec.ts` |
@@ -195,12 +195,12 @@ Script reads env: `CONTACT_CIAM_ENV=staging|prod`, `CONTACT_CIAM_TENANT_ID`, flo
 
 **Acceptance criteria**
 
-- [ ] Graph creates/updates tenant IdPs from KV-backed credentials
-- [ ] Google redirect URIs match CIAM federation endpoints (tenant ID + `elysecontacts.onmicrosoft.com` paths)
-- [ ] Apple domains: `*.ciamlogin.com`; return URLs use tenant **name** `elysecontacts`
-- [ ] MSA uses consumers endpoint — not workforce tenant
-- [ ] [`contact-accounts-social-idps.md`](../runbooks/contact-accounts-social-idps.md) trimmed to **one-time vendor console** steps (consent screen, Services ID, key upload to KV); flow/IdP enablement points at script
-- [ ] Closes open `ACCOUNT-P1-004` ACs when staging round-trips pass
+- [x] Graph creates/updates tenant IdPs from KV-backed credentials (`scripts/lib/contact-ciam-apply.mjs`, `CONTACT-IDP-*` in `kv-elyse-shared`)
+- [x] Google redirect URIs match CIAM federation endpoints (tenant ID + `elysecontacts.onmicrosoft.com` paths) — vendor console + runbook
+- [x] Apple domains: `*.ciamlogin.com`; return URLs use tenant **name** `elysecontacts` — vendor console + runbook
+- [x] MSA uses built-in Microsoft Account provider (`spec.type: builtin`) — not workforce tenant
+- [x] [`contact-accounts-social-idps.md`](../runbooks/contact-accounts-social-idps.md) trimmed to **one-time vendor console** steps; Entra IdP enablement via apply script
+- [ ] Closes open `ACCOUNT-P1-004` ACs when staging round-trips pass (operator: populate KV secrets, apply, test on `test.elysetindall.com`)
 
 </details>
 
@@ -209,10 +209,10 @@ Script reads env: `CONTACT_CIAM_ENV=staging|prod`, `CONTACT_CIAM_TENANT_ID`, flo
 
 **Acceptance criteria**
 
-- [ ] Theme uses ink / gold / gel / spotlight palette and site logo (HTTPS URL on `elysetindall.com` or SWA-hosted asset)
-- [ ] Sign-in page title/copy matches voice-lessons tone (no “Azure AD” jargon)
-- [ ] Staging visually recognizable as Elyse Tindall on iPhone Safari
-- [ ] Theme JSON in repo; apply script syncs to Graph
+- [x] Theme uses ink / gold / gel / spotlight palette and site logo (`infra/contact-ciam/branding/theme.json`; ink `#0e0d0c`, logo `https://elysetindall.com/images/photos/brand-mark.png`)
+- [x] Sign-in page copy matches voice-lessons tone (no “Azure AD” jargon)
+- [ ] Staging visually recognizable as Elyse Tindall on iPhone Safari (operator after apply)
+- [x] Theme JSON in repo; apply script syncs to Graph (`patchBrandingLocalization` + optional banner logo upload)
 
 </details>
 
@@ -269,7 +269,7 @@ PR #129 merge (enterprise SP in TF)
 ACCOUNT-P2-* may proceed in parallel once staging sign-in returns tokens
 ```
 
-**Suggested next PR:** `ACCOUNT-P1-008` (per-env user flow `spec` + Graph create/update).
+**Suggested next PR:** `ACCOUNT-P1-008` (per-env user flow `spec` + Graph create/update). IdPs (`P1-010`) and branding theme (`P1-011`) ship in the same automation stack — apply after KV secrets are populated.
 
 ---
 
