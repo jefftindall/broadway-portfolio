@@ -55,7 +55,7 @@ Studio does **not** use Entra app roles for authorization. There is no “Owner�
 ## Authentication
 
 1. **Workforce Entra app registration** (Terraform, `AzureADMyOrg`) — staging and prod are separate apps in the teaching tenant (operators).
-2. **External ID (CIAM)** — separate tenant; SWA `customOpenIdConnectProviders.contact` (students/parents). Operator setup: [`contact-accounts-auth.md`](../runbooks/contact-accounts-auth.md).
+2. **External ID (CIAM)** — separate tenant; SWA `customOpenIdConnectProviders.contact` (students/parents). One CIAM tenant; per-env OIDC apps and user flows ([`contact-ciam-automation.md`](../plans/contact-ciam-automation.md)). Operator setup: [`contact-accounts-auth.md`](../runbooks/contact-accounts-auth.md).
 3. **SWA Authentication** presents `x-ms-client-principal` to Functions (`authLevel: 'anonymous'` because SWA already identified the caller).
 4. **Route rules** — `/studio` and `/studio/*` require SWA role **`studio`**. `/account` and `/account/*` require **`contact`**. `/api/*` requires `authenticated` except documented anonymous routes.
 5. **rolesSource** — `POST /api/authRoles` maps `identityProvider` → `studio` | `contact`.
@@ -181,5 +181,6 @@ Studio screens read `GET /api/studioSession` (same payload as publisher status) 
 | SWA route rules | `staticwebapp.config.json` / `public/staticwebapp.config.json` |
 | Operator runbook | [`docs/runbooks/manage-access.md`](../runbooks/manage-access.md) |
 | Contact sign-in runbook | [`docs/runbooks/contact-accounts-auth.md`](../runbooks/contact-accounts-auth.md) |
+| CIAM as-code plan | [`docs/plans/contact-ciam-automation.md`](../plans/contact-ciam-automation.md) |
 | Profile schema | [`data-persistence.md`](./data-persistence.md) §1.2 |
 | Agent rule | [`.cursor/rules/studio-auth.mdc`](../../.cursor/rules/studio-auth.mdc) |

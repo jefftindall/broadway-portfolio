@@ -2,7 +2,7 @@
 
 **Artifact ID:** `ELYSE-ACCOUNT-001`  
 **Version:** 1.1  
-**Last updated:** 2026-08-29  
+**Last updated:** 2026-09-12  
 **Audience:** Agents, implementers, operators  
 **Scope:** Public-site **contact accounts** so students (and parents) can sign in with Google, Apple, or Microsoft, maintain profile and preferences, **see the schedule and book a slot**, and **review their lesson history**. The whole contact-account surface is behind a **runtime feature flag**. **Lesson and casting inquiries stay anonymous forever** — potential clients must never be forced to log in to write Elyse. Studio (`/studio`) stays the operator workspace. People CRM stays the relationship SoT. Stripe stays money. Google Calendar stays time.
 
@@ -74,12 +74,13 @@ Operator ──Microsoft work/school────────►  Workforce Entra
 | Phase / area | Status | Open residuals |
 |--------------|--------|----------------|
 | Phase 0 — Plan + Action IDs + SoT | `done` | — |
-| Phase 1 — Student identity (External ID + SWA roles) | `done` | Terraform automates CIAM tenant + OIDC apps; operator: Application Admin on CIAM tenant, social IdPs ([`contact-accounts-ciam-terraform.md`](../runbooks/contact-accounts-ciam-terraform.md), [`contact-accounts-social-idps.md`](../runbooks/contact-accounts-social-idps.md)); iPhone Safari IdP round-trips on staging |
+| Phase 1 — Student identity (External ID + SWA roles) | `done` | SWA OIDC + roles + flag shipped; CIAM user flows / IdPs / branding still portal or partial — see Phase 1b |
+| Phase 1b — CIAM user flows as code (per env) | `in_progress` | `ACCOUNT-P1-007` done; next `P1-008` per-env flow bodies + `P1-010` IdPs |
 | Phase 2 — Link login → People + `/account` | `planned` | After P1 |
 | Phase 3 — Flag + login-gated schedule/book | `planned` | Inquiry stays anonymous; `STUDIO-P5-001` uses this bind |
 | Phase 4 — Lesson history + parent booking | `planned` | History is part of `/account`; required before prod flag-on |
 
-**Suggested next:** `ACCOUNT-P2-001` (link login → People). Do **not** start `STUDIO-P5-001` until Phase 3 can bind a booker. Inquiry never waits on this track.
+**Suggested next:** `ACCOUNT-P1-008` (per-env user flow `spec` in `infra/contact-ciam/flows/`). Do **not** start `STUDIO-P5-001` until Phase 3 can bind a booker. Inquiry never waits on this track.
 
 ---
 
@@ -263,9 +264,38 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 | `ACCOUNT-P1-001` | External ID tenant + SWA OIDC + KV secrets | `done` | `ACCOUNT-P0-001` | `infra/bootstrap/contact_ciam.tf`; `infra/modules/portfolio/contact_ciam_entra.tf`; CD issuer patch |
 | `ACCOUNT-P1-002` | `rolesSource` + `/studio` requires `studio` | `done` | `ACCOUNT-P1-001` | `api/src/functions/` auth-roles; SWA routes; [`authentication-authorization.md`](../architecture/authentication-authorization.md) |
 | `ACCOUNT-P1-003` | Public `/login` chooser; fix 401 override | `done` | `ACCOUNT-P1-002` | `src/pages/login.astro`; `staticwebapp.config.json` `responseOverrides` |
-| `ACCOUNT-P1-004` | Federate Google, Apple, Microsoft on the user flow | `done` (runbook) | `ACCOUNT-P1-001` | Operator runbook; IdP apps (not Calendar clients) |
+| `ACCOUNT-P1-004` | Federate Google, Apple, Microsoft on the user flow | `in_progress` | `ACCOUNT-P1-001` | Runbook + vendor consoles; **automation:** [`contact-ciam-automation.md`](./contact-ciam-automation.md) `P1-010` / `P1-014` |
 | `ACCOUNT-P1-005` | Auth runbook, secret names, privacy mention, cost note | `done` | `ACCOUNT-P1-004` | `docs/runbooks/`; `rotate-secrets.md`; `privacy.astro`; `cost-and-quotas.md` |
 | `ACCOUNT-P1-006` | `CONTACT_ACCOUNTS_ENABLED` Terraform + SWA + public config GET | `done` | `ACCOUNT-P1-001` | env `variables.tf`; SWA app settings; anonymous config API |
+
+### Phase 1b — CIAM user flows as code (per environment)
+
+**Goal:** Configure CIAM user flows, social IdPs, and login branding from the repo — **one flow per environment** so staging is validated before prod. See [`contact-ciam-automation.md`](./contact-ciam-automation.md) for full design.
+
+| ID | Title | Status | Depends on | Primary files |
+|----|-------|--------|------------|---------------|
+| `ACCOUNT-P1-007` | Graph apply script + env Terraform hook | `done` | `ACCOUNT-P1-001` | `scripts/apply-contact-ciam-config.mjs`; `infra/contact-ciam/` |
+| `ACCOUNT-P1-008` | Per-env user flows (`contact-signin-staging` / `-prod`) | `planned` | `P1-007` | `infra/contact-ciam/flows/` |
+| `ACCOUNT-P1-009` | Minimal attribute collection (social-only friction) | `planned` | `P1-008` | flow JSON |
+| `ACCOUNT-P1-010` | IdP federation from KV (Google / Apple / MSA) | `planned` | `P1-007` | `infra/contact-ciam/idps/` |
+| `ACCOUNT-P1-011` | CIAM branding theme (site colors) | `planned` | `P1-007` | `infra/contact-ciam/branding/` |
+| `ACCOUNT-P1-012` | Custom URL domain `login.elysetindall.com` | `planned` | `P1-011` | Front Door + DNS; CD issuer |
+| `ACCOUNT-P1-013` | `/login` direct provider buttons | `planned` | `P1-008` | `src/pages/login.astro` |
+| `ACCOUNT-P1-014` | Promotion runbook + smoke/journey updates | `planned` | `P1-008`–`P1-013` | runbooks; smoke tests |
+
+<details>
+<summary><code>ACCOUNT-P1-007</code> — Graph automation foundation</summary>
+
+**Acceptance criteria**
+
+- [x] `scripts/apply-contact-ciam-config.mjs` + `scripts/lib/contact-ciam-*.mjs` load manifests from `infra/contact-ciam/`
+- [x] `--dry-run` prints planned actions (names/ids only — never secrets)
+- [x] Idempotent when manifest `spec` blocks are absent (noop/skip until P1-008+)
+- [x] `npm run test:contact-ciam-config`
+- [x] `terraform_data.contact_ciam_config` hook; `contact_ciam_skip_apply` / `CONTACT_CIAM_SKIP_APPLY`
+- [x] Runbook Step 3b in [`contact-accounts-ciam-terraform.md`](../runbooks/contact-accounts-ciam-terraform.md)
+
+</details>
 
 <details>
 <summary><code>ACCOUNT-P1-001</code> — External ID + SWA</summary>
@@ -312,7 +342,7 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 
 **Acceptance criteria**
 
-- [ ] External ID user flow enables **Google**, **Apple**, and **Microsoft personal** (MSA as custom OIDC to the consumers endpoint per current External ID docs — not workforce `AzureADMyOrg`) — operator configures in CIAM tenant
+- [ ] External ID **per-env** user flow enables **Google**, **Apple**, and **Microsoft personal** on the flow — **`ACCOUNT-P1-008`** / **`P1-009`** flow `spec` ([`contact-ciam-automation.md`](./contact-ciam-automation.md)); IdP **credentials** sync in **`ACCOUNT-P1-010`**
 - [ ] Google OAuth client is **not** the Calendar organizer/Elyse client. Redirects include External ID federation URIs ([Google federation](https://learn.microsoft.com/en-us/entra/external-id/customers/how-to-google-federation-customers))
 - [ ] Apple: Services ID + Sign in with Apple; Hide My Email must not 500 the callback
 - [x] No local email+password on v1 (social only). Email OTP is out of scope unless social is blocked
@@ -525,9 +555,12 @@ ACCOUNT-P0-001 (done)
     └─► ACCOUNT-P1-001 External ID + SWA OIDC
             ├─► P1-002 rolesSource + /studio = studio role
             │         └─► P1-003 /login chooser + 401 override
-            ├─► P1-004 Google / Apple / Microsoft federation
+            ├─► P1-004 Google / Apple / Microsoft federation ─► Phase 1b P1-010 (Graph)
             ├─► P1-005 runbook + privacy + cost
             └─► P1-006 CONTACT_ACCOUNTS_ENABLED flag
+                    ├─► Phase 1b P1-007 Graph apply ─► P1-008 per-env flows ─► P1-009 friction
+                    │         ├─► P1-011 branding ─► P1-012 login.elysetindall.com (optional)
+                    │         └─► P1-013 /login UX ─► P1-014 promotion + smoke
                     └─► ACCOUNT-P2-001 identity ↔ contact
                               ├─► P2-002 /api/account
                               │         └─► P2-003 /account UI ─► P2-004 privacy/tests
@@ -574,5 +607,6 @@ STUDIO-P3-003 lesson workflow (done) ─► P3-002 bind; P4-001 history
 | [`data-persistence.md`](../architecture/data-persistence.md) | Update in the `ACCOUNT-P2-001` PR when identity link ships |
 | [`manage-access.md`](../runbooks/manage-access.md) | Operators vs contacts after P1 |
 | [`cost-and-quotas.md`](../runbooks/cost-and-quotas.md) | External ID MAU + Apple Developer when P1 ships |
+| [`contact-ciam-automation.md`](./contact-ciam-automation.md) | Phase 1b: per-env user flows, Graph apply, branding, custom domain |
 | [`ux-release-testing-strategy.md`](./ux-release-testing-strategy.md) | New journeys under `ACCOUNT-P2-004` / `P3-004` |
 | [`.cursor/rules/studio-auth.mdc`](../../.cursor/rules/studio-auth.mdc) | Extend in P1: `contact` role ≠ catalog |

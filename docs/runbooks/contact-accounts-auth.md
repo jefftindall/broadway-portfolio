@@ -1,10 +1,10 @@
 # Runbook: Contact account authentication
 
 **Audience:** Operators, implementers  
-**Last updated:** 2026-08-29  
-**Plan:** [`contact-accounts.md`](../plans/contact-accounts.md) (`ACCOUNT-P1-*`)
+**Last updated:** 2026-09-12  
+**Plan:** [`contact-accounts.md`](../plans/contact-accounts.md) (`ACCOUNT-P1-*`) · Phase 1b: [`contact-ciam-automation.md`](../plans/contact-ciam-automation.md) (`ACCOUNT-P1-007+`)
 
-Students and parents sign in with **Google, Apple, or Microsoft** through **Entra External ID (CIAM)**. Operators use workforce Entra for **`/studio`**.
+Students and parents sign in with **Google, Apple, or Microsoft** through **Entra External ID (CIAM)** — **one shared CIAM tenant**, not the workforce teaching tenant. Operators use workforce Entra for **`/studio`**.
 
 ---
 
@@ -12,9 +12,11 @@ Students and parents sign in with **Google, Apple, or Microsoft** through **Entr
 
 | Step | Document | Who |
 |------|----------|-----|
-| 1 | **[contact-accounts-ciam-terraform.md](./contact-accounts-ciam-terraform.md)** | Terraform: CIAM tenant, OIDC apps, vault, SWA, CD issuer patch |
-| 2 | **[contact-accounts-social-idps.md](./contact-accounts-social-idps.md)** | Manual: Google, Apple, Microsoft personal in CIAM |
+| 1 | **[contact-accounts-ciam-terraform.md](./contact-accounts-ciam-terraform.md)** | Terraform: CIAM tenant, OIDC apps, enterprise apps, vault, SWA, CD issuer patch, Graph apply hook (`ACCOUNT-P1-007`) |
+| 2 | **[contact-accounts-social-idps.md](./contact-accounts-social-idps.md)** | Vendor consoles (Google / Apple / MSA) + CIAM user-flow association (portal interim; as-code in `ACCOUNT-P1-008`–`P1-010`) |
 | 3 | This page | Architecture reference |
+
+Configuration as code: [`infra/contact-ciam/README.md`](../../infra/contact-ciam/README.md) · [`contact-ciam-automation.md`](../plans/contact-ciam-automation.md).
 
 Secret names: [rotate-secrets.md](./rotate-secrets.md) § Contact accounts.
 
@@ -56,3 +58,4 @@ Rates and Turnstile inquire still work. Sign-in, `/account`, and (when shipped) 
 - [authentication-authorization.md](../architecture/authentication-authorization.md)
 - [manage-access.md](./manage-access.md)
 - [cost-and-quotas.md](./cost-and-quotas.md) (CIAM MAU; Apple Developer non-Azure)
+- [contact-ciam-automation.md](../plans/contact-ciam-automation.md) (per-env user flows, Graph apply backlog)

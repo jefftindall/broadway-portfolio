@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "key": "apple",
+  "displayName": "Apple",
+  "graphIdentityProviderId": "Apple-OAUTH",
+  "enabled": false,
+  "comment": "ACCOUNT-P1-010 enables federation from kv-elyse-shared CONTACT-IDP-APPLE-* secrets"
+}

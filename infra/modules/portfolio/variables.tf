@@ -112,6 +112,18 @@ variable "manage_contact_oidc_app" {
   default     = true
 }
 
+variable "manage_contact_ciam_config" {
+  type        = bool
+  description = "When true and CIAM is ready, run scripts/apply-contact-ciam-config.mjs after OIDC app apply (ACCOUNT-P1-007)."
+  default     = true
+}
+
+variable "contact_ciam_skip_apply" {
+  type        = bool
+  description = "When true, sets CONTACT_CIAM_SKIP_APPLY for the Graph apply hook (plan-only / emergency skip)."
+  default     = false
+}
+
 variable "additional_auth_hostnames" {
   type        = list(string)
   description = "Extra hostnames allowed to complete Entra sign-in (e.g. www.elysetindall.com)"

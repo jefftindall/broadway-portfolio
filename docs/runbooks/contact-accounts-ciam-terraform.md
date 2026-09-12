@@ -1,10 +1,10 @@
 # Runbook: Contact accounts — CIAM Terraform automation
 
 **Audience:** Operators  
-**Last updated:** 2026-08-31  
+**Last updated:** 2026-09-12  
 **Plan:** `ACCOUNT-P1-001` · **Related:** [contact-accounts-auth.md](./contact-accounts-auth.md) · [contact-accounts-social-idps.md](./contact-accounts-social-idps.md)
 
-Terraform automates the **shared CIAM tenant**, **per-environment OIDC app registrations**, **Key Vault secrets**, **SWA app settings**, and **deploy-time issuer patching**. Social IdP buttons (Google / Apple / Microsoft personal) remain a **manual** Entra External ID step.
+Terraform automates the **shared CIAM tenant**, **per-environment OIDC app registrations** (and enterprise apps / service principals), **Key Vault secrets**, **SWA app settings**, **deploy-time issuer patching**, and a **Graph apply hook** for user flows / IdPs / branding ([`ACCOUNT-P1-007`](../plans/contact-ciam-automation.md)). **Google Cloud / Apple Developer** vendor setup stays manual; Entra IdP federation moves to Graph in **`ACCOUNT-P1-010`** (credentials in `kv-elyse-shared`).
 
 ---
 
@@ -17,8 +17,11 @@ Terraform automates the **shared CIAM tenant**, **per-environment OIDC app regis
 | Feature flag | env stacks | `contact_accounts_enabled` → SWA `CONTACT_ACCOUNTS_ENABLED` |
 | SWA auth settings | env stacks | `CONTACT_OIDC_CLIENT_ID`, `CONTACT_OIDC_CLIENT_SECRET` (Key Vault reference) |
 | Deploy artifact | CD | `scripts/sync-contact-oidc-issuer.mjs` patches `dist/staticwebapp.config.json` issuer from shared vault |
+| CIAM user flows / IdPs / branding | env stacks | `terraform_data.contact_ciam_config` → `scripts/apply-contact-ciam-config.mjs` (Graph; `ACCOUNT-P1-007+`) |
 
 Committed `staticwebapp.config.json` files keep a **REPLACE_ME** issuer placeholder until bootstrap runs; CD injects the live issuer before SWA upload.
+
+Graph apply reads version-controlled manifests under [`infra/contact-ciam/`](../contact-ciam/README.md). Per-environment **user flows** (`flows/staging.json`, `flows/prod.json`) ship in `ACCOUNT-P1-008`; IdP federation and branding follow in `P1-010` / `P1-011`.
 
 ---
 
@@ -131,6 +134,38 @@ terraform import 'module.portfolio.azuread_service_principal.contact_swa[0]' '/s
 
 Prod needs no import when the SP is created by the first apply after this change.
 
+### Step 3b — CIAM Graph config (ACCOUNT-P1-007)
+
+After Step 3, env `terraform apply` runs [`scripts/apply-contact-ciam-config.mjs`](../../scripts/apply-contact-ciam-config.mjs) when `manage_contact_ciam_config=true` (default). It plans user flows, IdPs, and branding from [`infra/contact-ciam/`](../../infra/contact-ciam/README.md) via Microsoft Graph.
+
+**Local apply** — sign in to the **CIAM tenant** (subscription not required):
+
+```bash
+az login --tenant 692675c7-5ecc-44d7-a2e6-f8e49e250e3e --allow-no-subscriptions
+cd infra/environments/staging
+terraform apply tfplan
+```
+
+**Dry-run only** (no Graph writes):
+
+```bash
+CONTACT_CIAM_TENANT_ID="$(az keyvault secret show --vault-name kv-elyse-shared --name CONTACT-CIAM-TENANT-ID --query value -o tsv)"
+CONTACT_OIDC_CLIENT_ID="$(az keyvault secret show --vault-name kv-elyse-staging --name CONTACT-OIDC-CLIENT-ID --query value -o tsv)"
+node scripts/apply-contact-ciam-config.mjs --dry-run --env staging
+```
+
+**Skip hook** — emergency or plan-only:
+
+```bash
+terraform apply -var='contact_ciam_skip_apply=true' tfplan
+# or
+CONTACT_CIAM_SKIP_APPLY=true node scripts/apply-contact-ciam-config.mjs --env staging
+```
+
+**GitHub Actions** — the hook mints a CIAM federated session when `CONTACT_CIAM_TF_CLIENT_ID` and GitHub OIDC env vars are present (same app as `azuread.contact_ciam`). If Graph permissions are not yet consented, set `-var='contact_ciam_skip_apply=true'` until [`contact-ciam-automation.md`](../plans/contact-ciam-automation.md) `P1-010` admin-consent step is done.
+
+Create/update bodies for flows, IdPs, and branding land in **`ACCOUNT-P1-008`** / **`P1-010`** / **`P1-011`** when manifest `spec` blocks are added. Until then the script reports `SKIP` / `noop` and exits successfully.
+
 ---
 
 ## Step 4 — CD issuer patch (automatic)
@@ -145,9 +180,19 @@ Reads **`CONTACT-CIAM-OIDC-ISSUER`** from `kv-elyse-shared`.
 
 ---
 
-## Step 5 — Social IdPs (manual)
+## Step 5 — Social IdPs and user flows
 
-Follow **[contact-accounts-social-idps.md](./contact-accounts-social-idps.md)**.
+**Vendor consoles (always manual):** follow **[contact-accounts-social-idps.md](./contact-accounts-social-idps.md)** for Google Cloud, Apple Developer, and MSA app setup.
+
+**Entra / Graph (moving to as-code):**
+
+| Piece | Today | Target (`ACCOUNT-*`) |
+|-------|-------|----------------------|
+| IdP credentials in Entra | Portal paste or already configured | `ACCOUNT-P1-010` reads `CONTACT-IDP-*` from `kv-elyse-shared` |
+| User flow per environment | Portal (interim) or none | `ACCOUNT-P1-008`: `contact-signin-staging` / `contact-signin-prod` via [`infra/contact-ciam/flows/`](../../infra/contact-ciam/flows/) |
+| Apply on env Terraform | Step 3b (`apply-contact-ciam-config.mjs`) | Idempotent; skips until manifest `spec` blocks land |
+
+If you already linked both SWA apps to **one** portal user flow, that works until P1-008 splits flows — see the runbook migration note.
 
 ---
 

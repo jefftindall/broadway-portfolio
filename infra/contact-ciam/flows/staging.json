@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "enabled": true,
+  "displayName": "contact-signin-staging",
+  "applicationClientId": "{{CONTACT_OIDC_CLIENT_ID}}",
+  "comment": "ACCOUNT-P1-008 adds flow.spec (IdPs, attribute collection). Script plans create/update once spec exists."
+}

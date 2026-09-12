@@ -135,7 +135,7 @@ Feature flag (not a Key Vault secret): SWA app setting `LESSON_PAYMENTS_ENABLED`
 
 ## Contact accounts (External ID)
 
-Student/parent sign-in uses a **separate Entra External ID (CIAM) tenant** — not the workforce teaching tenant. Terraform creates the tenant (bootstrap), OIDC apps (env stacks), and most secrets. Social IdPs stay manual. Calendar Google OAuth clients are unrelated.
+Student/parent sign-in uses a **separate Entra External ID (CIAM) tenant** — not the workforce teaching tenant. Terraform creates the tenant (bootstrap), OIDC apps + enterprise apps (env stacks), Graph apply hook (`ACCOUNT-P1-007`), and most secrets. **Vendor** IdP setup (Google Cloud / Apple Developer) stays manual; Entra federation credentials move to `kv-elyse-shared` in **`ACCOUNT-P1-010`**. Calendar Google OAuth clients are unrelated.
 
 | Secret name | SWA app setting / use | Where | Managed by |
 |-------------|----------------------|-------|------------|
@@ -145,6 +145,16 @@ Student/parent sign-in uses a **separate Entra External ID (CIAM) tenant** — n
 | `CONTACT-CIAM-TF-CLIENT-ID` | GitHub Actions Terraform `azuread.contact_ciam` OIDC client | `kv-elyse-shared` | bootstrap Terraform (`elyse-portfolio-gha-ciam-terraform`) |
 | `CONTACT-OIDC-CLIENT-ID` | `CONTACT_OIDC_CLIENT_ID` | env vault | env Terraform (`elyse-portfolio-contact-{env}` app) |
 | `CONTACT-OIDC-CLIENT-SECRET` | `CONTACT_OIDC_CLIENT_SECRET` | env vault (SWA Key Vault reference) | env Terraform (rotates with `entra_secret_rotation_days`) |
+
+**Planned (`ACCOUNT-P1-010`)** — tenant-level IdP federation in `kv-elyse-shared` (names only until P1-010 Terraform placeholders ship):
+
+| Secret name | Purpose |
+|-------------|---------|
+| `CONTACT-IDP-GOOGLE-CLIENT-ID` / `CONTACT-IDP-GOOGLE-CLIENT-SECRET` | Google federation (not Calendar clients) |
+| `CONTACT-IDP-APPLE-SERVICES-ID` / `CONTACT-IDP-APPLE-KEY-ID` / `CONTACT-IDP-APPLE-TEAM-ID` / `CONTACT-IDP-APPLE-PRIVATE-KEY` | Sign in with Apple |
+| `CONTACT-IDP-MSA-CLIENT-ID` / `CONTACT-IDP-MSA-CLIENT-SECRET` | Microsoft personal OIDC |
+
+Optional prep: copy existing Google/Apple credentials from vendor consoles into these secrets; the apply script uses them only after P1-010.
 
 Feature flag (not a Key Vault secret): SWA app setting `CONTACT_ACCOUNTS_ENABLED`, Terraform `contact_accounts_enabled` — **true on staging**, **false on prod** until go-live. `GET /api/contactAccountConfig` returns `{ enabled: boolean }` only. Independent of `LESSON_PAYMENTS_ENABLED`. Prod go-live: `terraform apply -var='contact_accounts_enabled=true'`.
 

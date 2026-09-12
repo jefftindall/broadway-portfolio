@@ -1,8 +1,8 @@
 # Runbook: Contact accounts — social identity providers (manual)
 
 **Audience:** Operators  
-**Last updated:** 2026-08-30 (Apple return URLs corrected per [Microsoft Apple federation](https://learn.microsoft.com/en-us/entra/external-id/customers/how-to-apple-federation-customers))  
-**Plan:** `ACCOUNT-P1-004` · **Prerequisite:** [contact-accounts-ciam-terraform.md](./contact-accounts-ciam-terraform.md)
+**Last updated:** 2026-09-12  
+**Plan:** `ACCOUNT-P1-004` · Phase 1b: [`contact-ciam-automation.md`](../plans/contact-ciam-automation.md) · **Prerequisite:** [contact-accounts-ciam-terraform.md](./contact-accounts-ciam-terraform.md)
 
 Configure **Google**, **Apple**, and **Microsoft personal** in the **CIAM tenant**. Do not use Studio Calendar OAuth clients or SWA-native social providers.
 
@@ -223,22 +223,35 @@ https://login.microsoftonline.com/consumers/v2.0
 
 ---
 
-## User flow (enable buttons + link SWA apps)
+## User flows (one per environment — not one shared flow)
+
+Target architecture ([`contact-ciam-automation.md`](../plans/contact-ciam-automation.md)): **separate** sign-in flows so staging can be tested before prod promotion. Social IdPs stay **tenant-level** (same Google/Apple/MSA for both flows).
+
+| Environment | User flow name (target) | Enterprise app |
+|-------------|-------------------------|----------------|
+| Staging | `contact-signin-staging` | `elyse-portfolio-contact-staging` |
+| Production | `contact-signin-prod` | `elyse-portfolio-contact-prod` |
+
+Manifests: [`infra/contact-ciam/flows/staging.json`](../../infra/contact-ciam/flows/staging.json) · [`prod.json`](../../infra/contact-ciam/flows/prod.json). Graph create/update ships in **`ACCOUNT-P1-008`**.
 
 ### Enterprise app (service principal)
 
-CIAM user flows associate **enterprise applications** (service principals), not bare app registrations. Env Terraform creates **`azuread_service_principal.contact_swa`** alongside the OIDC app registration. After staging/prod apply, confirm under **Enterprise applications** → `elyse-portfolio-contact-{staging|prod}`.
+CIAM user flows associate **enterprise applications** (service principals), not bare app registrations. Env Terraform creates **`azuread_service_principal.contact_swa`** alongside each OIDC app. Confirm under **Enterprise applications** → `elyse-portfolio-contact-{staging|prod}`.
 
-### Configure the flow
+### Portal (interim until P1-008)
 
-1. CIAM tenant → **External Identities** → **User flows** (or **Get started** / default sign-in experience for customers).
-2. Edit the sign-up/sign-in flow used for external users.
+If you already created **one** portal user flow with both apps linked, sign-in still works. Before prod go-live, split into **`contact-signin-staging`** and **`contact-signin-prod`** (portal edit now, or Graph apply when P1-008 lands).
+
+Manual steps (same IdPs on each flow):
+
+1. CIAM tenant → **External Identities** → **User flows**.
+2. Create or edit **`contact-signin-staging`** (staging) and **`contact-signin-prod`** (prod) — or one interim flow if not split yet.
 3. **Identity providers**: enable **Google**, **Apple**, and **Microsoft Account**. Leave **local email/password disabled** on v1.
-4. **Applications** → **Add application** → select:
-  - **Staging (now):** `elyse-portfolio-contact-staging` (`961894e2-e231-4b01-8a13-56fa85cf0492`)
-  - **Production (after prod apply):** `elyse-portfolio-contact-prod` (client ID from `kv-elyse-prod` / `az ad app list` above)
+4. **Applications** → **Add application** — link **only** the matching env app:
+   - **Staging flow:** `elyse-portfolio-contact-staging` (`961894e2-e231-4b01-8a13-56fa85cf0492`)
+   - **Prod flow:** `elyse-portfolio-contact-prod` (client ID from `kv-elyse-prod` / `az ad app list` above)
 
-Both apps can share the same user flow and the same social IdP configuration.
+Do **not** link both SWA apps to a single prod-bound flow once P1-008 is live — staging flow changes would affect production.
 
 ---
 
@@ -269,7 +282,7 @@ Complete [contact-accounts-ciam-terraform.md](./contact-accounts-ciam-terraform.
 
 Then:
 
-1. Add **`elyse-portfolio-contact-prod`** to the same CIAM user flow (Google/Apple/MSA already enabled).
+1. Create or confirm **`contact-signin-prod`** user flow with Google/Apple/MSA enabled; link **only** `elyse-portfolio-contact-prod` (not the staging app).
 2. **Google** — no redirect URI change (CIAM URLs above are env-agnostic). Optionally add `elysetindall.com` to OAuth consent **Authorized domains** if not already present.
 3. **Apple** — no change (CIAM `*.ciamlogin.com` domains and return URLs are env-agnostic).
 4. Enable feature flag:
@@ -287,10 +300,10 @@ Then:
 
 - [ ] Apple Developer Program active
 - [ ] Google OAuth client with CIAM federation redirect URI
-- [ ] Google + Apple + Microsoft Account enabled in CIAM user flow
-- [ ] `elyse-portfolio-contact-staging` linked to user flow
+- [ ] Google + Apple + Microsoft Account enabled on **staging** user flow (`contact-signin-staging` or interim shared flow)
+- [ ] `elyse-portfolio-contact-staging` linked to **staging** flow only
 - [ ] Staging IdP round-trips on `test.elysetindall.com` (iPhone Safari)
-- [ ] (Prod) `elyse-portfolio-contact-prod` linked + `contact_accounts_enabled=true`
+- [ ] (Prod) `contact-signin-prod` + `elyse-portfolio-contact-prod` linked + `contact_accounts_enabled=true`
 
 ---
 
@@ -298,5 +311,7 @@ Then:
 
 - [contact-accounts-ciam-terraform.md](./contact-accounts-ciam-terraform.md)
 - [contact-accounts-auth.md](./contact-accounts-auth.md)
+- [contact-ciam-automation.md](../plans/contact-ciam-automation.md) (`ACCOUNT-P1-008`–`P1-010`)
+- [infra/contact-ciam/README.md](../../infra/contact-ciam/README.md)
 - [rotate-secrets.md](./rotate-secrets.md) § Contact accounts
 

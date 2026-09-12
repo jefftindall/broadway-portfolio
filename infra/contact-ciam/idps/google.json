@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "key": "google",
+  "displayName": "Google",
+  "graphIdentityProviderId": "Google-OAUTH",
+  "enabled": false,
+  "comment": "ACCOUNT-P1-010 enables federation from kv-elyse-shared CONTACT-IDP-GOOGLE-* secrets"
+}
