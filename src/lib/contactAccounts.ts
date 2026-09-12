@@ -23,39 +23,19 @@ export function parseContactAccountConfig(data: unknown): ContactAccountConfig {
 
 export const CONTACT_SWA_ROLE = 'contact';
 
-/** External ID custom OIDC provider id for the generic CIAM picker (staticwebapp.config.json). */
+/** External ID custom OIDC provider id (staticwebapp.config.json). */
 export const CONTACT_IDENTITY_PROVIDER = 'contact';
 
-/** CIAM domain_hint values (Entra External ID social direct sign-in). */
-export const CONTACT_SOCIAL_IDP_HINTS = {
-  google: 'google',
-  apple: 'apple',
-  microsoft: 'live.com',
-} as const;
-
-export type ContactSocialIdp = keyof typeof CONTACT_SOCIAL_IDP_HINTS;
-
-/** Per-IdP SWA providers with static loginParameterNames (skip CIAM picker). */
-export const CONTACT_SOCIAL_SWA_PROVIDERS = {
-  google: 'contact-google',
-  apple: 'contact-apple',
-  microsoft: 'contact-microsoft',
-} as const satisfies Record<ContactSocialIdp, string>;
+export type ContactSocialIdp = 'google' | 'apple' | 'microsoft';
 
 export const CONTACT_SOCIAL_LOGIN_OPTIONS: ReadonlyArray<{
   id: ContactSocialIdp;
   label: string;
-  domainHint: string;
   testId: string;
 }> = [
-  { id: 'google', label: 'Google', domainHint: CONTACT_SOCIAL_IDP_HINTS.google, testId: 'login-contact-google' },
-  { id: 'apple', label: 'Apple', domainHint: CONTACT_SOCIAL_IDP_HINTS.apple, testId: 'login-contact-apple' },
-  {
-    id: 'microsoft',
-    label: 'Microsoft',
-    domainHint: CONTACT_SOCIAL_IDP_HINTS.microsoft,
-    testId: 'login-contact-microsoft',
-  },
+  { id: 'google', label: 'Google', testId: 'login-contact-google' },
+  { id: 'apple', label: 'Apple', testId: 'login-contact-apple' },
+  { id: 'microsoft', label: 'Microsoft', testId: 'login-contact-microsoft' },
 ];
 
 export type SwaClientPrincipal = {
@@ -74,41 +54,26 @@ export function hasContactSession(me: SwaMeResponse | null | undefined): boolean
   return Array.isArray(roles) && roles.includes(CONTACT_SWA_ROLE);
 }
 
-export type AuthLoginProvider =
-  | 'contact'
-  | (typeof CONTACT_SOCIAL_SWA_PROVIDERS)[ContactSocialIdp]
-  | 'aad';
+export type AuthLoginProvider = 'contact' | 'aad';
 
-export type AuthLoginHrefOptions = {
-  /** Legacy query hint for generic `contact` provider only; prefer CONTACT_SOCIAL_SWA_PROVIDERS. */
-  domainHint?: string;
-};
-
-export function buildAuthLoginHref(
-  provider: AuthLoginProvider,
-  redirectPath = '/lessons/book',
-  options: AuthLoginHrefOptions = {},
-): string {
+export function buildAuthLoginHref(provider: AuthLoginProvider, redirectPath = '/lessons/book'): string {
   const safePath = redirectPath.startsWith('/') ? redirectPath : '/lessons/book';
   const params = new URLSearchParams({ post_login_redirect_uri: safePath });
-  if (provider === 'contact' && options.domainHint) {
-    params.set('domain_hint', options.domainHint);
-  }
   return `/.auth/login/${provider}?${params.toString()}`;
 }
 
 /** Student/parent External ID login — shows CIAM IdP picker. */
-export function buildContactAuthLoginHref(
-  redirectPath = '/lessons/book',
-  options: AuthLoginHrefOptions = {},
-): string {
-  return buildAuthLoginHref('contact', redirectPath, options);
+export function buildContactAuthLoginHref(redirectPath = '/lessons/book'): string {
+  return buildAuthLoginHref('contact', redirectPath);
 }
 
-/** Direct social sign-in via dedicated SWA provider + static CIAM domain_hint (ACCOUNT-P1-013). */
+/**
+ * Social shortcut buttons use the same CIAM picker flow as buildContactAuthLoginHref.
+ * Entra External ID rejects domain_hint=google|apple on desktop browsers (AADSTS90023).
+ */
 export function buildContactSocialLoginHref(
-  idp: ContactSocialIdp,
+  _idp: ContactSocialIdp,
   redirectPath = '/lessons/book',
 ): string {
-  return buildAuthLoginHref(CONTACT_SOCIAL_SWA_PROVIDERS[idp], redirectPath);
+  return buildContactAuthLoginHref(redirectPath);
 }

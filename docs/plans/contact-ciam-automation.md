@@ -73,7 +73,7 @@ Phase 1 shipped SWA → CIAM OIDC wiring, roles, `/login`, and the feature flag.
 | IdP picker | Google, Apple, Microsoft personal enabled on the flow |
 | First-time profile | Graph `onAttributeCollection`: **displayName** and **email** from IdP claims, **hidden or read-only** where supported; no extra custom fields |
 | Residual “Add details” | Built-in CIAM may still show a one-time confirm screen — minimize fields; full edit moves to **`/account`** (`ACCOUNT-P2-*`) |
-| Optional site UX | `/login` direct provider buttons with `domain_hint` / IdP-specific authorize URLs to skip the CIAM button grid (`ACCOUNT-P1-013`) |
+| Optional site UX | `/login` provider shortcut buttons (all route to CIAM picker; `domain_hint` direct hop blocked on desktop CIAM — `AADSTS90023`) |
 
 ### Branded login
 
@@ -145,7 +145,7 @@ Script reads env: `CONTACT_CIAM_ENV=staging|prod`, `CONTACT_CIAM_TENANT_ID`, flo
 | `ACCOUNT-P1-010` | IdP federation from KV (Google / Apple / MSA) | `done` | `P1-007` | `infra/contact-ciam/idps/`; KV secrets |
 | `ACCOUNT-P1-011` | CIAM company branding theme (site colors) | `done` | `P1-007` | `infra/contact-ciam/branding/` |
 | `ACCOUNT-P1-012` | Custom URL domain `login.elysetindall.com` | `wont_fix` | — (cost-prohibitive; Front Door required) | — |
-| `ACCOUNT-P1-013` | `/login` direct provider buttons (`domain_hint`) | `done` | `P1-008` | `src/pages/login.astro`; `contactAccounts.ts` |
+| `ACCOUNT-P1-013` | `/login` provider shortcut buttons (CIAM picker) | `done` (runbook) | `P1-008` | `src/pages/login.astro`; `contactAccounts.ts` |
 | `ACCOUNT-P1-014` | Promotion runbook + smoke/journey updates | `planned` | `P1-008`–`P1-013` | runbooks; `tests/smoke/contact-accounts.spec.ts` |
 
 <details>
@@ -235,9 +235,10 @@ Script reads env: `CONTACT_CIAM_ENV=staging|prod`, `CONTACT_CIAM_TENANT_ID`, flo
 **Acceptance criteria**
 
 - [x] `/login` student section offers **Continue with Google / Apple / Microsoft** (in addition to “Book or manage lessons”)
-- [x] Links pass SWA-safe redirect + CIAM `domain_hint` (`loginParameterNames` + `buildContactSocialLoginHref`)
+- [x] Links use SWA-safe `post_login_redirect_uri` via generic `contact` provider (no `domain_hint` — desktop CIAM returns `AADSTS90023`)
 - [x] Operator Studio path unchanged
-- [x] Smoke updated for `login-contact-{google,apple,microsoft}` test ids + domain_hint redirect probe
+- [ ] Direct skip of CIAM picker via `domain_hint` — **blocked** on desktop web (Microsoft External ID service limitation; reopen if fixed)
+- [x] Smoke covers `login-contact-{google,apple,microsoft}` test ids and CIAM redirect without `domain_hint`
 
 </details>
 

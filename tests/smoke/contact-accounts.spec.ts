@@ -39,7 +39,7 @@ test.describe('contact accounts smoke', () => {
     await expect(page.getByTestId('login-operator')).toBeVisible();
   });
 
-  test('contact Google login uses dedicated SWA provider and reaches CIAM when enabled', async ({
+  test('contact social login uses generic contact provider and reaches CIAM when enabled', async ({
     page,
     request,
   }) => {
@@ -47,11 +47,12 @@ test.describe('contact accounts smoke', () => {
     test.skip(!contactAccountsEnabled, 'CONTACT_ACCOUNTS_ENABLED is false');
     await waitForOk(page, '/login');
     const googleHref = await page.getByTestId('login-contact-google').getAttribute('href');
-    expect(googleHref ?? '').toMatch(/\/\.auth\/login\/contact-google/i);
+    expect(googleHref ?? '').toMatch(/\/\.auth\/login\/contact(?:\?|$)/i);
+    expect(googleHref ?? '').not.toMatch(/domain_hint=/i);
 
     await expectAuthRedirectToExternalIdp(
       request,
-      '/.auth/login/contact-google?post_login_redirect_uri=%2Flessons%2Fbook',
+      '/.auth/login/contact?post_login_redirect_uri=%2Flessons%2Fbook',
       /ciamlogin\.com/i,
     );
   });

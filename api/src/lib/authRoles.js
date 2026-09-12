@@ -9,12 +9,8 @@ export const STUDIO_IDENTITY_PROVIDER = 'aad';
 /** External ID custom OIDC provider id (staticwebapp.config.json). */
 export const CONTACT_IDENTITY_PROVIDER = 'contact';
 
-/** Per-IdP SWA providers that still map to the contact role. */
-export const CONTACT_SOCIAL_IDENTITY_PROVIDERS = [
-  'contact-google',
-  'contact-apple',
-  'contact-microsoft',
-];
+/** Legacy per-IdP SWA providers (PR #136); keep mapping until sessions expire. */
+const LEGACY_CONTACT_SOCIAL_IDENTITY_PROVIDERS = ['contact-google', 'contact-apple', 'contact-microsoft'];
 
 export const STUDIO_SWA_ROLE = 'studio';
 export const CONTACT_SWA_ROLE = 'contact';
@@ -22,7 +18,7 @@ export const CONTACT_SWA_ROLE = 'contact';
 function isContactIdentityProvider(provider) {
   return (
     provider === CONTACT_IDENTITY_PROVIDER ||
-    CONTACT_SOCIAL_IDENTITY_PROVIDERS.includes(provider)
+    LEGACY_CONTACT_SOCIAL_IDENTITY_PROVIDERS.includes(provider)
   );
 }
 
