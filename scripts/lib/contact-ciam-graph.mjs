@@ -20,6 +20,27 @@ function fail(message) {
 }
 
 /**
+ * True when Graph rejected the call for missing CIAM GHA application permissions.
+ *
+ * @param {unknown} err
+ * @returns {boolean}
+ */
+export function isGraphAccessError(err) {
+  const message = err instanceof Error ? err.message : String(err);
+  return /\(AADB2C\)|\(Authorization_RequestDenied\)|\(accessDenied\)|\(http-401\)|\(http-403\)|insufficient privileges/i.test(
+    message,
+  );
+}
+
+/** @type {{ flow: null; idps: Map<string, Record<string, unknown>>; branding: null; idpDetails: Map<string, Record<string, unknown>> }} */
+export const EMPTY_CONTACT_CIAM_REMOTE = {
+  flow: null,
+  idps: new Map(),
+  branding: null,
+  idpDetails: new Map(),
+};
+
+/**
  * @param {string[]} args
  * @param {{ allowFailure?: boolean }} [options]
  * @returns {{ status: number; stdout: string; stderr: string }}
@@ -242,7 +263,7 @@ export async function findUserFlowForApplication(tenantId, applicationClientId) 
  */
 export async function listIdentityProvidersByKey(tenantId) {
   const payload = /** @type {{ value?: Array<Record<string, unknown>> }} */ (
-    await graphBetaRequest({ tenantId, path: '/identity/identityProviders' })
+    await graphRequest({ tenantId, path: '/identity/identityProviders' })
   );
   /** @type {Map<string, Record<string, unknown>>} */
   const map = new Map();
@@ -271,7 +292,7 @@ export async function getIdentityProvider(tenantId, idpId) {
   if (!trimmed) return null;
   try {
     return /** @type {Record<string, unknown>} */ (
-      await graphBetaRequest({
+      await graphRequest({
         tenantId,
         path: `/identity/identityProviders/${encodeURIComponent(trimmed)}`,
       })
@@ -286,7 +307,7 @@ export async function getIdentityProvider(tenantId, idpId) {
  * @param {Record<string, unknown>} body
  */
 export async function createIdentityProvider(tenantId, body) {
-  return graphBetaRequest({
+  return graphRequest({
     tenantId,
     method: 'POST',
     path: '/identity/identityProviders',
@@ -300,7 +321,7 @@ export async function createIdentityProvider(tenantId, body) {
  * @param {Record<string, unknown>} body
  */
 export async function patchIdentityProvider(tenantId, idpId, body) {
-  return graphBetaRequest({
+  return graphRequest({
     tenantId,
     method: 'PATCH',
     path: `/identity/identityProviders/${encodeURIComponent(idpId.trim())}`,

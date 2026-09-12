@@ -78,7 +78,8 @@ After the tenant exists, set **`manage_contact_ciam_tenant = false`** on subsequ
 Bootstrap Terraform registers **`elyse-portfolio-gha-ciam-terraform`** in the CIAM tenant (mirror of workforce `elyse-portfolio-gha-terraform`):
 
 - GitHub OIDC federated credentials for **staging**, **prod**, and **pull_request** subjects
-- **Application Administrator** on that service principal
+- **Application Administrator** on that service principal (Terraform `azuread` provider)
+- Microsoft Graph **application** permissions for `apply-contact-ciam-config.mjs`: `IdentityProvider.ReadWrite.All`, `Organization.ReadWrite.All`, `Policy.ReadWrite.ApplicationConfiguration`, `Application.ReadWrite.All` (admin-consented on the CIAM GHA app)
 - Shared vault secret **`CONTACT-CIAM-TF-CLIENT-ID`**
 
 Apply (once, after Step 1 — requires **Application Administrator** or **Global Administrator** in the CIAM tenant for the operator running bootstrap):
@@ -87,8 +88,11 @@ Apply (once, after Step 1 — requires **Application Administrator** or **Global
 cd infra/bootstrap
 terraform apply -target=azuread_application.terraform_ciam \
   -target=azuread_service_principal.terraform_ciam \
+  -target=azuread_app_role_assignment.terraform_ciam_graph \
   -target=azurerm_key_vault_secret.contact_ciam_tf_client_id
 ```
+
+Until Step 2 includes the Graph permission grants, env `terraform apply` defers CIAM Graph writes (exit 0) rather than failing the hook.
 
 Env stacks use `azuread.contact_ciam` with `CONTACT-CIAM-TF-CLIENT-ID` when GitHub Actions sets `TF_VAR_contact_ciam_azuread_use_oidc=true` (Terraform plan/apply jobs). Local `terraform apply` continues to use your interactive `az login` session (`contact_ciam_azuread_use_oidc` defaults to false).
 
