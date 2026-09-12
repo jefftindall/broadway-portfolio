@@ -3,6 +3,9 @@
   "key": "microsoft-personal",
   "displayName": "Microsoft personal",
   "graphIdentityProviderId": "Microsoft-OAuth",
-  "enabled": false,
-  "comment": "ACCOUNT-P1-010 enables MSA consumers OIDC from kv-elyse-shared CONTACT-IDP-MSA-* secrets"
+  "enabled": true,
+  "spec": {
+    "type": "builtin",
+    "comment": "Built-in Microsoft Account provider — no KV secrets. Enable once in Entra if missing."
+  }
 }

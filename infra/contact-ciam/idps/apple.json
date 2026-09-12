@@ -3,6 +3,14 @@
   "key": "apple",
   "displayName": "Apple",
   "graphIdentityProviderId": "Apple-OAUTH",
-  "enabled": false,
-  "comment": "ACCOUNT-P1-010 enables federation from kv-elyse-shared CONTACT-IDP-APPLE-* secrets"
+  "enabled": true,
+  "spec": {
+    "type": "apple",
+    "secrets": {
+      "serviceId": "CONTACT-IDP-APPLE-SERVICES-ID",
+      "teamId": "CONTACT-IDP-APPLE-TEAM-ID",
+      "keyId": "CONTACT-IDP-APPLE-KEY-ID",
+      "privateKey": "CONTACT-IDP-APPLE-PRIVATE-KEY"
+    }
+  }
 }

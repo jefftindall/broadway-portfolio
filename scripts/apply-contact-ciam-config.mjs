@@ -2,7 +2,7 @@
 /**
  * Apply Entra External ID (CIAM) user-flow / IdP / branding desired state via Microsoft Graph.
  *
- * ACCOUNT-P1-007 foundation — create/update bodies ship in P1-008+ when manifest `spec` blocks exist.
+ * ACCOUNT-P1-007 foundation; IdP + branding apply in P1-010 / P1-011; user flows in P1-008.
  *
  * Usage:
  *   node scripts/apply-contact-ciam-config.mjs [--dry-run] [--env staging|prod]
@@ -12,13 +12,15 @@
  *   CONTACT_CIAM_TENANT_ID        CIAM tenant GUID
  *   CONTACT_OIDC_CLIENT_ID        env OIDC app client id (for flow association)
  *   CONTACT_CIAM_TF_CLIENT_ID     CIAM Terraform GHA app (Actions federated login)
- *   AZURE_SHARED_KEY_VAULT_NAME   optional; reserved for P1-010 IdP secrets
+ *   AZURE_SHARED_KEY_VAULT_NAME   shared KV for CONTACT-IDP-* secrets (default kv-elyse-shared)
  *   CONTACT_CIAM_SKIP_APPLY       when true, exit 0 without Graph calls
  *   CONTACT_CIAM_REPO_ROOT        repo root (default cwd)
  */
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { applyBrandingAction, applyIdentityProviderAction } from './lib/contact-ciam-apply.mjs';
 import {
+  flowManifestNeedsRemoteLookup,
   formatPlanAction,
   planBrandingSync,
   planHasPendingChanges,
@@ -26,6 +28,7 @@ import {
   planUserFlowSync,
   summarizePlan,
 } from './lib/contact-ciam-diff.mjs';
+import { resolveGraphIdpKey } from './lib/contact-ciam-idp.mjs';
 import {
   ensureCiamGraphSession,
   fetchRemoteContactCiamState,
@@ -35,6 +38,7 @@ import {
   resolveContactCiamManifest,
   SUPPORTED_ENVIRONMENTS,
 } from './lib/contact-ciam-manifest.mjs';
+import { loadIdpCredentials } from './lib/contact-ciam-secrets.mjs';
 
 /**
  * @param {string} message
@@ -78,19 +82,47 @@ function parseCliArgs() {
 /**
  * @param {import('./lib/contact-ciam-diff.mjs').PlanAction[]} actions
  * @param {boolean} dryRun
+ * @param {{
+ *   tenantId: string;
+ *   idpManifests: Record<string, unknown>[];
+ *   idpCredentials: Map<string, import('./lib/contact-ciam-secrets.mjs').IdpCredentialBundle>;
+ *   remoteByKey: Map<string, Record<string, unknown>>;
+ *   brandingManifest: Record<string, unknown> | null;
+ * }} context
  */
-async function applyPlan(actions, dryRun) {
-  const pending = actions.filter((action) => action.kind === 'create' || action.kind === 'update');
-  if (pending.length === 0) {
-    return;
-  }
-  if (dryRun) {
-    return;
-  }
-  for (const action of pending) {
-    fail(
-      `${formatPlanAction(action)} is not implemented yet — add manifest spec and handler in ACCOUNT-P1-008/P1-010/P1-011.`,
-    );
+async function applyPlan(actions, dryRun, context) {
+  for (const action of actions) {
+    if (action.kind !== 'create' && action.kind !== 'update') continue;
+    if (dryRun) continue;
+
+    if (action.resource === 'identityProvider') {
+      await applyIdentityProviderAction({
+        tenantId: context.tenantId,
+        action,
+        idpManifests: context.idpManifests,
+        idpCredentials: context.idpCredentials,
+        remoteByKey: context.remoteByKey,
+      });
+      continue;
+    }
+
+    if (action.resource === 'branding') {
+      if (!context.brandingManifest) {
+        fail('Branding apply requested without branding manifest');
+      }
+      await applyBrandingAction({
+        tenantId: context.tenantId,
+        action,
+        brandingManifest: context.brandingManifest,
+      });
+      continue;
+    }
+
+    if (action.resource === 'userFlow') {
+      fail(
+        `${formatPlanAction(action)} is not implemented yet — add flow handler in ACCOUNT-P1-008.`,
+      );
+    }
   }
 }
 
@@ -102,6 +134,7 @@ async function applyPlan(actions, dryRun) {
  *   applicationClientId: string;
  *   tfClientId?: string;
  *   repoRoot: string;
+ *   sharedKeyVaultName?: string;
  * }} options
  */
 export async function applyContactCiamConfig(options) {
@@ -111,15 +144,28 @@ export async function applyContactCiamConfig(options) {
     CONTACT_OIDC_CLIENT_ID: options.applicationClientId,
   });
 
+  const idpCredentials = loadIdpCredentials(manifest.idps, {
+    vaultName: options.sharedKeyVaultName,
+  });
+  const idpGraphKeys = manifest.idps
+    .filter((doc) => doc.enabled !== false)
+    .map((doc) => resolveGraphIdpKey(doc))
+    .filter(Boolean);
+
   await ensureCiamGraphSession({
     tenantId: options.tenantId,
     tfClientId: options.tfClientId,
   });
 
-  const remote = await fetchRemoteContactCiamState(options.tenantId, options.applicationClientId);
+  const remote = await fetchRemoteContactCiamState(
+    options.tenantId,
+    options.applicationClientId,
+    idpGraphKeys,
+    { skipUserFlow: !flowManifestNeedsRemoteLookup(manifest.flow) },
+  );
   const actions = [
     ...planUserFlowSync(manifest.flow, remote.flow, options.applicationClientId),
-    ...planIdentityProviderSync(manifest.idps, remote.idps),
+    ...planIdentityProviderSync(manifest.idps, remote.idps, idpCredentials, remote.idpDetails),
     ...planBrandingSync(manifest.branding, remote.branding),
   ];
 
@@ -138,7 +184,13 @@ export async function applyContactCiamConfig(options) {
     return { changed: planHasPendingChanges(actions), actions };
   }
 
-  await applyPlan(actions, options.dryRun);
+  await applyPlan(actions, options.dryRun, {
+    tenantId: options.tenantId,
+    idpManifests: manifest.idps,
+    idpCredentials,
+    remoteByKey: remote.idps,
+    brandingManifest: manifest.branding,
+  });
   process.stdout.write('CIAM config apply complete.\n');
   return { changed: true, actions };
 }
@@ -167,6 +219,7 @@ if (isCli) {
     applicationClientId,
     tfClientId: process.env.CONTACT_CIAM_TF_CLIENT_ID,
     repoRoot,
+    sharedKeyVaultName: process.env.AZURE_SHARED_KEY_VAULT_NAME,
   }).catch((err) => {
     fail(err instanceof Error ? err.message : String(err));
   });

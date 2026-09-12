@@ -3,6 +3,12 @@
   "key": "google",
   "displayName": "Google",
   "graphIdentityProviderId": "Google-OAUTH",
-  "enabled": false,
-  "comment": "ACCOUNT-P1-010 enables federation from kv-elyse-shared CONTACT-IDP-GOOGLE-* secrets"
+  "enabled": true,
+  "spec": {
+    "type": "google",
+    "secrets": {
+      "clientId": "CONTACT-IDP-GOOGLE-CLIENT-ID",
+      "clientSecret": "CONTACT-IDP-GOOGLE-CLIENT-SECRET"
+    }
+  }
 }

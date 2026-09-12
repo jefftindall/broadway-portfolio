@@ -9,6 +9,7 @@ import { join } from 'node:path';
 
 const GRAPH_RESOURCE = 'https://graph.microsoft.com';
 const GRAPH_BASE = `${GRAPH_RESOURCE}/v1.0`;
+const GRAPH_BETA = `${GRAPH_RESOURCE}/beta`;
 
 /**
  * @param {string} message
@@ -156,19 +157,37 @@ export async function getGraphAccessToken(tenantId) {
  *   path: string;
  *   body?: unknown;
  *   accessToken?: string;
+ *   baseUrl?: string;
+ *   contentType?: string;
+ *   rawBody?: Buffer | Uint8Array;
  * }} options
  */
-export async function graphRequest({ tenantId, method = 'GET', path, body, accessToken }) {
+export async function graphRequest({
+  tenantId,
+  method = 'GET',
+  path,
+  body,
+  accessToken,
+  baseUrl = GRAPH_BASE,
+  contentType,
+  rawBody,
+}) {
   const token = accessToken ?? (await getGraphAccessToken(tenantId));
-  const url = path.startsWith('http') ? path : `${GRAPH_BASE}${path.startsWith('/') ? path : `/${path}`}`;
+  const url = path.startsWith('http') ? path : `${baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
+  /** @type {Record<string, string>} */
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept: 'application/json',
+  };
+  if (rawBody !== undefined) {
+    headers['Content-Type'] = contentType || 'application/octet-stream';
+  } else if (body !== undefined) {
+    headers['Content-Type'] = contentType || 'application/json';
+  }
   const response = await fetch(url, {
     method,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/json',
-      ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-    },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    headers,
+    body: rawBody ?? (body !== undefined ? JSON.stringify(body) : undefined),
   });
   const text = await response.text();
   let payload = null;
@@ -187,6 +206,13 @@ export async function graphRequest({ tenantId, method = 'GET', path, body, acces
     fail(`Graph ${method} ${path} failed (${kind})`);
   }
   return payload;
+}
+
+/**
+ * @param {Parameters<typeof graphRequest>[0]} options
+ */
+export async function graphBetaRequest(options) {
+  return graphRequest({ ...options, baseUrl: GRAPH_BETA });
 }
 
 /**
@@ -215,30 +241,40 @@ export async function findUserFlowForApplication(tenantId, applicationClientId) 
  * @returns {Promise<Map<string, { id?: string; displayName?: string }>>}
  */
 export async function listIdentityProvidersByKey(tenantId) {
-  const payload = /** @type {{ value?: Array<{ id?: string; displayName?: string }> }} */ (
-    await graphRequest({ tenantId, path: '/identity/identityProviders' })
+  const payload = /** @type {{ value?: Array<Record<string, unknown>> }} */ (
+    await graphBetaRequest({ tenantId, path: '/identity/identityProviders' })
   );
+  /** @type {Map<string, Record<string, unknown>>} */
   const map = new Map();
   for (const idp of payload.value ?? []) {
-    if (idp.id) map.set(idp.id, idp);
-    if (idp.displayName) map.set(idp.displayName, idp);
+    const id = String(idp.id ?? '').trim();
+    const displayName = String(idp.displayName ?? '').trim();
+    if (id) {
+      map.set(id, idp);
+      map.set(id.toLowerCase(), idp);
+    }
+    if (displayName) {
+      map.set(displayName, idp);
+      map.set(displayName.toLowerCase(), idp);
+    }
   }
   return map;
 }
 
 /**
  * @param {string} tenantId
+ * @param {string} idpId
  * @returns {Promise<Record<string, unknown> | null>}
  */
-export async function getDefaultBranding(tenantId) {
-  const payload = /** @type {{ value?: Record<string, unknown>[] }} */ (
-    await graphRequest({ tenantId, path: '/organization?$select=id,displayName' })
-  );
-  const orgId = payload.value?.[0]?.id;
-  if (!orgId) return null;
+export async function getIdentityProvider(tenantId, idpId) {
+  const trimmed = idpId.trim();
+  if (!trimmed) return null;
   try {
     return /** @type {Record<string, unknown>} */ (
-      await graphRequest({ tenantId, path: `/organization/${orgId}/branding` })
+      await graphBetaRequest({
+        tenantId,
+        path: `/identity/identityProviders/${encodeURIComponent(trimmed)}`,
+      })
     );
   } catch {
     return null;
@@ -247,15 +283,136 @@ export async function getDefaultBranding(tenantId) {
 
 /**
  * @param {string} tenantId
- * @returns {Promise<{ flow: { id?: string; displayName?: string } | null; idps: Map<string, { id?: string; displayName?: string }>; branding: Record<string, unknown> | null }>}
+ * @param {Record<string, unknown>} body
  */
-export async function fetchRemoteContactCiamState(tenantId, applicationClientId) {
+export async function createIdentityProvider(tenantId, body) {
+  return graphBetaRequest({
+    tenantId,
+    method: 'POST',
+    path: '/identity/identityProviders',
+    body,
+  });
+}
+
+/**
+ * @param {string} tenantId
+ * @param {string} idpId
+ * @param {Record<string, unknown>} body
+ */
+export async function patchIdentityProvider(tenantId, idpId, body) {
+  return graphBetaRequest({
+    tenantId,
+    method: 'PATCH',
+    path: `/identity/identityProviders/${encodeURIComponent(idpId.trim())}`,
+    body,
+  });
+}
+
+/**
+ * @param {string} tenantId
+ * @returns {Promise<string | null>}
+ */
+export async function getOrganizationId(tenantId) {
+  const payload = /** @type {{ value?: Array<{ id?: string }> }} */ (
+    await graphRequest({ tenantId, path: '/organization?$select=id' })
+  );
+  return payload.value?.[0]?.id ?? null;
+}
+
+/**
+ * @param {string} tenantId
+ * @returns {Promise<Record<string, unknown> | null>}
+ */
+export async function getDefaultBranding(tenantId) {
+  const orgId = await getOrganizationId(tenantId);
+  if (!orgId) return null;
+  try {
+    const branding = /** @type {Record<string, unknown>} */ (
+      await graphRequest({ tenantId, path: `/organization/${orgId}/branding` })
+    );
+    let localization = null;
+    try {
+      localization = /** @type {Record<string, unknown>} */ (
+        await graphRequest({ tenantId, path: `/organization/${orgId}/branding/localizations/0` })
+      );
+    } catch {
+      localization = null;
+    }
+    return { orgId, branding, localization };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * @param {string} tenantId
+ * @param {string} orgId
+ * @param {string} locale
+ * @param {Record<string, string>} body
+ */
+export async function patchBrandingLocalization(tenantId, orgId, locale, body) {
+  return graphRequest({
+    tenantId,
+    method: 'PATCH',
+    path: `/organization/${orgId}/branding/localizations/${encodeURIComponent(locale)}`,
+    body,
+  });
+}
+
+/**
+ * @param {string} tenantId
+ * @param {string} orgId
+ * @param {string} locale
+ * @param {Buffer} bytes
+ * @param {string} contentType
+ */
+export async function uploadBannerLogo(tenantId, orgId, locale, bytes, contentType) {
+  return graphRequest({
+    tenantId,
+    method: 'PUT',
+    path: `/organization/${orgId}/branding/localizations/${encodeURIComponent(locale)}/bannerLogo/$value`,
+    rawBody: bytes,
+    contentType,
+  });
+}
+
+/**
+ * @param {string} tenantId
+ * @param {string} applicationClientId
+ * @param {string[]} [idpGraphKeys]
+ * @param {{ skipUserFlow?: boolean }} [options]
+ * @returns {Promise<{ flow: { id?: string; displayName?: string } | null; idps: Map<string, { id?: string; displayName?: string }>; branding: Record<string, unknown> | null; idpDetails: Map<string, Record<string, unknown>> }>}
+ */
+export async function fetchRemoteContactCiamState(
+  tenantId,
+  applicationClientId,
+  idpGraphKeys = [],
+  options = {},
+) {
   const [flow, idps, branding] = await Promise.all([
-    findUserFlowForApplication(tenantId, applicationClientId),
+    options.skipUserFlow ? Promise.resolve(null) : findUserFlowForApplication(tenantId, applicationClientId),
     listIdentityProvidersByKey(tenantId),
     getDefaultBranding(tenantId),
   ]);
-  return { flow, idps, branding };
+
+  /** @type {Map<string, Record<string, unknown>>} */
+  const idpDetails = new Map();
+  for (const graphKey of idpGraphKeys) {
+    const trimmed = String(graphKey ?? '').trim();
+    if (!trimmed) continue;
+    const listed =
+      idps.get(trimmed) ??
+      idps.get(trimmed.toLowerCase()) ??
+      idps.get(trimmed.toUpperCase());
+    const id = String(listed?.id ?? trimmed);
+    const detail = (listed && listed.clientId !== undefined ? listed : null) ?? (await getIdentityProvider(tenantId, id));
+    if (detail) {
+      idpDetails.set(trimmed, detail);
+      idpDetails.set(trimmed.toLowerCase(), detail);
+    }
+  }
+
+  return { flow, idps, branding, idpDetails };
 }
 
 /**

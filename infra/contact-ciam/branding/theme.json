@@ -1,5 +1,11 @@
 {
   "schemaVersion": 1,
-  "enabled": false,
-  "comment": "ACCOUNT-P1-011 adds branding.spec with ink/gold/gel palette and logo URL"
+  "enabled": true,
+  "spec": {
+    "locale": "0",
+    "backgroundColor": "#0e0d0c",
+    "signInPageText": "Sign in to book voice lessons or manage your lesson account with Elyse Tindall.",
+    "usernameHintText": "Email address",
+    "bannerLogoUrl": "https://elysetindall.com/images/photos/brand-mark.png"
+  }
 }
