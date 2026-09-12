@@ -2,10 +2,10 @@
 
 **Artifact ID:** `ELYSE-ACCOUNT-CIAM-001`  
 **Version:** 1.0  
-**Last updated:** 2026-09-12 (P1-008 staging flow + P1-009 + P1-013)  
+**Last updated:** 2026-09-12 (`ACCOUNT-P1-012` `wont_fix` — custom URL domain cost-prohibitive)  
 **Audience:** Agents, implementers, operators  
 **Parent plan:** [`contact-accounts.md`](./contact-accounts.md) (`ACCOUNT-P1-007`–`P1-014`)  
-**Scope:** Replace portal click-ops for Entra External ID (CIAM) **user flows**, **social IdP federation**, and **login branding** with version-controlled automation. **One user flow per environment** so staging can be exercised before prod promotion. Reduce first-time sign-in friction (social-only, minimal attribute collection). Optional: branded CIAM login on an **`elysetindall.com` subdomain** with site colors.
+**Scope:** Replace portal click-ops for Entra External ID (CIAM) **user flows**, **social IdP federation**, and **login branding** with version-controlled automation. **One user flow per environment** so staging can be exercised before prod promotion. Reduce first-time sign-in friction (social-only, minimal attribute collection). Branded login uses the **free default `*.ciamlogin.com` host** + company theme (`P1-011`); **`login.elysetindall.com` is out of scope** (`P1-012` `wont_fix`).
 
 Use **Action ID** (`ACCOUNT-P1-007` … `ACCOUNT-P1-014`) in PR titles and commits.
 
@@ -25,7 +25,7 @@ Phase 1 shipped SWA → CIAM OIDC wiring, roles, `/login`, and the feature flag.
 | Social IdPs (Google, Apple, MSA) | [`contact-accounts-social-idps.md`](../runbooks/contact-accounts-social-idps.md) manual steps | Drift, no staging/prod isolation for flow changes |
 | User flow | One shared flow (or none) for both SWA apps | Cannot test a flow change on staging without affecting prod |
 | First federated sign-in | CIAM **Add details** page after Google/Apple/MSA | Extra step; profile belongs on `/account` (Phase 2) |
-| Login chrome | Default Microsoft CIAM (`*.ciamlogin.com`) | Feels disconnected from elysetindall.com |
+| Login chrome | Default Microsoft CIAM (`*.ciamlogin.com`) | Theme (`P1-011`) + `/login` UX (`P1-013`) mitigate; custom URL domain rejected (~$35/mo Front Door — `P1-012` `wont_fix`) |
 
 **Already in Terraform (keep):** CIAM tenant (bootstrap), per-env OIDC app + **service principal** (`contact_ciam_entra.tf`), KV secrets, GHA CIAM principal with Application Administrator.
 
@@ -75,14 +75,12 @@ Phase 1 shipped SWA → CIAM OIDC wiring, roles, `/login`, and the feature flag.
 | Residual “Add details” | Built-in CIAM may still show a one-time confirm screen — minimize fields; full edit moves to **`/account`** (`ACCOUNT-P2-*`) |
 | Optional site UX | `/login` direct provider buttons with `domain_hint` / IdP-specific authorize URLs to skip the CIAM button grid (`ACCOUNT-P1-013`) |
 
-### Branded login (bonus)
+### Branded login
 
-Two layers — implement **theme first**, **custom domain** when ready for DNS + Front Door:
-
-| Layer | What users see | Automation |
-|-------|----------------|------------|
-| **A. Company branding theme** | Dark stage background, gold CTAs, Figtree/Cormorant where Entra allows; logo from `/images/` | Graph `organizationalBranding` / localization — checked into `infra/contact-ciam/branding/` |
-| **B. Custom URL domain** | `https://login.elysetindall.com/{tenant-id}/…` instead of `*.ciamlogin.com` | Azure Front Door + DNS CNAME + Graph custom domain registration; update SWA issuer via existing CD patch |
+| Layer | What users see | Status |
+|-------|----------------|--------|
+| **A. Company branding theme** | Dark stage background, gold CTAs, Figtree/Cormorant where Entra allows; logo from `/images/` | **`done`** (`P1-011`) — Graph `organizationalBranding` in `infra/contact-ciam/branding/` |
+| **B. Custom URL domain** | `https://login.elysetindall.com/{tenant-id}/…` instead of `*.ciamlogin.com` | **`wont_fix`** (`P1-012`) — Microsoft requires **Azure Front Door Standard ~$35/mo**; no supported cheaper proxy; low login volume does not justify doubling Azure spend |
 
 Brand tokens (from [`style-guide.md`](../style-guide.md)):
 
@@ -94,7 +92,7 @@ Brand tokens (from [`style-guide.md`](../style-guide.md)):
 | `gel` | `#3d8b8b` | Links / secondary accents |
 | `panel` | `#241f1a` | Card surfaces |
 
-**Custom domain note:** [Microsoft custom URL domain](https://learn.microsoft.com/en-us/entra/external-id/customers/concept-custom-url-domain) requires **Azure Front Door** (billable — recalc [`cost-and-quotas.md`](../runbooks/cost-and-quotas.md) + subscription budget in that PR). Recommended hostname: **`login.elysetindall.com`**. After cutover, SWA `openIdIssuer` and Apple return URLs must use the custom domain authority. Blocking default `*.ciamlogin.com` is optional and requires a Microsoft support ticket — defer until custom domain is proven.
+**Custom URL domain (`P1-012` `wont_fix`):** [Microsoft custom URL domain](https://learn.microsoft.com/en-us/entra/external-id/customers/concept-custom-url-domain) requires **Azure Front Door** (~**$35/mo** base; ~doubles current Azure expected spend). DIY proxies (Functions, App Service, nginx) are **not supported** for Entra custom URL domain registration. Revisit only if Microsoft ships third-party integration without Front Door or login volume justifies the cost. Until then: **`elysecontacts.ciamlogin.com`** + theme + `/login` direct buttons.
 
 ---
 
@@ -146,7 +144,7 @@ Script reads env: `CONTACT_CIAM_ENV=staging|prod`, `CONTACT_CIAM_TENANT_ID`, flo
 | `ACCOUNT-P1-009` | Minimal attribute collection (social-only) | `done` | `P1-008` | flow JSON `onAttributeCollection` |
 | `ACCOUNT-P1-010` | IdP federation from KV (Google / Apple / MSA) | `done` | `P1-007` | `infra/contact-ciam/idps/`; KV secrets |
 | `ACCOUNT-P1-011` | CIAM company branding theme (site colors) | `done` | `P1-007` | `infra/contact-ciam/branding/` |
-| `ACCOUNT-P1-012` | Custom URL domain `login.elysetindall.com` | `planned` | `P1-011`; DNS + Front Door | bootstrap or env TF; CD issuer patch |
+| `ACCOUNT-P1-012` | Custom URL domain `login.elysetindall.com` | `wont_fix` | — (cost-prohibitive; Front Door required) | — |
 | `ACCOUNT-P1-013` | `/login` direct provider buttons (`domain_hint`) | `done` | `P1-008` | `src/pages/login.astro`; `contactAccounts.ts` |
 | `ACCOUNT-P1-014` | Promotion runbook + smoke/journey updates | `planned` | `P1-008`–`P1-013` | runbooks; `tests/smoke/contact-accounts.spec.ts` |
 
@@ -217,9 +215,11 @@ Script reads env: `CONTACT_CIAM_ENV=staging|prod`, `CONTACT_CIAM_TENANT_ID`, flo
 </details>
 
 <details>
-<summary><code>ACCOUNT-P1-012</code> — Custom URL domain (optional go-live)</summary>
+<summary><code>ACCOUNT-P1-012</code> — Custom URL domain (`wont_fix` — cost-prohibitive)</summary>
 
-**Acceptance criteria**
+**Decision (2026-09-12):** Not planned. Entra External ID custom URL domains require Azure Front Door Standard (~**$35/mo** fixed), with no supported cheaper alternative at low volume. Stay on **`elysecontacts.ciamlogin.com`** + `P1-011` theme.
+
+**Acceptance criteria** (not pursued)
 
 - [ ] DNS `login.elysetindall.com` → Front Door → CIAM custom domain registered
 - [ ] SWA `openIdIssuer` + CD discovery patch use custom domain authority
@@ -246,7 +246,7 @@ Script reads env: `CONTACT_CIAM_ENV=staging|prod`, `CONTACT_CIAM_TENANT_ID`, flo
 
 **Acceptance criteria**
 
-- [ ] Runbook section: **Promote CIAM config staging → prod** (order: IdPs → theme → flow → custom domain)
+- [ ] Runbook section: **Promote CIAM config staging → prod** (order: IdPs → theme → flow; **`P1-012` skipped**)
 - [ ] Smoke: staging Google + Apple + MSA complete (or documented skip with reason)
 - [ ] `ACCOUNT-P1-003` iPhone Safari AC checked when IdPs live
 - [ ] `ACCOUNT-P1-004` checklist fully `[x]` after automation + staging validation
@@ -265,7 +265,7 @@ PR #129 merge (enterprise SP in TF)
             └─► P1-008 staging flow ─► P1-009 friction ─► P1-013 /login UX
                         └─► P1-014 staging validation
                                     └─► P1-008 prod flow + P1-014 prod promotion
-                                                └─► P1-012 custom domain (optional)
+                        P1-012 custom URL domain — wont_fix (Front Door ~$35/mo)
 ACCOUNT-P2-* may proceed in parallel once staging sign-in returns tokens
 ```
 
@@ -282,7 +282,7 @@ Automation does **not** replace:
 | Google Cloud | OAuth consent screen, create web client, paste id/secret → KV |
 | Apple Developer | Services ID, `.p8` key, domains on `*.ciamlogin.com` → KV |
 | Microsoft Entra (workforce) | Unchanged — Studio only |
-| DNS | `login.elysetindall.com` CNAME when `P1-012` ships |
+| DNS | No CIAM custom subdomain — `P1-012` `wont_fix` |
 
 ---
 
@@ -292,8 +292,8 @@ Automation does **not** replace:
 |------|------------|
 | Graph API schema drift | Pin flow JSON to documented Graph version; contract tests |
 | Built-in flow cannot skip “Add details” entirely | Minimize attributes; `/account` owns edits |
-| Custom domain breaks SWA issuer | CD discovery patch + staging smoke before prod |
-| Front Door cost | Budget line in same PR as `P1-012` |
+| Custom domain breaks SWA issuer | N/A — `P1-012` `wont_fix`; issuer stays `*.ciamlogin.com` |
+| Front Door cost (~$35/mo) | Rejected for `P1-012`; would ~double Azure expected spend at current volume |
 | Shared IdP creds across envs | Acceptable — same CIAM tenant; isolation is **user flow + OIDC app**, not separate Google clients |
 | Secret echo in CI | Script follows [`never-echo-secrets.mdc`](../../.cursor/rules/never-echo-secrets.mdc) |
 
@@ -308,6 +308,7 @@ Automation does **not** replace:
 | Workforce Entra guest students | Unchanged non-goal |
 | Custom auth cookies | SWA Easy Auth stays |
 | Entra External ID premium SMS MFA | Not needed at volume |
+| CIAM custom URL domain `login.elysetindall.com` (`P1-012`) | Cost-prohibitive — Front Door required; theme on `*.ciamlogin.com` is sufficient |
 
 ---
 

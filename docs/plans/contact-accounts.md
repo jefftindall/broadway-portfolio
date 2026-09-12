@@ -2,7 +2,7 @@
 
 **Artifact ID:** `ELYSE-ACCOUNT-001`  
 **Version:** 1.1  
-**Last updated:** 2026-09-12  
+**Last updated:** 2026-09-12 (`ACCOUNT-P1-012` custom URL domain `wont_fix`)  
 **Audience:** Agents, implementers, operators  
 **Scope:** Public-site **contact accounts** so students (and parents) can sign in with Google, Apple, or Microsoft, maintain profile and preferences, **see the schedule and book a slot**, and **review their lesson history**. The whole contact-account surface is behind a **runtime feature flag**. **Lesson and casting inquiries stay anonymous forever** — potential clients must never be forced to log in to write Elyse. Studio (`/studio`) stays the operator workspace. People CRM stays the relationship SoT. Stripe stays money. Google Calendar stays time.
 
@@ -279,7 +279,7 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 | `ACCOUNT-P1-009` | Minimal attribute collection (social-only friction) | `done` | `P1-008` | staging flow `spec.onAttributeCollection` |
 | `ACCOUNT-P1-010` | IdP federation from KV (Google / Apple / MSA) | `done` | `P1-007` | `infra/contact-ciam/idps/` |
 | `ACCOUNT-P1-011` | CIAM branding theme (site colors) | `done` | `P1-007` | `infra/contact-ciam/branding/` |
-| `ACCOUNT-P1-012` | Custom URL domain `login.elysetindall.com` | `planned` | `P1-011` | Front Door + DNS; CD issuer |
+| `ACCOUNT-P1-012` | Custom URL domain `login.elysetindall.com` | `wont_fix` | — (Front Door ~$35/mo; cost-prohibitive) | — |
 | `ACCOUNT-P1-013` | `/login` direct provider buttons | `done` | `P1-008` | `src/pages/login.astro`; `contactAccounts.ts` |
 | `ACCOUNT-P1-014` | Promotion runbook + smoke/journey updates | `planned` | `P1-008`–`P1-013` | runbooks; smoke tests |
 
@@ -559,7 +559,8 @@ ACCOUNT-P0-001 (done)
             ├─► P1-005 runbook + privacy + cost
             └─► P1-006 CONTACT_ACCOUNTS_ENABLED flag
                     ├─► Phase 1b P1-007 Graph apply ─► P1-008 per-env flows ─► P1-009 friction
-                    │         ├─► P1-011 branding ─► P1-012 login.elysetindall.com (optional)
+                    │         ├─► P1-011 branding (theme on `*.ciamlogin.com`)
+                    │         │         P1-012 login.elysetindall.com — wont_fix (Front Door cost)
                     │         └─► P1-013 /login UX ─► P1-014 promotion + smoke
                     └─► ACCOUNT-P2-001 identity ↔ contact
                               ├─► P2-002 /api/account
@@ -607,6 +608,6 @@ STUDIO-P3-003 lesson workflow (done) ─► P3-002 bind; P4-001 history
 | [`data-persistence.md`](../architecture/data-persistence.md) | Update in the `ACCOUNT-P2-001` PR when identity link ships |
 | [`manage-access.md`](../runbooks/manage-access.md) | Operators vs contacts after P1 |
 | [`cost-and-quotas.md`](../runbooks/cost-and-quotas.md) | External ID MAU + Apple Developer when P1 ships |
-| [`contact-ciam-automation.md`](./contact-ciam-automation.md) | Phase 1b: per-env user flows, Graph apply, branding, custom domain |
+| [`contact-ciam-automation.md`](./contact-ciam-automation.md) | Phase 1b: per-env user flows, Graph apply, branding (`P1-012` custom domain `wont_fix`) |
 | [`ux-release-testing-strategy.md`](./ux-release-testing-strategy.md) | New journeys under `ACCOUNT-P2-004` / `P3-004` |
 | [`.cursor/rules/studio-auth.mdc`](../../.cursor/rules/studio-auth.mdc) | Extend in P1: `contact` role ≠ catalog |
