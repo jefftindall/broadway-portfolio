@@ -168,7 +168,7 @@ CONTACT_CIAM_SKIP_APPLY=true node scripts/apply-contact-ciam-config.mjs --env st
 
 **GitHub Actions** — the hook mints a CIAM federated session when `CONTACT_CIAM_TF_CLIENT_ID` and GitHub OIDC env vars are present (same app as `azuread.contact_ciam`). If Graph permissions are not yet consented, set `-var='contact_ciam_skip_apply=true'` until [`contact-ciam-automation.md`](../plans/contact-ciam-automation.md) `P1-010` admin-consent step is done.
 
-Create/update bodies for **user flows** land in **`ACCOUNT-P1-008`** when flow manifest `spec` blocks are added. **IdPs** (`P1-010`) and **branding** (`P1-011`) apply when KV secrets / theme spec are ready; Google/Apple skip gracefully while `CONTACT-IDP-*` values are `REPLACE_ME`.
+Create/update bodies for **user flows** apply from `flows/{env}.json` when `spec` is present (`ACCOUNT-P1-008` staging shipped). **IdPs** (`P1-010`) and **branding** (`P1-011`) apply when KV secrets / theme spec are ready; Google/Apple skip gracefully while `CONTACT-IDP-*` values are `REPLACE_ME`.
 
 ---
 
@@ -194,8 +194,8 @@ Reads **`CONTACT-CIAM-OIDC-ISSUER`** from `kv-elyse-shared`.
 |-------|-------|----------------------|
 | IdP credentials in Entra | Graph apply from `CONTACT-IDP-*` in `kv-elyse-shared` | `ACCOUNT-P1-010` |
 | Login theme | Graph organizational branding from `infra/contact-ciam/branding/theme.json` | `ACCOUNT-P1-011` |
-| User flow per environment | Portal (interim) or none | `ACCOUNT-P1-008`: `contact-signin-staging` / `contact-signin-prod` via [`infra/contact-ciam/flows/`](../../infra/contact-ciam/flows/) |
-| Apply on env Terraform | Step 3b (`apply-contact-ciam-config.mjs`) | Idempotent; user flows skip until P1-008 `spec` |
+| User flow per environment | Staging `spec` in repo; prod after promotion | `ACCOUNT-P1-008`: `contact-signin-staging` via Graph apply; prod JSON pending `P1-014` |
+| Apply on env Terraform | Step 3b (`apply-contact-ciam-config.mjs`) | Idempotent; prod flow skips until `flows/prod.json` gains `spec` |
 
 If you already linked both SWA apps to **one** portal user flow, that works until P1-008 splits flows — see the runbook migration note.
 

@@ -2,7 +2,7 @@
 
 **Artifact ID:** `ELYSE-ACCOUNT-CIAM-001`  
 **Version:** 1.0  
-**Last updated:** 2026-09-12 (P1-010 IdPs + P1-011 theme)  
+**Last updated:** 2026-09-12 (P1-008 staging flow + P1-009 + P1-013)  
 **Audience:** Agents, implementers, operators  
 **Parent plan:** [`contact-accounts.md`](./contact-accounts.md) (`ACCOUNT-P1-007`–`P1-014`)  
 **Scope:** Replace portal click-ops for Entra External ID (CIAM) **user flows**, **social IdP federation**, and **login branding** with version-controlled automation. **One user flow per environment** so staging can be exercised before prod promotion. Reduce first-time sign-in friction (social-only, minimal attribute collection). Optional: branded CIAM login on an **`elysetindall.com` subdomain** with site colors.
@@ -142,12 +142,12 @@ Script reads env: `CONTACT_CIAM_ENV=staging|prod`, `CONTACT_CIAM_TENANT_ID`, flo
 | ID | Title | Status | Depends on | Primary files |
 |----|-------|--------|------------|---------------|
 | `ACCOUNT-P1-007` | Graph apply script + env Terraform hook | `done` | `ACCOUNT-P1-001` | `scripts/apply-contact-ciam-config.mjs`; `infra/contact-ciam/`; `contact_ciam_config.tf` |
-| `ACCOUNT-P1-008` | Per-env user flows (staging + prod JSON) | `planned` | `P1-007` | `infra/contact-ciam/flows/` |
-| `ACCOUNT-P1-009` | Minimal attribute collection (social-only) | `planned` | `P1-008` | flow JSON `onAttributeCollection` |
+| `ACCOUNT-P1-008` | Per-env user flows (staging + prod JSON) | `in_progress` | `P1-007` | staging `spec` in `infra/contact-ciam/flows/staging.json` |
+| `ACCOUNT-P1-009` | Minimal attribute collection (social-only) | `done` | `P1-008` | flow JSON `onAttributeCollection` |
 | `ACCOUNT-P1-010` | IdP federation from KV (Google / Apple / MSA) | `done` | `P1-007` | `infra/contact-ciam/idps/`; KV secrets |
 | `ACCOUNT-P1-011` | CIAM company branding theme (site colors) | `done` | `P1-007` | `infra/contact-ciam/branding/` |
 | `ACCOUNT-P1-012` | Custom URL domain `login.elysetindall.com` | `planned` | `P1-011`; DNS + Front Door | bootstrap or env TF; CD issuer patch |
-| `ACCOUNT-P1-013` | `/login` direct provider buttons (`domain_hint`) | `planned` | `P1-008` | `src/pages/login.astro`; `contactAccounts.ts` |
+| `ACCOUNT-P1-013` | `/login` direct provider buttons (`domain_hint`) | `done` | `P1-008` | `src/pages/login.astro`; `contactAccounts.ts` |
 | `ACCOUNT-P1-014` | Promotion runbook + smoke/journey updates | `planned` | `P1-008`–`P1-013` | runbooks; `tests/smoke/contact-accounts.spec.ts` |
 
 <details>
@@ -169,11 +169,11 @@ Script reads env: `CONTACT_CIAM_ENV=staging|prod`, `CONTACT_CIAM_TENANT_ID`, flo
 
 **Acceptance criteria**
 
-- [ ] `contact-signin-staging` exists and associates **only** with staging SP (`elyse-portfolio-contact-staging`)
-- [ ] `contact-signin-prod` exists and associates **only** with prod SP
-- [ ] Staging **Run now** / authorize URL uses `test.elysetindall.com` redirect semantics
-- [ ] Prod flow not modified by staging applies (`CONTACT_CIAM_ENV` guard)
-- [ ] Portal manual flow (if any) documented as superseded or imported once then abandoned
+- [x] `contact-signin-staging` Graph body in repo (`flows/staging.json` `spec`) — associates **only** staging SP via `CONTACT_OIDC_CLIENT_ID`
+- [ ] `contact-signin-prod` exists and associates **only** with prod SP (promote after staging validation — `P1-014`)
+- [x] Staging authorize uses staging OIDC app (Terraform redirect URIs include `test.elysetindall.com`)
+- [x] Prod flow not modified by staging applies (`CONTACT_CIAM_ENV` selects `flows/{env}.json`; prod JSON still lacks `spec`)
+- [ ] Portal manual flow documented as superseded once Graph apply succeeds on staging
 
 </details>
 
@@ -182,11 +182,11 @@ Script reads env: `CONTACT_CIAM_ENV=staging|prod`, `CONTACT_CIAM_TENANT_ID`, flo
 
 **Acceptance criteria**
 
-- [ ] User flow disables email+password and email OTP
-- [ ] Google, Apple, MSA enabled on the flow
-- [ ] `onAttributeCollection` maps **displayName** + **email** from IdP; no extra required fields
-- [ ] Document residual first-time confirm screen limitation; profile editing deferred to `/account` (`ACCOUNT-P2-003`)
-- [ ] Staging: Google sign-in reaches SWA callback without operator-only portal edits
+- [x] User flow disables email+password and email OTP (social IdPs only in `spec.identityProviders`)
+- [x] Google, Apple, MSA enabled on the flow (`Google-OAUTH`, `Apple-OAUTH`, `Microsoft-OAuth`)
+- [x] `onAttributeCollection` maps **displayName** + **email** hidden/read-only from IdP (`spec.onAttributeCollection`)
+- [x] Residual first-time confirm screen limitation documented — profile editing deferred to `/account` (`ACCOUNT-P2-003`); CIAM may still show a one-time confirm when IdP omits claims
+- [ ] Staging: Google sign-in reaches SWA callback without operator-only portal edits (operator after Graph apply + KV IdPs)
 
 </details>
 
@@ -234,10 +234,10 @@ Script reads env: `CONTACT_CIAM_ENV=staging|prod`, `CONTACT_CIAM_TENANT_ID`, flo
 
 **Acceptance criteria**
 
-- [ ] `/login` student section offers **Continue with Google / Apple / Microsoft** (in addition to single “Book or manage lessons” entry)
-- [ ] Links pass SWA-safe redirect + CIAM `domain_hint` or documented IdP-specific entry URL
-- [ ] Operator Studio path unchanged
-- [ ] Journeys/smoke updated for new test ids
+- [x] `/login` student section offers **Continue with Google / Apple / Microsoft** (in addition to “Book or manage lessons”)
+- [x] Links pass SWA-safe redirect + CIAM `domain_hint` (`loginParameterNames` + `buildContactSocialLoginHref`)
+- [x] Operator Studio path unchanged
+- [x] Smoke updated for `login-contact-{google,apple,microsoft}` test ids + domain_hint redirect probe
 
 </details>
 
@@ -269,7 +269,7 @@ PR #129 merge (enterprise SP in TF)
 ACCOUNT-P2-* may proceed in parallel once staging sign-in returns tokens
 ```
 
-**Suggested next PR:** `ACCOUNT-P1-008` (per-env user flow `spec` + Graph create/update). IdPs (`P1-010`) and branding theme (`P1-011`) ship in the same automation stack — apply after KV secrets are populated.
+**Suggested next PR:** `ACCOUNT-P1-014` staging validation + prod flow promotion (`flows/prod.json` `spec` after staging round-trips).
 
 ---
 

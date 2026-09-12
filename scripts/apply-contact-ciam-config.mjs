@@ -18,7 +18,7 @@
  */
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { applyBrandingAction, applyIdentityProviderAction } from './lib/contact-ciam-apply.mjs';
+import { applyBrandingAction, applyIdentityProviderAction, applyUserFlowAction } from './lib/contact-ciam-apply.mjs';
 import {
   flowManifestNeedsRemoteLookup,
   formatPlanAction,
@@ -90,12 +90,27 @@ function parseCliArgs() {
  *   idpCredentials: Map<string, import('./lib/contact-ciam-secrets.mjs').IdpCredentialBundle>;
  *   remoteByKey: Map<string, Record<string, unknown>>;
  *   brandingManifest: Record<string, unknown> | null;
+ *   flowManifest: Record<string, unknown> | null;
+ *   applicationClientId: string;
  * }} context
  */
 async function applyPlan(actions, dryRun, context) {
   for (const action of actions) {
     if (action.kind !== 'create' && action.kind !== 'update') continue;
     if (dryRun) continue;
+
+    if (action.resource === 'userFlow') {
+      if (!context.flowManifest) {
+        fail('User flow apply requested without flow manifest');
+      }
+      await applyUserFlowAction({
+        tenantId: context.tenantId,
+        action,
+        flowManifest: context.flowManifest,
+        applicationClientId: context.applicationClientId,
+      });
+      continue;
+    }
 
     if (action.resource === 'identityProvider') {
       await applyIdentityProviderAction({
@@ -120,11 +135,7 @@ async function applyPlan(actions, dryRun, context) {
       continue;
     }
 
-    if (action.resource === 'userFlow') {
-      fail(
-        `${formatPlanAction(action)} is not implemented yet — add flow handler in ACCOUNT-P1-008.`,
-      );
-    }
+    fail(`${formatPlanAction(action)} is not implemented.`);
   }
 }
 
@@ -212,6 +223,8 @@ export async function applyContactCiamConfig(options) {
     idpCredentials,
     remoteByKey: remote.idps,
     brandingManifest: manifest.branding,
+    flowManifest: manifest.flow,
+    applicationClientId: options.applicationClientId,
   });
   process.stdout.write('CIAM config apply complete.\n');
   return { changed: true, actions };

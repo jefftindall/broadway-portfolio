@@ -3,5 +3,22 @@
   "enabled": true,
   "displayName": "contact-signin-staging",
   "applicationClientId": "{{CONTACT_OIDC_CLIENT_ID}}",
-  "comment": "ACCOUNT-P1-008 adds flow.spec (IdPs, attribute collection). Script plans create/update once spec exists."
+  "spec": {
+    "onInteractiveAuthFlowStart": {
+      "isSignUpAllowed": true
+    },
+    "identityProviders": ["Google-OAUTH", "Apple-OAUTH", "Microsoft-OAuth"],
+    "onAttributeCollection": {
+      "email": {
+        "hidden": true,
+        "editable": false,
+        "required": true
+      },
+      "displayName": {
+        "hidden": true,
+        "editable": false,
+        "required": false
+      }
+    }
+  }
 }

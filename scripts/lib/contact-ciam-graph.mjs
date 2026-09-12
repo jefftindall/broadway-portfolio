@@ -259,6 +259,53 @@ export async function findUserFlowForApplication(tenantId, applicationClientId) 
 
 /**
  * @param {string} tenantId
+ * @param {string} flowId
+ * @returns {Promise<Record<string, unknown> | null>}
+ */
+export async function getAuthenticationEventsFlow(tenantId, flowId) {
+  const trimmed = flowId.trim();
+  if (!trimmed) return null;
+  try {
+    return /** @type {Record<string, unknown>} */ (
+      await graphRequest({
+        tenantId,
+        path: `/identity/authenticationEventsFlows/${encodeURIComponent(trimmed)}`,
+      })
+    );
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * @param {string} tenantId
+ * @param {Record<string, unknown>} body
+ */
+export async function createAuthenticationEventsFlow(tenantId, body) {
+  return graphRequest({
+    tenantId,
+    method: 'POST',
+    path: '/identity/authenticationEventsFlows',
+    body,
+  });
+}
+
+/**
+ * @param {string} tenantId
+ * @param {string} flowId
+ * @param {Record<string, unknown>} body
+ */
+export async function patchAuthenticationEventsFlow(tenantId, flowId, body) {
+  return graphRequest({
+    tenantId,
+    method: 'PATCH',
+    path: `/identity/authenticationEventsFlows/${encodeURIComponent(flowId.trim())}`,
+    body,
+  });
+}
+
+/**
+ * @param {string} tenantId
  * @returns {Promise<Map<string, { id?: string; displayName?: string }>>}
  */
 export async function listIdentityProvidersByKey(tenantId) {
@@ -410,11 +457,18 @@ export async function fetchRemoteContactCiamState(
   idpGraphKeys = [],
   options = {},
 ) {
-  const [flow, idps, branding] = await Promise.all([
-    options.skipUserFlow ? Promise.resolve(null) : findUserFlowForApplication(tenantId, applicationClientId),
+  const [flowSummary, idps, branding] = await Promise.all([
+    options.skipUserFlow || !applicationClientId.trim()
+      ? Promise.resolve(null)
+      : findUserFlowForApplication(tenantId, applicationClientId),
     listIdentityProvidersByKey(tenantId),
     getDefaultBranding(tenantId),
   ]);
+
+  let flow = null;
+  if (flowSummary?.id) {
+    flow = await getAuthenticationEventsFlow(tenantId, flowSummary.id);
+  }
 
   /** @type {Map<string, Record<string, unknown>>} */
   const idpDetails = new Map();

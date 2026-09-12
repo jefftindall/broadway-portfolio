@@ -263,13 +263,28 @@ Target architecture ([`contact-ciam-automation.md`](../plans/contact-ciam-automa
 | Staging | `contact-signin-staging` | `elyse-portfolio-contact-staging` |
 | Production | `contact-signin-prod` | `elyse-portfolio-contact-prod` |
 
-Manifests: [`infra/contact-ciam/flows/staging.json`](../../infra/contact-ciam/flows/staging.json) · [`prod.json`](../../infra/contact-ciam/flows/prod.json). Graph create/update ships in **`ACCOUNT-P1-008`**.
+Manifests: [`infra/contact-ciam/flows/staging.json`](../../infra/contact-ciam/flows/staging.json) ( **`spec` shipped** — social-only + minimal attributes) · [`prod.json`](../../infra/contact-ciam/flows/prod.json) (promote after staging validation). Graph create/update runs via `apply-contact-ciam-config.mjs` on env Terraform apply.
+
+**First-time sign-in:** CIAM may still show a one-time **Add details** / confirm screen even when `email` and `displayName` are hidden in the flow — that is a platform limitation. Full profile editing belongs on **`/account`** (`ACCOUNT-P2-003`).
 
 ### Enterprise app (service principal)
 
 CIAM user flows associate **enterprise applications** (service principals), not bare app registrations. Env Terraform creates **`azuread_service_principal.contact_swa`** alongside each OIDC app. Confirm under **Enterprise applications** → `elyse-portfolio-contact-{staging|prod}`.
 
-### Portal (interim until P1-008)
+### Graph apply (preferred)
+
+After KV IdP secrets are set and staging OIDC client id is known:
+
+```bash
+export CONTACT_CIAM_TENANT_ID="$(az keyvault secret show --vault-name kv-elyse-shared --name CONTACT-CIAM-TENANT-ID --query value -o tsv)"
+export CONTACT_OIDC_CLIENT_ID="$(az keyvault secret show --vault-name kv-elyse-staging --name CONTACT-OIDC-CLIENT-ID --query value -o tsv)"
+node scripts/apply-contact-ciam-config.mjs --dry-run --env staging
+node scripts/apply-contact-ciam-config.mjs --env staging
+```
+
+This creates/updates **`contact-signin-staging`** with Google, Apple, and Microsoft Account only (no email/password) and hidden attribute collection per [`staging.json`](../../infra/contact-ciam/flows/staging.json).
+
+### Portal (interim fallback)
 
 If you already created **one** portal user flow with both apps linked, sign-in still works. Before prod go-live, split into **`contact-signin-staging`** and **`contact-signin-prod`** (portal edit now, or Graph apply when P1-008 lands).
 

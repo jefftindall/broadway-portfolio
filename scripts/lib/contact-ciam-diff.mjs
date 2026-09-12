@@ -11,6 +11,10 @@ import {
   idpPublicFingerprint,
   resolveGraphIdpKey,
 } from './contact-ciam-idp.mjs';
+import {
+  userFlowDesiredFingerprint,
+  userFlowRemoteFingerprint,
+} from './contact-ciam-flow.mjs';
 
 /**
  * @typedef {'noop' | 'create' | 'update' | 'skip'} PlanActionKind
@@ -42,7 +46,7 @@ export function flowManifestNeedsRemoteLookup(flowManifest) {
 
 /**
  * @param {Record<string, unknown> | null | undefined} flowManifest
- * @param {{ id?: string; displayName?: string; applicationClientId?: string } | null} remoteFlow
+ * @param {Record<string, unknown> | null | undefined} remoteFlow
  * @param {string} applicationClientId
  * @returns {PlanAction[]}
  */
@@ -74,6 +78,8 @@ export function planUserFlowSync(flowManifest, remoteFlow, applicationClientId) 
     ];
   }
 
+  const desiredFingerprint = userFlowDesiredFingerprint(displayName, applicationClientId, flowManifest.spec);
+
   if (!remoteFlow?.id) {
     return [
       {
@@ -85,14 +91,13 @@ export function planUserFlowSync(flowManifest, remoteFlow, applicationClientId) 
     ];
   }
 
-  const remoteName = String(remoteFlow.displayName ?? '').trim();
-  if (remoteName !== displayName) {
+  const remoteFingerprint = userFlowRemoteFingerprint(remoteFlow);
+  if (desiredFingerprint === remoteFingerprint) {
     return [
       {
-        kind: 'update',
+        kind: 'noop',
         resource: 'userFlow',
         name: displayName,
-        reason: `displayName drift (${remoteName || remoteFlow.id})`,
         details: { flowId: remoteFlow.id, applicationClientId },
       },
     ];
@@ -100,9 +105,10 @@ export function planUserFlowSync(flowManifest, remoteFlow, applicationClientId) 
 
   return [
     {
-      kind: 'noop',
+      kind: 'update',
       resource: 'userFlow',
       name: displayName,
+      reason: 'user flow config drift',
       details: { flowId: remoteFlow.id, applicationClientId },
     },
   ];

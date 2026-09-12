@@ -6,14 +6,17 @@ import {
   bannerLogoContentType,
   normalizeBrandingSpec,
 } from './contact-ciam-branding.mjs';
+import { buildUserFlowRequestBody } from './contact-ciam-flow.mjs';
 import {
   buildIdentityProviderRequestBody,
   findRemoteIdp,
   resolveGraphIdpKey,
 } from './contact-ciam-idp.mjs';
 import {
+  createAuthenticationEventsFlow,
   createIdentityProvider,
   getOrganizationId,
+  patchAuthenticationEventsFlow,
   patchBrandingLocalization,
   patchIdentityProvider,
   uploadBannerLogo,
@@ -78,6 +81,38 @@ export async function applyIdentityProviderAction(context) {
   }
 
   fail(`Unsupported identity provider action kind: ${context.action.kind}`);
+}
+
+/**
+ * @param {{
+ *   tenantId: string;
+ *   action: import('./contact-ciam-diff.mjs').PlanAction;
+ *   flowManifest: Record<string, unknown>;
+ *   applicationClientId: string;
+ * }} context
+ */
+export async function applyUserFlowAction(context) {
+  const displayName = String(context.flowManifest.displayName ?? '').trim();
+  const applicationClientId = context.applicationClientId.trim();
+  if (!displayName || !applicationClientId) {
+    fail('User flow apply requires displayName and CONTACT_OIDC_CLIENT_ID');
+  }
+  const spec = context.flowManifest.spec;
+  if (!spec || typeof spec !== 'object') {
+    fail(`${displayName}: flow.spec missing`);
+  }
+
+  const body = buildUserFlowRequestBody(displayName, applicationClientId, spec);
+  if (context.action.kind === 'create') {
+    await createAuthenticationEventsFlow(context.tenantId, body);
+    return;
+  }
+
+  const flowId = String(context.action.details?.flowId ?? '').trim();
+  if (!flowId) {
+    fail(`${displayName}: update missing flowId`);
+  }
+  await patchAuthenticationEventsFlow(context.tenantId, flowId, body);
 }
 
 /**

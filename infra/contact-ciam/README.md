@@ -6,7 +6,7 @@ Version-controlled desired state for Entra External ID **user flows**, **identit
 
 | Path | Scope | Action ID |
 |------|-------|-----------|
-| `flows/staging.json` | Staging user flow only | `ACCOUNT-P1-008` |
+| `flows/staging.json` | Staging user flow only | `ACCOUNT-P1-008` / `P1-009` |
 | `flows/prod.json` | Production user flow only | `ACCOUNT-P1-008` |
 | `idps/*.json` | Tenant-level IdPs (shared) | `ACCOUNT-P1-010` |
 | `branding/theme.json` | Tenant-level sign-in theme | `ACCOUNT-P1-011` |
