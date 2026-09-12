@@ -23,6 +23,9 @@ export function parseContactAccountConfig(data: unknown): ContactAccountConfig {
 
 export const CONTACT_SWA_ROLE = 'contact';
 
+/** External ID custom OIDC provider id for the generic CIAM picker (staticwebapp.config.json). */
+export const CONTACT_IDENTITY_PROVIDER = 'contact';
+
 /** CIAM domain_hint values (Entra External ID social direct sign-in). */
 export const CONTACT_SOCIAL_IDP_HINTS = {
   google: 'google',
@@ -31,6 +34,13 @@ export const CONTACT_SOCIAL_IDP_HINTS = {
 } as const;
 
 export type ContactSocialIdp = keyof typeof CONTACT_SOCIAL_IDP_HINTS;
+
+/** Per-IdP SWA providers with static loginParameterNames (skip CIAM picker). */
+export const CONTACT_SOCIAL_SWA_PROVIDERS = {
+  google: 'contact-google',
+  apple: 'contact-apple',
+  microsoft: 'contact-microsoft',
+} as const satisfies Record<ContactSocialIdp, string>;
 
 export const CONTACT_SOCIAL_LOGIN_OPTIONS: ReadonlyArray<{
   id: ContactSocialIdp;
@@ -64,10 +74,13 @@ export function hasContactSession(me: SwaMeResponse | null | undefined): boolean
   return Array.isArray(roles) && roles.includes(CONTACT_SWA_ROLE);
 }
 
-export type AuthLoginProvider = 'contact' | 'aad';
+export type AuthLoginProvider =
+  | 'contact'
+  | (typeof CONTACT_SOCIAL_SWA_PROVIDERS)[ContactSocialIdp]
+  | 'aad';
 
 export type AuthLoginHrefOptions = {
-  /** CIAM social direct sign-in (contact provider only). */
+  /** Legacy query hint for generic `contact` provider only; prefer CONTACT_SOCIAL_SWA_PROVIDERS. */
   domainHint?: string;
 };
 
@@ -84,7 +97,7 @@ export function buildAuthLoginHref(
   return `/.auth/login/${provider}?${params.toString()}`;
 }
 
-/** Student/parent External ID login with optional social domain_hint (ACCOUNT-P1-013). */
+/** Student/parent External ID login — shows CIAM IdP picker. */
 export function buildContactAuthLoginHref(
   redirectPath = '/lessons/book',
   options: AuthLoginHrefOptions = {},
@@ -92,9 +105,10 @@ export function buildContactAuthLoginHref(
   return buildAuthLoginHref('contact', redirectPath, options);
 }
 
+/** Direct social sign-in via dedicated SWA provider + static CIAM domain_hint (ACCOUNT-P1-013). */
 export function buildContactSocialLoginHref(
   idp: ContactSocialIdp,
   redirectPath = '/lessons/book',
 ): string {
-  return buildContactAuthLoginHref(redirectPath, { domainHint: CONTACT_SOCIAL_IDP_HINTS[idp] });
+  return buildAuthLoginHref(CONTACT_SOCIAL_SWA_PROVIDERS[idp], redirectPath);
 }

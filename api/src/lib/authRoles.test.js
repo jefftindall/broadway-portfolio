@@ -14,14 +14,17 @@ test('assignSwRoles maps workforce AAD to studio only', () => {
   assert.deepEqual(assignSwRoles({ identityProvider: 'AAD' }), [STUDIO_SWA_ROLE]);
 });
 
-test('assignSwRoles maps External ID contact provider to contact only', () => {
+test('assignSwRoles maps External ID contact providers to contact only', () => {
   assert.deepEqual(assignSwRoles({ identityProvider: CONTACT_IDENTITY_PROVIDER }), [
     CONTACT_SWA_ROLE,
   ]);
+  assert.deepEqual(assignSwRoles({ identityProvider: 'contact-google' }), [CONTACT_SWA_ROLE]);
+  assert.deepEqual(assignSwRoles({ identityProvider: 'contact-apple' }), [CONTACT_SWA_ROLE]);
+  assert.deepEqual(assignSwRoles({ identityProvider: 'contact-microsoft' }), [CONTACT_SWA_ROLE]);
 });
 
 test('assignSwRoles never assigns both roles', () => {
-  for (const provider of ['aad', CONTACT_IDENTITY_PROVIDER, 'google', '']) {
+  for (const provider of ['aad', CONTACT_IDENTITY_PROVIDER, 'contact-google', 'google', '']) {
     const roles = assignSwRoles({ identityProvider: provider });
     assert.equal(roles.includes(STUDIO_SWA_ROLE) && roles.includes(CONTACT_SWA_ROLE), false);
   }

@@ -27,11 +27,11 @@ Secret names: [rotate-secrets.md](./rotate-secrets.md) § Contact accounts.
 | Audience | Login | SWA role | Routes |
 |----------|-------|----------|--------|
 | Operators | `/login` → Studio workspace or `/.auth/login/aad` | `studio` | `/studio`, `/studio/*` |
-| Students / parents | `/login` → **Book or manage lessons**, **Continue with Google / Apple / Microsoft** (`domain_hint`), or `/.auth/login/contact` | `contact` | `/account`, `/account/*` |
+| Students / parents | `/login` → **Book or manage lessons** (`contact`), **Continue with Google / Apple / Microsoft** (`contact-google` / `contact-apple` / `contact-microsoft`), or `/.auth/login/contact` | `contact` | `/account`, `/account/*` |
 
-`POST /api/authRoles` assigns roles by IdP. Unauthenticated protected routes → `/login?post_login_redirect_uri={url}`.
+`POST /api/authRoles` assigns roles by IdP (including `contact-*` social providers). Unauthenticated protected routes → `/login?post_login_redirect_uri={url}`.
 
-**Direct social sign-in (`ACCOUNT-P1-013`):** `/login` offers **Continue with Google / Apple / Microsoft** links that call `/.auth/login/contact?...&domain_hint={google|apple|live.com}`. SWA forwards `domain_hint` when `loginParameterNames` includes it in [`staticwebapp.config.json`](../../public/staticwebapp.config.json). Helpers: [`src/lib/contactAccounts.ts`](../../src/lib/contactAccounts.ts).
+**Direct social sign-in (`ACCOUNT-P1-013`):** `/login` **Continue with …** links use dedicated SWA providers (`/.auth/login/contact-google`, etc.) with static `loginParameterNames` (`domain_hint=google|apple|live.com`) in [`staticwebapp.config.json`](../../public/staticwebapp.config.json). Generic **Book or manage lessons** still uses `contact` and shows the CIAM IdP picker. Helpers: [`src/lib/contactAccounts.ts`](../../src/lib/contactAccounts.ts).
 
 ---
 
