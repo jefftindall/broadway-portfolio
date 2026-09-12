@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "enabled": true,
+  "displayName": "contact-signin-prod",
+  "applicationClientId": "{{CONTACT_OIDC_CLIENT_ID}}",
+  "comment": "Promote from staging after validation — ACCOUNT-P1-014. Add flow.spec in ACCOUNT-P1-008."
+}
