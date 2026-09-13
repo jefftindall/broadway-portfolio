@@ -79,7 +79,7 @@ Bootstrap Terraform registers **`elyse-portfolio-gha-ciam-terraform`** in the CI
 
 - GitHub OIDC federated credentials for **staging**, **prod**, and **pull_request** subjects
 - **Application Administrator** on that service principal (Terraform `azuread` provider)
-- Microsoft Graph **application** permissions for `apply-contact-ciam-config.mjs`: `IdentityProvider.ReadWrite.All`, `Organization.ReadWrite.All`, `Policy.ReadWrite.ApplicationConfiguration`, `Application.ReadWrite.All` (admin-consented on the CIAM GHA app)
+- Microsoft Graph **application** permissions for `apply-contact-ciam-config.mjs`, resolved from the **CIAM tenant’s** Microsoft Graph enterprise app (role GUIDs differ from workforce): `IdentityProvider.ReadWrite.All`, `Organization.ReadWrite.All`, `OrganizationalBranding.ReadWrite.All`, `EventListener.ReadWrite.All`, `Application.ReadWrite.All` (admin-consented on the CIAM GHA app)
 - Shared vault secret **`CONTACT-CIAM-TF-CLIENT-ID`**
 
 Apply (once, after Step 1 — requires **Application Administrator** or **Global Administrator** in the CIAM tenant for the operator running bootstrap):
@@ -92,7 +92,7 @@ terraform apply -target=azuread_application.terraform_ciam \
   -target=azurerm_key_vault_secret.contact_ciam_tf_client_id
 ```
 
-Until Step 2 includes the Graph permission grants, env `terraform apply` defers CIAM Graph writes (exit 0) rather than failing the hook.
+Until Step 2 includes the Graph permission grants, env `terraform apply` may defer IdP / user-flow Graph writes when the hook cannot read remote state; branding apply still runs when planned. Re-run bootstrap Step 2 after changing `contact_ciam_gha.tf` so role IDs resolve from the CIAM tenant Graph SP.
 
 Env stacks use `azuread.contact_ciam` with `CONTACT-CIAM-TF-CLIENT-ID` when GitHub Actions sets `TF_VAR_contact_ciam_azuread_use_oidc=true` (Terraform plan/apply jobs). Local `terraform apply` continues to use your interactive `az login` session (`contact_ciam_azuread_use_oidc` defaults to false).
 
@@ -142,13 +142,7 @@ Prod needs no import when the SP is created by the first apply after this change
 
 After Step 3, env `terraform apply` runs [`scripts/apply-contact-ciam-config.mjs`](../../scripts/apply-contact-ciam-config.mjs) when `manage_contact_ciam_config=true` (default). It plans user flows, IdPs, and branding from [`infra/contact-ciam/`](../../infra/contact-ciam/README.md) via Microsoft Graph.
 
-**Local apply** — sign in to the **CIAM tenant** (subscription not required):
-
-```bash
-az login --tenant 692675c7-5ecc-44d7-a2e6-f8e49e250e3e --allow-no-subscriptions
-cd infra/environments/staging
-terraform apply tfplan
-```
+**Local apply** — sign in to the **workforce tenant** (for `kv-elyse-shared` / env vault reads). The apply script mints CIAM Graph tokens with `az account get-access-token --tenant <CONTACT-CIAM-TENANT-ID>`; you do **not** need `az login` into the CIAM tenant unless token mint fails. Delegated operators without **Organizational Branding Administrator** / **External ID User Flow Administrator** in the CIAM tenant can still dry-run; full writes run in GitHub Actions via `CONTACT-CIAM-TF` (OIDC + application permissions from Step 2).
 
 **Dry-run only** (no Graph writes):
 
@@ -217,7 +211,7 @@ If you already linked both SWA apps to **one** portal user flow, that works unti
 | No OIDC app in plan | `CONTACT-CIAM-TENANT-ID` still `REPLACE_ME` |
 | Authorization error on apply | Application Administrator in **CIAM** tenant |
 | SWA OIDC failure | Issuer patch + `CONTACT_OIDC_*` SWA settings |
-| Redirect URI mismatch | Re-apply env after custom domain bound |
+| CIAM Graph apply deferred / unbranded login | Bootstrap Step 2: CIAM GHA app must declare Graph roles on the **CIAM tenant** Microsoft Graph SP (GUIDs differ from workforce). Needs `OrganizationalBranding.ReadWrite.All` + `EventListener.ReadWrite.All` + `IdentityProvider.ReadWrite.All`. Until company branding exists, first POST `/branding/localizations` may be required — apply script falls back from beta themes automatically. |
 | App reg exists but missing from user flow **Add application** | Env apply must create `azuread_service_principal.contact_swa` (enterprise app). Re-apply staging/prod; for a pre-existing manual SP on staging, import per [contact-accounts-ciam-terraform.md](./contact-accounts-ciam-terraform.md) |
 
 See [rotate-secrets.md](./rotate-secrets.md) § Contact accounts for secret names.

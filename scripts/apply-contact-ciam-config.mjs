@@ -82,6 +82,40 @@ function parseCliArgs() {
 }
 
 /**
+ * @typedef {import('./lib/contact-ciam-graph.mjs').ContactCiamReadFailures} ContactCiamReadFailures
+ */
+
+/**
+ * @param {import('./lib/contact-ciam-diff.mjs').PlanAction[]} actions
+ * @param {ContactCiamReadFailures} readFailures
+ * @returns {{ applyActions: import('./lib/contact-ciam-diff.mjs').PlanAction[]; deferredActions: import('./lib/contact-ciam-diff.mjs').PlanAction[] }}
+ */
+export function partitionActionsByReadFailures(actions, readFailures) {
+  /** @type {import('./lib/contact-ciam-diff.mjs').PlanAction[]} */
+  const applyActions = [];
+  /** @type {import('./lib/contact-ciam-diff.mjs').PlanAction[]} */
+  const deferredActions = [];
+
+  for (const action of actions) {
+    if (action.kind !== 'create' && action.kind !== 'update') {
+      applyActions.push(action);
+      continue;
+    }
+    if (action.resource === 'identityProvider' && readFailures.identityProviders) {
+      deferredActions.push(action);
+      continue;
+    }
+    if (action.resource === 'userFlow' && readFailures.userFlow) {
+      deferredActions.push(action);
+      continue;
+    }
+    applyActions.push(action);
+  }
+
+  return { applyActions, deferredActions };
+}
+
+/**
  * @param {import('./lib/contact-ciam-diff.mjs').PlanAction[]} actions
  * @param {boolean} dryRun
  * @param {{
@@ -96,48 +130,82 @@ function parseCliArgs() {
  * }} context
  */
 async function applyPlan(actions, dryRun, context) {
-  for (const action of actions) {
+  const resourceOrder = /** @type {const} */ (['branding', 'identityProvider', 'userFlow']);
+  const sorted = [...actions].sort((left, right) => {
+    const leftIndex = resourceOrder.indexOf(left.resource);
+    const rightIndex = resourceOrder.indexOf(right.resource);
+    return (leftIndex === -1 ? resourceOrder.length : leftIndex) - (rightIndex === -1 ? resourceOrder.length : rightIndex);
+  });
+
+  /** @type {import('./lib/contact-ciam-diff.mjs').PlanAction[]} */
+  const applied = [];
+  /** @type {import('./lib/contact-ciam-diff.mjs').PlanAction[]} */
+  const deferred = [];
+
+  for (const action of sorted) {
     if (action.kind !== 'create' && action.kind !== 'update') continue;
     if (dryRun) continue;
 
-    if (action.resource === 'userFlow') {
-      if (!context.flowManifest) {
-        fail('User flow apply requested without flow manifest');
+    try {
+      if (action.resource === 'userFlow') {
+        if (!context.flowManifest) {
+          fail('User flow apply requested without flow manifest');
+        }
+        await applyUserFlowAction({
+          tenantId: context.tenantId,
+          action,
+          flowManifest: context.flowManifest,
+          applicationClientId: context.applicationClientId,
+        });
+        applied.push(action);
+        continue;
       }
-      await applyUserFlowAction({
-        tenantId: context.tenantId,
-        action,
-        flowManifest: context.flowManifest,
-        applicationClientId: context.applicationClientId,
-      });
-      continue;
-    }
 
-    if (action.resource === 'identityProvider') {
-      await applyIdentityProviderAction({
-        tenantId: context.tenantId,
-        action,
-        idpManifests: context.idpManifests,
-        idpCredentials: context.idpCredentials,
-        remoteByKey: context.remoteByKey,
-      });
-      continue;
-    }
-
-    if (action.resource === 'branding') {
-      if (!context.brandingManifest) {
-        fail('Branding apply requested without branding manifest');
+      if (action.resource === 'identityProvider') {
+        await applyIdentityProviderAction({
+          tenantId: context.tenantId,
+          action,
+          idpManifests: context.idpManifests,
+          idpCredentials: context.idpCredentials,
+          remoteByKey: context.remoteByKey,
+        });
+        applied.push(action);
+        continue;
       }
-      await applyBrandingAction({
-        tenantId: context.tenantId,
-        repoRoot: context.repoRoot,
-        action,
-        brandingManifest: context.brandingManifest,
-      });
-      continue;
-    }
 
-    fail(`${formatPlanAction(action)} is not implemented.`);
+      if (action.resource === 'branding') {
+        if (!context.brandingManifest) {
+          fail('Branding apply requested without branding manifest');
+        }
+        await applyBrandingAction({
+          tenantId: context.tenantId,
+          repoRoot: context.repoRoot,
+          action,
+          brandingManifest: context.brandingManifest,
+        });
+        applied.push(action);
+        continue;
+      }
+
+      fail(`${formatPlanAction(action)} is not implemented.`);
+    } catch (err) {
+      if (isGraphAccessError(err)) {
+        deferred.push(action);
+        process.stdout.write(
+          `${formatPlanAction(action)} deferred (${err instanceof Error ? err.message : String(err)})\n`,
+        );
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  if (deferred.length > 0 && applied.length === 0) {
+    fail('CIAM Graph apply could not write any pending changes (missing CONTACT-CIAM-TF Graph application permissions).');
+  }
+
+  if (deferred.length > 0) {
+    process.stdout.write(`${deferred.length} CIAM apply action(s) deferred due to Graph access errors.\n`);
   }
 }
 
@@ -177,7 +245,6 @@ export async function applyContactCiamConfig(options) {
   ).trim();
 
   let remote = EMPTY_CONTACT_CIAM_REMOTE;
-  let graphReadFailed = false;
   try {
     remote = await fetchRemoteContactCiamState(
       options.tenantId,
@@ -192,10 +259,18 @@ export async function applyContactCiamConfig(options) {
     if (!isGraphAccessError(err)) {
       throw err;
     }
-    graphReadFailed = true;
     process.stdout.write(
-      'CIAM Graph read failed (CONTACT-CIAM-TF app may lack Graph application permissions — run bootstrap Step 2).\n',
+      `CIAM Graph read failed: ${err instanceof Error ? err.message : String(err)}\n`,
     );
+  }
+
+  if (remote.readFailures.identityProviders) {
+    process.stdout.write(
+      'CIAM identity provider snapshot unavailable — IdP apply actions will be deferred if planned.\n',
+    );
+  }
+  if (remote.readFailures.userFlow) {
+    process.stdout.write('CIAM user flow snapshot unavailable — flow apply actions will be deferred if planned.\n');
   }
 
   const actions = [
@@ -214,11 +289,15 @@ export async function applyContactCiamConfig(options) {
     return { changed: false, actions };
   }
 
-  if (graphReadFailed) {
-    process.stdout.write(
-      'CIAM Graph apply deferred until bootstrap grants Graph application permissions on CONTACT-CIAM-TF.\n',
-    );
-    return { changed: false, actions, deferred: true };
+  const { applyActions, deferredActions } = partitionActionsByReadFailures(actions, remote.readFailures);
+  for (const action of deferredActions) {
+    process.stdout.write(`${formatPlanAction(action)} (deferred — remote snapshot unavailable)\n`);
+  }
+
+  const pendingApply = applyActions.filter((action) => action.kind === 'create' || action.kind === 'update');
+  if (pendingApply.length === 0) {
+    process.stdout.write('CIAM Graph apply deferred until remote snapshots are readable (CONTACT-CIAM-TF Graph permissions).\n');
+    return { changed: false, actions, deferred: deferredActions.length > 0 };
   }
 
   if (options.dryRun) {
@@ -226,7 +305,7 @@ export async function applyContactCiamConfig(options) {
     return { changed: planHasPendingChanges(actions), actions };
   }
 
-  await applyPlan(actions, options.dryRun, {
+  await applyPlan(pendingApply, options.dryRun, {
     tenantId: options.tenantId,
     repoRoot: options.repoRoot,
     idpManifests: manifest.idps,

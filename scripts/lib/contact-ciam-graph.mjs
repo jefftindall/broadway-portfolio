@@ -27,17 +27,28 @@ function fail(message) {
  */
 export function isGraphAccessError(err) {
   const message = err instanceof Error ? err.message : String(err);
+  if (/branding\/themes/i.test(message) && /Request_ResourceNotFound|http-404/i.test(message)) {
+    return true;
+  }
   return /\(AADB2C\)|\(Authorization_RequestDenied\)|\(accessDenied\)|\(http-401\)|\(http-403\)|insufficient privileges/i.test(
     message,
   );
 }
 
-/** @type {{ flow: null; idps: Map<string, Record<string, unknown>>; branding: null; idpDetails: Map<string, Record<string, unknown>> }} */
+/**
+ * @typedef {{
+ *   identityProviders?: string;
+ *   userFlow?: string;
+ * }} ContactCiamReadFailures
+ */
+
+/** @type {{ flow: null; idps: Map<string, Record<string, unknown>>; branding: null; idpDetails: Map<string, Record<string, unknown>>; readFailures: ContactCiamReadFailures }} */
 export const EMPTY_CONTACT_CIAM_REMOTE = {
   flow: null,
   idps: new Map(),
   branding: null,
   idpDetails: new Map(),
+  readFailures: {},
 };
 
 /**
@@ -108,7 +119,32 @@ export async function ensureCiamGraphSession({ tenantId, tfClientId }) {
         return;
       }
     } catch {
-      // fall through to login
+      // fall through
+    }
+  }
+
+  // Workforce (or other home) tenant login can still mint CIAM Graph tokens via --tenant.
+  const tokenProbe = runAz(
+    [
+      'account',
+      'get-access-token',
+      '--tenant',
+      trimmedTenant,
+      '--resource',
+      GRAPH_RESOURCE,
+      '-o',
+      'json',
+    ],
+    { allowFailure: true },
+  );
+  if (tokenProbe.status === 0) {
+    try {
+      const parsed = JSON.parse(tokenProbe.stdout);
+      if (String(parsed.accessToken ?? '').trim()) {
+        return;
+      }
+    } catch {
+      // fall through to federated login
     }
   }
 
@@ -181,6 +217,7 @@ export async function getGraphAccessToken(tenantId) {
  *   baseUrl?: string;
  *   contentType?: string;
  *   rawBody?: Buffer | Uint8Array;
+ *   acceptLanguage?: string;
  * }} options
  */
 export async function graphRequest({
@@ -192,6 +229,7 @@ export async function graphRequest({
   baseUrl = GRAPH_BASE,
   contentType,
   rawBody,
+  acceptLanguage,
 }) {
   const token = accessToken ?? (await getGraphAccessToken(tenantId));
   const url = path.startsWith('http') ? path : `${baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
@@ -200,6 +238,9 @@ export async function graphRequest({
     Authorization: `Bearer ${token}`,
     Accept: 'application/json',
   };
+  if (acceptLanguage !== undefined) {
+    headers['Accept-Language'] = acceptLanguage;
+  }
   if (rawBody !== undefined) {
     headers['Content-Type'] = contentType || 'application/octet-stream';
   } else if (body !== undefined) {
@@ -247,14 +288,21 @@ export async function findUserFlowForApplication(tenantId, applicationClientId) 
   const filter = encodeURIComponent(
     `microsoft.graph.externalUsersSelfServiceSignUpEventsFlow/conditions/applications/includeApplications/any(appId:appId/appId eq '${appId}')`,
   );
-  const payload = /** @type {{ value?: Array<{ id?: string; displayName?: string }> }} */ (
-    await graphRequest({
-      tenantId,
-      path: `/identity/authenticationEventsFlows?$filter=${filter}`,
-    })
-  );
-  const flows = payload.value ?? [];
-  return flows[0] ?? null;
+  try {
+    const payload = /** @type {{ value?: Array<{ id?: string; displayName?: string }> }} */ (
+      await graphRequest({
+        tenantId,
+        path: `/identity/authenticationEventsFlows?$filter=${filter}`,
+      })
+    );
+    const flows = payload.value ?? [];
+    return flows[0] ?? null;
+  } catch (err) {
+    if (isGraphAccessError(err)) {
+      return null;
+    }
+    throw err;
+  }
 }
 
 /**
@@ -309,9 +357,17 @@ export async function patchAuthenticationEventsFlow(tenantId, flowId, body) {
  * @returns {Promise<Map<string, { id?: string; displayName?: string }>>}
  */
 export async function listIdentityProvidersByKey(tenantId) {
-  const payload = /** @type {{ value?: Array<Record<string, unknown>> }} */ (
-    await graphRequest({ tenantId, path: '/identity/identityProviders' })
-  );
+  let payload;
+  try {
+    payload = /** @type {{ value?: Array<Record<string, unknown>> }} */ (
+      await graphRequest({ tenantId, path: '/identity/identityProviders' })
+    );
+  } catch (err) {
+    if (isGraphAccessError(err)) {
+      return new Map();
+    }
+    throw err;
+  }
   /** @type {Map<string, Record<string, unknown>>} */
   const map = new Map();
   for (const idp of payload.value ?? []) {
@@ -387,6 +443,11 @@ export async function getOrganizationId(tenantId) {
   return payload.value?.[0]?.id ?? null;
 }
 
+export function isBrandingThemeUnavailable(err) {
+  const message = err instanceof Error ? err.message : String(err);
+  return /branding\/themes/i.test(message) && /Request_ResourceNotFound|http-404/i.test(message);
+}
+
 /**
  * @param {string} tenantId
  * @param {string} themeName
@@ -422,6 +483,24 @@ export async function getContactBrandingTheme(tenantId, themeName) {
 }
 
 /**
+ * Prefer branding themes when present; fall back to tenant company branding (CIAM default).
+ *
+ * @param {string} tenantId
+ * @param {string} themeName
+ */
+export async function getContactBrandingState(tenantId, themeName) {
+  const themeState = await getContactBrandingTheme(tenantId, themeName);
+  if (themeState?.theme?.id) {
+    return themeState;
+  }
+  const companyState = await getDefaultBranding(tenantId);
+  if (!companyState?.orgId) {
+    return themeState;
+  }
+  return { orgId: companyState.orgId, theme: null, localization: companyState.localization };
+}
+
+/**
  * @param {string} tenantId
  * @param {string} orgId
  * @param {{ name: string; isDefaultTheme?: boolean }} body
@@ -431,7 +510,10 @@ export async function createBrandingTheme(tenantId, orgId, body) {
     tenantId,
     method: 'POST',
     path: `/organization/${orgId}/branding/themes`,
-    body,
+    body: {
+      '@odata.type': '#microsoft.graph.organizationalBrandingTheme',
+      ...body,
+    },
   });
 }
 
@@ -510,12 +592,20 @@ export async function getDefaultBranding(tenantId) {
   if (!orgId) return null;
   try {
     const branding = /** @type {Record<string, unknown>} */ (
-      await graphRequest({ tenantId, path: `/organization/${orgId}/branding` })
+      await graphRequest({
+        tenantId,
+        path: `/organization/${orgId}/branding`,
+        acceptLanguage: '0',
+      })
     );
     let localization = null;
     try {
       localization = /** @type {Record<string, unknown>} */ (
-        await graphRequest({ tenantId, path: `/organization/${orgId}/branding/localizations/0` })
+        await graphRequest({
+          tenantId,
+          path: `/organization/${orgId}/branding/localizations/0`,
+          acceptLanguage: '0',
+        })
       );
     } catch {
       localization = null;
@@ -532,11 +622,32 @@ export async function getDefaultBranding(tenantId) {
  * @param {string} locale
  * @param {Record<string, string>} body
  */
+export async function createBrandingLocalization(tenantId, orgId, locale, body) {
+  return graphRequest({
+    tenantId,
+    method: 'POST',
+    path: `/organization/${orgId}/branding/localizations`,
+    acceptLanguage: locale,
+    body: {
+      '@odata.type': '#microsoft.graph.organizationalBrandingLocalization',
+      locale,
+      ...body,
+    },
+  });
+}
+
+/**
+ * @param {string} tenantId
+ * @param {string} orgId
+ * @param {string} locale
+ * @param {Record<string, string>} body
+ */
 export async function patchBrandingLocalization(tenantId, orgId, locale, body) {
   return graphRequest({
     tenantId,
     method: 'PATCH',
     path: `/organization/${orgId}/branding/localizations/${encodeURIComponent(locale)}`,
+    acceptLanguage: locale,
     body,
   });
 }
@@ -552,18 +663,26 @@ export async function uploadBannerLogo(tenantId, orgId, locale, bytes, contentTy
   return graphRequest({
     tenantId,
     method: 'PUT',
-    path: `/organization/${orgId}/branding/localizations/${encodeURIComponent(locale)}/bannerLogo/$value`,
+    path: `/organization/${orgId}/branding/localizations/${encodeURIComponent(locale)}/bannerLogo`,
+    acceptLanguage: locale,
     rawBody: bytes,
     contentType,
   });
 }
 
 /**
+ * @typedef {{
+ *   identityProviders?: string;
+ *   userFlow?: string;
+ * }} ContactCiamReadFailures
+ */
+
+/**
  * @param {string} tenantId
  * @param {string} applicationClientId
  * @param {string[]} [idpGraphKeys]
  * @param {{ skipUserFlow?: boolean; brandingThemeName?: string }} [options]
- * @returns {Promise<{ flow: { id?: string; displayName?: string } | null; idps: Map<string, { id?: string; displayName?: string }>; branding: Record<string, unknown> | null; idpDetails: Map<string, Record<string, unknown>> }>}
+ * @returns {Promise<{ flow: { id?: string; displayName?: string } | null; idps: Map<string, { id?: string; displayName?: string }>; branding: Record<string, unknown> | null; idpDetails: Map<string, Record<string, unknown>>; readFailures: ContactCiamReadFailures }>}
  */
 export async function fetchRemoteContactCiamState(
   tenantId,
@@ -572,13 +691,48 @@ export async function fetchRemoteContactCiamState(
   options = {},
 ) {
   const themeName = String(options.brandingThemeName ?? 'Elyse Contact Accounts').trim();
-  const [flowSummary, idps, branding] = await Promise.all([
-    options.skipUserFlow || !applicationClientId.trim()
-      ? Promise.resolve(null)
-      : findUserFlowForApplication(tenantId, applicationClientId),
-    listIdentityProvidersByKey(tenantId),
-    getContactBrandingTheme(tenantId, themeName),
-  ]);
+  /** @type {ContactCiamReadFailures} */
+  const readFailures = {};
+
+  let flowSummary = null;
+  if (!options.skipUserFlow && applicationClientId.trim()) {
+    try {
+      flowSummary = await findUserFlowForApplication(tenantId, applicationClientId);
+    } catch (err) {
+      if (isGraphAccessError(err)) {
+        readFailures.userFlow = err instanceof Error ? err.message : String(err);
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  let idps = new Map();
+  try {
+    idps = await listIdentityProvidersByKey(tenantId);
+  } catch (err) {
+    if (isGraphAccessError(err)) {
+      readFailures.identityProviders = err instanceof Error ? err.message : String(err);
+      idps = new Map();
+    } else {
+      throw err;
+    }
+  }
+
+  const idpListEmpty = idps.size === 0;
+  if (idpListEmpty && !readFailures.identityProviders) {
+    try {
+      await graphRequest({ tenantId, path: '/identity/identityProviders?$top=1' });
+    } catch (err) {
+      if (isGraphAccessError(err)) {
+        readFailures.identityProviders = err instanceof Error ? err.message : String(err);
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  const branding = await getContactBrandingState(tenantId, themeName);
 
   let flow = null;
   if (flowSummary?.id) {
@@ -602,7 +756,7 @@ export async function fetchRemoteContactCiamState(
     }
   }
 
-  return { flow, idps, branding, idpDetails };
+  return { flow, idps, branding, idpDetails, readFailures };
 }
 
 /**

@@ -338,6 +338,7 @@ test('planBrandingSync noop when localization matches desired fingerprint', () =
       theme: { id: 'theme-1', name: 'Elyse Contact Accounts', isDefaultTheme: true },
       localization: {
         pageBackgroundColor: '#0e0d0c',
+        backgroundColor: '#0e0d0c',
         signInPageText: 'Sign in to book voice lessons.',
         usernameHintText: 'Email address',
         bannerLogoRelativeUrl: 'bannerLogo',
@@ -403,7 +404,36 @@ test('idp fingerprints detect clientId drift only on public fields', () => {
 test('isGraphAccessError matches CIAM permission failures', () => {
   assert.equal(isGraphAccessError(new Error('Graph GET /identity/identityProviders failed (AADB2C)')), true);
   assert.equal(isGraphAccessError(new Error('Graph GET /organization failed (Authorization_RequestDenied)')), true);
+  assert.equal(isGraphAccessError(new Error('Graph POST /organization/x/branding/themes failed (Request_ResourceNotFound)')), true);
   assert.equal(isGraphAccessError(new Error('Graph GET /me failed (http-404)')), false);
+});
+
+test('planBrandingSync noop when company branding localization matches desired fingerprint', () => {
+  const spec = {
+    themeName: 'Elyse Contact Accounts',
+    isDefaultTheme: true,
+    locale: '0',
+    backgroundColor: '#0e0d0c',
+    signInPageText: 'Sign in to book voice lessons or manage your lesson account with Elyse Tindall.',
+    usernameHintText: 'Email address',
+    bannerLogoFile: 'banner-logo.png',
+  };
+  const actions = planBrandingSync(
+    { schemaVersion: 1, enabled: true, spec },
+    {
+      orgId: '692675c7-5ecc-44d7-a2e6-f8e49e250e3e',
+      theme: null,
+      localization: {
+        backgroundColor: '#0e0d0c',
+        pageBackgroundColor: '#0e0d0c',
+        signInPageText: 'Sign in to book voice lessons or manage your lesson account with Elyse Tindall.',
+        usernameHintText: 'Email address',
+        bannerLogoRelativeUrl: 'dbd5/logo',
+      },
+    },
+  );
+  assert.equal(actions.length, 1);
+  assert.equal(actions[0].kind, 'noop');
 });
 
 test('isSecretReady rejects REPLACE_ME and empty values', () => {

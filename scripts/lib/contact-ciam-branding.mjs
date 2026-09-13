@@ -31,6 +31,7 @@ export function brandingLocalizationFingerprint(localization) {
   return stableJson({
     pageBackgroundColor:
       localization.pageBackgroundColor ?? localization.backgroundColor ?? null,
+    backgroundColor: localization.backgroundColor ?? localization.pageBackgroundColor ?? null,
     signInPageText: localization.signInPageText ?? null,
     usernameHintText: localization.usernameHintText ?? null,
   });
@@ -44,6 +45,7 @@ export function brandingDesiredFingerprint(spec) {
   const normalized = normalizeBrandingSpec(spec);
   return stableJson({
     pageBackgroundColor: normalized.backgroundColor,
+    backgroundColor: normalized.backgroundColor,
     signInPageText: normalized.signInPageText,
     usernameHintText: normalized.usernameHintText,
   });
@@ -57,7 +59,10 @@ export function buildBrandingThemeLocalizationPatch(spec) {
   const normalized = normalizeBrandingSpec(spec);
   /** @type {Record<string, string>} */
   const body = {};
-  if (normalized.backgroundColor) body.pageBackgroundColor = normalized.backgroundColor;
+  if (normalized.backgroundColor) {
+    body.pageBackgroundColor = normalized.backgroundColor;
+    body.backgroundColor = normalized.backgroundColor;
+  }
   if (normalized.signInPageText) body.signInPageText = normalized.signInPageText;
   if (normalized.usernameHintText) body.usernameHintText = normalized.usernameHintText;
   return body;

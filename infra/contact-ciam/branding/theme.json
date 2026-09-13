@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "enabled": true,
   "spec": {
+    "applyRevision": 1,
     "themeName": "Elyse Contact Accounts",
     "isDefaultTheme": true,
     "locale": "0",
