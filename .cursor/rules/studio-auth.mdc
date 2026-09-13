@@ -42,6 +42,7 @@ Discrete permissions live in [`api/src/lib/permissions.js`](api/src/lib/permissi
 | Public `lessonPayConfig` | Flag + sanitized Payment Link URLs only |
 | Public `contactAccountConfig` | Flag `{ enabled }` only |
 | Public `authRoles` | SWA rolesSource assignment (`studio` \| `contact`) |
+| `GET` / `PATCH` `/api/account` | `contactGate()` + linked `contactId` ownership; self-serve field allowlist only |
 | Public `stripeWebhook` | Stripe signature verification |
 | Public `calendarWatch` | Google channel token |
 | Public `lessonAction` | Signed Confirm / Decline token (ICS fallback) |

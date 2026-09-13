@@ -55,6 +55,12 @@ resource "azurerm_storage_table" "studio_calendar" {
   storage_account_id = azurerm_storage_account.studio_crm.id
 }
 
+# ACCOUNT-P2-001 — External ID subject → People contactId. Same account; not a new SKU.
+resource "azurerm_storage_table" "contact_identities" {
+  name               = "contactIdentities"
+  storage_account_id = azurerm_storage_account.studio_crm.id
+}
+
 # CD: staging reads the connection string after apply / before SWA upload.
 resource "azurerm_role_assignment" "github_actions_crm_key_operator" {
   scope                = azurerm_storage_account.studio_crm.id

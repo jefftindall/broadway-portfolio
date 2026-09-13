@@ -1,7 +1,7 @@
 # Data persistence
 
 **Audience:** Agents, implementers  
-**Last updated:** 2026-08-24  
+**Last updated:** 2026-09-13  
 **Scope:** Where durable data lives today, the record shapes, how records relate, and the access paths. This is the architecture SoT for stores — not a backlog. Phased work stays in [`docs/plans/`](../plans/).
 
 **Keep this document current:** when a PR changes a store, schema, relation, or access path, update the matching sections, mermaid, and source map **in that same PR**, then bump **Last updated**. Agent contract: [`.cursor/rules/data-persistence.mdc`](../../.cursor/rules/data-persistence.mdc) and [AGENTS.md](../../AGENTS.md).
@@ -80,10 +80,10 @@ flowchart TB
 
 | Environment | Account | Tables | Replication |
 |-------------|---------|--------|-------------|
-| Staging | `stelysecrmstaging` | `contacts`, `studioUsers`, `studioLedger`, `studioLessons`, `studioCalendar` | Standard RA-GRS (eastus2 → Central US) |
-| Production | `stelysecrmprod` | `contacts`, `studioUsers`, `studioLedger`, `studioLessons`, `studioCalendar` | Same |
+| Staging | `stelysecrmstaging` | `contacts`, `contactIdentities`, `studioUsers`, `studioLedger`, `studioLessons`, `studioCalendar` | Standard RA-GRS (eastus2 → Central US) |
+| Production | `stelysecrmprod` | `contacts`, `contactIdentities`, `studioUsers`, `studioLedger`, `studioLessons`, `studioCalendar` | Same |
 
-Connection string is written into SWA app settings at apply (`STUDIO_CRM_STORAGE_CONNECTION_STRING`). Table names: `STUDIO_CRM_TABLE_NAME` (`contacts`), `STUDIO_USERS_TABLE_NAME` (`studioUsers`), `STUDIO_LEDGER_TABLE_NAME` (`studioLedger`), `STUDIO_LESSONS_TABLE_NAME` (`studioLessons`), `STUDIO_CALENDAR_TABLE_NAME` (`studioCalendar`). Values are never logged or committed.
+Connection string is written into SWA app settings at apply (`STUDIO_CRM_STORAGE_CONNECTION_STRING`). Table names: `STUDIO_CRM_TABLE_NAME` (`contacts`), `CONTACT_IDENTITIES_TABLE_NAME` (`contactIdentities`), `STUDIO_USERS_TABLE_NAME` (`studioUsers`), `STUDIO_LEDGER_TABLE_NAME` (`studioLedger`), `STUDIO_LESSONS_TABLE_NAME` (`studioLessons`), `STUDIO_CALENDAR_TABLE_NAME` (`studioCalendar`). Values are never logged or committed.
 
 **Reads** go to the primary first and fall back to the paired-region secondary when the primary is unreachable (timeouts / 5xx / network). **Writes** stay on the primary until an operator account failover — the secondary is read-only.
 
@@ -107,6 +107,7 @@ One row = one person. Partition = constant `people` (`STUDIO_CONTACTS_PARTITION`
 | `studentPackageRemaining` | `studentPackageRemaining` | number \| omitted | 0–500 |
 | `studentLastLesson` | `studentLastLesson` | `YYYY-MM-DD` \| `""` | Day only |
 | `studentSmsOk` | `studentSmsOk` | boolean | Explicit opt-in for lesson reminder SMS (`STUDIO-P4-003`) |
+| `timezone` | `timezone` | string | IANA zone; default `America/New_York`; self-serve on `/account` (`ACCOUNT-P2-002`) |
 | `agentAgency` | `agentAgency` | string | Max 200 |
 | `agentTerritory` | `agentTerritory` | string | Max 200 |
 | `agentLastSubmission` | `agentLastSubmission` | string | Max 400 |
@@ -131,6 +132,24 @@ One row = one person. Partition = constant `people` (`STUDIO_CONTACTS_PARTITION`
 **Uniqueness:** Active (non-archived) emails are unique in the CRM. Archived rows do not block reuse. List/search is in-partition scan + in-memory filter (`q` matches display name or email; `persona` is an exact tag). Default page size 10, max 50. `directory=1` returns the full filtered set (related-contact picker).
 
 **Seed:** Staging CD runs [`scripts/seed-studio-people.mjs`](../../scripts/seed-studio-people.mjs) **after Terraform apply and before SWA upload**. Fifteen fictional rows (`seed-people-01`…`15`), one of each persona mix, last names A–P so pagination is obvious, all in the `people` partition. Prod is not seeded. Local: `npm run studio:seed-people` against Azurite.
+
+### 1.1b Contact identity link (`contactIdentities` table)
+
+Maps External ID login keys to a People `contactId` (`ACCOUNT-P2-001`). Partition = constant `identity`. Row key = SHA-256 of `provider` + `issuer` + `subject` (never log those values — ids only).
+
+| Property | Table column | Type | Notes |
+|----------|--------------|------|--------|
+| — | `PartitionKey` | `"identity"` | Always |
+| `id` | `RowKey` | string | Hash of provider / issuer / subject |
+| `provider` | `provider` | string | SWA `identityProvider` (`contact`, legacy `contact-*`) |
+| `issuer` | `issuer` | string | OIDC `iss` when present |
+| `subject` | `subject` | string | Entra object id / `sub` (SWA `userId`) |
+| `contactId` | `contactId` | string | FK → `contacts` row in `people` partition |
+| `createdAt` / `updatedAt` | same | ISO-8601 | Server-set |
+
+**First login:** `ensureLinkedContact` (`api/src/lib/contactLink.js`) attaches an existing active email match or creates a `student` row, then writes the identity row. Archived contacts → 403. Duplicate active email matches → 403 (operator resolves in Studio). Same person may attach multiple providers when verified emails match.
+
+**Access:** `GET` / `PATCH` `/api/account` resolves the linked row and allowlists self-serve contact fields only (`api/src/lib/accountProfile.js`).
 
 ### 1.2 Studio user profile (`studioUsers` table)
 

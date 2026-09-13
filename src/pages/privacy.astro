@@ -53,6 +53,14 @@ const description =
           lesson and casting inquiries do not require an account.
         </li>
         <li>
+          <strong>Student account profile.</strong> Signed-in students and parents may update the
+          name, email, phone, lesson format (NYC or Zoom), time zone, and whether lesson reminders
+          may be sent by SMS. We store those preferences in the same Studio People record used for
+          scheduling. You choose whether you are a student, parent, or both. Identity-provider
+          sign-in keys (provider and subject id) are stored separately so we can link your login to
+          that record without a second database.
+        </li>
+        <li>
           <strong>Studio CRM.</strong> When a signed-in Studio user adds a teaching or career
           contact, we store the name and optional email, phone, personas, notes, and related-person
           links in Azure Table Storage for that user’s Studio workspace. This is not a public

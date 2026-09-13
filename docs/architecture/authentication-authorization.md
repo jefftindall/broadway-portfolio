@@ -1,7 +1,7 @@
 # Authentication and authorization
 
 **Audience:** Agents, implementers  
-**Last updated:** 2026-08-29  
+**Last updated:** 2026-09-13  
 **Scope:** How Studio proves identity, how it grants capabilities, and the permission catalog. This is the architecture SoT for authn/authz — not a backlog. Phased work stays in [`docs/plans/`](../plans/). Store shapes for profiles live in [`data-persistence.md`](./data-persistence.md). Operator steps live in [`manage-access.md`](../runbooks/manage-access.md).
 
 **Keep this document current:** when a PR changes login gates, the permission catalog, role bundles, bootstrap, or how APIs authorize, update the matching sections and mermaid **in that same PR**, then bump **Last updated**. Agent contract: [`.cursor/rules/studio-auth.mdc`](../../.cursor/rules/studio-auth.mdc).
@@ -68,11 +68,12 @@ Anonymous exceptions (same `private, no-store` cache; not Studio login):
 | `GET /api/lessonPayConfig` | Feature flag + sanitized Payment Link URLs |
 | `GET /api/contactAccountConfig` | Feature flag `{ enabled }` only |
 | `POST /api/authRoles` | SWA platform roles assignment |
+| `GET` / `PATCH` `/api/account` | `contactGate()` + first-login link to People (`contactIdentities`); self-serve field allowlist |
 | `POST /api/stripeWebhook` | Stripe signature |
 | `POST /api/calendarWatch` | Google channel token |
 | `GET /api/lessonAction` | Signed Confirm / Decline token |
 
-Local Functions (`AZURE_FUNCTIONS_ENVIRONMENT=Development`) skip the SWA principal and grant the **full catalog** so `func start` works without headers.
+Local Functions (`AZURE_FUNCTIONS_ENVIRONMENT=Development`) grant the **full Studio catalog** without SWA headers. Contact account APIs use `CONTACT_DEV_PRINCIPAL` or an `x-ms-client-principal` header instead — see [`contact-accounts-auth.md`](../runbooks/contact-accounts-auth.md).
 
 ## Authorization
 

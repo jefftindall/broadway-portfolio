@@ -10,19 +10,368 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 >
   <section class="mx-auto max-w-xl px-6 py-16 md:py-24">
     <p class="text-sm uppercase tracking-[0.2em] text-gel">Account</p>
-    <h1 class="mt-3 font-display text-4xl text-spotlight md:text-5xl">You are signed in</h1>
+    <h1 class="mt-3 font-display text-4xl text-spotlight md:text-5xl">Profile &amp; preferences</h1>
     <p class="mt-4 text-muted">
-      Profile, preferences, and lesson history will appear here in a future update. Lesson inquiries
-      and rates stay available without an account.
+      Update the contact details you use for voice lessons. Lesson inquiries and rates stay available
+      without an account.
     </p>
-    <p class="mt-8 text-sm">
-      <a href="/lessons/book" class="text-gel underline-offset-2 hover:text-gold hover:underline">
-        ← Back to rates &amp; scheduling
+
+    <div
+      id="account-unavailable"
+      class="mt-10 hidden rounded-sm border border-line bg-ink/40 px-4 py-3 text-sm text-muted"
+      hidden
+    >
+      Student accounts are not available right now.
+      <a href="/lessons/book" class="ml-1 text-gel underline-offset-2 hover:text-gold hover:underline">
+        Back to rates &amp; scheduling
       </a>
-      {' · '}
-      <a href="/.auth/logout" class="text-gel underline-offset-2 hover:text-gold hover:underline">
-        Sign out
-      </a>
-    </p>
+    </div>
+
+    <div id="account-loading" class="mt-10 text-sm text-muted">Loading your profile…</div>
+
+    <form id="account-form" class="mt-10 hidden flex-col gap-8" hidden novalidate>
+      <div
+        id="account-persona-panel"
+        class="hidden rounded-sm border border-line bg-ink/30 px-4 py-4"
+        hidden
+      >
+        <p class="text-sm font-medium text-spotlight">How are you using the studio?</p>
+        <p class="mt-1 text-sm text-muted">Choose one or both — you can change this later.</p>
+        <div class="mt-4 flex flex-wrap gap-4 text-sm text-spotlight">
+          <label class="inline-flex items-center gap-2">
+            <input type="checkbox" name="personaStudent" value="student" data-testid="account-persona-student" />
+            I take voice lessons
+          </label>
+          <label class="inline-flex items-center gap-2">
+            <input type="checkbox" name="personaParent" value="parent" data-testid="account-persona-parent" />
+            I&apos;m a parent or guardian
+          </label>
+        </div>
+      </div>
+
+      <fieldset class="min-w-0 border-0 p-0">
+        <legend class="font-display text-xl text-spotlight">Profile</legend>
+        <div class="mt-4 grid gap-4">
+          <label class="block min-w-0">
+            <span class="text-sm text-muted">Name</span>
+            <input
+              class="mt-1 box-border w-full max-w-full min-w-0 rounded-sm border border-line bg-ink/40 px-3 py-2 text-spotlight focus:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+              type="text"
+              name="displayName"
+              autocomplete="name"
+              required
+              maxlength="200"
+              data-testid="account-display-name"
+            />
+          </label>
+          <label class="block min-w-0">
+            <span class="text-sm text-muted">Email</span>
+            <input
+              class="mt-1 box-border w-full max-w-full min-w-0 rounded-sm border border-line bg-ink/40 px-3 py-2 text-spotlight focus:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+              type="email"
+              name="email"
+              autocomplete="email"
+              maxlength="254"
+              data-testid="account-email"
+            />
+          </label>
+          <p id="account-apple-hint" class="hidden text-sm text-muted" hidden>
+            If you use Apple Hide My Email, add the address you use for lessons so reminders reach
+            you.
+          </p>
+          <label class="block min-w-0">
+            <span class="text-sm text-muted">Phone (optional)</span>
+            <input
+              class="mt-1 box-border w-full max-w-full min-w-0 rounded-sm border border-line bg-ink/40 px-3 py-2 text-spotlight focus:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+              type="tel"
+              name="phone"
+              autocomplete="tel"
+              maxlength="40"
+              data-testid="account-phone"
+            />
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="min-w-0 border-0 p-0">
+        <legend class="font-display text-xl text-spotlight">Preferences</legend>
+        <div class="mt-4 grid gap-4">
+          <label class="block min-w-0">
+            <span class="text-sm text-muted">Lesson format</span>
+            <select
+              name="studentFormat"
+              class="mt-1 box-border w-full max-w-full min-w-0 rounded-sm border border-line bg-ink/40 px-3 py-2 text-spotlight focus:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+              data-testid="account-format"
+            >
+              <option value="">No preference yet</option>
+              <option value="nyc">NYC in-person</option>
+              <option value="zoom">Zoom</option>
+            </select>
+          </label>
+          <label class="block min-w-0">
+            <span class="text-sm text-muted">Time zone</span>
+            <input
+              class="mt-1 box-border w-full max-w-full min-w-0 rounded-sm border border-line bg-ink/40 px-3 py-2 text-spotlight focus:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+              type="text"
+              name="timezone"
+              autocomplete="off"
+              maxlength="80"
+              placeholder="America/New_York"
+              data-testid="account-timezone"
+            />
+          </label>
+          <label class="inline-flex items-start gap-2 text-sm text-spotlight">
+            <input
+              type="checkbox"
+              name="studentSmsOk"
+              class="mt-1"
+              data-testid="account-sms-ok"
+            />
+            <span>
+              Text me about lesson reminders or schedule changes. Message and data rates may apply.
+              You can turn this off anytime.
+            </span>
+          </label>
+        </div>
+      </fieldset>
+
+      <div
+        id="account-error"
+        class="hidden rounded-sm border border-red-500/40 bg-red-950/30 px-4 py-3 text-sm text-red-100"
+        hidden
+        role="alert"
+      >
+        <p id="account-error-text"></p>
+        <p class="mt-2 text-xs text-red-200/80">
+          Reference:
+          <code id="account-error-id" class="break-all text-red-50"></code>
+        </p>
+      </div>
+
+      <div
+        id="account-success"
+        class="hidden rounded-sm border border-gold/40 bg-gold/10 px-4 py-3 text-sm text-spotlight"
+        hidden
+        role="status"
+      >
+        Saved.
+      </div>
+
+      <div class="flex flex-wrap items-center gap-4">
+        <button
+          type="submit"
+          class="min-h-11 rounded-sm bg-gold px-5 py-2 text-sm font-medium text-ink transition hover:bg-gold/90 disabled:opacity-60"
+          data-testid="account-save"
+        >
+          Save changes
+        </button>
+        <a
+          href="/lessons/book"
+          class="text-sm text-gel underline-offset-2 hover:text-gold hover:underline"
+        >
+          Rates &amp; scheduling
+        </a>
+        <a
+          href="/.auth/logout"
+          class="text-sm text-muted underline-offset-2 hover:text-spotlight hover:underline"
+        >
+          Sign out
+        </a>
+      </div>
+    </form>
   </section>
 </BaseLayout>
+
+<script>
+  import { parseContactAccountConfig } from '../../lib/contactAccounts';
+
+  type AccountProfile = {
+    displayName?: string;
+    email?: string;
+    phone?: string;
+    personas?: string[];
+    studentFormat?: string;
+    studentSmsOk?: boolean;
+    timezone?: string;
+    needsPersonaChoice?: boolean;
+    appleRelayEmail?: boolean;
+    etag?: string;
+  };
+
+  type AccountResponse = {
+    account?: AccountProfile;
+    error?: string;
+    correlationId?: string;
+  };
+
+  const loading = document.getElementById('account-loading');
+  const unavailable = document.getElementById('account-unavailable');
+  const form = document.getElementById('account-form') as HTMLFormElement | null;
+  const personaPanel = document.getElementById('account-persona-panel');
+  const appleHint = document.getElementById('account-apple-hint');
+  const errorBox = document.getElementById('account-error');
+  const errorText = document.getElementById('account-error-text');
+  const errorId = document.getElementById('account-error-id');
+  const successBox = document.getElementById('account-success');
+  const saveButton = document.querySelector<HTMLButtonElement>('[data-testid="account-save"]');
+
+  let currentEtag = '';
+  let currentAccount: AccountProfile | null = null;
+
+  function show(el: HTMLElement | null) {
+    if (!el) return;
+    el.hidden = false;
+    el.classList.remove('hidden');
+  }
+
+  function hide(el: HTMLElement | null) {
+    if (!el) return;
+    el.hidden = true;
+    el.classList.add('hidden');
+  }
+
+  function showError(message: string, correlationId?: string) {
+    hide(successBox);
+    if (!errorBox || !errorText || !errorId) return;
+    errorText.textContent = message;
+    if (correlationId) {
+      errorId.textContent = correlationId;
+      errorId.parentElement?.classList.remove('hidden');
+    } else {
+      errorId.textContent = '';
+      errorId.parentElement?.classList.add('hidden');
+    }
+    show(errorBox);
+  }
+
+  function showSuccess() {
+    hide(errorBox);
+    show(successBox);
+  }
+
+  function selectedPersonas(formEl: HTMLFormElement): string[] {
+    const personas: string[] = [];
+    const student = formEl.querySelector<HTMLInputElement>('input[name="personaStudent"]');
+    const parent = formEl.querySelector<HTMLInputElement>('input[name="personaParent"]');
+    if (student?.checked) personas.push('student');
+    if (parent?.checked) personas.push('parent');
+    return personas;
+  }
+
+  function fillForm(account: AccountProfile) {
+    if (!form) return;
+    const displayName = form.querySelector<HTMLInputElement>('input[name="displayName"]');
+    const email = form.querySelector<HTMLInputElement>('input[name="email"]');
+    const phone = form.querySelector<HTMLInputElement>('input[name="phone"]');
+    const studentFormat = form.querySelector<HTMLSelectElement>('select[name="studentFormat"]');
+    const timezone = form.querySelector<HTMLInputElement>('input[name="timezone"]');
+    const smsOk = form.querySelector<HTMLInputElement>('input[name="studentSmsOk"]');
+    const studentPersona = form.querySelector<HTMLInputElement>('input[name="personaStudent"]');
+    const parentPersona = form.querySelector<HTMLInputElement>('input[name="personaParent"]');
+
+    if (displayName) displayName.value = account.displayName || '';
+    if (email) email.value = account.email || '';
+    if (phone) phone.value = account.phone || '';
+    if (studentFormat) studentFormat.value = account.studentFormat || '';
+    if (timezone) timezone.value = account.timezone || 'America/New_York';
+    if (smsOk) smsOk.checked = Boolean(account.studentSmsOk);
+    const personas = account.personas || [];
+    if (studentPersona) studentPersona.checked = personas.includes('student');
+    if (parentPersona) parentPersona.checked = personas.includes('parent');
+
+    if (account.needsPersonaChoice) {
+      show(personaPanel);
+    } else {
+      hide(personaPanel);
+    }
+
+    if (account.appleRelayEmail) {
+      show(appleHint);
+    } else {
+      hide(appleHint);
+    }
+  }
+
+  async function loadAccount() {
+    const configRes = await fetch('/api/contactAccountConfig', { credentials: 'same-origin' });
+    const config = parseContactAccountConfig(await configRes.json());
+    if (!config.enabled) {
+      hide(loading);
+      show(unavailable);
+      return;
+    }
+
+    const res = await fetch('/api/account', { credentials: 'same-origin' });
+    const data = (await res.json()) as AccountResponse;
+    if (!res.ok) {
+      hide(loading);
+      showError(data.error || 'Could not load your account.', data.correlationId);
+      return;
+    }
+
+    currentAccount = data.account || null;
+    currentEtag = currentAccount?.etag || '';
+    hide(loading);
+    show(form);
+    form?.classList.remove('hidden');
+    form?.classList.add('flex');
+    if (currentAccount) fillForm(currentAccount);
+  }
+
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!form) return;
+    hide(errorBox);
+    hide(successBox);
+    if (saveButton) saveButton.disabled = true;
+
+    const personas = selectedPersonas(form);
+    const needsPersona = Boolean(currentAccount?.needsPersonaChoice || personaPanel?.hidden === false);
+    if (needsPersona && personas.length === 0) {
+      showError('Choose student and/or parent.');
+      if (saveButton) saveButton.disabled = false;
+      return;
+    }
+
+    const body: Record<string, unknown> = {
+      displayName: form.querySelector<HTMLInputElement>('input[name="displayName"]')?.value,
+      email: form.querySelector<HTMLInputElement>('input[name="email"]')?.value,
+      phone: form.querySelector<HTMLInputElement>('input[name="phone"]')?.value,
+      studentFormat: form.querySelector<HTMLSelectElement>('select[name="studentFormat"]')?.value,
+      timezone: form.querySelector<HTMLInputElement>('input[name="timezone"]')?.value,
+      studentSmsOk: form.querySelector<HTMLInputElement>('input[name="studentSmsOk"]')?.checked,
+      etag: currentEtag,
+    };
+    if (personas.length > 0) body.personas = personas;
+
+    try {
+      const res = await fetch('/api/account', {
+        method: 'PATCH',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(currentEtag ? { 'If-Match': currentEtag } : {}),
+        },
+        body: JSON.stringify(body),
+      });
+      const data = (await res.json()) as AccountResponse;
+      if (!res.ok) {
+        showError(data.error || 'Could not save your profile.', data.correlationId);
+        return;
+      }
+      currentAccount = data.account || null;
+      currentEtag = currentAccount?.etag || '';
+      if (currentAccount) fillForm(currentAccount);
+      showSuccess();
+    } catch {
+      showError('Could not save your profile. Check your connection and try again.');
+    } finally {
+      if (saveButton) saveButton.disabled = false;
+    }
+  });
+
+  loadAccount().catch(() => {
+    hide(loading);
+    showError('Could not load your account.');
+  });
+</script>

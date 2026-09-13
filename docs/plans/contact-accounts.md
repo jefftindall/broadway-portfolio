@@ -2,7 +2,7 @@
 
 **Artifact ID:** `ELYSE-ACCOUNT-001`  
 **Version:** 1.1  
-**Last updated:** 2026-09-12 (`ACCOUNT-P1-012` custom URL domain `wont_fix`)  
+**Last updated:** 2026-09-13 (`ACCOUNT-P2-*` link + `/account` profile)  
 **Audience:** Agents, implementers, operators  
 **Scope:** Public-site **contact accounts** so students (and parents) can sign in with Google, Apple, or Microsoft, maintain profile and preferences, **see the schedule and book a slot**, and **review their lesson history**. The whole contact-account surface is behind a **runtime feature flag**. **Lesson and casting inquiries stay anonymous forever** — potential clients must never be forced to log in to write Elyse. Studio (`/studio`) stays the operator workspace. People CRM stays the relationship SoT. Stripe stays money. Google Calendar stays time.
 
@@ -76,11 +76,11 @@ Operator ──Microsoft work/school────────►  Workforce Entra
 | Phase 0 — Plan + Action IDs + SoT | `done` | — |
 | Phase 1 — Student identity (External ID + SWA roles) | `done` | SWA OIDC + roles + flag shipped; CIAM user flows / IdPs / branding still portal or partial — see Phase 1b |
 | Phase 1b — CIAM user flows as code (per env) | `in_progress` | `P1-007`–`P1-011` + staging flow (`P1-008`/`P1-009`) + `/login` UX (`P1-013`) done; prod flow + validation (`P1-014`) next |
-| Phase 2 — Link login → People + `/account` | `planned` | After P1 |
+| Phase 2 — Link login → People + `/account` | `done` | Staging apply for `contactIdentities` table; CIAM sign-in validation still `P1-014` |
 | Phase 3 — Flag + login-gated schedule/book | `planned` | Inquiry stays anonymous; `STUDIO-P5-001` uses this bind |
 | Phase 4 — Lesson history + parent booking | `planned` | History is part of `/account`; required before prod flag-on |
 
-**Suggested next:** `ACCOUNT-P1-014` (staging Graph apply + IdP round-trips, then promote `flows/prod.json`). Do **not** start `STUDIO-P5-001` until Phase 3 can bind a booker. Inquiry never waits on this track.
+**Suggested next:** `ACCOUNT-P1-014` (staging Graph apply + IdP round-trips, then promote `flows/prod.json`), then `ACCOUNT-P3-001` (flag-gated schedule/book). Do **not** start `STUDIO-P5-001` until Phase 3 can bind a booker. Inquiry never waits on this track.
 
 ---
 
@@ -386,21 +386,21 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 
 | ID | Title | Status | Depends on | Primary files |
 |----|-------|--------|------------|---------------|
-| `ACCOUNT-P2-001` | Identity ↔ contact store + first-login link/create | `planned` | `ACCOUNT-P1-002`; `STUDIO-P1-001` | `api/src/lib/contacts.js` (or `contactIdentities`); `data-persistence.md` |
-| `ACCOUNT-P2-002` | `GET`/`PATCH /api/account` (own row, allowlisted fields) | `planned` | `ACCOUNT-P2-001` | `api/src/functions/`; contact gate (not `people.write`) |
-| `ACCOUNT-P2-003` | `/account` UI (profile + preferences) | `planned` | `ACCOUNT-P2-002` | `src/pages/account/`; public header Sign in / Account |
-| `ACCOUNT-P2-004` | Privacy, logging, journeys | `planned` | `ACCOUNT-P2-003` | `privacy.astro`; `tests/journeys/` |
+| `ACCOUNT-P2-001` | Identity ↔ contact store + first-login link/create | `done` | `ACCOUNT-P1-002`; `STUDIO-P1-001` | `api/src/lib/contactIdentities.js`, `contactLink.js`; `data-persistence.md` |
+| `ACCOUNT-P2-002` | `GET`/`PATCH /api/account` (own row, allowlisted fields) | `done` | `ACCOUNT-P2-001` | `api/src/functions/account.js`; `contactAccess.js` |
+| `ACCOUNT-P2-003` | `/account` UI (profile + preferences) | `done` | `ACCOUNT-P2-002` | `src/pages/account/`; public header Sign in / Account |
+| `ACCOUNT-P2-004` | Privacy, logging, journeys | `done` (runbook) | `ACCOUNT-P2-003` | `privacy.astro`; `tests/journeys/account.spec.ts`; API unit tests |
 
 <details>
 <summary><code>ACCOUNT-P2-001</code> — Link</summary>
 
 **Acceptance criteria**
 
-- [ ] Persist provider + issuer + subject → `contactId` on the existing CRM account (new table **or** columns on `contacts` — pick one in the PR and document in [`data-persistence.md`](../architecture/data-persistence.md))
-- [ ] First login follows [Contact link rules](#contact-link-rules) (match, create, Apple relay, no auto-merge)
-- [ ] Duplicate active emails still forbidden
-- [ ] Same uniqueness as `STUDIO-P4-001` inquiry upsert (one person per email)
-- [ ] No new Postgres SKU
+- [x] Persist provider + issuer + subject → `contactId` in Table `contactIdentities` ([`data-persistence.md`](../architecture/data-persistence.md) §1.1b)
+- [x] First login follows [Contact link rules](#contact-link-rules) (match, create, Apple relay, no auto-merge)
+- [x] Duplicate active emails still forbidden
+- [x] Same uniqueness as `STUDIO-P4-001` inquiry upsert (one person per email)
+- [x] No new Postgres SKU
 
 </details>
 
@@ -409,11 +409,11 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 
 **Acceptance criteria**
 
-- [ ] Requires `contact` SWA role + linked contact. 401/403 + `correlationId` otherwise
-- [ ] PATCH allowlist: display name, email, phone, `studentFormat`, `studentSmsOk`, `timezone`, student/parent persona flags only
-- [ ] Reject notes, LTV, rate, package, agent/casting, `archived`, arbitrary `relatedContacts`, other `contactId`s
-- [ ] Studio `people.write` still edits the same row from `/studio/people` (operators win on those fields; optimistic concurrency via etag)
-- [ ] Development environment can call the API without External ID (documented fixture)
+- [x] Requires `contact` SWA role + linked contact. 401/403 + `correlationId` otherwise
+- [x] PATCH allowlist: display name, email, phone, `studentFormat`, `studentSmsOk`, `timezone`, student/parent persona flags only
+- [x] Reject notes, LTV, rate, package, agent/casting, `archived`, arbitrary `relatedContacts`, other `contactId`s
+- [x] Studio `people.write` still edits the same row from `/studio/people` (operators win on those fields; optimistic concurrency via etag)
+- [x] Development environment can call the API without External ID (`CONTACT_DEV_PRINCIPAL` — [`contact-accounts-auth.md`](../runbooks/contact-accounts-auth.md))
 
 </details>
 
@@ -422,10 +422,10 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 
 **Acceptance criteria**
 
-- [ ] `/account` is SWA `contact`-gated (or page-level redirect to `/login`) **and** hidden when `CONTACT_ACCOUNTS_ENABLED` is false, `noIndex`, not in sitemap, `private, no-store`
-- [ ] iPhone Safari: edit profile + preferences, save, friendly error + `Reference: {correlationId}`
-- [ ] Public header Sign in / Account **only when the flag is on** (not Studio)
-- [ ] First-run: choose student vs parent if personas are empty
+- [x] `/account` is SWA `contact`-gated (or page-level redirect to `/login`) **and** hidden when `CONTACT_ACCOUNTS_ENABLED` is false, `noIndex`, not in sitemap, `private, no-store`
+- [ ] iPhone Safari: edit profile + preferences, save, friendly error + `Reference: {correlationId}` — operator validates after `P1-014` CIAM sign-in on staging
+- [x] Public header Sign in / Account **only when the flag is on** (not Studio)
+- [x] First-run: choose student vs parent if personas are empty
 
 </details>
 
@@ -434,9 +434,9 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 
 **Acceptance criteria**
 
-- [ ] Privacy covers account profile, preferences, SMS-ok, and identity providers
-- [ ] Function logs: kinds + contact id only
-- [ ] Journey: anonymous `/account` → login; signed-in contact can save preferences (staging)
+- [x] Privacy covers account profile, preferences, SMS-ok, and identity providers
+- [x] Function logs: kinds + contact id only
+- [x] Journey: anonymous `/account` → login (`tests/journeys/account.spec.ts`); signed-in save covered by API unit tests until CIAM journey auth (`P1-014`)
 
 </details>
 
