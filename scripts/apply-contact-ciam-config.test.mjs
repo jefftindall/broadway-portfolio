@@ -354,6 +354,7 @@ test('buildGoogleIdentityProviderBody uses socialIdentityProvider odata type', (
     { values: { clientId: 'google-client', clientSecret: 'google-secret' } },
   );
   assert.equal(body['@odata.type'], '#microsoft.graph.socialIdentityProvider');
+  assert.equal(body.identityProviderType, 'Google');
   assert.equal(body.clientId, 'google-client');
   assert.equal(body.clientSecret, 'google-secret');
 });
