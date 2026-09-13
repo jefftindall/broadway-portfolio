@@ -11,6 +11,9 @@ const GRAPH_RESOURCE = 'https://graph.microsoft.com';
 const GRAPH_BASE = `${GRAPH_RESOURCE}/v1.0`;
 const GRAPH_BETA = `${GRAPH_RESOURCE}/beta`;
 
+/** Required in CIAM tenants before Graph can create IdPs / custom auth extensions (AADB2C90063 when missing). */
+export const AAD_AUTH_EXTENSIONS_APP_ID = '99045fe1-7639-4a75-9d4a-577b6ca3810f';
+
 /**
  * @param {string} message
  * @returns {never}
@@ -30,9 +33,52 @@ export function isGraphAccessError(err) {
   if (/branding\/themes/i.test(message) && /Request_ResourceNotFound|http-404/i.test(message)) {
     return true;
   }
-  return /\(AADB2C\)|\(Authorization_RequestDenied\)|\(accessDenied\)|\(http-401\)|\(http-403\)|insufficient privileges/i.test(
-    message,
+  return (
+    /\(AADB2C/i.test(message) ||
+    /\(Authorization_RequestDenied\)|\(accessDenied\)|\(http-401\)|\(http-403\)|insufficient privileges/i.test(
+      message,
+    )
   );
+}
+
+/**
+ * Ensure the first-party Authentication Extensions enterprise app exists in the CIAM tenant.
+ * Without it, Graph POST /identity/identityProviders returns AADB2C90063.
+ *
+ * @param {string} tenantId
+ */
+export async function ensureAuthenticationExtensionsServicePrincipal(tenantId) {
+  const filter = encodeURIComponent(`appId eq '${AAD_AUTH_EXTENSIONS_APP_ID}'`);
+  try {
+    const payload = /** @type {{ value?: Array<{ id?: string }> }} */ (
+      await graphRequest({ tenantId, path: `/servicePrincipals?$filter=${filter}&$select=id` })
+    );
+    if ((payload.value ?? []).some((item) => String(item.id ?? '').trim())) {
+      return;
+    }
+  } catch (err) {
+    if (!isGraphAccessError(err)) {
+      throw err;
+    }
+  }
+
+  try {
+    await graphRequest({
+      tenantId,
+      method: 'POST',
+      path: '/servicePrincipals',
+      body: { appId: AAD_AUTH_EXTENSIONS_APP_ID },
+    });
+    process.stdout.write(
+      'Ensured Azure Active Directory Authentication Extensions service principal in CIAM tenant.\n',
+    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (/http-409|ObjectConflict|already exists|MultipleObjectsMatchingFilter/i.test(message)) {
+      return;
+    }
+    throw err;
+  }
 }
 
 /**

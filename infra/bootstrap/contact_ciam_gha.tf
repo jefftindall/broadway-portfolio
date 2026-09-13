@@ -11,7 +11,8 @@ locals {
 
   # Microsoft Graph application permissions for apply-contact-ciam-config.mjs (ACCOUNT-P1-010+).
   # Resolve role IDs from the CIAM tenant's Microsoft Graph enterprise app — GUIDs differ from workforce.
-  ms_graph_app_id = "00000003-0000-0000-c000-000000000000"
+  ms_graph_app_id            = "00000003-0000-0000-c000-000000000000"
+  aad_auth_extensions_app_id = "99045fe1-7639-4a75-9d4a-577b6ca3810f"
   contact_ciam_graph_role_values = [
     "IdentityProvider.ReadWrite.All",
     "Organization.ReadWrite.All",
@@ -150,4 +151,17 @@ resource "azurerm_key_vault_secret" "contact_ciam_tf_client_id" {
 data "azuread_client_config" "contact_ciam" {
   count    = local.contact_ciam_ready && var.manage_contact_ciam_gha ? 1 : 0
   provider = azuread.contact_ciam
+}
+
+# Azure Active Directory Authentication Extensions — required for CIAM IdP Graph writes (AADB2C90063 when missing).
+resource "azuread_service_principal" "aad_auth_extensions" {
+  count    = local.contact_ciam_ready && var.manage_contact_ciam_gha ? 1 : 0
+  provider = azuread.contact_ciam
+
+  client_id = local.aad_auth_extensions_app_id
+  owners    = [data.azuread_client_config.contact_ciam[0].object_id]
+
+  lifecycle {
+    ignore_changes = [owners]
+  }
 }
