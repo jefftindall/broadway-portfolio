@@ -86,11 +86,15 @@ Apply (once, after Step 1 — requires **Application Administrator** or **Global
 
 ```bash
 cd infra/bootstrap
-terraform apply -target=azuread_application.terraform_ciam \
-  -target=azuread_service_principal.terraform_ciam \
+terraform apply \
+  -target=azuread_application.terraform_ciam[0] \
+  -target=azuread_service_principal.terraform_ciam[0] \
   -target=azuread_app_role_assignment.terraform_ciam_graph \
+  -target=azuread_service_principal.aad_auth_extensions[0] \
   -target=azurerm_key_vault_secret.contact_ciam_tf_client_id
 ```
+
+**Verify admin consent:** `elyse-portfolio-gha-ciam-terraform` must have five **Microsoft Graph application** permissions granted in the **CIAM** tenant (`IdentityProvider.ReadWrite.All`, `Organization.ReadWrite.All`, `OrganizationalBranding.ReadWrite.All`, `EventListener.ReadWrite.All`, `Application.ReadWrite.All`). Without `azuread_app_role_assignment.terraform_ciam_graph`, the env apply hook logs `AADB2C` / missing delegated permissions even when the app registration lists the roles. In Actions, `apply-contact-ciam-config.mjs` uses an isolated Azure CLI profile for CONTACT-CIAM-TF federated OIDC so workforce `azure/login` is not reused for Graph tokens.
 
 Until Step 2 includes the Graph permission grants, env `terraform apply` may defer IdP / user-flow Graph writes when the hook cannot read remote state; branding apply still runs when planned. Re-run bootstrap Step 2 after changing `contact_ciam_gha.tf` so role IDs resolve from the CIAM tenant Graph SP.
 
