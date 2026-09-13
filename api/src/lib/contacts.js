@@ -14,6 +14,7 @@ export const MAX_PEOPLE_PAGE_SIZE = 50;
 export const SEED_CONTACT_ID_PATTERN = /^seed-people-\d{2}$/;
 /** One CRM per deployment. Staging and prod already use separate storage accounts. */
 export const STUDIO_CONTACTS_PARTITION = 'people';
+export const DEFAULT_CONTACT_TIMEZONE = 'America/New_York';
 
 const INVERSE_RELATION = {
   parent: 'student',
@@ -290,6 +291,11 @@ export function normalizeContactInput(input, { partial = false } = {}) {
     out.studentSmsOk = Boolean(src.studentSmsOk);
   }
 
+  if (!partial || has('timezone')) {
+    const timezone = trimTo(src.timezone, 80);
+    out.timezone = timezone || DEFAULT_CONTACT_TIMEZONE;
+  }
+
   if (!partial || has('relatedContacts')) {
     out.relatedContacts = normalizeRelated(src.relatedContacts);
     if (out.relatedContacts.some((rel) => !rel.id)) {
@@ -326,6 +332,7 @@ export function publicContact(record) {
     castingLastRequestOn: record.castingLastRequestOn || '',
     castingWarmth: record.castingWarmth || '',
     studentSmsOk: Boolean(record.studentSmsOk),
+    timezone: record.timezone || DEFAULT_CONTACT_TIMEZONE,
     studentLtvCents: record.studentLtvCents ?? 0,
     studentLtvStripeCents: record.studentLtvStripeCents ?? 0,
     studentLtvOfflineCents: record.studentLtvOfflineCents ?? 0,
@@ -374,6 +381,7 @@ function entityToRecord(entity) {
     castingLastRequestOn: String(entity.castingLastRequestOn || ''),
     castingWarmth: String(entity.castingWarmth || ''),
     studentSmsOk: Boolean(entity.studentSmsOk),
+    timezone: String(entity.timezone || '') || DEFAULT_CONTACT_TIMEZONE,
     studentLtvCents: Number(entity.studentLtvCents || 0),
     studentLtvStripeCents: Number(entity.studentLtvStripeCents || 0),
     studentLtvOfflineCents: Number(entity.studentLtvOfflineCents || 0),
@@ -409,6 +417,7 @@ function recordToEntity(record) {
     castingLastRequestOn: record.castingLastRequestOn || '',
     castingWarmth: record.castingWarmth || '',
     studentSmsOk: Boolean(record.studentSmsOk),
+    timezone: record.timezone || DEFAULT_CONTACT_TIMEZONE,
     studentLtvCents: Number(record.studentLtvCents || 0),
     studentLtvStripeCents: Number(record.studentLtvStripeCents || 0),
     studentLtvOfflineCents: Number(record.studentLtvOfflineCents || 0),

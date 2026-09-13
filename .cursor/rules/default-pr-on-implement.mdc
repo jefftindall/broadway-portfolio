@@ -1,0 +1,24 @@
+# Default: commit + PR after implementation
+
+When the user asks you to **implement**, **build**, **add**, **fix**, or **ship** a feature (or a plan phase / Action ID), treat the deliverable as **code + commit + pull request** unless they explicitly say otherwise.
+
+## Default workflow (end of implementation)
+
+1. Run `npm run lint` (and any other gates required by [`lint-before-commit.mdc`](lint-before-commit.mdc)).
+2. Branch from `main` (not an unrelated in-progress branch) — e.g. `account/account-p2-profile`.
+3. Commit only intentional changes. **Never** commit secrets, cookie dumps, `tfplan` binaries, or local-only config (`.cursor/mcp.json`, `tmp-*-cookies.txt`, etc.).
+4. Push with `-u` and open a PR via `gh pr create`. Cite plan Action IDs (`ACCOUNT-P2-*`, …) in title/body. Update matching `docs/plans/*` statuses in the same PR when applicable ([`plans-status-on-pr.mdc`](plans-status-on-pr.mdc)).
+
+## Exceptions — do **not** commit or open a PR
+
+- User says **only explain**, **review**, **plan**, **don't commit**, **don't push**, or **no PR**.
+- Pure Q&A with no code changes.
+- User asked for a **local-only** or **draft** change and said to stop before git.
+
+## If the working tree is on the wrong branch
+
+Stash implementation files → `git fetch origin main` → new branch from `origin/main` → stash pop → commit → PR. Do not stack unrelated feature work onto another feature branch.
+
+## Related
+
+Commit message style: user rule `committing-changes-with-git`. PR body format: user rule `creating-pull-requests`. Lint gate: [`AGENTS.md`](../../AGENTS.md).

@@ -2,6 +2,11 @@
 description: Keep docs/architecture/data-persistence.md current when stores, schemas, or access paths change
 globs:
   - api/src/lib/contacts.js
+  - api/src/lib/contactIdentities.js
+  - api/src/lib/contactLink.js
+  - api/src/lib/contactAccess.js
+  - api/src/lib/accountProfile.js
+  - api/src/functions/account.js
   - api/src/lib/users.js
   - api/src/lib/tableGeo.js
   - api/src/lib/permissions.js

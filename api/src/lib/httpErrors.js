@@ -249,6 +249,81 @@ export function crmFailureResponse(err, correlationId) {
   };
 }
 
+const MSG_ACCOUNT_GENERIC =
+  'Something went wrong while loading your account. Share the reference below with support.';
+const MSG_ACCOUNT_CONFIG =
+  'Accounts aren’t configured right now. Please try again later or use the lesson inquiry form.';
+const MSG_ACCOUNT_ARCHIVED =
+  'This account is paused. Email Elyse if you need it restored.';
+const MSG_ACCOUNT_LINK =
+  'We couldn’t link this sign-in to your profile. Share the reference below if you need help.';
+
+/**
+ * @param {unknown} err
+ * @returns {{ errorKind: string, status: number, error: string }}
+ */
+export function classifyAccountError(err) {
+  const name = err instanceof Error ? err.name : '';
+  const message = err instanceof Error ? err.message : String(err || '');
+  const lower = message.toLowerCase();
+
+  if (name === 'ContactArchivedError') {
+    return { errorKind: 'archived', status: 403, error: MSG_ACCOUNT_ARCHIVED };
+  }
+  if (name === 'ContactLinkError') {
+    const status = err?.status && Number.isFinite(err.status) ? err.status : 403;
+    return { errorKind: 'link', status, error: message || MSG_ACCOUNT_LINK };
+  }
+  if (name === 'CrmValidationError') {
+    return {
+      errorKind: 'validation',
+      status: 400,
+      error: message || 'Please check the account fields and try again.',
+    };
+  }
+  if (name === 'CrmNotFoundError') {
+    return { errorKind: 'not_found', status: 404, error: 'Account profile not found.' };
+  }
+  if (name === 'CrmConflictError') {
+    return {
+      errorKind: 'conflict',
+      status: 409,
+      error: message || 'Someone else updated this profile. Refresh and try again.',
+    };
+  }
+  if (
+    name === 'CrmConfigError' ||
+    name === 'ContactIdentityConfigError' ||
+    /missing studio_crm|missing contact_identity/i.test(message)
+  ) {
+    return { errorKind: 'config', status: 500, error: MSG_ACCOUNT_CONFIG };
+  }
+  if (/429|throttl|timeout|temporar|unavailable|econnreset/i.test(lower)) {
+    return {
+      errorKind: 'storage_temporary',
+      status: 503,
+      error: 'Accounts are temporarily unavailable. Please try again in a few minutes.',
+    };
+  }
+  return { errorKind: 'unknown', status: 500, error: MSG_ACCOUNT_GENERIC };
+}
+
+/**
+ * @param {unknown} err
+ * @param {string} correlationId
+ */
+export function accountFailureResponse(err, correlationId) {
+  const classified = classifyAccountError(err);
+  return {
+    status: classified.status,
+    jsonBody: {
+      error: classified.error,
+      correlationId,
+    },
+    errorKind: classified.errorKind,
+  };
+}
+
 /**
  * @param {unknown} err
  * @returns {{ errorKind: string, status: number, error: string }}

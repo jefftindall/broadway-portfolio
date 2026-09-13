@@ -49,6 +49,28 @@ Independent of `LESSON_PAYMENTS_ENABLED`. Lesson and casting inquire stay **anon
 
 ---
 
+## Local API (`func start`)
+
+With `AZURE_FUNCTIONS_ENVIRONMENT=Development` and `CONTACT_ACCOUNTS_ENABLED=true`, set `CONTACT_DEV_PRINCIPAL` in `api/local.settings.json` to a JSON principal when you are not sending `x-ms-client-principal` (same pattern as the Studio catalog grant). Example shape:
+
+```json
+{
+  "identityProvider": "contact",
+  "userId": "dev-contact-sub",
+  "userDetails": "dev.student@example.com",
+  "userRoles": ["contact"],
+  "claims": [
+    { "typ": "email", "val": "dev.student@example.com" },
+    { "typ": "name", "val": "Dev Student" },
+    { "typ": "iss", "val": "https://ciam.example" }
+  ]
+}
+```
+
+Call `GET` / `PATCH` `http://localhost:7071/api/account` against Azurite CRM storage. Do not point local Astro at production External ID.
+
+---
+
 ## If External ID is down
 
 Rates and Turnstile inquire still work. Sign-in, `/account`, and (when shipped) schedule/book are unavailable until IdP recovery. Operators use workforce AAD for Studio independently.

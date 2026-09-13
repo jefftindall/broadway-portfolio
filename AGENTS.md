@@ -1,5 +1,9 @@
 See README.md and docs/ for project guidance.
 
+## Default deliverable: PR
+
+When asked to **implement** a feature or plan phase, finish with **lint → commit → push → open PR** unless the user says otherwise (explain-only, review-only, “don’t commit”, etc.). Branch from `main`; never commit secrets or local junk (`tmp-*-cookies.txt`, `tfplan*`, `.cursor/mcp.json`). See [`.cursor/rules/default-pr-on-implement.mdc`](.cursor/rules/default-pr-on-implement.mdc).
+
 ## Cursor Cloud specific instructions
 
 Single-product Astro portfolio + optional Gemini-powered "Studio" Azure Functions API. Node >= 22.12 is required (see root `package.json` engines). Cloud agent runtime is defined in [`.cursor/environment.json`](.cursor/environment.json): the `install` script runs `npm ci` for the root site and `api/`. Bake Node, Terraform (>= 1.5), TFLint (`tflint --init` in `infra/`), and Azure CLI (`az`) into the Cursor Cloud environment **snapshot** (then set `"snapshot"` in `environment.json`). Azure Functions Core Tools (`func`) may be present on the base/snapshot image but is **not** part of `install`. The `site` terminal starts Astro on port 4321 for browser / computer-use checks.
