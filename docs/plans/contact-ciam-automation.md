@@ -209,8 +209,9 @@ Script reads env: `CONTACT_CIAM_ENV=staging|prod`, `CONTACT_CIAM_TENANT_ID`, flo
 
 - [x] Theme uses ink / gold / gel / spotlight palette and CIAM-sized banner logo (`infra/contact-ciam/branding/theme.json` + `banner-logo.png`; ink `#0e0d0c`)
 - [x] Sign-in page copy matches voice-lessons tone (no “Azure AD” jargon)
-- [ ] Staging visually recognizable as Elyse Tindall on iPhone Safari (operator after apply)
-- [x] Theme JSON in repo; apply script syncs to Graph beta branding theme (`isDefaultTheme`, `pageBackgroundColor`, banner logo upload)
+- [x] Staging visually recognizable as Elyse Tindall on iPhone Safari (ink `#0e0d0c` background, banner logo, voice-lessons sign-in copy on `test.elysetindall.com` after Graph apply)
+- [x] Theme JSON in repo; apply script syncs branding via Graph beta theme when supported, else **company branding** fallback (`backgroundColor`, sign-in copy, banner logo upload)
+- [x] Bootstrap GHA Graph roles resolve from CIAM tenant Microsoft Graph SP (workforce role GUIDs are invalid in External ID tenants)
 
 </details>
 

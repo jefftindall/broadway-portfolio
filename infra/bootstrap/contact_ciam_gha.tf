@@ -10,12 +10,21 @@ locals {
   )
 
   # Microsoft Graph application permissions for apply-contact-ciam-config.mjs (ACCOUNT-P1-010+).
+  # Resolve role IDs from the CIAM tenant's Microsoft Graph enterprise app — GUIDs differ from workforce.
   ms_graph_app_id = "00000003-0000-0000-c000-000000000000"
+  contact_ciam_graph_role_values = [
+    "IdentityProvider.ReadWrite.All",
+    "Organization.ReadWrite.All",
+    "OrganizationalBranding.ReadWrite.All",
+    "EventListener.ReadWrite.All",
+    "Application.ReadWrite.All",
+  ]
   contact_ciam_graph_app_roles = {
-    identity_provider_rw = "898868ce-daac-4334-9a4c-57d6860f305b" # IdentityProvider.ReadWrite.All
-    organization_rw      = "62a82d76-70ea-41e2-9197-370581704d8e" # Organization.ReadWrite.All
-    policy_rw            = "242b12ff-6bd3-4138-b447-eb1afa57df2c" # Policy.ReadWrite.ApplicationConfiguration
-    application_rw       = "1bfefb4e-e0b5-418b-a88f-73c46d2cc8e9" # Application.ReadWrite.All
+    for value in local.contact_ciam_graph_role_values :
+    replace(replace(lower(value), ".", "_"), "-", "_") => one([
+      for role in data.azuread_service_principal.ms_graph_ciam[0].app_roles :
+      role.id if role.value == value
+    ])
   }
 }
 

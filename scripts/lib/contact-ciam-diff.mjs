@@ -267,7 +267,7 @@ export function planBrandingSync(brandingManifest, remoteBranding) {
       /** @type {Record<string, unknown>} */ (localization).bannerLogoRelativeUrl,
   );
 
-  if (!remoteBranding?.orgId || !theme?.id) {
+  if (!remoteBranding?.orgId || (!theme?.id && !localization)) {
     return [
       {
         kind: 'create',
@@ -276,6 +276,30 @@ export function planBrandingSync(brandingManifest, remoteBranding) {
         details: { uploadLogo: Boolean(logoSource) },
       },
     ];
+  }
+
+  if (!theme?.id && localization) {
+    if (
+      desiredFingerprint !== remoteFingerprint ||
+      (logoSource && (resyncLogo || !hasRemoteLogo))
+    ) {
+      return [
+        {
+          kind: 'update',
+          resource: 'branding',
+          name: 'theme',
+          reason:
+            desiredFingerprint !== remoteFingerprint
+              ? 'company branding localization drift'
+              : 'banner logo upload pending',
+          details: {
+            orgId: remoteBranding.orgId,
+            uploadLogo: Boolean(logoSource),
+          },
+        },
+      ];
+    }
+    return [{ kind: 'noop', resource: 'branding', name: 'theme', details: { orgId: remoteBranding.orgId } }];
   }
 
   if (

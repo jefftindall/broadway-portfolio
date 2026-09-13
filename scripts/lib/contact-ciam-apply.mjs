@@ -15,14 +15,18 @@ import {
 } from './contact-ciam-idp.mjs';
 import {
   createAuthenticationEventsFlow,
+  createBrandingLocalization,
   createBrandingTheme,
   createBrandingThemeLocalization,
   createIdentityProvider,
   getOrganizationId,
+  isBrandingThemeUnavailable,
   patchAuthenticationEventsFlow,
+  patchBrandingLocalization,
   patchBrandingTheme,
   patchBrandingThemeLocalization,
   patchIdentityProvider,
+  uploadBannerLogo,
   uploadBrandingThemeBannerLogo,
 } from './contact-ciam-graph.mjs';
 
@@ -137,6 +141,25 @@ function isMissingThemeLocalization(err) {
  * }} context
  */
 export async function applyBrandingAction(context) {
+  try {
+    await applyBrandingThemeAction(context);
+  } catch (err) {
+    if (!isBrandingThemeUnavailable(err)) {
+      throw err;
+    }
+    await applyCompanyBrandingAction(context);
+  }
+}
+
+/**
+ * @param {{
+ *   tenantId: string;
+ *   repoRoot: string;
+ *   action: import('./contact-ciam-diff.mjs').PlanAction;
+ *   brandingManifest: Record<string, unknown>;
+ * }} context
+ */
+async function applyBrandingThemeAction(context) {
   const spec = /** @type {Record<string, unknown>} */ (context.brandingManifest.spec ?? {});
   const normalized = normalizeBrandingSpec(spec);
   const orgId = await getOrganizationId(context.tenantId);
@@ -196,6 +219,49 @@ export async function applyBrandingAction(context) {
       context.tenantId,
       orgId,
       themeId,
+      normalized.locale,
+      logoAsset.bytes,
+      logoAsset.contentType,
+    );
+  }
+}
+
+/**
+ * @param {{
+ *   tenantId: string;
+ *   repoRoot: string;
+ *   action: import('./contact-ciam-diff.mjs').PlanAction;
+ *   brandingManifest: Record<string, unknown>;
+ * }} context
+ */
+async function applyCompanyBrandingAction(context) {
+  const spec = /** @type {Record<string, unknown>} */ (context.brandingManifest.spec ?? {});
+  const normalized = normalizeBrandingSpec(spec);
+  const orgId = await getOrganizationId(context.tenantId);
+  if (!orgId) {
+    fail('Organization id not found for branding apply');
+  }
+
+  const patch = buildBrandingThemeLocalizationPatch(spec);
+  if (context.action.kind === 'create' || Object.keys(patch).length > 0) {
+    try {
+      await patchBrandingLocalization(context.tenantId, orgId, normalized.locale, patch);
+    } catch (err) {
+      if (!isMissingThemeLocalization(err)) {
+        throw err;
+      }
+      await createBrandingLocalization(context.tenantId, orgId, normalized.locale, patch);
+    }
+  }
+
+  let logoAsset = resolveBannerLogoAsset(context.repoRoot, spec);
+  if (!logoAsset && normalized.bannerLogoUrl) {
+    logoAsset = await fetchBannerLogoFromUrl(normalized.bannerLogoUrl);
+  }
+  if (logoAsset) {
+    await uploadBannerLogo(
+      context.tenantId,
+      orgId,
       normalized.locale,
       logoAsset.bytes,
       logoAsset.contentType,
