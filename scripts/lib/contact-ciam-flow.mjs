@@ -139,6 +139,28 @@ export function buildUserFlowRequestBody(displayName, applicationClientId, spec)
 }
 
 /**
+ * PATCH bodies must omit conditions and use the attribute page shape only.
+ *
+ * @param {string} displayName
+ * @param {string} applicationClientId
+ * @param {unknown} spec
+ * @returns {Record<string, unknown>}
+ */
+export function buildUserFlowPatchBody(displayName, applicationClientId, spec) {
+  const full = buildUserFlowRequestBody(displayName, applicationClientId, spec);
+  const onAttributeCollection = /** @type {Record<string, unknown>} */ (full.onAttributeCollection ?? {});
+  return {
+    '@odata.type': full['@odata.type'],
+    onInteractiveAuthFlowStart: full.onInteractiveAuthFlowStart,
+    onAuthenticationMethodLoadStart: full.onAuthenticationMethodLoadStart,
+    onAttributeCollection: {
+      '@odata.type': onAttributeCollection['@odata.type'],
+      attributeCollectionPage: onAttributeCollection.attributeCollectionPage,
+    },
+  };
+}
+
+/**
  * @param {Record<string, unknown> | null | undefined} input
  */
 function attributeInputState(input) {

@@ -202,7 +202,7 @@ async function applyPlan(actions, dryRun, context) {
   }
 
   if (deferred.length > 0 && applied.length === 0) {
-    fail('CIAM Graph apply could not write any pending changes (missing CONTACT-CIAM-TF Graph application permissions).');
+    fail('CIAM Graph apply could not write any pending changes (see deferred action errors above).');
   }
 
   if (deferred.length > 0) {

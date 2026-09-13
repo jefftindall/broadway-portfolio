@@ -79,8 +79,16 @@ export async function graphMutateWithRetry(operation, options = {}) {
  * @param {unknown} err
  * @returns {boolean}
  */
+export function isIdpAlreadyExistsError(err) {
+  const message = err instanceof Error ? err.message : String(err);
+  return /already exists in tenant/i.test(message);
+}
+
 export function isGraphAccessError(err) {
   const message = err instanceof Error ? err.message : String(err);
+  if (isIdpAlreadyExistsError(err)) {
+    return false;
+  }
   if (/branding\/themes/i.test(message) && /Request_ResourceNotFound|http-404/i.test(message)) {
     return true;
   }
@@ -550,6 +558,7 @@ export async function listIdentityProvidersByKey(tenantId) {
   for (const idp of payload.value ?? []) {
     const id = String(idp.id ?? '').trim();
     const displayName = String(idp.displayName ?? '').trim();
+    const providerType = String(idp.identityProviderType ?? '').trim();
     if (id) {
       map.set(id, idp);
       map.set(id.toLowerCase(), idp);
@@ -557,6 +566,12 @@ export async function listIdentityProvidersByKey(tenantId) {
     if (displayName) {
       map.set(displayName, idp);
       map.set(displayName.toLowerCase(), idp);
+    }
+    if (providerType) {
+      map.set(providerType, idp);
+      map.set(providerType.toLowerCase(), idp);
+      map.set(`${providerType}-OAUTH`, idp);
+      map.set(`${providerType.toLowerCase()}-oauth`, idp);
     }
   }
   return map;
