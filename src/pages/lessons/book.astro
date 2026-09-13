@@ -6,6 +6,7 @@ import GlassPanel from '../../components/GlassPanel.astro';
 import CtaLink from '../../components/CtaLink.astro';
 import InquiryForm from '../../components/InquiryForm.astro';
 import LessonPayCtas from '../../components/LessonPayCtas.astro';
+import LessonScheduleBook from '../../components/LessonScheduleBook.astro';
 import OptimizedImg from '../../components/OptimizedImg.astro';
 
 const entry = await getEntry('pages', 'lessons-book');
@@ -122,6 +123,8 @@ const jsonLd = [
       </div>
     </div>
   </section>
+
+  <LessonScheduleBook />
 
   <section class="border-t border-line" aria-labelledby="lesson-form-heading">
     <div class="mx-auto max-w-2xl px-6 py-16 md:py-20">

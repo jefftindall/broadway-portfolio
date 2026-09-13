@@ -373,6 +373,13 @@ export function classifyCalendarError(err) {
   const kind = err && typeof err === 'object' ? err.kind : '';
   const lower = message.toLowerCase();
 
+  if (name === 'ContactLessonRateLimitError') {
+    return {
+      errorKind: 'rate_limit',
+      status: 429,
+      error: message || 'Too many booking requests. Please try again later.',
+    };
+  }
   if (name === 'LessonValidationError' || name === 'CalendarValidationError') {
     return {
       errorKind: 'validation',

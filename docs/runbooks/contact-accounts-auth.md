@@ -1,7 +1,7 @@
 # Runbook: Contact account authentication
 
 **Audience:** Operators, implementers  
-**Last updated:** 2026-09-12  
+**Last updated:** 2026-09-13  
 **Plan:** [`contact-accounts.md`](../plans/contact-accounts.md) (`ACCOUNT-P1-*`) · Phase 1b: [`contact-ciam-automation.md`](../plans/contact-ciam-automation.md) (`ACCOUNT-P1-007+`)
 
 Students and parents sign in with **Google, Apple, or Microsoft** through **Entra External ID (CIAM)** — **one shared CIAM tenant**, not the workforce teaching tenant. Operators use workforce Entra for **`/studio`**.
@@ -67,13 +67,13 @@ With `AZURE_FUNCTIONS_ENVIRONMENT=Development` and `CONTACT_ACCOUNTS_ENABLED=tru
 }
 ```
 
-Call `GET` / `PATCH` `http://localhost:7071/api/account` against Azurite CRM storage. Do not point local Astro at production External ID.
+Call `GET` / `PATCH` `http://localhost:7071/api/account` against Azurite CRM storage. Schedule + book: `GET /api/lessonSchedule?durationMin=60` and `POST /api/lessonBook` (same `CONTACT_DEV_PRINCIPAL` / `contactGate` pattern; flag must be `true`). Do not point local Astro at production External ID.
 
 ---
 
 ## If External ID is down
 
-Rates and Turnstile inquire still work. Sign-in, `/account`, and (when shipped) schedule/book are unavailable until IdP recovery. Operators use workforce AAD for Studio independently.
+Rates and Turnstile inquire still work. Sign-in, `/account`, and schedule/book are unavailable until IdP recovery. Operators use workforce AAD for Studio independently.
 
 ---
 

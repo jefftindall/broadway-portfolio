@@ -1,7 +1,14 @@
 import { expect, test } from '@playwright/test';
-import { waitForOk } from '../helpers/propagation';
+import { fetchContactAccountsEnabled } from '../helpers/contactAccounts';
+import { isStaticWebAppHost, waitForOk } from '../helpers/propagation';
 
 test.describe('lessons journeys', () => {
+  let contactAccountsEnabled = false;
+
+  test.beforeAll(async ({ request }) => {
+    if (!isStaticWebAppHost()) return;
+    contactAccountsEnabled = await fetchContactAccountsEnabled(request);
+  });
   test('LESSON-01 book a lesson flow', async ({ page }) => {
     await waitForOk(page, '/lessons');
     await expect(page.getByRole('heading', { name: /Vocal coaching/i })).toBeVisible();
@@ -67,6 +74,25 @@ test.describe('lessons journeys', () => {
     await page.getByRole('link', { name: 'Book a lesson' }).first().click();
     await expect(page).toHaveURL(/\/lessons\/book\/?$/);
     await expect(page.getByRole('link', { name: /Send lesson inquiry/i }).first()).toBeVisible();
+    await expect(page.locator('#lesson-inquiry')).toBeVisible();
+  });
+
+  test('LESSON-04 lesson inquiry stays anonymous when contact accounts enabled', async ({
+    page,
+  }) => {
+    test.skip(!isStaticWebAppHost(), 'SWA auth is only enforced on deployed hosts');
+    test.skip(!contactAccountsEnabled, 'CONTACT_ACCOUNTS_ENABLED is false');
+    await waitForOk(page, '/lessons/book');
+    await expect(page.locator('#lesson-inquiry')).toBeVisible();
+    await expect(page.getByTestId('lesson-submit')).toBeVisible();
+  });
+
+  test('LESSON-05 schedule section when contact accounts enabled', async ({ page }) => {
+    test.skip(!isStaticWebAppHost(), 'SWA auth is only enforced on deployed hosts');
+    test.skip(!contactAccountsEnabled, 'CONTACT_ACCOUNTS_ENABLED is false');
+    await waitForOk(page, '/lessons/book');
+    await expect(page.locator('#lesson-schedule')).toBeVisible();
+    await expect(page.getByTestId('lesson-schedule-signin')).toBeVisible();
     await expect(page.locator('#lesson-inquiry')).toBeVisible();
   });
 });
