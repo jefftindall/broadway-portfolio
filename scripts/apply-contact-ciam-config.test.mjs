@@ -403,6 +403,10 @@ test('idp fingerprints detect clientId drift only on public fields', () => {
 
 test('isGraphAccessError matches CIAM permission failures', () => {
   assert.equal(isGraphAccessError(new Error('Graph GET /identity/identityProviders failed (AADB2C)')), true);
+  assert.equal(
+    isGraphAccessError(new Error('Graph POST /identity/identityProviders failed (AADB2C90063)')),
+    true,
+  );
   assert.equal(isGraphAccessError(new Error('Graph GET /organization failed (Authorization_RequestDenied)')), true);
   assert.equal(isGraphAccessError(new Error('Graph POST /organization/x/branding/themes failed (Request_ResourceNotFound)')), true);
   assert.equal(isGraphAccessError(new Error('Graph GET /me failed (http-404)')), false);

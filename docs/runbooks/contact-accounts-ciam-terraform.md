@@ -212,6 +212,7 @@ If you already linked both SWA apps to **one** portal user flow, that works unti
 | Authorization error on apply | Application Administrator in **CIAM** tenant |
 | SWA OIDC failure | Issuer patch + `CONTACT_OIDC_*` SWA settings |
 | CIAM Graph apply deferred / unbranded login | Bootstrap Step 2: CIAM GHA app must declare Graph roles on the **CIAM tenant** Microsoft Graph SP (GUIDs differ from workforce). Needs `OrganizationalBranding.ReadWrite.All` + `EventListener.ReadWrite.All` + `IdentityProvider.ReadWrite.All`. Until company branding exists, first POST `/branding/localizations` may be required — apply script falls back from beta themes automatically. |
+| `AADB2C90063` on IdP create | CIAM tenant missing **Azure Active Directory Authentication Extensions** enterprise app. Bootstrap creates it (`azuread_service_principal.aad_auth_extensions`); apply script also ensures it via Graph before IdP writes. Re-run bootstrap apply once, then staging/prod apply. |
 | App reg exists but missing from user flow **Add application** | Env apply must create `azuread_service_principal.contact_swa` (enterprise app). Re-apply staging/prod; for a pre-existing manual SP on staging, import per [contact-accounts-ciam-terraform.md](./contact-accounts-ciam-terraform.md) |
 
 See [rotate-secrets.md](./rotate-secrets.md) § Contact accounts for secret names.
