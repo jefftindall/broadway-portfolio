@@ -20,6 +20,7 @@ export function buildGoogleIdentityProviderBody(doc, credentials) {
   return {
     '@odata.type': '#microsoft.graph.socialIdentityProvider',
     displayName: String(doc.displayName ?? 'Google'),
+    identityProviderType: 'Google',
     clientId: credentials.values.clientId,
     clientSecret: credentials.values.clientSecret,
   };

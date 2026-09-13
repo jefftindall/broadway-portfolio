@@ -14,12 +14,60 @@ const GRAPH_BETA = `${GRAPH_RESOURCE}/beta`;
 /** Required in CIAM tenants before Graph can create IdPs / custom auth extensions (AADB2C90063 when missing). */
 export const AAD_AUTH_EXTENSIONS_APP_ID = '99045fe1-7639-4a75-9d4a-577b6ca3810f';
 
+const AUTH_EXTENSIONS_PROPAGATION_DELAYS_MS = [0, 5_000, 10_000, 20_000];
+
+/**
+ * @param {number} ms
+ */
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 /**
  * @param {string} message
  * @returns {never}
  */
 function fail(message) {
   throw new Error(message);
+}
+
+/**
+ * @param {unknown} err
+ * @returns {boolean}
+ */
+export function isAuthExtensionsPropagationError(err) {
+  const message = err instanceof Error ? err.message : String(err);
+  return /AADB2C90063/i.test(message);
+}
+
+/**
+ * @param {() => Promise<unknown>} operation
+ * @param {{ label?: string; delaysMs?: number[] }} [options]
+ */
+export async function graphMutateWithRetry(operation, options = {}) {
+  const delays = options.delaysMs ?? AUTH_EXTENSIONS_PROPAGATION_DELAYS_MS;
+  let lastError;
+  for (let attempt = 0; attempt < delays.length; attempt += 1) {
+    if (delays[attempt] > 0) {
+      await sleep(delays[attempt]);
+    }
+    try {
+      return await operation();
+    } catch (err) {
+      lastError = err;
+      const retryable = isGraphAccessError(err) || isAuthExtensionsPropagationError(err);
+      if (!retryable || attempt === delays.length - 1) {
+        throw err;
+      }
+      const label = options.label ? `${options.label}: ` : '';
+      process.stdout.write(
+        `${label}Graph mutation failed (${err instanceof Error ? err.message : String(err)}); retrying...\n`,
+      );
+    }
+  }
+  throw lastError;
 }
 
 /**
@@ -49,6 +97,7 @@ export function isGraphAccessError(err) {
  */
 export async function ensureAuthenticationExtensionsServicePrincipal(tenantId) {
   const filter = encodeURIComponent(`appId eq '${AAD_AUTH_EXTENSIONS_APP_ID}'`);
+  let created = false;
   try {
     const payload = /** @type {{ value?: Array<{ id?: string }> }} */ (
       await graphRequest({ tenantId, path: `/servicePrincipals?$filter=${filter}&$select=id` })
@@ -69,6 +118,7 @@ export async function ensureAuthenticationExtensionsServicePrincipal(tenantId) {
       path: '/servicePrincipals',
       body: { appId: AAD_AUTH_EXTENSIONS_APP_ID },
     });
+    created = true;
     process.stdout.write(
       'Ensured Azure Active Directory Authentication Extensions service principal in CIAM tenant.\n',
     );
@@ -78,6 +128,24 @@ export async function ensureAuthenticationExtensionsServicePrincipal(tenantId) {
       return;
     }
     throw err;
+  }
+
+  if (!created) {
+    return;
+  }
+
+  for (const delayMs of AUTH_EXTENSIONS_PROPAGATION_DELAYS_MS.slice(1)) {
+    await sleep(delayMs);
+    try {
+      const payload = /** @type {{ value?: Array<{ id?: string }> }} */ (
+        await graphRequest({ tenantId, path: `/servicePrincipals?$filter=${filter}&$select=id` })
+      );
+      if ((payload.value ?? []).some((item) => String(item.id ?? '').trim())) {
+        return;
+      }
+    } catch {
+      // keep waiting
+    }
   }
 }
 
@@ -157,43 +225,6 @@ export async function ensureCiamGraphSession({ tenantId, tfClientId }) {
     fail('CONTACT_CIAM_TENANT_ID is required');
   }
 
-  const current = runAz(['account', 'show', '-o', 'json'], { allowFailure: true });
-  if (current.status === 0) {
-    try {
-      const account = JSON.parse(current.stdout);
-      if (String(account.tenantId ?? '').toLowerCase() === trimmedTenant.toLowerCase()) {
-        return;
-      }
-    } catch {
-      // fall through
-    }
-  }
-
-  // Workforce (or other home) tenant login can still mint CIAM Graph tokens via --tenant.
-  const tokenProbe = runAz(
-    [
-      'account',
-      'get-access-token',
-      '--tenant',
-      trimmedTenant,
-      '--resource',
-      GRAPH_RESOURCE,
-      '-o',
-      'json',
-    ],
-    { allowFailure: true },
-  );
-  if (tokenProbe.status === 0) {
-    try {
-      const parsed = JSON.parse(tokenProbe.stdout);
-      if (String(parsed.accessToken ?? '').trim()) {
-        return;
-      }
-    } catch {
-      // fall through to federated login
-    }
-  }
-
   const clientId = (tfClientId || process.env.CONTACT_CIAM_TF_CLIENT_ID || '').trim();
   const jwt = await fetchGitHubOidcJwt();
   if (clientId && jwt) {
@@ -217,6 +248,43 @@ export async function ensureCiamGraphSession({ tenantId, tfClientId }) {
       return;
     } finally {
       rmSync(dir, { recursive: true, force: true });
+    }
+  }
+
+  const current = runAz(['account', 'show', '-o', 'json'], { allowFailure: true });
+  if (current.status === 0) {
+    try {
+      const account = JSON.parse(current.stdout);
+      if (String(account.tenantId ?? '').toLowerCase() === trimmedTenant.toLowerCase()) {
+        return;
+      }
+    } catch {
+      // fall through
+    }
+  }
+
+  // Local operator: workforce login can mint CIAM Graph tokens via --tenant when the user has CIAM roles.
+  const tokenProbe = runAz(
+    [
+      'account',
+      'get-access-token',
+      '--tenant',
+      trimmedTenant,
+      '--resource',
+      GRAPH_RESOURCE,
+      '-o',
+      'json',
+    ],
+    { allowFailure: true },
+  );
+  if (tokenProbe.status === 0) {
+    try {
+      const parsed = JSON.parse(tokenProbe.stdout);
+      if (String(parsed.accessToken ?? '').trim()) {
+        return;
+      }
+    } catch {
+      // fall through
     }
   }
 
@@ -376,12 +444,16 @@ export async function getAuthenticationEventsFlow(tenantId, flowId) {
  * @param {Record<string, unknown>} body
  */
 export async function createAuthenticationEventsFlow(tenantId, body) {
-  return graphRequest({
-    tenantId,
-    method: 'POST',
-    path: '/identity/authenticationEventsFlows',
-    body,
-  });
+  return graphMutateWithRetry(
+    () =>
+      graphRequest({
+        tenantId,
+        method: 'POST',
+        path: '/identity/authenticationEventsFlows',
+        body,
+      }),
+    { label: 'CREATE userFlow' },
+  );
 }
 
 /**
@@ -390,12 +462,17 @@ export async function createAuthenticationEventsFlow(tenantId, body) {
  * @param {Record<string, unknown>} body
  */
 export async function patchAuthenticationEventsFlow(tenantId, flowId, body) {
-  return graphRequest({
-    tenantId,
-    method: 'PATCH',
-    path: `/identity/authenticationEventsFlows/${encodeURIComponent(flowId.trim())}`,
-    body,
-  });
+  const trimmed = flowId.trim();
+  return graphMutateWithRetry(
+    () =>
+      graphRequest({
+        tenantId,
+        method: 'PATCH',
+        path: `/identity/authenticationEventsFlows/${encodeURIComponent(trimmed)}`,
+        body,
+      }),
+    { label: `PATCH userFlow ${trimmed}` },
+  );
 }
 
 /**
@@ -406,7 +483,7 @@ export async function listIdentityProvidersByKey(tenantId) {
   let payload;
   try {
     payload = /** @type {{ value?: Array<Record<string, unknown>> }} */ (
-      await graphRequest({ tenantId, path: '/identity/identityProviders' })
+      await graphBetaRequest({ tenantId, path: '/identity/identityProviders' })
     );
   } catch (err) {
     if (isGraphAccessError(err)) {
@@ -441,7 +518,7 @@ export async function getIdentityProvider(tenantId, idpId) {
   if (!trimmed) return null;
   try {
     return /** @type {Record<string, unknown>} */ (
-      await graphRequest({
+      await graphBetaRequest({
         tenantId,
         path: `/identity/identityProviders/${encodeURIComponent(trimmed)}`,
       })
@@ -456,12 +533,16 @@ export async function getIdentityProvider(tenantId, idpId) {
  * @param {Record<string, unknown>} body
  */
 export async function createIdentityProvider(tenantId, body) {
-  return graphRequest({
-    tenantId,
-    method: 'POST',
-    path: '/identity/identityProviders',
-    body,
-  });
+  return graphMutateWithRetry(
+    () =>
+      graphBetaRequest({
+        tenantId,
+        method: 'POST',
+        path: '/identity/identityProviders',
+        body,
+      }),
+    { label: 'CREATE identityProvider' },
+  );
 }
 
 /**
@@ -470,12 +551,17 @@ export async function createIdentityProvider(tenantId, body) {
  * @param {Record<string, unknown>} body
  */
 export async function patchIdentityProvider(tenantId, idpId, body) {
-  return graphRequest({
-    tenantId,
-    method: 'PATCH',
-    path: `/identity/identityProviders/${encodeURIComponent(idpId.trim())}`,
-    body,
-  });
+  const trimmed = idpId.trim();
+  return graphMutateWithRetry(
+    () =>
+      graphBetaRequest({
+        tenantId,
+        method: 'PATCH',
+        path: `/identity/identityProviders/${encodeURIComponent(trimmed)}`,
+        body,
+      }),
+    { label: `PATCH identityProvider ${trimmed}` },
+  );
 }
 
 /**
@@ -768,7 +854,7 @@ export async function fetchRemoteContactCiamState(
   const idpListEmpty = idps.size === 0;
   if (idpListEmpty && !readFailures.identityProviders) {
     try {
-      await graphRequest({ tenantId, path: '/identity/identityProviders?$top=1' });
+      await graphBetaRequest({ tenantId, path: '/identity/identityProviders?$top=1' });
     } catch (err) {
       if (isGraphAccessError(err)) {
         readFailures.identityProviders = err instanceof Error ? err.message : String(err);
