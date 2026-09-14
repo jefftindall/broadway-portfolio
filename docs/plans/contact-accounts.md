@@ -2,7 +2,7 @@
 
 **Artifact ID:** `ELYSE-ACCOUNT-001`  
 **Version:** 1.1  
-**Last updated:** 2026-09-13 (`ACCOUNT-P2-*` link + `/account` profile)  
+**Last updated:** 2026-09-13 (`ACCOUNT-P3-*` flag-gated schedule + book)  
 **Audience:** Agents, implementers, operators  
 **Scope:** Public-site **contact accounts** so students (and parents) can sign in with Google, Apple, or Microsoft, maintain profile and preferences, **see the schedule and book a slot**, and **review their lesson history**. The whole contact-account surface is behind a **runtime feature flag**. **Lesson and casting inquiries stay anonymous forever** — potential clients must never be forced to log in to write Elyse. Studio (`/studio`) stays the operator workspace. People CRM stays the relationship SoT. Stripe stays money. Google Calendar stays time.
 
@@ -77,10 +77,10 @@ Operator ──Microsoft work/school────────►  Workforce Entra
 | Phase 1 — Student identity (External ID + SWA roles) | `done` | SWA OIDC + roles + flag shipped; CIAM user flows / IdPs / branding still portal or partial — see Phase 1b |
 | Phase 1b — CIAM user flows as code (per env) | `in_progress` | `P1-007`–`P1-011` + staging flow (`P1-008`/`P1-009`) + `/login` UX (`P1-013`) done; prod flow + validation (`P1-014`) next |
 | Phase 2 — Link login → People + `/account` | `done` | Staging apply for `contactIdentities` table; CIAM sign-in validation still `P1-014` |
-| Phase 3 — Flag + login-gated schedule/book | `planned` | Inquiry stays anonymous; `STUDIO-P5-001` uses this bind |
+| Phase 3 — Flag + login-gated schedule/book | `done` | Staging apply + CIAM sign-in validation still `P1-014` |
 | Phase 4 — Lesson history + parent booking | `planned` | History is part of `/account`; required before prod flag-on |
 
-**Suggested next:** `ACCOUNT-P1-014` (staging Graph apply + IdP round-trips, then promote `flows/prod.json`), then `ACCOUNT-P3-001` (flag-gated schedule/book). Do **not** start `STUDIO-P5-001` until Phase 3 can bind a booker. Inquiry never waits on this track.
+**Suggested next:** `ACCOUNT-P1-014` (staging Graph apply + IdP round-trips, then promote `flows/prod.json`), then `ACCOUNT-P4-001` (lesson history on `/account`). Inquiry never waits on this track.
 
 ---
 
@@ -448,20 +448,20 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 
 | ID | Title | Status | Depends on | Primary files |
 |----|-------|--------|------------|---------------|
-| `ACCOUNT-P3-001` | Gate **schedule + book a slot** on flag + `contact` session | `planned` | `ACCOUNT-P1-006`; `ACCOUNT-P2-001` | `/lessons/book`; slot-create API |
-| `ACCOUNT-P3-002` | Bind `contactId` from the session on book | `planned` | `ACCOUNT-P3-001`; `STUDIO-P3-003` | `api/src/functions/lessons.js` (or public book function) |
-| `ACCOUNT-P3-003` | Keep **lesson + casting inquire**, rates, pay links anonymous | `planned` | `ACCOUNT-P3-001` | `InquiryForm`; `contactInquiry`; `lessonPayConfig` |
-| `ACCOUNT-P3-004` | Book journeys + Studio plan AC sync | `planned` | `ACCOUNT-P3-002` | `tests/journeys/lessons.spec.ts`; `STUDIO-P5-001` |
+| `ACCOUNT-P3-001` | Gate **schedule + book a slot** on flag + `contact` session | `done` | `ACCOUNT-P1-006`; `ACCOUNT-P2-001` | `/lessons/book`; `GET /api/lessonSchedule`; `POST /api/lessonBook` |
+| `ACCOUNT-P3-002` | Bind `contactId` from the session on book | `done` | `ACCOUNT-P3-001`; `STUDIO-P3-003` | `api/src/functions/lessonBook.js`; `contactLessonBook.js` |
+| `ACCOUNT-P3-003` | Keep **lesson + casting inquire**, rates, pay links anonymous | `done` | `ACCOUNT-P3-001` | `InquiryForm`; `contactInquiry`; `lessonPayConfig` |
+| `ACCOUNT-P3-004` | Book journeys + Studio plan AC sync | `done` | `ACCOUNT-P3-002` | `tests/journeys/lessons.spec.ts`; `STUDIO-P5-001` |
 
 <details>
 <summary><code>ACCOUNT-P3-001</code> — Gate</summary>
 
 **Acceptance criteria**
 
-- [ ] Flag **off**: no schedule picker, no book-slot CTA, no student Sign in; **lesson inquire still works**
-- [ ] Flag **on**: anonymous visitors see rates, inquire, and Payment Links; **See schedule** / **Book** require login
-- [ ] Unauthenticated slot-create API → 401 (flag on) or 404 (flag off), not a 500
-- [ ] Do **not** retire Turnstile lesson inquire. That form must not require a session
+- [x] Flag **off**: no schedule picker, no book-slot CTA, no student Sign in; **lesson inquire still works**
+- [x] Flag **on**: anonymous visitors see rates, inquire, and Payment Links; **See schedule** / **Book** require login
+- [x] Unauthenticated slot-create API → 401 (flag on) or 404 (flag off), not a 500
+- [x] Do **not** retire Turnstile lesson inquire. That form must not require a session
 
 </details>
 
@@ -470,10 +470,10 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 
 **Acceptance criteria**
 
-- [ ] Booked-slot lesson row `contactId` = linked contact. Body `contactId` ignored
-- [ ] Same persist-then-Google path; **Requested** mail to the account email
-- [ ] Rate-limit still applies (login is not a substitute for abuse controls)
-- [ ] `STUDIO-P5-001` slot picker uses this same bind — no anonymous book POST; picker hidden when the contact-accounts flag is off
+- [x] Booked-slot lesson row `contactId` = linked contact. Body `contactId` ignored
+- [x] Same persist-then-Google path; **Requested** mail to the account email
+- [x] Rate-limit still applies (login is not a substitute for abuse controls)
+- [x] `STUDIO-P5-001` slot picker uses this same bind — no anonymous book POST; picker hidden when the contact-accounts flag is off
 
 </details>
 
@@ -482,11 +482,11 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 
 **Acceptance criteria**
 
-- [ ] `type=lesson` inquire unchanged: Turnstile, anonymous, upserts CRM (`STUDIO-P4-001`) — **does not** require the flag or a contact session
-- [ ] `type=casting` inquire unchanged
-- [ ] `GET /api/lessonPayConfig` still anonymous
-- [ ] Stripe Payment Links do not require a contact session
-- [ ] Journey: submit a lesson inquiry while logged out, flag on and flag off
+- [x] `type=lesson` inquire unchanged: Turnstile, anonymous, upserts CRM (`STUDIO-P4-001`) — **does not** require the flag or a contact session
+- [x] `type=casting` inquire unchanged
+- [x] `GET /api/lessonPayConfig` still anonymous
+- [x] Stripe Payment Links do not require a contact session
+- [x] Journey: submit a lesson inquiry while logged out, flag on and flag off (`LESSON-04`)
 
 </details>
 
@@ -495,8 +495,8 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 
 **Acceptance criteria**
 
-- [ ] `LESSON-*` journeys: anonymous book page still renders inquire; schedule/book appear only when flag on + signed in
-- [ ] No PII in test fixtures beyond already-fictional staging people
+- [x] `LESSON-*` journeys: anonymous book page still renders inquire; schedule/book appear only when flag on + signed in (`LESSON-04` / `LESSON-05`)
+- [x] No PII in test fixtures beyond already-fictional staging people
 
 </details>
 

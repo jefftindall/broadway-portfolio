@@ -1,0 +1,296 @@
+---
+/** Flag-gated schedule + book (ACCOUNT-P3). Lesson inquire stays below on the page. */
+---
+
+<section
+  id="lesson-schedule"
+  class="hidden border-t border-line"
+  aria-labelledby="lesson-schedule-heading"
+  hidden
+>
+  <div class="mx-auto max-w-6xl px-6 py-16 md:py-20">
+    <p class="text-sm uppercase tracking-[0.2em] text-gel">Schedule</p>
+    <h2 id="lesson-schedule-heading" class="mt-3 font-display text-4xl text-spotlight md:text-5xl">
+      See open times
+    </h2>
+    <p id="lesson-schedule-intro" class="mt-4 max-w-2xl text-muted">
+      You can always send a lesson inquiry below without an account. Sign in to see open times and
+      request a slot for a private voice lesson.
+    </p>
+
+    <div id="lesson-schedule-signin" class="mt-8 hidden" hidden>
+      <a
+        href="/login?post_login_redirect_uri=%2Flessons%2Fbook%23lesson-schedule"
+        data-testid="lesson-schedule-signin"
+        class="inline-flex min-h-11 items-center rounded-sm bg-gold px-5 py-2 text-sm font-medium text-ink transition hover:bg-gold/90"
+      >
+        Sign in to see the schedule
+      </a>
+    </div>
+
+    <div id="lesson-schedule-loading" class="mt-8 hidden text-sm text-muted" hidden>
+      Loading open times…
+    </div>
+
+    <div id="lesson-schedule-unavailable" class="mt-8 hidden text-sm text-muted" hidden>
+      Online scheduling is not available right now. Send a lesson inquiry below and Elyse will follow
+      up with times.
+    </div>
+
+    <div id="lesson-schedule-disconnected" class="mt-8 hidden text-sm text-muted" hidden>
+      The live calendar is not connected yet. Send a lesson inquiry below and Elyse will reply with
+      availability.
+    </div>
+
+    <div id="lesson-schedule-workspace" class="mt-8 hidden" hidden>
+      <div class="flex flex-wrap items-end gap-4">
+        <label class="block text-sm text-muted">
+          Session length
+          <select
+            id="lesson-schedule-duration"
+            data-testid="lesson-schedule-duration"
+            class="mt-1 box-border min-w-[10rem] rounded-sm border border-line bg-ink/40 px-3 py-2 text-spotlight focus:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+          >
+            <option value="60">60 minutes</option>
+            <option value="30">30 minutes</option>
+          </select>
+        </label>
+        <label class="block text-sm text-muted">
+          Format
+          <select
+            id="lesson-schedule-format"
+            data-testid="lesson-schedule-format"
+            class="mt-1 box-border min-w-[10rem] rounded-sm border border-line bg-ink/40 px-3 py-2 text-spotlight focus:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+          >
+            <option value="zoom">Zoom</option>
+            <option value="nyc">NYC in-person</option>
+          </select>
+        </label>
+      </div>
+
+      <p id="lesson-schedule-empty" class="mt-6 hidden text-sm text-muted" hidden>
+        No open slots in the next two weeks. Send a lesson inquiry below and Elyse will follow up.
+      </p>
+
+      <ul
+        id="lesson-schedule-slots"
+        class="mt-6 grid gap-2 sm:grid-cols-2 lg:grid-cols-3"
+        data-testid="lesson-schedule-slots"
+      ></ul>
+
+      <div
+        id="lesson-schedule-success"
+        class="mt-6 hidden rounded-sm border border-gold/40 bg-gold/10 px-4 py-3 text-sm text-spotlight"
+        hidden
+        role="status"
+      ></div>
+
+      <div
+        id="lesson-schedule-error"
+        class="mt-6 hidden rounded-sm border border-red-500/40 bg-red-950/30 px-4 py-3 text-sm text-red-100"
+        hidden
+        role="alert"
+      >
+        <p id="lesson-schedule-error-text"></p>
+        <p class="mt-2 text-xs text-red-200/80">
+          Reference:
+          <code id="lesson-schedule-error-id" class="break-all text-red-50"></code>
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import {
+    buildContactAuthLoginHref,
+    hasContactSession,
+    parseContactAccountConfig,
+    type SwaMeResponse,
+  } from '../lib/contactAccounts';
+
+  type ScheduleSlot = { startAt: string; durationMin: number };
+
+  const root = document.getElementById('lesson-schedule');
+  const signIn = document.getElementById('lesson-schedule-signin');
+  const loading = document.getElementById('lesson-schedule-loading');
+  const unavailable = document.getElementById('lesson-schedule-unavailable');
+  const disconnected = document.getElementById('lesson-schedule-disconnected');
+  const workspace = document.getElementById('lesson-schedule-workspace');
+  const slotsEl = document.getElementById('lesson-schedule-slots');
+  const emptyEl = document.getElementById('lesson-schedule-empty');
+  const durationEl = document.getElementById('lesson-schedule-duration') as HTMLSelectElement;
+  const formatEl = document.getElementById('lesson-schedule-format') as HTMLSelectElement;
+  const successEl = document.getElementById('lesson-schedule-success');
+  const errorBox = document.getElementById('lesson-schedule-error');
+  const errorText = document.getElementById('lesson-schedule-error-text');
+  const errorId = document.getElementById('lesson-schedule-error-id');
+
+  let scheduleTimezone = 'America/New_York';
+
+  function show(el: HTMLElement | null) {
+    if (!el) return;
+    el.hidden = false;
+    el.classList.remove('hidden');
+  }
+
+  function hide(el: HTMLElement | null) {
+    if (!el) return;
+    el.hidden = true;
+    el.classList.add('hidden');
+  }
+
+  function hideAllPanels() {
+    hide(signIn);
+    hide(loading);
+    hide(unavailable);
+    hide(disconnected);
+    hide(workspace);
+    hide(errorBox);
+    hide(successEl);
+  }
+
+  function showError(message: string, correlationId?: string) {
+    hide(successEl);
+    if (!errorBox || !errorText || !errorId) return;
+    errorText.textContent = message;
+    errorId.textContent = correlationId || '';
+    show(errorBox);
+  }
+
+  function formatSlotLabel(iso: string) {
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return iso;
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone: scheduleTimezone,
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(date);
+  }
+
+  function renderSlots(slots: ScheduleSlot[]) {
+    if (!slotsEl) return;
+    slotsEl.replaceChildren();
+    hide(emptyEl);
+    if (slots.length === 0) {
+      show(emptyEl);
+      return;
+    }
+    for (const slot of slots) {
+      const item = document.createElement('li');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className =
+        'w-full rounded-sm border border-line bg-ink/30 px-4 py-3 text-left text-sm text-spotlight transition hover:border-gold hover:text-gold';
+      button.textContent = formatSlotLabel(slot.startAt);
+      button.dataset.testid = 'lesson-schedule-slot';
+      button.addEventListener('click', () => bookSlot(slot, button));
+      item.append(button);
+      slotsEl.append(item);
+    }
+  }
+
+  async function loadSchedule() {
+    hide(errorBox);
+    hide(successEl);
+    show(loading);
+    const durationMin = Number(durationEl?.value || 60);
+    const res = await fetch(`/api/lessonSchedule?durationMin=${durationMin}`, {
+      credentials: 'same-origin',
+      headers: { Accept: 'application/json' },
+    });
+    const data = await res.json().catch(() => ({}));
+    hide(loading);
+    if (res.status === 401) {
+      hide(workspace);
+      show(signIn);
+      const link = signIn?.querySelector('a');
+      if (link) link.setAttribute('href', buildContactAuthLoginHref('/lessons/book#lesson-schedule'));
+      return;
+    }
+    if (!res.ok) {
+      showError(data.error || 'Could not load open times.', data.correlationId);
+      return;
+    }
+    scheduleTimezone = String(data.timezone || scheduleTimezone);
+    if (!data.connected) {
+      hide(workspace);
+      show(disconnected);
+      return;
+    }
+    show(workspace);
+    renderSlots((data.slots || []) as ScheduleSlot[]);
+  }
+
+  async function bookSlot(slot: ScheduleSlot, button: HTMLButtonElement) {
+    hide(errorBox);
+    hide(successEl);
+    button.disabled = true;
+    try {
+      const res = await fetch('/api/lessonBook', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          startAt: slot.startAt,
+          durationMin: slot.durationMin,
+          format: formatEl?.value || 'zoom',
+          timezone: scheduleTimezone,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showError(data.error || 'Could not request that time.', data.correlationId);
+        return;
+      }
+      if (successEl) {
+        successEl.textContent =
+          data.message ||
+          'Your lesson is requested. Elyse will confirm after she accepts the calendar invite.';
+        show(successEl);
+      }
+      await loadSchedule();
+    } catch {
+      showError('Could not request that time. Check your connection and try again.');
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  async function init() {
+    if (!root) return;
+    try {
+      const [configRes, meRes] = await Promise.all([
+        fetch('/api/contactAccountConfig', { credentials: 'same-origin' }),
+        fetch('/.auth/me', { credentials: 'same-origin' }),
+      ]);
+      const config = parseContactAccountConfig(await configRes.json());
+      if (!config.enabled) {
+        hide(root);
+        return;
+      }
+      show(root);
+      const me = (await meRes.json()) as SwaMeResponse;
+      if (!hasContactSession(me)) {
+        hideAllPanels();
+        show(signIn);
+        const link = signIn?.querySelector('a');
+        if (link) link.setAttribute('href', buildContactAuthLoginHref('/lessons/book#lesson-schedule'));
+        return;
+      }
+      hideAllPanels();
+      await loadSchedule();
+    } catch {
+      hide(root);
+    }
+  }
+
+  durationEl?.addEventListener('change', () => {
+    if (!workspace?.hidden) loadSchedule().catch(() => undefined);
+  });
+
+  init().catch(() => hide(root));
+</script>

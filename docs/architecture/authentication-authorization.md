@@ -69,6 +69,8 @@ Anonymous exceptions (same `private, no-store` cache; not Studio login):
 | `GET /api/contactAccountConfig` | Feature flag `{ enabled }` only |
 | `POST /api/authRoles` | SWA platform roles assignment |
 | `GET` / `PATCH` `/api/account` | `contactGate()` + first-login link to People (`contactIdentities`); self-serve field allowlist |
+| `GET /api/lessonSchedule` | `requireContactBooking()` — flag on + `contact` session; 404 when flag off; 401 when unsigned |
+| `POST /api/lessonBook` | Same gate; `contactId` from session (`ensureLinkedContact`); rate-limited; uses `createLessonsWithCalendar` |
 | `POST /api/stripeWebhook` | Stripe signature |
 | `POST /api/calendarWatch` | Google channel token |
 | `GET /api/lessonAction` | Signed Confirm / Decline token |

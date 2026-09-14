@@ -95,6 +95,16 @@ export function contactSignInRequired(correlationId) {
   return signInRequired(correlationId);
 }
 
+export function contactBookSignInRequired(correlationId) {
+  return {
+    status: 401,
+    jsonBody: {
+      error: 'Sign in to see open times or request a lesson slot.',
+      correlationId: correlationId || undefined,
+    },
+  };
+}
+
 export function contactForbidden(correlationId, error) {
   return forbidden(
     correlationId,

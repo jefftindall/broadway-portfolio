@@ -85,7 +85,7 @@ Payments vendor choice and Phase 1 checkout live in [`lesson-payments.md`](./les
 | Phase 2 — Lifetime value + pay status | `done` | Residual: upcoming lesson paid/unpaid waits on `STUDIO-P3-003` |
 | Phase 3 — Google Calendar scheduling | `done` | Operator: GCP Testing client + KV client id/secret + Connect in Studio |
 | Phase 4 — Contact automation | `done` | Residual: operator confirms ACS mail on staging; `STUDIO-P2-004` upcoming paid/unpaid |
-| Phase 5 — Public slots + month report | `planned` | Slot picker (`STUDIO-P5-001`) waits on `ACCOUNT-P3` + `CONTACT_ACCOUNTS_ENABLED`; inquire stays anonymous |
+| Phase 5 — Public slots + month report | `in_progress` | Slot picker (`STUDIO-P5-001`) done via `ACCOUNT-P3`; month report (`STUDIO-P5-002`) residual |
 | Phase 6 — Roles, permissions, user profiles | `done` | Shipped after P1 in git (People needed the catalog). Listed last so phase numbers read 0–6. Live grants on `/studio/admin/access` |
 
 **Suggested next:** [`ACCOUNT-P1-001`](./contact-accounts.md) (student Google / Apple / Microsoft sign-in) before the public slot picker. Residual `STUDIO-P2-004` upcoming paid/unpaid joins confirmed lessons. `STUDIO-P5-001` after `ACCOUNT-P3` (flag on) and staging Calendar connect. Lesson inquire never waits on accounts.
@@ -606,7 +606,7 @@ Selected integration: **Studio Google identity as event organizer** (option F in
 
 | ID | Title | Status | Depends on | Primary files |
 |----|-------|--------|------------|---------------|
-| `STUDIO-P5-001` | Public free/busy slot picker on `/lessons/book` | `planned` | `STUDIO-P3-003`; `ACCOUNT-P3-002` | `src/pages/lessons/book.astro`; contact-session book API (rate-limited) |
+| `STUDIO-P5-001` | Public free/busy slot picker on `/lessons/book` | `done` | `STUDIO-P3-003`; `ACCOUNT-P3-002` | `LessonScheduleBook.astro`; `GET /api/lessonSchedule`; `POST /api/lessonBook` |
 | `STUDIO-P5-002` | In-Studio month summary + Stripe export link | `planned` | `STUDIO-P2-001` | Studio reports UI |
 | `STUDIO-P5-003` | Help for public booking + reports | `planned` | `STUDIO-P5-001` or `002` | `studioHelp.ts` |
 
@@ -615,14 +615,14 @@ Selected integration: **Studio Google identity as event organizer** (option F in
 
 **Acceptance criteria**
 
-- [ ] Slot picker reads Google free/busy when connected; never invents open times
-- [ ] Hidden when `CONTACT_ACCOUNTS_ENABLED` is **off** — **lesson inquire remains** (do not 500 `/lessons/book`)
-- [ ] If free/busy is unavailable while the flag is on, hide the picker and keep inquire — do not 500
-- [ ] Booking a **slot** uses the same `STUDIO-P3-003` path with `contactId` from the **contact session** (`ACCOUNT-P3-002`) — no anonymous book POST
-- [ ] Success copy: **Requested** — Confirmed comes when Elyse accepts
-- [ ] Voice-lessons-only copy; rates, **lesson inquire**, and Payment Links remain usable without login
-- [ ] Create-slot endpoint requires `contact` SWA role **and** the contact-accounts flag; still rate-limited; no contact dump
-- [ ] Depends on [`ACCOUNT-P3`](./contact-accounts.md) + `ACCOUNT-P1-006` — do not ship this ID first
+- [x] Slot picker reads Google free/busy when connected; never invents open times
+- [x] Hidden when `CONTACT_ACCOUNTS_ENABLED` is **off** — **lesson inquire remains** (do not 500 `/lessons/book`)
+- [x] If free/busy is unavailable while the flag is on, hide the picker and keep inquire — do not 500
+- [x] Booking a **slot** uses the same `STUDIO-P3-003` path with `contactId` from the **contact session** (`ACCOUNT-P3-002`) — no anonymous book POST
+- [x] Success copy: **Requested** — Confirmed comes when Elyse accepts
+- [x] Voice-lessons-only copy; rates, **lesson inquire**, and Payment Links remain usable without login
+- [x] Create-slot endpoint requires `contact` SWA role **and** the contact-accounts flag; still rate-limited; no contact dump
+- [x] Depends on [`ACCOUNT-P3`](./contact-accounts.md) + `ACCOUNT-P1-006` — do not ship this ID first
 
 </details>
 

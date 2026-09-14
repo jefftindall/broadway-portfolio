@@ -236,6 +236,20 @@
       }
     },
     {
+      "route": "/api/lessonSchedule",
+      "allowedRoles": ["anonymous", "authenticated"],
+      "headers": {
+        "Cache-Control": "private, no-store"
+      }
+    },
+    {
+      "route": "/api/lessonBook",
+      "allowedRoles": ["anonymous", "authenticated"],
+      "headers": {
+        "Cache-Control": "private, no-store"
+      }
+    },
+    {
       "route": "/api/*",
       "allowedRoles": ["authenticated"],
       "headers": {
