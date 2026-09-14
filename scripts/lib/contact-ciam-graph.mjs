@@ -3,7 +3,7 @@
  * Never logs access tokens or secret values.
  */
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -15,6 +15,9 @@ const GRAPH_BETA = `${GRAPH_RESOURCE}/beta`;
 export const AAD_AUTH_EXTENSIONS_APP_ID = '99045fe1-7639-4a75-9d4a-577b6ca3810f';
 
 const AUTH_EXTENSIONS_PROPAGATION_DELAYS_MS = [0, 5_000, 10_000, 20_000];
+
+/** Isolated Azure CLI profile for CIAM Graph tokens (keeps workforce az login for KV reads). */
+let graphAzConfigDir = null;
 
 /**
  * @param {number} ms
@@ -76,8 +79,16 @@ export async function graphMutateWithRetry(operation, options = {}) {
  * @param {unknown} err
  * @returns {boolean}
  */
+export function isIdpAlreadyExistsError(err) {
+  const message = err instanceof Error ? err.message : String(err);
+  return /already exists in tenant/i.test(message);
+}
+
 export function isGraphAccessError(err) {
   const message = err instanceof Error ? err.message : String(err);
+  if (isIdpAlreadyExistsError(err)) {
+    return false;
+  }
   if (/branding\/themes/i.test(message) && /Request_ResourceNotFound|http-404/i.test(message)) {
     return true;
   }
@@ -171,10 +182,16 @@ export const EMPTY_CONTACT_CIAM_REMOTE = {
  * @returns {{ status: number; stdout: string; stderr: string }}
  */
 function runAz(args, options = {}) {
+  /** @type {NodeJS.ProcessEnv} */
+  const env = { ...process.env };
+  if (graphAzConfigDir) {
+    env.AZURE_CONFIG_DIR = graphAzConfigDir;
+  }
   const result = spawnSync('az', args, {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
     shell: process.platform === 'win32',
+    env,
   });
   if (result.status !== 0 && !options.allowFailure) {
     const err = (result.stderr || result.stdout || '').trim();
@@ -215,6 +232,64 @@ async function fetchGitHubOidcJwt() {
 }
 
 /**
+ * @param {string} accessToken
+ * @returns {Record<string, unknown> | null}
+ */
+function decodeJwtPayload(accessToken) {
+  const parts = accessToken.split('.');
+  if (parts.length < 2) return null;
+  try {
+    const normalized = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=');
+    return /** @type {Record<string, unknown>} */ (JSON.parse(Buffer.from(padded, 'base64').toString('utf8')));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * @param {string} tenantId
+ */
+function assertApplicationGraphRoles(tenantId) {
+  const token = getGraphAccessTokenSync(tenantId);
+  const payload = decodeJwtPayload(token);
+  const roles = Array.isArray(payload?.roles) ? payload.roles : [];
+  if (roles.length === 0) {
+    fail(
+      'CIAM Graph token has no application roles. Re-run bootstrap Step 2 (azuread_app_role_assignment.terraform_ciam_graph) to admin-consent Microsoft Graph permissions on CONTACT-CIAM-TF.',
+    );
+  }
+}
+
+/**
+ * @param {string} tenantId
+ * @returns {string}
+ */
+function getGraphAccessTokenSync(tenantId) {
+  const result = runAz([
+    'account',
+    'get-access-token',
+    '--tenant',
+    tenantId.trim(),
+    '--resource',
+    GRAPH_RESOURCE,
+    '-o',
+    'json',
+  ]);
+  let parsed;
+  try {
+    parsed = JSON.parse(result.stdout);
+  } catch {
+    fail('Failed to parse access token response from Azure CLI');
+  }
+  const accessToken = String(parsed.accessToken ?? '').trim();
+  if (!accessToken) {
+    fail('Azure CLI returned an empty Graph access token');
+  }
+  return accessToken;
+}
+
+/**
  * Ensure az CLI has an account in the CIAM tenant for Graph calls.
  *
  * @param {{ tenantId: string; tfClientId?: string }} options
@@ -228,27 +303,30 @@ export async function ensureCiamGraphSession({ tenantId, tfClientId }) {
   const clientId = (tfClientId || process.env.CONTACT_CIAM_TF_CLIENT_ID || '').trim();
   const jwt = await fetchGitHubOidcJwt();
   if (clientId && jwt) {
-    const dir = mkdtempSync(join(tmpdir(), 'ciam-oidc-'));
-    const jwtFile = join(dir, 'oidc.jwt');
-    try {
-      writeFileSync(jwtFile, jwt, { mode: 0o600 });
-      runAz([
-        'login',
-        '--service-principal',
-        '--username',
-        clientId,
-        '--tenant',
-        trimmedTenant,
-        '--federated-token',
-        jwt,
-        '--allow-no-subscriptions',
-        '--output',
-        'none',
-      ]);
-      return;
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
+    graphAzConfigDir = mkdtempSync(join(tmpdir(), 'ciam-az-'));
+    runAz([
+      'login',
+      '--service-principal',
+      '--username',
+      clientId,
+      '--tenant',
+      trimmedTenant,
+      '--federated-token',
+      jwt,
+      '--allow-no-subscriptions',
+      '--output',
+      'none',
+    ]);
+    const account = JSON.parse(runAz(['account', 'show', '-o', 'json']).stdout);
+    if (String(account.tenantId ?? '').toLowerCase() !== trimmedTenant.toLowerCase()) {
+      fail('CIAM federated login succeeded but active tenant does not match CONTACT_CIAM_TENANT_ID');
     }
+    if (String(account.user?.type ?? '') !== 'servicePrincipal') {
+      fail('CIAM Graph session is not a service principal after federated login');
+    }
+    assertApplicationGraphRoles(trimmedTenant);
+    process.stdout.write('CIAM Graph auth: CONTACT-CIAM-TF federated OIDC (isolated Azure CLI profile).\n');
+    return;
   }
 
   const current = runAz(['account', 'show', '-o', 'json'], { allowFailure: true });
@@ -256,6 +334,7 @@ export async function ensureCiamGraphSession({ tenantId, tfClientId }) {
     try {
       const account = JSON.parse(current.stdout);
       if (String(account.tenantId ?? '').toLowerCase() === trimmedTenant.toLowerCase()) {
+        process.stdout.write('CIAM Graph auth: existing Azure CLI session in CIAM tenant.\n');
         return;
       }
     } catch {
@@ -281,6 +360,7 @@ export async function ensureCiamGraphSession({ tenantId, tfClientId }) {
     try {
       const parsed = JSON.parse(tokenProbe.stdout);
       if (String(parsed.accessToken ?? '').trim()) {
+        process.stdout.write('CIAM Graph auth: cross-tenant Azure CLI token for CIAM tenant.\n');
         return;
       }
     } catch {
@@ -298,27 +378,7 @@ export async function ensureCiamGraphSession({ tenantId, tfClientId }) {
  * @returns {Promise<string>}
  */
 export async function getGraphAccessToken(tenantId) {
-  const result = runAz([
-    'account',
-    'get-access-token',
-    '--tenant',
-    tenantId.trim(),
-    '--resource',
-    GRAPH_RESOURCE,
-    '-o',
-    'json',
-  ]);
-  let parsed;
-  try {
-    parsed = JSON.parse(result.stdout);
-  } catch {
-    fail('Failed to parse access token response from Azure CLI');
-  }
-  const accessToken = String(parsed.accessToken ?? '').trim();
-  if (!accessToken) {
-    fail('Azure CLI returned an empty Graph access token');
-  }
-  return accessToken;
+  return getGraphAccessTokenSync(tenantId);
 }
 
 /**
@@ -375,11 +435,13 @@ export async function graphRequest({
     }
   }
   if (!response.ok) {
-    const kind =
+    const error =
       payload && typeof payload === 'object' && payload.error && typeof payload.error === 'object'
-        ? String(/** @type {{ error: { code?: string }}} */ (payload).error.code ?? 'graph-error')
-        : `http-${response.status}`;
-    fail(`Graph ${method} ${path} failed (${kind})`);
+        ? /** @type {{ code?: string; message?: string }} */ (payload.error)
+        : null;
+    const kind = String(error?.code ?? `http-${response.status}`);
+    const detail = String(error?.message ?? '').trim();
+    fail(`Graph ${method} ${path} failed (${kind})${detail ? `: ${detail}` : ''}`);
   }
   return payload;
 }
@@ -496,6 +558,7 @@ export async function listIdentityProvidersByKey(tenantId) {
   for (const idp of payload.value ?? []) {
     const id = String(idp.id ?? '').trim();
     const displayName = String(idp.displayName ?? '').trim();
+    const providerType = String(idp.identityProviderType ?? '').trim();
     if (id) {
       map.set(id, idp);
       map.set(id.toLowerCase(), idp);
@@ -503,6 +566,12 @@ export async function listIdentityProvidersByKey(tenantId) {
     if (displayName) {
       map.set(displayName, idp);
       map.set(displayName.toLowerCase(), idp);
+    }
+    if (providerType) {
+      map.set(providerType, idp);
+      map.set(providerType.toLowerCase(), idp);
+      map.set(`${providerType}-OAUTH`, idp);
+      map.set(`${providerType.toLowerCase()}-oauth`, idp);
     }
   }
   return map;
