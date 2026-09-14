@@ -14,6 +14,7 @@ import { contactsStoreFromEnv } from '../lib/contacts.js';
 import { contactIdentitiesStoreFromEnv } from '../lib/contactIdentities.js';
 import { ensureLinkedContact } from '../lib/contactLink.js';
 import { providerKindForLog } from '../lib/authRoles.js';
+import { loadBookableStudents } from '../lib/contactAccountLessons.js';
 import { accountFailureResponse } from '../lib/httpErrors.js';
 import { tryLedgerStoreFromEnv } from '../lib/ledger.js';
 import { flush, trackEvent, trackException } from '../lib/telemetry.js';
@@ -116,11 +117,15 @@ app.http('account', {
           created: linked.created,
         });
         await flush();
+        const bookableStudents = await loadBookableStudents(contactsStore, linked.contact);
         return {
           status: 200,
           headers: jsonHeaders(),
           jsonBody: {
-            account: publicAccountProfile(linked.contact),
+            account: {
+              ...publicAccountProfile(linked.contact),
+              bookableStudents,
+            },
             correlationId,
           },
         };

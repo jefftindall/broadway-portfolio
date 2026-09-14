@@ -149,7 +149,7 @@ Maps External ID login keys to a People `contactId` (`ACCOUNT-P2-001`). Partitio
 
 **First login:** `ensureLinkedContact` (`api/src/lib/contactLink.js`) attaches an existing active email match or creates a `student` row, then writes the identity row. Archived contacts → 403. Duplicate active email matches → 403 (operator resolves in Studio). Same person may attach multiple providers when verified emails match.
 
-**Access:** `GET` / `PATCH` `/api/account` resolves the linked row and allowlists self-serve contact fields only (`api/src/lib/accountProfile.js`). `GET /api/lessonSchedule` reads Google free/busy + availability settings (no writes). `POST /api/lessonBook` binds `contactId` from the session and creates `studioLessons` rows via `createLessonsWithCalendar` (`api/src/functions/lessonBook.js`).
+**Access:** `GET` / `PATCH` `/api/account` resolves the linked row and allowlists self-serve contact fields only (`api/src/lib/accountProfile.js`); `GET` also returns `bookableStudents` for parent bookers. `GET /api/accountLessons` lists upcoming/past `studioLessons` for the signed-in contact (and linked students when parent) via `api/src/lib/contactAccountLessons.js`. `GET /api/lessonSchedule` reads Google free/busy + availability settings (no writes). `POST /api/lessonBook` binds `contactId` from the session (or `bookForContactId` for linked students) and creates `studioLessons` rows via `createLessonsWithCalendar` (`api/src/functions/lessonBook.js`).
 
 ### 1.2 Studio user profile (`studioUsers` table)
 

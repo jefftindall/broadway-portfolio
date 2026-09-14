@@ -14,8 +14,8 @@
       See open times
     </h2>
     <p id="lesson-schedule-intro" class="mt-4 max-w-2xl text-muted">
-      You can always send a lesson inquiry below without an account. Sign in to see open times and
-      request a slot for a private voice lesson.
+      You can always send a lesson inquiry below without an account. Sign in to see open times, book
+      a slot, and view your lesson history on your account page — private voice lessons only.
     </p>
 
     <div id="lesson-schedule-signin" class="mt-8 hidden" hidden>
@@ -66,6 +66,14 @@
             <option value="nyc">NYC in-person</option>
           </select>
         </label>
+        <label id="lesson-schedule-student-wrap" class="hidden block text-sm text-muted" hidden>
+          Book for
+          <select
+            id="lesson-schedule-student"
+            data-testid="lesson-schedule-student"
+            class="mt-1 box-border min-w-[12rem] rounded-sm border border-line bg-ink/40 px-3 py-2 text-spotlight focus:border-gold focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+          ></select>
+        </label>
       </div>
 
       <p id="lesson-schedule-empty" class="mt-6 hidden text-sm text-muted" hidden>
@@ -110,6 +118,7 @@
   } from '../lib/contactAccounts';
 
   type ScheduleSlot = { startAt: string; durationMin: number };
+  type BookableStudent = { id: string; displayName: string };
 
   const root = document.getElementById('lesson-schedule');
   const signIn = document.getElementById('lesson-schedule-signin');
@@ -121,12 +130,47 @@
   const emptyEl = document.getElementById('lesson-schedule-empty');
   const durationEl = document.getElementById('lesson-schedule-duration') as HTMLSelectElement;
   const formatEl = document.getElementById('lesson-schedule-format') as HTMLSelectElement;
+  const studentWrap = document.getElementById('lesson-schedule-student-wrap');
+  const studentEl = document.getElementById('lesson-schedule-student') as HTMLSelectElement;
   const successEl = document.getElementById('lesson-schedule-success');
   const errorBox = document.getElementById('lesson-schedule-error');
   const errorText = document.getElementById('lesson-schedule-error-text');
   const errorId = document.getElementById('lesson-schedule-error-id');
 
   let scheduleTimezone = 'America/New_York';
+
+  function selectedBookForContactId(): string | undefined {
+    const value = studentEl?.value || '';
+    return value && value !== 'self' ? value : undefined;
+  }
+
+  function renderBookableStudents(students: BookableStudent[]) {
+    if (!studentEl || !studentWrap) return;
+    studentEl.replaceChildren();
+    if (students.length === 0) {
+      hide(studentWrap);
+      return;
+    }
+    const self = document.createElement('option');
+    self.value = 'self';
+    self.textContent = 'Myself';
+    studentEl.append(self);
+    for (const student of students) {
+      const option = document.createElement('option');
+      option.value = student.id;
+      option.textContent = student.displayName;
+      studentEl.append(option);
+    }
+    show(studentWrap);
+  }
+
+  async function loadAccountStudents() {
+    const res = await fetch('/api/account', { credentials: 'same-origin' });
+    if (!res.ok) return;
+    const data = await res.json().catch(() => ({}));
+    const students = (data.account?.bookableStudents || []) as BookableStudent[];
+    renderBookableStudents(students);
+  }
 
   function show(el: HTMLElement | null) {
     if (!el) return;
@@ -239,6 +283,9 @@
           durationMin: slot.durationMin,
           format: formatEl?.value || 'zoom',
           timezone: scheduleTimezone,
+          ...(selectedBookForContactId()
+            ? { bookForContactId: selectedBookForContactId() }
+            : {}),
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -282,6 +329,7 @@
         return;
       }
       hideAllPanels();
+      await loadAccountStudents();
       await loadSchedule();
     } catch {
       hide(root);

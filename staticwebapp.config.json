@@ -250,6 +250,13 @@
       }
     },
     {
+      "route": "/api/accountLessons",
+      "allowedRoles": ["anonymous", "authenticated"],
+      "headers": {
+        "Cache-Control": "private, no-store"
+      }
+    },
+    {
       "route": "/api/*",
       "allowedRoles": ["authenticated"],
       "headers": {

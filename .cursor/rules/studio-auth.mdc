@@ -43,7 +43,8 @@ Discrete permissions live in [`api/src/lib/permissions.js`](api/src/lib/permissi
 | Public `contactAccountConfig` | Flag `{ enabled }` only |
 | Public `authRoles` | SWA rolesSource assignment (`studio` \| `contact`) |
 | `GET` / `PATCH` `/api/account` | `contactGate()` + linked `contactId` ownership; self-serve field allowlist only |
-| `GET /api/lessonSchedule` / `POST /api/lessonBook` | `requireContactBooking()` — flag on + `contact` session; session-bound `contactId`; rate-limited |
+| `GET /api/lessonSchedule` / `POST /api/lessonBook` | `requireContactBooking()` — flag on + `contact` session; session-bound `contactId` or `bookForContactId`; rate-limited |
+| `GET /api/accountLessons` | `contactGate()` — own lesson history (+ linked students for parents); sanitized fields only |
 | Public `stripeWebhook` | Stripe signature verification |
 | Public `calendarWatch` | Google channel token |
 | Public `lessonAction` | Signed Confirm / Decline token (ICS fallback) |

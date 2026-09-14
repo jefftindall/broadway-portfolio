@@ -8,7 +8,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   noIndex={true}
   hideFooterCta={true}
 >
-  <section class="mx-auto max-w-xl px-6 py-16 md:py-24">
+  <section class="mx-auto max-w-2xl px-6 py-16 md:py-24">
     <p class="text-sm uppercase tracking-[0.2em] text-gel">Account</p>
     <h1 class="mt-3 font-display text-4xl text-spotlight md:text-5xl">Profile &amp; preferences</h1>
     <p class="mt-4 text-muted">
@@ -179,11 +179,60 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         </a>
       </div>
     </form>
+
+    <section
+      id="account-lessons"
+      class="mt-16 hidden border-t border-line pt-12"
+      aria-labelledby="account-lessons-heading"
+      hidden
+    >
+      <h2 id="account-lessons-heading" class="font-display text-2xl text-spotlight">
+        Lesson history
+      </h2>
+      <p class="mt-2 text-sm text-muted">
+        Upcoming and past private voice lessons tied to your account.
+      </p>
+      <div id="account-lessons-loading" class="mt-6 text-sm text-muted">Loading lessons…</div>
+      <p
+        id="account-lessons-empty"
+        class="mt-6 hidden text-sm text-muted"
+        hidden
+        data-testid="account-lessons-empty"
+      >
+        No lessons yet. Send a lesson inquiry or book a slot from
+        <a href="/lessons/book" class="text-gel underline-offset-2 hover:text-gold hover:underline">
+          rates &amp; scheduling
+        </a>.
+      </p>
+      <div id="account-lessons-upcoming-wrap" class="mt-8 hidden" hidden>
+        <h3 class="text-sm font-medium uppercase tracking-[0.15em] text-gel">Upcoming</h3>
+        <ul
+          id="account-lessons-upcoming"
+          class="mt-4 space-y-3"
+          data-testid="account-lessons-upcoming"
+        ></ul>
+      </div>
+      <div id="account-lessons-past-wrap" class="mt-8 hidden" hidden>
+        <h3 class="text-sm font-medium uppercase tracking-[0.15em] text-gel">Past</h3>
+        <ul id="account-lessons-past" class="mt-4 space-y-3" data-testid="account-lessons-past"></ul>
+      </div>
+    </section>
   </section>
 </BaseLayout>
 
 <script>
   import { parseContactAccountConfig } from '../../lib/contactAccounts';
+
+  type AccountLesson = {
+    id: string;
+    startAt: string;
+    durationMin: number;
+    format?: string;
+    timezone?: string;
+    status?: string;
+    statusLabel?: string;
+    studentName?: string;
+  };
 
   type AccountProfile = {
     displayName?: string;
@@ -195,6 +244,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     timezone?: string;
     needsPersonaChoice?: boolean;
     appleRelayEmail?: boolean;
+    bookableStudents?: { id: string; displayName: string }[];
     etag?: string;
   };
 
@@ -214,6 +264,13 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   const errorId = document.getElementById('account-error-id');
   const successBox = document.getElementById('account-success');
   const saveButton = document.querySelector<HTMLButtonElement>('[data-testid="account-save"]');
+  const lessonsSection = document.getElementById('account-lessons');
+  const lessonsLoading = document.getElementById('account-lessons-loading');
+  const lessonsEmpty = document.getElementById('account-lessons-empty');
+  const upcomingWrap = document.getElementById('account-lessons-upcoming-wrap');
+  const upcomingList = document.getElementById('account-lessons-upcoming');
+  const pastWrap = document.getElementById('account-lessons-past-wrap');
+  const pastList = document.getElementById('account-lessons-past');
 
   let currentEtag = '';
   let currentAccount: AccountProfile | null = null;
@@ -292,6 +349,84 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     }
   }
 
+  function formatLessonWhen(lesson: AccountLesson) {
+    const date = new Date(lesson.startAt);
+    if (Number.isNaN(date.getTime())) return lesson.startAt;
+    const tz = lesson.timezone || 'America/New_York';
+    return new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(date);
+  }
+
+  function renderLessonItem(lesson: AccountLesson) {
+    const item = document.createElement('li');
+    item.className =
+      'rounded-sm border border-line bg-ink/30 px-4 py-3 text-sm text-spotlight';
+    const title = document.createElement('p');
+    title.className = 'font-medium';
+    title.textContent = formatLessonWhen(lesson);
+    const meta = document.createElement('p');
+    meta.className = 'mt-1 text-muted';
+    const format = lesson.format === 'nyc' ? 'NYC in-person' : 'Zoom';
+    const who = lesson.studentName ? ` for ${lesson.studentName}` : '';
+    meta.textContent = `${lesson.durationMin} min · ${format}${who}`;
+    const status = document.createElement('p');
+    status.className = 'mt-2 text-xs uppercase tracking-[0.12em] text-gel';
+    status.textContent = lesson.statusLabel || 'Requested';
+    item.append(title, meta, status);
+    return item;
+  }
+
+  function renderLessonHistory(upcoming: AccountLesson[], past: AccountLesson[]) {
+    hide(lessonsLoading);
+    show(lessonsSection);
+    if (upcomingList) upcomingList.replaceChildren();
+    if (pastList) pastList.replaceChildren();
+    if (upcoming.length === 0 && past.length === 0) {
+      show(lessonsEmpty);
+      hide(upcomingWrap);
+      hide(pastWrap);
+      return;
+    }
+    hide(lessonsEmpty);
+    if (upcoming.length > 0) {
+      show(upcomingWrap);
+      for (const lesson of upcoming) upcomingList?.append(renderLessonItem(lesson));
+    } else {
+      hide(upcomingWrap);
+    }
+    if (past.length > 0) {
+      show(pastWrap);
+      for (const lesson of past) pastList?.append(renderLessonItem(lesson));
+    } else {
+      hide(pastWrap);
+    }
+  }
+
+  async function loadLessonHistory() {
+    show(lessonsSection);
+    show(lessonsLoading);
+    try {
+      const res = await fetch('/api/accountLessons', { credentials: 'same-origin' });
+      const data = await res.json();
+      if (!res.ok) {
+        hide(lessonsLoading);
+        return;
+      }
+      renderLessonHistory(
+        (data.upcoming || []) as AccountLesson[],
+        (data.past || []) as AccountLesson[],
+      );
+    } catch {
+      hide(lessonsLoading);
+    }
+  }
+
   async function loadAccount() {
     const configRes = await fetch('/api/contactAccountConfig', { credentials: 'same-origin' });
     const config = parseContactAccountConfig(await configRes.json());
@@ -316,6 +451,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     form?.classList.remove('hidden');
     form?.classList.add('flex');
     if (currentAccount) fillForm(currentAccount);
+    await loadLessonHistory();
   }
 
   form?.addEventListener('submit', async (event) => {
