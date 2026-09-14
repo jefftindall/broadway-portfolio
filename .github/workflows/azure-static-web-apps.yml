@@ -53,6 +53,8 @@ jobs:
         id: filter
         with:
           filters: |
+            # Terraform apply hooks live outside infra/** — keep this list aligned with
+            # static-analysis.yml and any new scripts referenced from infra/modules/**.
             infra:
               - 'infra/**'
               - '.github/workflows/azure-static-web-apps.yml'
@@ -61,6 +63,10 @@ jobs:
               - 'scripts/seed-studio-people.sh'
               - 'scripts/seed-studio-people.mjs'
               - 'scripts/lib/people-seed.mjs'
+              - 'scripts/apply-contact-ciam-config.mjs'
+              - 'scripts/lib/contact-ciam-**'
+              - 'scripts/read-lesson-rates.mjs'
+              - 'scripts/upsert-stripe-payment-links.mjs'
             app:
               - 'src/**'
               - 'public/**'
