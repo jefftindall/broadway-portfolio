@@ -34,7 +34,9 @@ test.describe('lessons journeys', () => {
     if ((await payCta.count()) > 0) {
       await expect(payCta).toBeVisible();
       await expect(payCta).toHaveAttribute('href', /https:\/\/buy\.stripe\.com\//);
-      await expect(page.getByText(/private voice lessons only/i)).toBeVisible();
+      await expect(
+        page.locator('#booking-heading').getByText(/private voice lessons only/i),
+      ).toBeVisible();
     }
   });
 
