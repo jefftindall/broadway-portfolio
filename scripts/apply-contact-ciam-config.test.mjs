@@ -17,6 +17,7 @@ import {
   buildGoogleIdentityProviderBody,
   idpDesiredPublicFingerprint,
   idpPublicFingerprint,
+  normalizeAppleCertificateData,
   normalizeApplePrivateKey,
 } from './lib/contact-ciam-idp.mjs';
 import {
@@ -26,6 +27,7 @@ import {
   normalizeBrandingSpec,
 } from './lib/contact-ciam-branding.mjs';
 import {
+  buildUserFlowPatchBody,
   buildUserFlowRequestBody,
   DEFAULT_CONTACT_FLOW_IDPS,
   normalizeFlowSpec,
@@ -354,6 +356,7 @@ test('buildGoogleIdentityProviderBody uses socialIdentityProvider odata type', (
     { values: { clientId: 'google-client', clientSecret: 'google-secret' } },
   );
   assert.equal(body['@odata.type'], '#microsoft.graph.socialIdentityProvider');
+  assert.equal(body.identityProviderType, 'Google');
   assert.equal(body.clientId, 'google-client');
   assert.equal(body.clientSecret, 'google-secret');
 });
@@ -362,6 +365,27 @@ test('normalizeApplePrivateKey wraps raw p8 content', () => {
   const normalized = normalizeApplePrivateKey('abc123');
   assert.match(normalized, /BEGIN PRIVATE KEY/);
   assert.match(normalized, /abc123/);
+});
+
+test('normalizeAppleCertificateData strips PEM headers for Graph', () => {
+  const normalized = normalizeAppleCertificateData('-----BEGIN PRIVATE KEY-----\nabc123\n-----END PRIVATE KEY-----');
+  assert.equal(normalized, 'abc123');
+});
+
+test('buildUserFlowPatchBody omits conditions and attribute definitions', () => {
+  const spec = {
+    onInteractiveAuthFlowStart: { isSignUpAllowed: true },
+    identityProviders: DEFAULT_CONTACT_FLOW_IDPS,
+  };
+  const patch = buildUserFlowPatchBody('contact-signin-staging', '961894e2-e231-4b01-8a13-56fa85cf0492', spec);
+  assert.equal(patch.conditions, undefined);
+  assert.equal(patch.displayName, undefined);
+  assert.ok(patch.onAuthenticationMethodLoadStart);
+  assert.ok(patch.onAttributeCollection);
+  assert.equal(
+    /** @type {Record<string, unknown>} */ (patch.onAttributeCollection).attributes,
+    undefined,
+  );
 });
 
 test('buildAppleIdentityProviderBody maps team and service ids', () => {
@@ -403,6 +427,10 @@ test('idp fingerprints detect clientId drift only on public fields', () => {
 
 test('isGraphAccessError matches CIAM permission failures', () => {
   assert.equal(isGraphAccessError(new Error('Graph GET /identity/identityProviders failed (AADB2C)')), true);
+  assert.equal(
+    isGraphAccessError(new Error('Graph POST /identity/identityProviders failed (AADB2C90063)')),
+    true,
+  );
   assert.equal(isGraphAccessError(new Error('Graph GET /organization failed (Authorization_RequestDenied)')), true);
   assert.equal(isGraphAccessError(new Error('Graph POST /organization/x/branding/themes failed (Request_ResourceNotFound)')), true);
   assert.equal(isGraphAccessError(new Error('Graph GET /me failed (http-404)')), false);

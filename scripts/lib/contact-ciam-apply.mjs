@@ -7,7 +7,7 @@ import {
   normalizeBrandingSpec,
   resolveBannerLogoAsset,
 } from './contact-ciam-branding.mjs';
-import { buildUserFlowRequestBody } from './contact-ciam-flow.mjs';
+import { buildUserFlowPatchBody, buildUserFlowRequestBody } from './contact-ciam-flow.mjs';
 import {
   buildIdentityProviderRequestBody,
   findRemoteIdp,
@@ -79,7 +79,26 @@ export async function applyIdentityProviderAction(context) {
   const idpId = String(remote?.id ?? graphKey);
 
   if (context.action.kind === 'create') {
-    await createIdentityProvider(context.tenantId, body);
+    try {
+      await createIdentityProvider(context.tenantId, body);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (!/already exists in tenant/i.test(message)) {
+        throw err;
+      }
+      const providerId =
+        type === 'google'
+          ? 'Google'
+          : type === 'apple'
+            ? 'Apple'
+            : graphKey;
+      const existing =
+        findRemoteIdp(context.remoteByKey, graphKey) ??
+        findRemoteIdp(context.remoteByKey, providerId) ??
+        findRemoteIdp(context.remoteByKey, type);
+      const existingId = String(existing?.id ?? providerId);
+      await patchIdentityProvider(context.tenantId, existingId, body);
+    }
     return;
   }
 
@@ -110,8 +129,8 @@ export async function applyUserFlowAction(context) {
     fail(`${displayName}: flow.spec missing`);
   }
 
-  const body = buildUserFlowRequestBody(displayName, applicationClientId, spec);
   if (context.action.kind === 'create') {
+    const body = buildUserFlowRequestBody(displayName, applicationClientId, spec);
     await createAuthenticationEventsFlow(context.tenantId, body);
     return;
   }
@@ -120,7 +139,8 @@ export async function applyUserFlowAction(context) {
   if (!flowId) {
     fail(`${displayName}: update missing flowId`);
   }
-  await patchAuthenticationEventsFlow(context.tenantId, flowId, body);
+  const patchBody = buildUserFlowPatchBody(displayName, applicationClientId, spec);
+  await patchAuthenticationEventsFlow(context.tenantId, flowId, patchBody);
 }
 
 /**

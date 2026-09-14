@@ -31,6 +31,7 @@ import {
 import { resolveGraphIdpKey } from './lib/contact-ciam-idp.mjs';
 import {
   EMPTY_CONTACT_CIAM_REMOTE,
+  ensureAuthenticationExtensionsServicePrincipal,
   ensureCiamGraphSession,
   fetchRemoteContactCiamState,
   isGraphAccessError,
@@ -201,7 +202,7 @@ async function applyPlan(actions, dryRun, context) {
   }
 
   if (deferred.length > 0 && applied.length === 0) {
-    fail('CIAM Graph apply could not write any pending changes (missing CONTACT-CIAM-TF Graph application permissions).');
+    fail('CIAM Graph apply could not write any pending changes (see deferred action errors above).');
   }
 
   if (deferred.length > 0) {
@@ -303,6 +304,10 @@ export async function applyContactCiamConfig(options) {
   if (options.dryRun) {
     process.stdout.write('Dry run: pending Graph writes listed above; no changes applied.\n');
     return { changed: planHasPendingChanges(actions), actions };
+  }
+
+  if (pendingApply.some((action) => action.resource === 'identityProvider')) {
+    await ensureAuthenticationExtensionsServicePrincipal(options.tenantId);
   }
 
   await applyPlan(pendingApply, options.dryRun, {

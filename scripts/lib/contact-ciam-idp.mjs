@@ -20,15 +20,31 @@ export function buildGoogleIdentityProviderBody(doc, credentials) {
   return {
     '@odata.type': '#microsoft.graph.socialIdentityProvider',
     displayName: String(doc.displayName ?? 'Google'),
+    identityProviderType: 'Google',
     clientId: credentials.values.clientId,
     clientSecret: credentials.values.clientSecret,
   };
 }
 
 /**
+ * Graph expects certificateData as a single Base64 string (no PEM headers).
+ *
  * @param {string} privateKey
  * @returns {string}
  */
+export function normalizeAppleCertificateData(privateKey) {
+  const trimmed = String(privateKey ?? '').trim();
+  if (!trimmed) return trimmed;
+  if (trimmed.includes('BEGIN')) {
+    return trimmed
+      .replace(/-----BEGIN [^-]+-----/g, '')
+      .replace(/-----END [^-]+-----/g, '')
+      .replace(/\s+/g, '');
+  }
+  return trimmed.replace(/\s+/g, '');
+}
+
+/** @deprecated Use normalizeAppleCertificateData for Graph apply. */
 export function normalizeApplePrivateKey(privateKey) {
   const trimmed = String(privateKey ?? '').trim();
   if (!trimmed) return trimmed;
@@ -48,7 +64,7 @@ export function buildAppleIdentityProviderBody(doc, credentials) {
     developerId: credentials.values.teamId,
     serviceId: credentials.values.serviceId,
     keyId: credentials.values.keyId,
-    certificateData: normalizeApplePrivateKey(credentials.values.privateKey),
+    certificateData: normalizeAppleCertificateData(credentials.values.privateKey),
   };
 }
 
