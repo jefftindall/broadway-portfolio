@@ -26,4 +26,12 @@ test.describe('account journeys', () => {
     await expect(page.getByTestId('login-contact')).toBeVisible();
     // Signed-in save path is covered by API unit tests until CIAM journey auth is available.
   });
+
+  test('ACCOUNT-03 account page includes lesson history chrome', async ({ page }) => {
+    test.skip(!isStaticWebAppHost(), 'SWA auth is only enforced on deployed hosts');
+    test.skip(!contactAccountsEnabled, 'CONTACT_ACCOUNTS_ENABLED is false');
+    const res = await page.goto('/account');
+    expect(res?.status()).toBeLessThan(500);
+    await expect(page.getByRole('heading', { name: 'Lesson history' })).toBeAttached();
+  });
 });

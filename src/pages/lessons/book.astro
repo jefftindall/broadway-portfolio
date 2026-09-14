@@ -78,6 +78,15 @@ const jsonLd = [
       <p class="mt-5 max-w-xl text-lg text-muted">
         Ready to study voice? Review session options below, then send a lesson inquiry.
       </p>
+      <p
+        id="lesson-account-hint"
+        class="mt-4 hidden max-w-xl text-sm text-muted"
+        hidden
+        data-testid="lesson-account-hint"
+      >
+        You can always inquire without an account. Sign in to see open times, book a slot, and view
+        your lesson history — private voice lessons only.
+      </p>
       <div class="mt-10 flex flex-wrap gap-4">
         <CtaLink href="#lesson-inquiry">Send lesson inquiry</CtaLink>
         <CtaLink href="/lessons" variant="secondary">About lessons</CtaLink>
@@ -140,3 +149,17 @@ const jsonLd = [
     </div>
   </section>
 </BaseLayout>
+
+<script>
+  import { parseContactAccountConfig } from '../../lib/contactAccounts';
+
+  const hint = document.getElementById('lesson-account-hint');
+  fetch('/api/contactAccountConfig', { credentials: 'same-origin' })
+    .then((res) => res.json())
+    .then((data) => {
+      if (!parseContactAccountConfig(data).enabled || !hint) return;
+      hint.hidden = false;
+      hint.classList.remove('hidden');
+    })
+    .catch(() => undefined);
+</script>

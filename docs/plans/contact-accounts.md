@@ -2,7 +2,7 @@
 
 **Artifact ID:** `ELYSE-ACCOUNT-001`  
 **Version:** 1.1  
-**Last updated:** 2026-09-13 (`ACCOUNT-P3-*` flag-gated schedule + book)  
+**Last updated:** 2026-09-14 (`ACCOUNT-P4-*` lesson history + parent book)  
 **Audience:** Agents, implementers, operators  
 **Scope:** Public-site **contact accounts** so students (and parents) can sign in with Google, Apple, or Microsoft, maintain profile and preferences, **see the schedule and book a slot**, and **review their lesson history**. The whole contact-account surface is behind a **runtime feature flag**. **Lesson and casting inquiries stay anonymous forever** — potential clients must never be forced to log in to write Elyse. Studio (`/studio`) stays the operator workspace. People CRM stays the relationship SoT. Stripe stays money. Google Calendar stays time.
 
@@ -78,9 +78,9 @@ Operator ──Microsoft work/school────────►  Workforce Entra
 | Phase 1b — CIAM user flows as code (per env) | `in_progress` | `P1-007`–`P1-011` + staging flow (`P1-008`/`P1-009`) + `/login` UX (`P1-013`) done; prod flow + validation (`P1-014`) next |
 | Phase 2 — Link login → People + `/account` | `done` | Staging apply for `contactIdentities` table; CIAM sign-in validation still `P1-014` |
 | Phase 3 — Flag + login-gated schedule/book | `done` | Staging apply + CIAM sign-in validation still `P1-014` |
-| Phase 4 — Lesson history + parent booking | `planned` | History is part of `/account`; required before prod flag-on |
+| Phase 4 — Lesson history + parent booking | `done` | Staging apply + CIAM sign-in validation still `P1-014` |
 
-**Suggested next:** `ACCOUNT-P1-014` (staging Graph apply + IdP round-trips, then promote `flows/prod.json`), then `ACCOUNT-P4-001` (lesson history on `/account`). Inquiry never waits on this track.
+**Suggested next:** `ACCOUNT-P1-014` (staging Graph apply + IdP round-trips, then promote `flows/prod.json`) before production flag-on. Inquiry never waits on this track.
 
 ---
 
@@ -508,20 +508,20 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 
 | ID | Title | Status | Depends on | Primary files |
 |----|-------|--------|------------|---------------|
-| `ACCOUNT-P4-001` | `/account` lesson **history** (own `contactId` only) | `planned` | `ACCOUNT-P2-001`; `STUDIO-P3-003` | `/account`; lessons list API scoped to self |
-| `ACCOUNT-P4-002` | Parent books a slot for a related student | `planned` | `ACCOUNT-P4-001`; `ACCOUNT-P3-002`; `STUDIO-P1-002` | Book UI + bind rules |
-| `ACCOUNT-P4-003` | Help / book copy for account holders | `planned` | `ACCOUNT-P1-006` | `/lessons/book` copy |
+| `ACCOUNT-P4-001` | `/account` lesson **history** (own `contactId` only) | `done` | `ACCOUNT-P2-001`; `STUDIO-P3-003` | `GET /api/accountLessons`; `/account` history UI |
+| `ACCOUNT-P4-002` | Parent books a slot for a related student | `done` | `ACCOUNT-P4-001`; `ACCOUNT-P3-002`; `STUDIO-P1-002` | `bookForContactId`; parent Requested mail |
+| `ACCOUNT-P4-003` | Help / book copy for account holders | `done` | `ACCOUNT-P1-006` | `/lessons/book` copy; `LessonScheduleBook.astro` |
 
 <details>
 <summary><code>ACCOUNT-P4-001</code> — History</summary>
 
 **Acceptance criteria**
 
-- [ ] `/account` lists upcoming and past lessons for the linked contact only (Studio-created and slot-booked)
-- [ ] Status labels match Studio: **Requested** / **Confirmed** / declined / cancelled
-- [ ] Empty state when they have no lessons yet
-- [ ] No other students’ rows; no operator notes; no LTV
-- [ ] Hidden when `CONTACT_ACCOUNTS_ENABLED` is false (same as the rest of `/account`)
+- [x] `/account` lists upcoming and past lessons for the linked contact only (Studio-created and slot-booked)
+- [x] Status labels match Studio: **Requested** / **Confirmed** / declined / cancelled
+- [x] Empty state when they have no lessons yet
+- [x] No other students’ rows; no operator notes; no LTV
+- [x] Hidden when `CONTACT_ACCOUNTS_ENABLED` is false (same as the rest of `/account`)
 
 </details>
 
@@ -530,9 +530,9 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 
 **Acceptance criteria**
 
-- [ ] Parent persona + `relatedContacts` student link required to book as someone else
-- [ ] Cannot bind an arbitrary `contactId`
-- [ ] ACS mail goes to the parent (and student email if present) per existing comms rules — never `ALERT-*`
+- [x] Parent persona + `relatedContacts` student link required to book as someone else
+- [x] Cannot bind an arbitrary `contactId` (`bookForContactId` only; body `contactId` ignored)
+- [x] ACS mail goes to the parent (and student email if present) per existing comms rules — never `ALERT-*`
 
 </details>
 
@@ -541,8 +541,8 @@ Aligns with [`studio-teaching-business.md`](./studio-teaching-business.md) lifec
 
 **Acceptance criteria**
 
-- [ ] `/lessons/book` explains: inquire anytime without an account; **sign in to see the schedule, book a slot, and view history** — only when the flag is on (voice-lessons only)
-- [ ] Do not document unshipped slot picker or Studio screens on the public account page
+- [x] `/lessons/book` explains: inquire anytime without an account; **sign in to see the schedule, book a slot, and view history** — only when the flag is on (voice-lessons only)
+- [x] Do not document unshipped slot picker or Studio screens on the public account page
 
 </details>
 

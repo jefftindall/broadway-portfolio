@@ -95,4 +95,12 @@ test.describe('lessons journeys', () => {
     await expect(page.getByTestId('lesson-schedule-signin')).toBeVisible();
     await expect(page.locator('#lesson-inquiry')).toBeVisible();
   });
+
+  test('LESSON-06 account hint when contact accounts enabled', async ({ page }) => {
+    test.skip(!isStaticWebAppHost(), 'SWA auth is only enforced on deployed hosts');
+    test.skip(!contactAccountsEnabled, 'CONTACT_ACCOUNTS_ENABLED is false');
+    await waitForOk(page, '/lessons/book');
+    await expect(page.getByTestId('lesson-account-hint')).toBeVisible();
+    await expect(page.getByTestId('lesson-account-hint')).toContainText(/view your lesson history/i);
+  });
 });

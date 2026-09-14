@@ -6,10 +6,12 @@ import {
   loadContactSchedule,
   requireContactBooking,
 } from '../lib/contactLessonBook.js';
+import { resolveBookTargetContact } from '../lib/contactAccountLessons.js';
 import { contactsStoreFromEnv } from '../lib/contacts.js';
 import { calendarFailureResponse } from '../lib/httpErrors.js';
 import { createLessonsWithCalendar } from '../lib/lessonWorkflow.js';
 import { lessonsStoreFromEnv } from '../lib/lessons.js';
+import { sendLessonRequestedEmail } from '../lib/studioComms.js';
 import { flush, trackEvent, trackException } from '../lib/telemetry.js';
 
 function jsonHeaders() {
@@ -101,12 +103,16 @@ app.http('lessonBook', {
   handler: async (request, context) => {
     const authed = await requireContactBooking(request, 'book');
     if (authed.error) return { ...authed.error, headers: jsonHeaders() };
-    const { contact, contactId, correlationId, contactsStore } = authed;
+    const { contact: booker, contactId: bookerId, correlationId, contactsStore } = authed;
 
     try {
       const body = await request.json();
       const lessons = lessonsStoreFromEnv();
-      await assertContactBookRateLimit({ lessons, contactId });
+      await assertContactBookRateLimit({ lessons, contactId: bookerId });
+
+      const store = contactsStore || contactsStoreFromEnv();
+      const target = await resolveBookTargetContact({ booker, body, contactsStore: store });
+      const { contact, contactId } = target;
 
       const settings = tryCalendarSettingsStoreFromEnv();
       const result = await createLessonsWithCalendar({
@@ -119,10 +125,22 @@ app.http('lessonBook', {
           recurring: false,
         },
         lessons,
-        contacts: contactsStore || contactsStoreFromEnv(),
+        contacts: store,
         settings,
         correlationId,
       });
+
+      if (target.bookedByParent) {
+        try {
+          await sendLessonRequestedEmail({
+            lesson: result.lessons[0],
+            contact: booker,
+            correlationId,
+          });
+        } catch {
+          // Parent copy must not block the student Requested mail.
+        }
+      }
 
       trackEvent('ContactLessonBookOp', {
         correlationId,

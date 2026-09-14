@@ -380,6 +380,13 @@ export function classifyCalendarError(err) {
       error: message || 'Too many booking requests. Please try again later.',
     };
   }
+  if (name === 'ContactBookTargetError') {
+    return {
+      errorKind: 'forbidden',
+      status: 403,
+      error: message || 'That student is not linked to your account.',
+    };
+  }
   if (name === 'LessonValidationError' || name === 'CalendarValidationError') {
     return {
       errorKind: 'validation',
