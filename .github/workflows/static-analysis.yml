@@ -154,7 +154,16 @@ jobs:
           filters: |
             infra:
               - 'infra/**'
+              - '.github/workflows/azure-static-web-apps.yml'
               - '.github/workflows/static-analysis.yml'
+              - '.github/workflows/staging-branch.yml'
+              - 'scripts/seed-studio-people.sh'
+              - 'scripts/seed-studio-people.mjs'
+              - 'scripts/lib/people-seed.mjs'
+              - 'scripts/apply-contact-ciam-config.mjs'
+              - 'scripts/lib/contact-ciam-**'
+              - 'scripts/read-lesson-rates.mjs'
+              - 'scripts/upsert-stripe-payment-links.mjs'
 
   plan:
     name: Plan ${{ matrix.environment }}
