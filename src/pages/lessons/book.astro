@@ -153,6 +153,19 @@ const jsonLd = [
 <script>
   import { parseContactAccountConfig } from '../../lib/contactAccounts';
 
+  const paidBannerId = 'lesson-paid-banner';
+  if (new URLSearchParams(window.location.search).get('paid') === '1') {
+    const paySection = document.getElementById('lesson-pay');
+    if (paySection && !document.getElementById(paidBannerId)) {
+      const banner = document.createElement('p');
+      banner.id = paidBannerId;
+      banner.className = 'mt-4 rounded-sm border border-gold/40 bg-gold/10 px-4 py-3 text-sm text-spotlight';
+      banner.textContent =
+        'Thank you — your payment was received. Elyse will confirm your lesson time by email.';
+      paySection.insertBefore(banner, paySection.firstChild?.nextSibling ?? null);
+    }
+  }
+
   const hint = document.getElementById('lesson-account-hint');
   fetch('/api/contactAccountConfig', { credentials: 'same-origin' })
     .then((res) => res.json())

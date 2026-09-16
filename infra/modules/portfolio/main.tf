@@ -290,6 +290,7 @@ resource "azurerm_static_web_app" "main" {
     STRIPE_WEBHOOK_SECRET      = data.azurerm_key_vault_secret.stripe_webhook_secret.value
     STRIPE_PAYMENT_LINK_30MIN  = data.azurerm_key_vault_secret.stripe_payment_link_30min.value
     STRIPE_PAYMENT_LINK_60MIN  = data.azurerm_key_vault_secret.stripe_payment_link_60min.value
+    STRIPE_PRICE_IDS           = local.stripe_ready ? jsonencode(module.stripe_catalog[0].price_ids) : "{}"
     # Studio CRM (Table Storage). People and access profiles require catalog permissions.
     STUDIO_CRM_STORAGE_CONNECTION_STRING    = azurerm_storage_account.studio_crm.primary_connection_string
     STUDIO_CRM_TABLE_NAME                   = azurerm_storage_table.contacts.name

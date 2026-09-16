@@ -7,6 +7,7 @@ export type LessonPayRateId = (typeof LESSON_PAY_RATE_IDS)[number];
 export type LessonPayConfig = {
   enabled: boolean;
   links: Partial<Record<LessonPayRateId, string>>;
+  checkout: boolean;
 };
 
 const STRIPE_PAYMENT_LINK_HOST = 'buy.stripe.com';
@@ -43,13 +44,13 @@ export function bakedLessonPayConfig(): LessonPayConfig {
   if (thirty) links['30min'] = thirty;
   if (sixty) links['60min'] = sixty;
   if (!enabled || Object.keys(links).length === 0) {
-    return { enabled: false, links: {} };
+    return { enabled: false, links: {}, checkout: false };
   }
-  return { enabled: true, links };
+  return { enabled: true, links, checkout: false };
 }
 
 export function parseLessonPayConfig(data: unknown): LessonPayConfig {
-  if (!data || typeof data !== 'object') return { enabled: false, links: {} };
+  if (!data || typeof data !== 'object') return { enabled: false, links: {}, checkout: false };
   const record = data as Record<string, unknown>;
   const rawLinks =
     record.links && typeof record.links === 'object'
@@ -60,6 +61,7 @@ export function parseLessonPayConfig(data: unknown): LessonPayConfig {
     const href = sanitizeStripePaymentLink(rawLinks[id]);
     if (href) links[id] = href;
   }
-  const enabled = flagEnabled(record.enabled) && Object.keys(links).length > 0;
-  return enabled ? { enabled: true, links } : { enabled: false, links: {} };
+  const checkout = flagEnabled(record.checkout);
+  const enabled = flagEnabled(record.enabled) && (Object.keys(links).length > 0 || checkout);
+  return enabled ? { enabled: true, links, checkout } : { enabled: false, links: {}, checkout: false };
 }

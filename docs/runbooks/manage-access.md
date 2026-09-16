@@ -6,7 +6,7 @@ Sign-in is not permission to act. Studio authorization is one catalog of **discr
 
 1. **Entra app registration** (Terraform) — single-tenant (`AzureADMyOrg`). Enterprise-app **Assignment required** is **off** (`require_app_role_assignment = false`) so login is not blocked with `AADSTS50105`. Do not turn assignment required on to “secure” publish or People.
 2. **SWA Authentication** — `/studio` and `/studio/*` require SWA role **`studio`** (workforce AAD via `/login` or `/.auth/login/aad`). `/account` requires **`contact`**. `/api/*` requires authentication except documented public routes.
-3. **Route rules** — anonymous exceptions: `POST /api/contactInquiry`, `GET /api/lessonPayConfig`, `GET /api/contactAccountConfig`, `POST /api/authRoles`, `POST /api/stripeWebhook`, `POST /api/calendarWatch`, and `GET /api/lessonAction` (same `private, no-store` cache).
+3. **Route rules** — anonymous exceptions: `POST /api/contactInquiry`, `GET /api/lessonPayConfig`, `POST /api/lessonCheckout`, `GET /api/contactAccountConfig`, `POST /api/authRoles`, `POST /api/stripeWebhook`, `POST /api/calendarWatch`, and `GET /api/lessonAction` (same `private, no-store` cache).
 4. **rolesSource** — `POST /api/authRoles` assigns `studio` vs `contact` by IdP. Not the permission catalog.
 5. **Authorization (application)** — every privileged Function calls `permissionGate()` against the catalog in [`api/src/lib/permissions.js`](../../api/src/lib/permissions.js):
    - **Publish / upload / discrete / publish status** — `content.publish`
@@ -14,7 +14,7 @@ Sign-in is not permission to act. Studio authorization is one catalog of **discr
    - **Schedule** — `calendar.read` / `calendar.write` (People role includes these)
    - **Calendar connect** — `calendar.connect` (Super Administrator by default)
    - **Access admin** — `users.read` / `users.manage`
-   - **Public exceptions** — Turnstile, sanitized Payment Links, contact-account flag, SWA roles assignment, Stripe webhook signatures, Google watch channel token, or signed lesson Confirm / Decline tokens
+   - **Public exceptions** — Turnstile (`contactInquiry`, `lessonCheckout`), sanitized Payment Links, contact-account flag, SWA roles assignment, Stripe webhook signatures, Google watch channel token, or signed lesson Confirm / Decline tokens
 
 | Environment | Key Vault | Enterprise app |
 |---|---|---|

@@ -215,6 +215,13 @@
       }
     },
     {
+      "route": "/api/lessonCheckout",
+      "allowedRoles": ["anonymous", "authenticated"],
+      "headers": {
+        "Cache-Control": "private, no-store"
+      }
+    },
+    {
       "route": "/api/stripeWebhook",
       "allowedRoles": ["anonymous", "authenticated"],
       "headers": {

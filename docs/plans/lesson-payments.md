@@ -18,7 +18,7 @@ Private **voice** lessons are currently inquire-then-schedule: rates live on [`/
 
 This plan compares options and recommends a phased path. Phase 1 Payment Links are **in progress**: test/live **API keys** live in `kv-elyse-shared`; each environment stack owns products, prices (synced from `lessons-book.md`), webhooks, and Payment Links (staging = test, prod = live) so catalog changes promote with the env.
 
-_Last updated: 2026-08-28._ Cross-link: Studio CRM / calendar / automation phases are `STUDIO-*` in [`studio-teaching-business.md`](./studio-teaching-business.md). Contact login / schedule-gate is `ACCOUNT-*` in [`contact-accounts.md`](./contact-accounts.md).
+_Last updated: 2026-09-15._ Cross-link: Studio CRM / calendar / automation phases are `STUDIO-*` in [`studio-teaching-business.md`](./studio-teaching-business.md). Contact login / schedule-gate is `ACCOUNT-*` in [`contact-accounts.md`](./contact-accounts.md).
 
 ---
 
@@ -317,10 +317,10 @@ Do not charge cards from unconfirmed voice prompts. Keep `/studio` and `/studio/
 | 1 | Stripe account + shared Key Vault `STRIPE-TEST-*` / `STRIPE-LIVE-*` (staging maps test, prod maps live) | `done` |
 | 2 | Privacy/Terms updates for paid lessons | `done` (`/privacy#payments`, `/terms#paid-lessons`) |
 | 3 | `/lessons/book` Pay CTAs gated by `LESSON_PAYMENTS_ENABLED` (staging **true**, prod **false**) | `in_progress` (UI wired; hidden on prod until go-live + live Payment Links) |
-| 4 | Operator runbook: day-of charge, refund, monthly CSV | `planned` |
+| 4 | Operator runbook: day-of charge, refund, monthly CSV | `done` |
 | 5 | Journey test: inquiry flow + legal copy; pay CTA when flag+links (`LESSON-01` / `LESSON-03`) | `done` |
 | 6 | Per-env catalog: products, prices (cents from `lessons-book.md`), webhook endpoints, Payment Link upsert (staging = test keys, prod = live); `POST /api/stripeWebhook` | `done` |
-| 7 | Later: Checkout Session Function. Webhook → Studio LTV / unmatched (`STUDIO-P2-001`) is **done**; upcoming lesson paid/unpaid still needs Calendar (`STUDIO-P2-004` / `P3`) | `planned` (Checkout only) |
+| 7 | Later: Checkout Session Function. Webhook → Studio LTV / unmatched (`STUDIO-P2-001`) is **done**; upcoming lesson paid/unpaid still needs Calendar (`STUDIO-P2-004` / `P3`) | `done` (Checkout only; Calendar paid/unpaid remains `STUDIO-P2-004`) |
 | 8 | Later: Studio GCal / comms / reports (`STUDIO-P3`–`P5`) per [`studio-teaching-business.md`](./studio-teaching-business.md). CRM + LTV (`STUDIO-P1` / `P2`) are done. Public slot picker waits on contact login + `CONTACT_ACCOUNTS_ENABLED` (`ACCOUNT-P3`); inquire stays anonymous | `planned` |
 
 CD ships **one Astro artifact** to staging and prod, so the pay-flow flag and Payment Link URLs are **runtime** SWA app settings (`GET /api/lessonPayConfig`), not baked `PUBLIC_*` vars. Restricted API keys (`rk_test_` / `rk_live_`) stay in **`kv-elyse-shared`**; webhook secrets and Payment Links live in the **env vault** and are never returned by that endpoint. Rate changes in `lessons-book.md` require an **environment re-apply** (staging, then prod) so Stripe prices follow the site. Populate commands: [rotate-secrets.md](../runbooks/rotate-secrets.md#stripe-lesson-payments). Go-live on production: `terraform apply -var='lesson_payments_enabled=true'` in `infra/environments/prod` after live Payment Links are set.

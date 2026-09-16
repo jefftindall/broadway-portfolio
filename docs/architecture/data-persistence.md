@@ -1,7 +1,7 @@
 # Data persistence
 
 **Audience:** Agents, implementers  
-**Last updated:** 2026-09-13  
+**Last updated:** 2026-09-15  
 **Scope:** Where durable data lives today, the record shapes, how records relate, and the access paths. This is the architecture SoT for stores — not a backlog. Phased work stays in [`docs/plans/`](../plans/).
 
 **Keep this document current:** when a PR changes a store, schema, relation, or access path, update the matching sections, mermaid, and source map **in that same PR**, then bump **Last updated**. Agent contract: [`.cursor/rules/data-persistence.mdc`](../../.cursor/rules/data-persistence.mdc) and [AGENTS.md](../../AGENTS.md).
@@ -480,7 +480,7 @@ Public pages **read** collections at **build time** (`getCollection` / `getEntry
 
 **Catalog Terraform:** [`infra/modules/stripe_catalog/`](../../infra/modules/stripe_catalog/)  
 **Env wiring:** [`infra/modules/portfolio/stripe.tf`](../../infra/modules/portfolio/stripe.tf)  
-**API:** [`api/src/lib/lessonPayConfig.js`](../../api/src/lib/lessonPayConfig.js), [`api/src/functions/stripeWebhook.js`](../../api/src/functions/stripeWebhook.js)
+**API:** [`api/src/lib/lessonPayConfig.js`](../../api/src/lib/lessonPayConfig.js), [`api/src/lib/lessonCheckout.js`](../../api/src/lib/lessonCheckout.js), [`api/src/functions/stripeWebhook.js`](../../api/src/functions/stripeWebhook.js)
 
 | Object | Created by | Stored where | Linked how |
 |--------|------------|--------------|------------|
@@ -488,31 +488,40 @@ Public pages **read** collections at **build time** (`getCollection` / `getEntry
 | Price (USD cents, one-time) | Env Terraform | Stripe | Same metadata; cents from `lessons-book.md` |
 | Webhook endpoint | Env Terraform | Stripe | URL `https://{host}/api/stripeWebhook` |
 | Payment Link | `scripts/upsert-stripe-payment-links.mjs` | Stripe + **env vault** `STRIPE-PAYMENT-LINK-*` | One link per rate |
-| Checkout / PaymentIntent / Charge | Stripe Checkout | Stripe | Matched into `studioLedger` by email; Stripe remains the books |
+| Checkout Session | `POST /api/lessonCheckout` | Stripe (hosted) | `STRIPE_PRICE_IDS` env JSON; Turnstile; metadata `lesson_rate_id` |
+| PaymentIntent / Charge | Stripe Checkout / Payment Links | Stripe | Matched into `studioLedger` by email; Stripe remains the books |
 
 API keys live in **`kv-elyse-shared`** (`STRIPE-TEST-*` / `STRIPE-LIVE-*`). Staging consumes test keys; prod consumes live. Webhook signing secret and Payment Link URLs live in the **environment** vault so catalogs promote independently.
 
 ```mermaid
 sequenceDiagram
   participant Book as /lessons/book
-  participant API as GET /api/lessonPayConfig
+  participant Config as GET /api/lessonPayConfig
+  participant Checkout as POST /api/lessonCheckout
   participant KV as Env vault via SWA settings
   participant Stripe as Stripe Checkout
   participant Hook as POST /api/stripeWebhook
   participant Tables as studioLedger + contacts
   participant AI as App Insights
 
-  Book->>API: anonymous
-  API->>KV: LESSON_PAYMENTS_ENABLED + STRIPE_PAYMENT_LINK_*
-  API-->>Book: sanitized buy.stripe.com URLs or enabled false
-  Book->>Stripe: Payment Link
+  Book->>Config: anonymous
+  Config->>KV: LESSON_PAYMENTS_ENABLED + links + STRIPE_PRICE_IDS
+  Config-->>Book: links and/or checkout true
+  alt Checkout (price IDs configured)
+    Book->>Checkout: Turnstile + rateId
+    Checkout->>Stripe: create Session
+    Checkout-->>Book: hosted checkout URL
+    Book->>Stripe: redirect
+  else Payment Link fallback
+    Book->>Stripe: buy.stripe.com link
+  end
   Stripe->>Hook: signed event
   Hook->>Hook: constructEvent
   Hook->>Tables: upsert studioLedger + contact LTV rollup
   Hook->>AI: StripeWebhookReceived eventId + type + matchKind (no email)
 ```
 
-`GET /api/lessonPayConfig` never returns secret/restricted keys. Links must be `https://buy.stripe.com/…`. Prod flag is **false** until go-live. Studio may still copy those URLs via `people.read` even when the public flag is off (`studioLessonPayLinksFromEnv`).
+`GET /api/lessonPayConfig` never returns secret/restricted keys or price ids. Payment Links must be `https://buy.stripe.com/…`. `POST /api/lessonCheckout` returns only a hosted Checkout URL. Prod flag is **false** until go-live. Studio may still copy Payment Link URLs via `people.read` even when the public flag is off (`studioLessonPayLinksFromEnv`). Operator workflows: [lesson-payments-ops.md](../runbooks/lesson-payments-ops.md).
 
 Webhook handler **verifies**, upserts `studioLedger` (`checkout.session.*` paid, `payment_intent.succeeded`, `charge.refunded`), rematches by email, and telemeters event id + type + `matchKind` — never email or amount in App Insights.
 
@@ -625,7 +634,7 @@ Do not invent a second calendar or a Studio ledger that can drift from Stripe.
 | Inquiry HTTP | `api/src/functions/contactInquiry.js` |
 | Lesson comms + reminders | `api/src/lib/studioComms.js`, `api/src/functions/lessonReminders.js`, `api/src/functions/studioComms.js` |
 | Agent tasks | `api/src/lib/agentTasks.js`, `api/src/functions/agentTasks.js` |
-| Pay config / webhook | `api/src/functions/lessonPayConfig.js`, `stripeWebhook.js` |
+| Pay config / checkout / webhook | `api/src/functions/lessonPayConfig.js`, `lessonCheckout.js`, `stripeWebhook.js` |
 | Table infra | `infra/modules/portfolio/studio_crm.tf` |
 | Stripe catalog | `infra/modules/stripe_catalog/main.tf` |
 | People seed | `scripts/seed-studio-people.mjs` |

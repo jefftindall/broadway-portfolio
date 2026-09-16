@@ -65,7 +65,8 @@ Anonymous exceptions (same `private, no-store` cache; not Studio login):
 | Route | Proof |
 |-------|-------|
 | `POST /api/contactInquiry` | Cloudflare Turnstile + schema |
-| `GET /api/lessonPayConfig` | Feature flag + sanitized Payment Link URLs |
+| `GET /api/lessonPayConfig` | Feature flag + sanitized Payment Link URLs + checkout availability |
+| `POST /api/lessonCheckout` | Turnstile + `LESSON_PAYMENTS_ENABLED` + Stripe Checkout Session URL (no secret keys) |
 | `GET /api/contactAccountConfig` | Feature flag `{ enabled }` only |
 | `POST /api/authRoles` | SWA platform roles assignment |
 | `GET` / `PATCH` `/api/account` | `contactGate()` + first-login link to People (`contactIdentities`); self-serve field allowlist |
