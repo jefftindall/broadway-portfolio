@@ -131,6 +131,8 @@ Prefer a **restricted API key** (`rk_test_` / `rk_live_`) with Products, Prices,
 | `STRIPE-PAYMENT-LINK-30MIN` | `STRIPE_PAYMENT_LINK_30MIN` | env vault | Upserted by staging apply from the 30-min price | Same (live) |
 | `STRIPE-PAYMENT-LINK-60MIN` | `STRIPE_PAYMENT_LINK_60MIN` | env vault | Upserted from the 60-min price | Same (live) |
 
+`STRIPE_PRICE_IDS` is a Terraform-managed SWA app setting (JSON `{"30min":"price_…","60min":"price_…"}`) — not a Key Vault secret. Environment apply writes it from the Stripe catalog module; `sync-swa-api-secrets.sh` preserves it when merging other secrets.
+
 Feature flag (not a Key Vault secret): SWA app setting `LESSON_PAYMENTS_ENABLED`, Terraform `lesson_payments_enabled` — **true on staging**, **false on prod** until go-live. `GET /api/lessonPayConfig` returns links only when the flag is on **and** at least one Payment Link is a real `https://buy.stripe.com/…` URL (not `REPLACE_ME`). Prod with the flag off does not expose live links.
 
 ## Contact accounts (External ID)
@@ -162,7 +164,9 @@ Setup (in order): [contact-accounts-ciam-terraform.md](./contact-accounts-ciam-t
 
 Committed `staticwebapp.config.json` keeps a **REPLACE_ME** issuer placeholder; CD injects the live issuer from `CONTACT-CIAM-OIDC-ISSUER` before SWA upload. Local optional sync: `node scripts/sync-contact-oidc-issuer.mjs repo`.
 
-When advertised rates in `lessons-book.md` change, **re-apply the environment stack** (staging first, then prod) so Stripe prices and Payment Links follow the website (Stripe prices are immutable; Terraform replaces them).
+When advertised rates in `lessons-book.md` change, **re-apply the environment stack** (staging first, then prod) so Stripe prices, `STRIPE_PRICE_IDS`, and Payment Links follow the website (Stripe prices are immutable; Terraform replaces them).
+
+Day-of charge, refunds, and monthly CSV exports: [lesson-payments-ops.md](./lesson-payments-ops.md).
 
 ```bash
 # After bootstrap apply (API-key placeholders exist). Strip trailing newlines

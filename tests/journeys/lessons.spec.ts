@@ -33,7 +33,12 @@ test.describe('lessons journeys', () => {
     const payCta = page.getByTestId('lesson-pay-30min');
     if ((await payCta.count()) > 0) {
       await expect(payCta).toBeVisible();
-      await expect(payCta).toHaveAttribute('href', /https:\/\/buy\.stripe\.com\//);
+      const tagName = await payCta.evaluate((el) => el.tagName.toLowerCase());
+      if (tagName === 'a') {
+        await expect(payCta).toHaveAttribute('href', /https:\/\/buy\.stripe\.com\//);
+      } else {
+        expect(tagName).toBe('button');
+      }
       await expect(
         page.locator('#booking-heading').getByText(/private voice lessons only/i),
       ).toBeVisible();

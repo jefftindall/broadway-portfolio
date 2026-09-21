@@ -1,6 +1,6 @@
 /**
- * Public lesson-pay config (Payment Links). Never include secret/restricted
- * keys or webhook secrets in this payload.
+ * Public lesson-pay config (Payment Links + checkout availability). Never
+ * include secret/restricted keys, webhook secrets, or Stripe price ids.
  */
 
 export const LESSON_PAY_RATE_IDS = ['30min', '60min'];
@@ -29,6 +29,36 @@ export function flagEnabled(value) {
  * @param {unknown} value
  * @returns {string | null}
  */
+/**
+ * @param {unknown} raw
+ * @returns {Record<string, string>}
+ */
+export function parseStripePriceIds(raw) {
+  let parsed;
+  try {
+    parsed = typeof raw === 'string' ? JSON.parse(raw || '{}') : raw;
+  } catch {
+    return {};
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+  /** @type {Record<string, string>} */
+  const out = {};
+  for (const id of LESSON_PAY_RATE_IDS) {
+    const priceId = String(parsed[id] ?? '').trim();
+    if (priceId.startsWith('price_')) out[id] = priceId;
+  }
+  return out;
+}
+
+/**
+ * @param {NodeJS.ProcessEnv} [env]
+ */
+export function lessonCheckoutEnabled(env = process.env) {
+  if (!flagEnabled(env.LESSON_PAYMENTS_ENABLED)) return false;
+  if (!isUsableSecret(env.STRIPE_SECRET_KEY)) return false;
+  return Object.keys(parseStripePriceIds(env.STRIPE_PRICE_IDS)).length > 0;
+}
+
 export function sanitizeStripePaymentLink(value) {
   const raw = String(value ?? '').trim();
   if (!isUsableSecret(raw)) return null;
@@ -48,10 +78,17 @@ export function sanitizeStripePaymentLink(value) {
  * @param {{
  *   enabledFlag?: unknown,
  *   links?: Record<string, unknown>,
+ *   priceIdsRaw?: unknown,
+ *   stripeSecretKey?: unknown,
  * }} input
- * @returns {{ enabled: boolean, links: Record<string, string> }}
+ * @returns {{ enabled: boolean, links: Record<string, string>, checkout: boolean }}
  */
-export function publicLessonPayConfig({ enabledFlag, links = {} } = {}) {
+export function publicLessonPayConfig({
+  enabledFlag,
+  links = {},
+  priceIdsRaw,
+  stripeSecretKey,
+} = {}) {
   /** @type {Record<string, string>} */
   const sanitized = {};
   for (const id of LESSON_PAY_RATE_IDS) {
@@ -59,8 +96,14 @@ export function publicLessonPayConfig({ enabledFlag, links = {} } = {}) {
     if (href) sanitized[id] = href;
   }
 
-  const enabled = flagEnabled(enabledFlag) && Object.keys(sanitized).length > 0;
-  return enabled ? { enabled: true, links: sanitized } : { enabled: false, links: {} };
+  const checkout =
+    flagEnabled(enabledFlag) &&
+    isUsableSecret(stripeSecretKey) &&
+    Object.keys(parseStripePriceIds(priceIdsRaw)).length > 0;
+  const hasLinks = Object.keys(sanitized).length > 0;
+  const enabled = flagEnabled(enabledFlag) && (hasLinks || checkout);
+  if (!enabled) return { enabled: false, links: {}, checkout: false };
+  return { enabled: true, links: sanitized, checkout };
 }
 
 /**
@@ -74,6 +117,8 @@ export function publicLessonPayConfigFromEnv(env = process.env) {
       '30min': env.STRIPE_PAYMENT_LINK_30MIN,
       '60min': env.STRIPE_PAYMENT_LINK_60MIN,
     },
+    priceIdsRaw: env.STRIPE_PRICE_IDS,
+    stripeSecretKey: env.STRIPE_SECRET_KEY,
   });
 }
 

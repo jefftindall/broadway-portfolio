@@ -19,7 +19,7 @@
     "test:api-studio-publish": "node --test api/src/lib/studioPublish.test.js",
     "test:api-github-commit": "node --test api/src/lib/github-commit.test.js",
     "test:api-gallery-meta": "node --test api/src/lib/gallery-meta.test.js",
-    "test:api-lesson-pay": "node --test api/src/lib/lessonPayConfig.test.js",
+    "test:api-lesson-pay": "node --test api/src/lib/lessonPayConfig.test.js api/src/lib/lessonCheckout.test.js",
     "test:api-contact-accounts": "node --test api/src/lib/contactAccountConfig.test.js api/src/lib/authRoles.test.js api/src/lib/contactPrincipal.test.js api/src/lib/contactIdentities.test.js api/src/lib/contactLink.test.js api/src/lib/contactAccess.test.js api/src/lib/accountProfile.test.js api/src/lib/contactAccountLessons.test.js api/src/lib/lessonSlots.test.js api/src/lib/contactLessonBook.test.js",
     "test:api-stripe-webhook": "node --test api/src/lib/stripeWebhook.test.js",
     "test:api-auth": "node --test api/src/lib/auth.test.js api/src/lib/permissions.test.js api/src/lib/users.test.js api/src/lib/studioAccess.test.js",

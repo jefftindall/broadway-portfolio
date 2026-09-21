@@ -3,7 +3,9 @@ import test from 'node:test';
 import {
   flagEnabled,
   isUsableSecret,
+  lessonCheckoutEnabled,
   lessonSchedulingEnabledFromEnv,
+  parseStripePriceIds,
   publicLessonPayConfig,
   publicLessonPayConfigFromEnv,
   sanitizeStripePaymentLink,
@@ -49,7 +51,7 @@ test('publicLessonPayConfig hides links when the flag is off', () => {
       '60min': 'https://buy.stripe.com/test_60',
     },
   });
-  assert.deepEqual(result, { enabled: false, links: {} });
+  assert.deepEqual(result, { enabled: false, links: {}, checkout: false });
 });
 
 test('publicLessonPayConfig requires flag plus at least one valid link', () => {
@@ -58,7 +60,7 @@ test('publicLessonPayConfig requires flag plus at least one valid link', () => {
       enabledFlag: 'true',
       links: { '30min': 'REPLACE_ME', '60min': 'REPLACE_ME' },
     }),
-    { enabled: false, links: {} },
+    { enabled: false, links: {}, checkout: false },
   );
 
   assert.deepEqual(
@@ -69,8 +71,48 @@ test('publicLessonPayConfig requires flag plus at least one valid link', () => {
         '60min': 'https://evil.example/phish',
       },
     }),
-    { enabled: true, links: { '30min': 'https://buy.stripe.com/test_30' } },
+    {
+      enabled: true,
+      links: { '30min': 'https://buy.stripe.com/test_30' },
+      checkout: false,
+    },
   );
+});
+
+test('publicLessonPayConfig enables checkout without payment links', () => {
+  assert.deepEqual(
+    publicLessonPayConfig({
+      enabledFlag: 'true',
+      links: { '30min': 'REPLACE_ME', '60min': 'REPLACE_ME' },
+      priceIdsRaw: '{"30min":"price_test30","60min":"price_test60"}',
+      stripeSecretKey: 'rk_test_example',
+    }),
+    { enabled: true, links: {}, checkout: true },
+  );
+});
+
+test('lessonCheckoutEnabled requires flag, secret key, and price ids', () => {
+  assert.equal(
+    lessonCheckoutEnabled({
+      LESSON_PAYMENTS_ENABLED: 'true',
+      STRIPE_SECRET_KEY: 'rk_test_x',
+      STRIPE_PRICE_IDS: '{"30min":"price_test30"}',
+    }),
+    true,
+  );
+  assert.equal(
+    lessonCheckoutEnabled({
+      LESSON_PAYMENTS_ENABLED: 'false',
+      STRIPE_SECRET_KEY: 'rk_test_x',
+      STRIPE_PRICE_IDS: '{"30min":"price_test30"}',
+    }),
+    false,
+  );
+});
+
+test('parseStripePriceIds ignores invalid entries', () => {
+  assert.deepEqual(parseStripePriceIds('{"30min":"price_abc"}'), { '30min': 'price_abc' });
+  assert.deepEqual(parseStripePriceIds(''), {});
 });
 
 test('publicLessonPayConfigFromEnv never returns secret key fields', () => {
@@ -86,6 +128,7 @@ test('publicLessonPayConfigFromEnv never returns secret key fields', () => {
     '30min': 'https://buy.stripe.com/test_30',
     '60min': 'https://buy.stripe.com/test_60',
   });
+  assert.equal(result.checkout, false);
   assert.equal('secretKey' in result, false);
   assert.equal(JSON.stringify(result).includes('rk_test'), false);
   assert.equal(JSON.stringify(result).includes('whsec_'), false);

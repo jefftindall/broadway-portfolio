@@ -14,7 +14,10 @@ interface Props {
 
 const { rates } = Astro.props;
 const baked = bakedLessonPayConfig();
-const bakedRates = rates.filter((rate) => baked.links[rate.id as LessonPayRateId]);
+const siteKey = String(import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '').trim();
+const bakedRates = rates.filter(
+  (rate) => baked.links[rate.id as LessonPayRateId] || baked.checkout,
+);
 ---
 
 {
@@ -24,28 +27,50 @@ const bakedRates = rates.filter((rate) => baked.links[rate.id as LessonPayRateId
       class="mt-8 border-t border-line pt-6"
       data-lesson-pay
       data-baked="true"
+      data-checkout={baked.checkout ? 'true' : 'false'}
+      data-turnstile-sitekey={siteKey}
     >
       <h3 class="font-display text-2xl text-spotlight">Pay for a lesson</h3>
       <p class="mt-2 text-sm text-muted">
         Prepaid private <strong>voice</strong> lessons only. Schedule is confirmed by email — pay
         the matching session length after you have a time, or just before we start.
       </p>
-      <div class="mt-4 flex flex-wrap gap-3">
+      <div class="mt-4 flex flex-wrap gap-3" data-lesson-pay-actions>
         {
-          bakedRates.map((rate) => (
-            <CtaLink
-              href={baked.links[rate.id as LessonPayRateId] ?? '#'}
-              external
-              data-ga-event="select_content"
-              data-ga-content-type="lesson_payment"
-              data-ga-content-id={rate.id}
-              data-testid={`lesson-pay-${rate.id}`}
-            >
-              Pay {rate.price} · {rate.label}
-            </CtaLink>
-          ))
+          baked.checkout
+            ? bakedRates.map((rate) => (
+                <button
+                  type="button"
+                  class="inline-flex min-h-11 items-center justify-center rounded-sm px-6 py-3 text-sm transition bg-gold text-ink font-semibold hover:brightness-110"
+                  data-lesson-pay-checkout
+                  data-rate-id={rate.id}
+                  data-testid={`lesson-pay-${rate.id}`}
+                >
+                  Pay {rate.price} · {rate.label}
+                </button>
+              ))
+            : bakedRates.map((rate) => (
+                <CtaLink
+                  href={baked.links[rate.id as LessonPayRateId] ?? '#'}
+                  external
+                  data-ga-event="select_content"
+                  data-ga-content-type="lesson_payment"
+                  data-ga-content-id={rate.id}
+                  data-testid={`lesson-pay-${rate.id}`}
+                >
+                  Pay {rate.price} · {rate.label}
+                </CtaLink>
+              ))
         }
       </div>
+      {
+        baked.checkout && siteKey ? (
+          <div class="mt-4">
+            <div class="cf-turnstile min-h-[65px]" data-turnstile-mount data-action="turnstile-spin-v2" />
+          </div>
+        ) : null
+      }
+      <p class="mt-4 text-xs text-muted" data-lesson-pay-status hidden></p>
       <p class="mt-4 text-xs text-muted">
         Card numbers are handled by Stripe, not this site.{' '}
         <a href="/terms#paid-lessons">Cancellation &amp; refunds</a>
@@ -59,6 +84,7 @@ const bakedRates = rates.filter((rate) => baked.links[rate.id as LessonPayRateId
       class="mt-8 border-t border-line pt-6"
       data-lesson-pay
       data-baked="false"
+      data-turnstile-sitekey={siteKey}
       data-rates={JSON.stringify(
         rates.map((rate) => ({ id: rate.id, label: rate.label, price: rate.price })),
       )}
@@ -70,9 +96,219 @@ const bakedRates = rates.filter((rate) => baked.links[rate.id as LessonPayRateId
 <script>
   import { parseLessonPayConfig, sanitizeStripePaymentLink } from '../lib/lessonPayments';
   import { trackGaEvent } from '../lib/analytics';
+  import { isButtonBusy, setButtonBusy } from '../lib/buttonBusy';
+
+  type TurnstileApi = {
+    render: (el: HTMLElement, opts: Record<string, unknown>) => string;
+    reset: (widgetId?: string) => void;
+    getResponse: (widgetId?: string) => string;
+  };
+
+  const TURNSTILE_SRC = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+  let turnstileLoader: Promise<void> | null = null;
+
+  function turnstileApi(): TurnstileApi | undefined {
+    return (window as unknown as { turnstile?: TurnstileApi }).turnstile;
+  }
+
+  function loadTurnstile(): Promise<void> {
+    if (turnstileApi()) return Promise.resolve();
+    if (turnstileLoader) return turnstileLoader;
+    turnstileLoader = new Promise((resolve, reject) => {
+      const existing = document.querySelector<HTMLScriptElement>(`script[src^="${TURNSTILE_SRC}"]`);
+      if (existing) {
+        existing.addEventListener('load', () => resolve(), { once: true });
+        existing.addEventListener('error', () => reject(new Error('Turnstile failed to load')), {
+          once: true,
+        });
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = TURNSTILE_SRC;
+      script.async = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Turnstile failed to load'));
+      document.head.appendChild(script);
+    });
+    return turnstileLoader;
+  }
+
+  function setPayStatus(el: HTMLElement | null, message: string, isError: boolean) {
+    if (!el) return;
+    el.textContent = message;
+    el.hidden = !message;
+    el.classList.toggle('text-gold', isError);
+    el.classList.toggle('text-muted', !isError);
+  }
+
+  async function mountTurnstile(root: HTMLElement, widgetIdRef: { current?: string }) {
+    const siteKey = root.dataset.turnstileSitekey || '';
+    if (!siteKey || widgetIdRef.current !== undefined) return;
+    await loadTurnstile();
+    const mount = root.querySelector<HTMLElement>('[data-turnstile-mount]');
+    const api = turnstileApi();
+    if (mount && api) {
+      widgetIdRef.current = api.render(mount, {
+        sitekey: siteKey,
+        theme: 'dark',
+        action: 'turnstile-spin-v2',
+      });
+    }
+  }
+
+  function bindCheckoutButtons(
+    root: HTMLElement,
+    rates: { id: string; label: string; price: string }[],
+    widgetIdRef: { current?: string },
+  ) {
+    const statusEl = root.querySelector<HTMLElement>('[data-lesson-pay-status]');
+    const siteKey = root.dataset.turnstileSitekey || '';
+
+    root.querySelectorAll<HTMLButtonElement>('[data-lesson-pay-checkout]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        if (isButtonBusy(button)) return;
+        const rateId = button.dataset.rateId || '';
+        const rate = rates.find((entry) => entry.id === rateId);
+        if (!rate) return;
+
+        if (!siteKey) {
+          setPayStatus(statusEl, 'Verification is not configured. Please try again later.', true);
+          return;
+        }
+
+        try {
+          await mountTurnstile(root, widgetIdRef);
+        } catch {
+          setPayStatus(
+            statusEl,
+            'Verification widget failed to load. Refresh and try again.',
+            true,
+          );
+          return;
+        }
+
+        const api = turnstileApi();
+        const token =
+          widgetIdRef.current !== undefined && api ? api.getResponse(widgetIdRef.current) : '';
+        if (!token) {
+          setPayStatus(statusEl, 'Please complete the verification check.', true);
+          return;
+        }
+
+        setButtonBusy(button, true, 'Opening…');
+        setPayStatus(statusEl, 'Opening secure checkout…', false);
+
+        try {
+          const res = await fetch('/api/lessonCheckout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({ rateId, turnstileToken: token }),
+          });
+          const data = (await res.json().catch(() => ({}))) as {
+            url?: string;
+            error?: string;
+            correlationId?: string;
+          };
+
+          if (!res.ok || !data.url) {
+            const ref = data.correlationId ? ` Reference: ${data.correlationId}` : '';
+            setPayStatus(
+              statusEl,
+              `${data.error || 'Checkout could not start.'}${ref}`,
+              true,
+            );
+            setButtonBusy(button, false);
+            if (api && widgetIdRef.current !== undefined) api.reset(widgetIdRef.current);
+            return;
+          }
+
+          trackGaEvent('select_content', {
+            content_type: 'lesson_payment',
+            content_id: rateId,
+          });
+          window.location.assign(data.url);
+        } catch {
+          setPayStatus(statusEl, 'Checkout could not start. Please try again.', true);
+          setButtonBusy(button, false);
+          const api = turnstileApi();
+          if (api && widgetIdRef.current !== undefined) api.reset(widgetIdRef.current);
+        }
+      });
+    });
+  }
+
+  function renderLinkActions(
+    rates: { id: string; label: string; price: string }[],
+    links: Partial<Record<'30min' | '60min', string>>,
+  ) {
+    const actions = document.createElement('div');
+    actions.className = 'mt-4 flex flex-wrap gap-3';
+    const ctaClass =
+      'inline-flex min-h-11 items-center justify-center rounded-sm px-6 py-3 text-sm transition bg-gold text-ink font-semibold hover:brightness-110';
+
+    for (const rate of rates) {
+      const href = sanitizeStripePaymentLink(links[rate.id as '30min' | '60min']);
+      if (!href) continue;
+      const a = document.createElement('a');
+      a.href = href;
+      a.className = ctaClass;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.dataset.testid = `lesson-pay-${rate.id}`;
+      a.textContent = `Pay ${rate.price} · ${rate.label}`;
+      a.addEventListener('click', () => {
+        trackGaEvent('select_content', {
+          content_type: 'lesson_payment',
+          content_id: rate.id,
+        });
+      });
+      actions.append(a);
+    }
+    return actions;
+  }
+
+  function renderCheckoutActions(
+    rates: { id: string; label: string; price: string }[],
+  ) {
+    const actions = document.createElement('div');
+    actions.className = 'mt-4 flex flex-wrap gap-3';
+    const ctaClass =
+      'inline-flex min-h-11 items-center justify-center rounded-sm px-6 py-3 text-sm transition bg-gold text-ink font-semibold hover:brightness-110';
+
+    for (const rate of rates) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = ctaClass;
+      button.dataset.lessonPayCheckout = 'true';
+      button.dataset.rateId = rate.id;
+      button.dataset.testid = `lesson-pay-${rate.id}`;
+      button.textContent = `Pay ${rate.price} · ${rate.label}`;
+      actions.append(button);
+    }
+    return actions;
+  }
 
   const root = document.querySelector<HTMLElement>('[data-lesson-pay]');
-  if (root && root.dataset.baked !== 'true') {
+  if (!root) {
+    // no-op
+  } else if (root.dataset.baked === 'true' && root.dataset.checkout === 'true') {
+    const rates = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-lesson-pay-checkout]')).map(
+      (button) => ({
+        id: button.dataset.rateId || '',
+        label: '',
+        price: '',
+      }),
+    );
+    const widgetIdRef: { current?: string } = {};
+    root.addEventListener(
+      'pointerdown',
+      () => {
+        void mountTurnstile(root, widgetIdRef);
+      },
+      { once: true },
+    );
+    bindCheckoutButtons(root, rates, widgetIdRef);
+  } else if (root.dataset.baked !== 'true') {
     void (async () => {
       try {
         const res = await fetch('/api/lessonPayConfig', {
@@ -102,34 +338,15 @@ const bakedRates = rates.filter((rate) => baked.links[rate.id as LessonPayRateId
           ' lessons only. Schedule is confirmed by email — pay the matching session length after you have a time, or just before we start.',
         );
 
-        const actions = document.createElement('div');
-        actions.className = 'mt-4 flex flex-wrap gap-3';
-
-        const ctaClass =
-          'inline-flex min-h-11 items-center justify-center rounded-sm px-6 py-3 text-sm transition bg-gold text-ink font-semibold hover:brightness-110';
-
-        for (const rate of rates) {
-          const href = sanitizeStripePaymentLink(
-            config.links[rate.id as '30min' | '60min'],
-          );
-          if (!href) continue;
-          const a = document.createElement('a');
-          a.href = href;
-          a.className = ctaClass;
-          a.target = '_blank';
-          a.rel = 'noopener noreferrer';
-          a.dataset.testid = `lesson-pay-${rate.id}`;
-          a.textContent = `Pay ${rate.price} · ${rate.label}`;
-          a.addEventListener('click', () => {
-            trackGaEvent('select_content', {
-              content_type: 'lesson_payment',
-              content_id: rate.id,
-            });
-          });
-          actions.append(a);
-        }
-
+        const actions = config.checkout
+          ? renderCheckoutActions(rates)
+          : renderLinkActions(rates, config.links);
         if (!actions.childElementCount) return;
+
+        const status = document.createElement('p');
+        status.className = 'mt-4 text-xs text-muted';
+        status.dataset.lessonPayStatus = 'true';
+        status.hidden = true;
 
         const legal = document.createElement('p');
         legal.className = 'mt-4 text-xs text-muted';
@@ -143,8 +360,32 @@ const bakedRates = rates.filter((rate) => baked.links[rate.id as LessonPayRateId
         privacy.textContent = 'Privacy';
         legal.append(terms, sep, privacy);
 
-        root.replaceChildren(heading, copy, actions, legal);
+        const children = [heading, copy, actions];
+        if (config.checkout && root.dataset.turnstileSitekey) {
+          const turnstileWrap = document.createElement('div');
+          turnstileWrap.className = 'mt-4';
+          const mount = document.createElement('div');
+          mount.className = 'cf-turnstile min-h-[65px]';
+          mount.setAttribute('data-turnstile-mount', '');
+          turnstileWrap.append(mount);
+          children.push(turnstileWrap);
+        }
+        children.push(status, legal);
+
+        root.replaceChildren(...children);
         root.hidden = false;
+
+        if (config.checkout) {
+          const widgetIdRef: { current?: string } = {};
+          root.addEventListener(
+            'pointerdown',
+            () => {
+              void mountTurnstile(root, widgetIdRef);
+            },
+            { once: true },
+          );
+          bindCheckoutButtons(root, rates, widgetIdRef);
+        }
       } catch {
         // Stay hidden when Functions are not running (local `astro dev`).
       }
