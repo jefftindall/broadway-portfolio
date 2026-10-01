@@ -4,7 +4,7 @@ Living reliability posture for the Elyse Tindall portfolio. Rubric, SLOs, and ba
 
 | Field | Value |
 |-------|-------|
-| **Last reviewed** | 2026-09-01 |
+| **Last reviewed** | 2026-10-01 |
 | **Review source** | monthly-workflow (+ Azure SLI attempt) |
 | **Weighted overall** | **4.1 / 5** |
 | **Target overall** | ≥ 3.8 (after P1 alerting) |
@@ -20,10 +20,10 @@ Living reliability posture for the Elyse Tindall portfolio. Rubric, SLOs, and ba
 | Secrets & config | 0.9 | 4.0 | Strong | Env + shared KV; sync workflow; rotate-secrets | Functions need explicit secret sync | ok |
 | Observability | 1.2 | 4.2 | Strong | Per-env AI; Studio correlation + events; GA4 public; HomepageFcpMs; contact inquiry events + SLI docs | No Workbooks as code | ok |
 | Test automation | 1.1 | 4.0 | Strong | Staging smoke + journeys; homepage + materials synthetics; soft lab FCP | No unit tests; Studio E2E OOS | ok |
-| Cost & capacity | 0.7 | 4.0 | Strong | Subscription budget $38/mo (OPS-P4-001); Subscription ActualCost 2026-08: $27.70 (72.9% of $38 budget). MoM up +$25.60 (+1229.4%). | Gemini/Google console budget alert still manual | ok: Subscription ActualCost 2026-08: $27.70 (72.9% of $38 budget). MoM up +$25.60 (+1229.4%). |
+| Cost & capacity | 0.7 | 4.0 | Strong | Subscription budget $38/mo (OPS-P4-001); Subscription ActualCost 2026-09: $15.70 (41.2% of $38 budget). MoM down $-12.60 (-44.6%). | Gemini/Google console budget alert still manual | ok: Subscription ActualCost 2026-09: $15.70 (41.2% of $38 budget). MoM down $-12.60 (-44.6%). |
 | Alerting & on-call | 1.1 | 4.3 | Strong | KV ALERT-* → notify/critical/watch AGs; homepage+materials Sev1; DeployFailed Sev1 (OPS-P3-003); FCP Sev3 | Optional vendor escalate-if-unacked still OPS-P3-002; operator must keep ALERT-* real | ok |
 | Resilience & DR | 0.9 | 2.0 | Thin | Git rollback; env isolation; East US 2 only | Single region; shared ACS/Turnstile coupling | ok |
-| SLOs & error budget | 0.8 | 3.8 | Solid | Field/synthetic SLIs: Materials availability avg 100% over 12 probe(s) (target 99.8% / 7d). API availability 100% / 7d (0 bad minute(s); target 99.9% ≈ 10.07999999999889 min budget). | Windows need traffic before met/missed; inquiry not yet a committed SLO | ok: App Insights returned no availability datapoints for the last 7 days (Homepage). Materials availability avg 100% over 12 probe(s) (target 99.8% / 7d). No HomepageFcpMs samples in the last 7 days (field pipeline pending deploy traffic). API availability 100% / 7d (0 bad minute(s); target 99.9% ≈ 10.07999999999889 min budget). No Studio publish UI events in the last 28 days; SLO-2 left stale. No StudioPublishToProdDurationMs samples in the last 28 days; SLO-3 left stale. No inquiry events in the last 28 days (excluding bots/validation); left stale. App Insights 2026-08: 0 contact(s), 0 Studio publish(es). GA4 2026-08: 1413 session(s), 1356 user(s). |
+| SLOs & error budget | 0.8 | 3.8 | Solid | Field/synthetic SLIs: Materials availability avg 100% over 12 probe(s) (target 99.8% / 7d). API availability 100% / 7d (0 bad minute(s); target 99.9% ≈ 10.07999999999889 min budget). | Windows need traffic before met/missed; inquiry not yet a committed SLO | ok: App Insights returned no availability datapoints for the last 7 days (Homepage). Materials availability avg 100% over 12 probe(s) (target 99.8% / 7d). No HomepageFcpMs samples in the last 7 days (field pipeline pending deploy traffic). API availability 100% / 7d (0 bad minute(s); target 99.9% ≈ 10.07999999999889 min budget). No Studio publish UI events in the last 28 days; SLO-2 left stale. No StudioPublishToProdDurationMs samples in the last 28 days; SLO-3 left stale. No inquiry events in the last 28 days (excluding bots/validation); left stale. App Insights 2026-09: 0 contact(s), 0 Studio publish(es). GA4 2026-09: 221 session(s), 221 user(s). |
 
 ## Committed SLOs (status this review)
 
@@ -47,39 +47,39 @@ Living reliability posture for the Elyse Tindall portfolio. Rubric, SLOs, and ba
 | Field | Value |
 |-------|-------|
 | **Budget** | $38 / month |
-| **Last month (2026-08)** | $27.70 (72.9% of budget) |
-| **Prior month (2026-07)** | $2.10 |
-| **MoM** | up +$25.60 (+1229.4%) |
+| **Last month (2026-09)** | $15.70 (41.2% of budget) |
+| **Prior month (2026-08)** | $28.30 |
+| **MoM** | down $-12.60 (-44.6%) |
 | **Under budget** | yes |
 
 ## Site performance (previous month)
 
 | Field | Value |
 |-------|-------|
-| **Month** | 2026-08 |
+| **Month** | 2026-09 |
 | **Status** | ok |
-| **Visits (GA4)** | 1413 sessions · 1356 users |
+| **Visits (GA4)** | 221 sessions · 221 users |
 | **Contacts (App Insights)** | 0 total (0 casting · 0 lesson) |
 | **Studio publishes** | 0 |
 | **Top pages** | See list below |
-| **Note** | App Insights 2026-08: 0 contact(s), 0 Studio publish(es). GA4 2026-08: 1413 session(s), 1356 user(s). |
+| **Note** | App Insights 2026-09: 0 contact(s), 0 Studio publish(es). GA4 2026-09: 221 session(s), 221 user(s). |
 
-- Homepage — 397 visit(s)
-- Materials (resume & headshots) — 181 visit(s)
-- Shows — 147 visit(s)
-- Voice lessons — 126 visit(s)
-- Book a voice lesson — 125 visit(s)
-- Anastasia — Lily — 108 visit(s)
-- Gallery — 101 visit(s)
-- About — 96 visit(s)
+- Homepage — 56 visit(s)
+- About — 22 visit(s)
+- Materials (resume & headshots) — 22 visit(s)
+- Gallery — 19 visit(s)
+- Voice lessons — 19 visit(s)
+- Shows — 19 visit(s)
+- Book a voice lesson — 18 visit(s)
+- Anastasia — Lily — 17 visit(s)
 
 ## Content freshness (casting materials)
 
 | Item | Status | Days since update | Note |
 |------|--------|-------------------|------|
-| Homepage | ok | 15 | Updated 15 day(s) ago (2026-08-16). |
-| Resume | ok | 10 | Updated 10 day(s) ago (2026-08-21). |
-| Headshot | ok | 29 | Updated 29 day(s) ago (2026-08-02). |
+| Homepage | watch | 45 | No update in 45 days (since 2026-08-16) — overdue for a refresh. |
+| Resume | ok | 40 | Updated 40 day(s) ago (2026-08-21). |
+| Headshot | ok | 59 | Updated 59 day(s) ago (2026-08-02). |
 
 ## How this file is updated
 
