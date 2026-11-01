@@ -1,0 +1,128 @@
+{
+  "$schemaComment": "SEARCH-P4-002 search signals since last run. Paths, query themes, numeric bands only. No emails/phones/secrets. No Gemini.",
+  "actionId": "SEARCH-P4-002",
+  "period": "2026-10-01_2026-10-31",
+  "generatedAt": "2026-11-01T18:19:36.429Z",
+  "window": {
+    "from": "2026-10-01",
+    "toExclusive": "2026-11-01",
+    "toInclusive": "2026-10-31",
+    "source": "since_last_run"
+  },
+  "castingLandersInRepo": [
+    "/for/anastasia-lily",
+    "/for/atlanta-to-nyc-actress",
+    "/for/available-casting-nyc",
+    "/for/belt-vocalist-musical-theatre",
+    "/for/broadway-artists-alliance",
+    "/for/comedic-actress",
+    "/for/ethnically-ambiguous-actress",
+    "/for/georgia-musical-theatre",
+    "/for/ingenue-musical-theatre",
+    "/for/mezzo-soprano-musical-theatre",
+    "/for/miss-you-like-hell",
+    "/for/musical-comedy-actress",
+    "/for/musical-theatre-actress-nyc",
+    "/for/off-broadway-cabaret",
+    "/for/stage-actress-new-york",
+    "/for/strand-theater-actress",
+    "/for/teenage-musical-theatre",
+    "/for/triple-threat-actress-nyc",
+    "/for/vocalist-actress",
+    "/for/young-adult-musical-theatre"
+  ],
+  "coverage": [
+    {
+      "id": 1,
+      "title": "GSC Performance",
+      "status": "stale",
+      "note": "GSC probe failed. (User does not have sufficient permission for site 'https://elysetindall.com/'. See also: https://support.google.com/webmasters/answer/2451999.)"
+    },
+    {
+      "id": 2,
+      "title": "GSC Pages / indexing anomalies",
+      "status": "stale",
+      "note": "GSC probe failed. (User does not have sufficient permission for site 'https://elysetindall.com/'. See also: https://support.google.com/webmasters/answer/2451999.)"
+    },
+    {
+      "id": 3,
+      "title": "GA organic landings",
+      "status": "ok",
+      "note": "GA organic 2 landing(s); 1 conversion landing(s)."
+    },
+    {
+      "id": 4,
+      "title": "GA events by landing",
+      "status": "ok",
+      "note": "1 conversion landing(s)"
+    },
+    {
+      "id": 5,
+      "title": "GA ↔ GSC join",
+      "status": "ok",
+      "note": "Joined 2 path(s) across GSC pages and GA organic landings."
+    }
+  ],
+  "gsc": {
+    "ok": false,
+    "note": "GSC probe failed. (User does not have sufficient permission for site 'https://elysetindall.com/'. See also: https://support.google.com/webmasters/answer/2451999.)"
+  },
+  "ga": {
+    "ok": true,
+    "landings": [
+      {
+        "path": "/",
+        "sessions": 2,
+        "engagementRatePct": 50,
+        "label": "Homepage"
+      },
+      {
+        "path": "/materials",
+        "sessions": 1,
+        "engagementRatePct": 0,
+        "label": "Materials (resume & headshots)"
+      }
+    ],
+    "conversionsByLanding": [
+      {
+        "path": "/",
+        "events": {
+          "file_download": 3,
+          "select_content": 3
+        },
+        "total": 6,
+        "label": "Homepage"
+      }
+    ],
+    "landingCount": 2,
+    "conversionLandingCount": 1,
+    "note": "GA organic 2 landing(s); 1 conversion landing(s)."
+  },
+  "join": {
+    "ok": true,
+    "rows": [
+      {
+        "path": "/",
+        "label": "Homepage",
+        "gscImpressions": 0,
+        "gscClicks": 0,
+        "gscCtrBand": "unknown",
+        "gaSessions": 2,
+        "events": {
+          "file_download": 3,
+          "select_content": 3
+        }
+      },
+      {
+        "path": "/materials",
+        "label": "Materials (resume & headshots)",
+        "gscImpressions": 0,
+        "gscClicks": 0,
+        "gscCtrBand": "unknown",
+        "gaSessions": 1,
+        "events": {}
+      }
+    ],
+    "note": "Joined 2 path(s) across GSC pages and GA organic landings."
+  }
+}

@@ -1,12 +1,12 @@
 {
   "$schemaComment": "SEARCH-P4-002 search signals since last run. Paths, query themes, numeric bands only. No emails/phones/secrets. No Gemini.",
   "actionId": "SEARCH-P4-002",
-  "period": "2026-09-01_2026-09-30",
-  "generatedAt": "2026-10-01T18:45:40.046Z",
+  "period": "2026-10-01_2026-10-31",
+  "generatedAt": "2026-11-01T18:19:36.429Z",
   "window": {
-    "from": "2026-09-01",
-    "toExclusive": "2026-10-01",
-    "toInclusive": "2026-09-30",
+    "from": "2026-10-01",
+    "toExclusive": "2026-11-01",
+    "toInclusive": "2026-10-31",
     "source": "since_last_run"
   },
   "castingLandersInRepo": [
@@ -48,19 +48,19 @@
       "id": 3,
       "title": "GA organic landings",
       "status": "ok",
-      "note": "GA organic 1 landing(s); 0 conversion landing(s)."
+      "note": "GA organic 2 landing(s); 1 conversion landing(s)."
     },
     {
       "id": 4,
       "title": "GA events by landing",
       "status": "ok",
-      "note": "0 conversion landing(s)"
+      "note": "1 conversion landing(s)"
     },
     {
       "id": 5,
       "title": "GA ↔ GSC join",
       "status": "ok",
-      "note": "Joined 1 path(s) across GSC pages and GA organic landings."
+      "note": "Joined 2 path(s) across GSC pages and GA organic landings."
     }
   ],
   "gsc": {
@@ -72,15 +72,31 @@
     "landings": [
       {
         "path": "/",
+        "sessions": 2,
+        "engagementRatePct": 50,
+        "label": "Homepage"
+      },
+      {
+        "path": "/materials",
         "sessions": 1,
-        "engagementRatePct": 100,
+        "engagementRatePct": 0,
+        "label": "Materials (resume & headshots)"
+      }
+    ],
+    "conversionsByLanding": [
+      {
+        "path": "/",
+        "events": {
+          "file_download": 3,
+          "select_content": 3
+        },
+        "total": 6,
         "label": "Homepage"
       }
     ],
-    "conversionsByLanding": [],
-    "landingCount": 1,
-    "conversionLandingCount": 0,
-    "note": "GA organic 1 landing(s); 0 conversion landing(s)."
+    "landingCount": 2,
+    "conversionLandingCount": 1,
+    "note": "GA organic 2 landing(s); 1 conversion landing(s)."
   },
   "join": {
     "ok": true,
@@ -91,10 +107,22 @@
         "gscImpressions": 0,
         "gscClicks": 0,
         "gscCtrBand": "unknown",
+        "gaSessions": 2,
+        "events": {
+          "file_download": 3,
+          "select_content": 3
+        }
+      },
+      {
+        "path": "/materials",
+        "label": "Materials (resume & headshots)",
+        "gscImpressions": 0,
+        "gscClicks": 0,
+        "gscCtrBand": "unknown",
         "gaSessions": 1,
         "events": {}
       }
     ],
-    "note": "Joined 1 path(s) across GSC pages and GA organic landings."
+    "note": "Joined 2 path(s) across GSC pages and GA organic landings."
   }
 }
